@@ -1,0 +1,6 @@
+"SWF Material ID","Material Name","Manning's coefficient","Depression storage height","Obstruction storage height","SWF Depth for smoothing (SWFH1)","SWF Depth for smoothing (SWFH2)"
+1,"Streambed",0.03,0.10,0.00,1.0e-06,1.0e-06
+2,"Grass",0.30,0.10,0.00,1.0e-06,1.0e-06
+3,"Panday slope",0.01,0.01,0.00,1.0e-06,1.0e-06
+4,"Panday channel",0.15,0.01,0.00,1.0e-06,1.0e-06
+7,"-",0.03,0.10,0.00,1.0e-06,1.0e-06

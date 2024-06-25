@@ -1,0 +1,96 @@
+% -----------------------------------------------------------------------------
+% !Mode:: "TeX:Hard:CP1252"
+% PDFLaTeX this document and view or print it from Acrobat Reader!
+% -----------------------------------------------------------------------------
+% Preamble Starts here:
+% -----------------------------------------------------------------------------
+\documentclass[12pt,oneside,openany]{book}
+\usepackage[cm]{fullpage}
+\usepackage{blindtext}
+\usepackage{graphicx}
+\graphicspath{./SourceMaterial/} %Setting the graphicspath
+%\usepackage[paperwidth=9.25in, paperheight=6.125in]{geometry}
+\usepackage{makeidx}
+
+\usepackage{amsmath}
+
+\usepackage{hyperref}
+\hypersetup{
+%    bookmarks=true,         % show bookmarks bar?
+    unicode=false,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={My title},    % title
+    pdfauthor={Author},     % author
+    pdfsubject={Subject},   % subject of the document
+    pdfcreator={Creator},   % creator of the document
+    pdfproducer={Producer}, % producer of the document
+    pdfkeywords={keyword1, key2, key3}, % list of keywords
+    pdfnewwindow=true,      % links in new PDF window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=blue,          % color of internal links (change box color with linkbordercolor)
+    citecolor=green,        % color of links to bibliography
+    filecolor=cyan,         % color of file links
+    urlcolor=magenta        % color of external links
+}
+
+\graphicspath{{SourceMaterial/}} %Setting the graphicspath
+
+%\includeonly{Poultry}
+
+\makeindex
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vfill
+    {\bfseries\Huge
+        Modflow User Tools (MUT): User's Guide\\
+    }
+    \vspace{1in}
+
+    %\includegraphics[width=0.9\textwidth]{Title}
+
+    \vspace{1in}
+    {\bfseries\Large
+        May 2024\\
+        \vskip2cm
+        Rob McLaren\\
+    }
+
+    \vfill
+    \vfill
+\end{titlepage}
+
+\pagestyle{empty} \tableofcontents
+
+\chapter{Concepts}
+\chapter{Model Characteristics}\include{ModelCharacteristicsINTRO}
+\chapter{Physical Properties}
+    \section{Groundwater Flow(GWF) Domain}
+        \subsection{Mesh}
+        \subsection{Connected Linear Networks CLN}
+        \subsection{Surfacewater Flow SWF}
+\chapter{Boundary Conditions}
+    \section{Constrained Head}
+        \subsection{Constant Head}\include{Drains}
+        \subsection{Drains}\include{Drains}
+    \section{Constrained Flow}
+        \subsection{Recharge}
+        \subsection{Pumping}
+
+\printindex
+\newpage
+
+%\appendix
+%\include{CookingNotes}
+%\include{Scans}
+
+
+
+\end{document}
+
+% -----------------------------------------------------------------------------

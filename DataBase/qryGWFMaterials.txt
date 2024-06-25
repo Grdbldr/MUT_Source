@@ -1,0 +1,7 @@
+"Material ID","Material name","Porosity","Kh (Kx)","Kv (Kz)","Ky","Specific storage","Specific Yield","Brooks/Corey","Alpha","Beta","Sr","Tabular Input","P-S Table","S-Kr Table"
+1,"Sand",0.30,1.0e-05,1.0e-05,0.00,1.0e-04,0.30,0,1.00,5.00,0.30,0,"Sand P-S Table.txt","Sand S-Kr Table.txt"
+2,"Clay",0.50,1.0e-08,1.0e-08,0.00,1.0e-04,0.50,0,1.00,5.00,0.50,0,"Clay P-S Table.txt","Clay S-Kr Table.txt"
+3,"Silt",0.40,1.0e-06,1.0e-06,0.00,1.0e-04,0.40,0,1.00,5.00,0.50,0,"Silt P-S Table.txt","Silt S-Kr Table.txt"
+4,"Borden sand",0.34,1.0e-05,1.0e-05,0.00,1.2e-07,0.34,0,1.90,6.00,0.18,1,"Borden Sand P-S Table.txt","Borden Sand S-Kr Table.txt"
+6,"VSF Column",0.30,10.00,10.00,0.00,1.0e-07,0.43,0,0.03,1.56,0.18,0,"-","-"
+7,"VSF Hillslope",0.10,31.53,31.53,1.0e-05,1.0e-05,0.10,0,0.03,1.98,0.27,0,"-","-"
