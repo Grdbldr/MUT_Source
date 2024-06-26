@@ -27,12 +27,16 @@ Module MeshGeneration
 
 
         !     xl, yl are grid lengths in x- and y-directions
-        read(FNum,*) xl,nbx
-        write(TMPStr,'(a,f10.3,a,i5,a)') TAB//'Mesh length in X-direction: ',xl,'is subdivided into ',nbx, ' rectangular elements'
+        read(FNum,*) xl, nbx
+        write(TMPStr,'(a,g15.3)') TAB//'Mesh length in X        ',xl
+        call Msg(TMPStr)
+        write(TMPStr,'(a,i9)')    TAB//'Number of elements in X ',nbx
         call Msg(TMPStr)
 
-        read(FNum,*) yl,nby
-        write(TMPStr,'(a,f10.3,a,i5,a)') TAB//'Mesh length in Y-direction: ',yl,'is subdivided into ',nby, ' rectangular elements'
+        read(FNum,*) yl, nby
+        write(TMPStr,'(a,g15.3)') TAB//'Mesh length in Y        ',yl
+        call Msg(TMPStr)
+        write(TMPStr,'(a,i9)')    TAB//'Number of elements in Y ',nby
         call Msg(TMPStr)
 
         nx=nbx+1
@@ -108,8 +112,8 @@ Module MeshGeneration
         do i=1,TMPLT.nElements
             TMPLT.ElementArea(i)=(TMPLT.x(TMPLT.iNode(2,i))-TMPLT.x(TMPLT.iNode(1,i))) * &
                                  (TMPLT.y(TMPLT.iNode(3,i))-TMPLT.y(TMPLT.iNode(1,i)))
-            TMPLT.xElement=(TMPLT.x(TMPLT.iNode(2,i)) + TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
-            TMPLT.yElement=(TMPLT.y(TMPLT.iNode(3,i)) + TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
+            TMPLT.xElement(i)=(TMPLT.x(TMPLT.iNode(2,i)) + TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
+            TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(3,i)) + TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
             
             TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
             TMPLT.SideLength(2,i)=abs(TMPLT.x(TMPLT.iNode(3,i)) - TMPLT.x(TMPLT.iNode(2,i)))
@@ -121,9 +125,10 @@ Module MeshGeneration
                     
         TMPLT.IsDefined=.true.
     
-        write(TmpSTR,'(a,i8)') TAB//'Number of nodes               ',TMPLT.nNodes
+        call Msg(' ')
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)') TAB//'Number of elements            ',TMPLT.nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
         call Msg(TmpSTR)
 
 

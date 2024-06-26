@@ -67,8 +67,12 @@
 
 \pagestyle{empty} \tableofcontents
 
-\chapter{Concepts}
-\chapter{Model Characteristics}\include{ModelCharacteristicsINTRO}
+
+
+\chapter{Introduction} \input{Introduction}
+    \section{Installation and Setup}\input{Installation}
+    \section{Environment Variables}
+\chapter{Model Characteristics}\input{ModelCharacteristicsINTRO}
 \chapter{Physical Properties}
     \section{Groundwater Flow(GWF) Domain}
         \subsection{Mesh}
@@ -76,8 +80,8 @@
         \subsection{Surfacewater Flow SWF}
 \chapter{Boundary Conditions}
     \section{Constrained Head}
-        \subsection{Constant Head}\include{Drains}
-        \subsection{Drains}\include{Drains}
+        \subsection{Constant Head}\input{Drains}
+        \subsection{Drains}\input{Drains}
     \section{Constrained Flow}
         \subsection{Recharge}
         \subsection{Pumping}
@@ -86,8 +90,8 @@
 \newpage
 
 %\appendix
-%\include{CookingNotes}
-%\include{Scans}
+%\input{CookingNotes}
+%\input{Scans}
 
 
 

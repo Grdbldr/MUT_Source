@@ -586,7 +586,7 @@ module Tecplot !
     contains
     
    !------------------------------------------------------------------------
-   subroutine ProcessTecplot(FnumMUT) !--- Process Tecplot instructions
+   subroutine BuildTecplot(FnumMUT) !--- Process Tecplot instructions
         implicit none
     
         integer :: FnumMUT
@@ -626,7 +626,7 @@ module Tecplot !
 
         10 continue        
    
-    end subroutine ProcessTecplot
+    end subroutine BuildTecplot
     !*************************************************************************old plot_data routines 
     !------------------------------------------------------------------------
     subroutine Tecplot_hsplot2012

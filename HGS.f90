@@ -465,7 +465,7 @@ module HGS !
     contains
     
    !------------------------------------------------------------------------
-   subroutine ProcessHGS(FnumTG, hgs) !--- Process HGS instructions for this data structure  hgs
+   subroutine PostprocessExistingHGSModel(FnumTG, hgs) !--- Process HGS instructions for this data structure  hgs
         implicit none
     
         integer :: FnumTG
@@ -673,7 +673,7 @@ module HGS !
 
         10 continue        
    
-    end subroutine ProcessHGS
+    end subroutine PostprocessExistingHGSModel
     !------------------------------------------------------------------------
 
     subroutine HGS_GetMeshComponents(FnumTG, hgs)

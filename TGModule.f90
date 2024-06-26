@@ -8,10 +8,11 @@ module MUT  !### Modflow-USG Tools
 
     !integer, parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
     character(60) :: MUT_CMD="none"
-    character(60) :: ProcessModflowUSG_CMD="modflow_usg"
-    character(60) :: ProcessHGS_CMD="hgs"
+    character(60) :: BuildModflowUSG_CMD="build modflow usg"
+    character(60) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
+    character(60) :: PostprocessExistingHGSModel_CMD="postprocess existing hgs model"
     ! TecIO szplt
-    character(60) :: ProcessTecplot_CMD="tecplot"
+    character(60) :: BuildTecplot_CMD="build tecplot"
         
 
     character(256) :: FileNameMUT
@@ -101,15 +102,18 @@ module MUT  !### Modflow-USG Tools
                 call ElapsedTime(l1)
 
 
-            else if(index(MUT_CMD, ProcessModflowUSG_CMD) /= 0) then
-                call ProcessModflowUSG(FnumMUT,MyMUSG_Project,prefix)
+            else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
+                call BuildModflowUSG(FnumMUT,MyMUSG_Project,prefix)
+
+            else if(index(MUT_CMD, PostprocessExistingModflowModel_CMD) /= 0) then
+                call PostprocessExistingModflowModel(FnumMUT,MyMUSG_Project,prefix)
 
 
-            else if(index(MUT_CMD, ProcessHGS_CMD) /= 0) then
-                call ProcessHGS(FnumMUT,MyHGS)
+            else if(index(MUT_CMD, PostprocessExistingHGSModel_CMD) /= 0) then
+                call PostprocessExistingHGSModel(FnumMUT,MyHGS)
 
-            else if(index(MUT_CMD, ProcessTecplot_CMD) /= 0) then
-                call ProcessTecplot(FnumMUT)
+            else if(index(MUT_CMD, BuildTecplot_CMD) /= 0) then
+                call BuildTecplot(FnumMUT)
 
             else
                 call ErrMsg('MUT?:'//MUT_CMD)

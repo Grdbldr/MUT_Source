@@ -66,6 +66,7 @@
 
     character(60) :: MUSG_ClearAllNodes_CMD	                =   'clear chosen nodes'
     character(60) :: MUSG_ChooseAllNodes_CMD                =   'choose all nodes'
+    character(60) :: MUSG_ChooseNodeAtXYZ_CMD               =   'choose node at xyz'
     character(60) :: MUSG_ChooseGBNodes_CMD	                =   'choose gb nodes'
 
     character(60) :: MUSG_ClearAllCells_CMD	                =   'clear chosen cells'
@@ -94,6 +95,7 @@
     character(60) :: MUSG_AssignCHDtoSWF_CMD		    =   'swf constant head'
     character(60) :: MUSG_AssignRCHtoSWF_CMD		    =   'swf recharge'
     character(60) :: MUSG_AssignCriticalDepthtoSWF_CMD	=   'swf critical depth'
+    character(60) :: MUSG_AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
     
     !---------------------------------------------------GWF Properties
     character(60) :: MUSG_AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
@@ -130,7 +132,6 @@
 
     ! Post-processing modflow output files
     character(60) :: MUSG_ModflowOutputToModflowStructure_CMD='modflow output to modflow structure'
-    character(60) :: MUSG_TagFiles_CMD='tag modflow files'
 
 
     character(60) :: MUSG_End_CMD=	'end'
@@ -622,7 +623,490 @@
     
     contains
 
-   subroutine ProcessModflowUSG(FNumMUT, Modflow,prefix) !--- Process MUSG instructions for this data structure  Modflow
+    ! Postprocessing routines
+    subroutine PostprocessExistingModflowModel(FNumMUT, Modflow,prefix) !--- Post-process existing Modflow model from instructions
+        implicit none
+
+        integer :: FNumMUT
+        character(*) :: prefix
+        type (ModflowProject) Modflow
+        
+        integer :: i
+        
+        Modflow.MUTPrefix=prefix
+           
+        call MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
+    
+    end subroutine PostprocessExistingModflowModel
+    !-------------------------------------------------------------
+    subroutine MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
+        implicit none
+        !-------ASSIGN VERSION NUMBER AND DATE
+        CHARACTER*40 VERSION
+        CHARACTER*14 MFVNAM
+        PARAMETER (VERSION='USG-TRANSPORT VERSION 2.02.1')
+        PARAMETER (MFVNAM='USG-TRANSPORT ') !USG = Un-Structured Grids
+        
+        integer :: FNumMUT
+        type (ModflowProject) Modflow
+        
+        integer :: i
+       
+        integer :: inunit
+        CHARACTER*4 CUNIT(NIUNIT)
+        DATA CUNIT/'BCF6', 'WEL ', 'DRN ', 'RIV ', 'EVT ', 'EVS ', 'GHB ',&  !  7  et time series is now EVS as ETS is for segmented ET&
+                'RCH ', 'RTS ', 'TIB ', 'DPF ', 'OC  ', 'SMS ', 'PCB ',&  ! 14
+                'BCT ', 'FHB ', 'RES ', 'STR ', 'IBS ', 'CHD ', 'HFB6',&  ! 21
+                'LAK ', 'LPF ', 'DIS ', 'DISU', 'PVAL', 'SGB ', 'HOB ',&  ! 28
+                'CLN ', 'DPT ', 'ZONE', 'MULT', 'DROB', 'RVOB', 'GBOB',&  ! 35
+                'GNC ', 'DDF ', 'CHOB', 'ETS ', 'DRT ', 'QRT ', 'GMG ',&  ! 42
+                'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
+                'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
+                'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
+                'TVM ', 'SWF ', 'SWBC', 34*'    '/
+
+        integer :: maxunit, nc 
+
+        INCLUDE 'openspec.inc'
+
+        
+        ! read prefix for project
+        read(FNumMUT,'(a)') Modflow.Prefix
+		call lcase(Modflow.Prefix)
+        call Msg('Modflow project prefix: '//Modflow.Prefix)
+        
+        modflow.GWF.Name='GWF'
+        
+        
+        ! Scan file
+        Modflow.FNameSCAN=trim(Modflow.MUTPrefix)//'o.scan'
+        open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
+        write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
+        Modflow.nKeyWord=0
+        allocate(Modflow.KeyWord(Modflow.nDim))
+        Modflow.KeyWord(:)='UNDEFINED'
+
+
+        ! Process NAM file
+        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
+        call openMUSGFile('NAM',' '//Modflow.FNameNAM,Modflow.Prefix,Modflow.iNAM,Modflow.FNameNAM)
+        INUNIT = 99
+        MAXUNIT= INUNIT
+        !
+        !4------OPEN NAME FILE.
+        OPEN (UNIT=INUNIT,FILE=Modflow.FNameNAM,STATUS='OLD',ACTION=ACTION(1))
+        NC=INDEX(Modflow.FNameNAM,' ')
+        WRITE(*,490)' Using NAME file: ',Modflow.FNameNAM(1:NC)
+490     FORMAT(A,A)
+        
+        ALLOCATE(IUNIT(NIUNIT))
+
+        call Msg(' ')
+        call Msg('-------Open and scan files listed in NAM file:')
+        !
+        !C2------Open all files in name file.
+        CALL SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,NIUNIT,&
+            VERSION,INBAS,MAXUNIT,modflow)
+        
+        !do i=1,niunit
+        !    write(iout,*) i, iunit(i),cunit(i)
+        !end do
+        !
+        
+        ! Unit numbering starts at BCF6=7 so add 6 to iunut index
+        Modflow.iBAS6 =inbas       
+        file_open_flag(inbas) = .true.
+        Modflow.iBCF6 =iunit(1)       
+        Modflow.iWEL  =iunit(2)       
+        Modflow.iDRN  =iunit(3)       
+        Modflow.iRIV  =iunit(4)       
+        Modflow.iEVT  =iunit(5)       
+        Modflow.iEVS  =iunit(6)       
+        Modflow.iGHB  =iunit(7)       
+        Modflow.iRCH  =iunit(8)       
+        Modflow.iRTS  =iunit(9)       
+        Modflow.iTIB =iunit(10)       
+        Modflow.iDPF =iunit(11)       
+        Modflow.iOC  =iunit(12)       
+        Modflow.iSMS =iunit(13)       
+        Modflow.iPCB =iunit(14)       
+        Modflow.iBCT =iunit(15)       
+        Modflow.iFHB =iunit(16)       
+        Modflow.iRES =iunit(17)       
+        Modflow.iSTR =iunit(18)       
+        Modflow.iIBS =iunit(19)       
+        Modflow.iCHD =iunit(20)       
+        Modflow.iHFB6=iunit(21)       
+        Modflow.iLAK =iunit(22)       
+        Modflow.iLPF =iunit(23)       
+        Modflow.iDIS =iunit(24)       
+        Modflow.iDISU=iunit(25)       
+        Modflow.iPVAL=iunit(26)       
+        Modflow.iSGB =iunit(27)       
+        Modflow.iHOB =iunit(28)       
+        Modflow.iCLN =iunit(29)       
+        Modflow.iDPT =iunit(30)       
+        Modflow.iZONE=iunit(31)       
+        Modflow.iMULT=iunit(32)       
+        Modflow.iDROB=iunit(33)       
+        Modflow.iRVOB=iunit(34)       
+        Modflow.iGBOB=iunit(35)       
+        Modflow.iGNC =iunit(36)       
+        Modflow.iDDF =iunit(37)       
+        Modflow.iCHOB=iunit(38)       
+        Modflow.iETS =iunit(39)       
+        Modflow.iDRT =iunit(40)       
+        Modflow.iQRT =iunit(41)       
+        Modflow.iGMG =iunit(42)       
+        Modflow.ihyd =iunit(43)       
+        Modflow.iSFR =iunit(44)       
+        Modflow.iMDT =iunit(45)       
+        Modflow.iGAGE=iunit(46)       
+        Modflow.iLVDA=iunit(47)       
+        Modflow.iSYF =iunit(48)       
+        Modflow.ilmt6=iunit(49)       
+        Modflow.iMNW1=iunit(50)       
+        Modflow.iKDEP=iunit(53)       
+        Modflow.iSUB =iunit(54)       
+        Modflow.iUZF =iunit(55)       
+        Modflow.igwm =iunit(56)       
+        Modflow.iSWT =iunit(57)       
+        Modflow.iPATH=iunit(58)       
+        Modflow.iPTH =iunit(59)       
+        Modflow.iTVM =iunit(64)  
+        Modflow.iSWF =iunit(65)   
+        Modflow.iSWBC =iunit(66)   
+        do i=1,65
+            if(iunit(i) > 0) then
+                file_open_flag(iunit(i)) = .true.
+            end if
+        end do
+
+        ! First read all GSF (grid specification) files for GWF domain, then CLN and SWF domains if present
+        call Msg(' ')
+        call Msg('-------Read all GSF (grid specification) files:')
+        Modflow.FNameGSF=trim(Modflow.Prefix)//'.GWF.gsf'
+        inquire(file=Modflow.FNameGSF,exist=FileExists)
+        if(.not. FileExists) then
+            call Msg('No grid specification file: '//Modflow.FNameGSF)
+        else
+            call Msg('Modflow GWF GSF file: '//Modflow.FNameGSF)
+	        call getunit(Modflow.iGSF)
+            open(Modflow.iGSF,file=Modflow.FNameGSF,status='unknown',form='formatted')
+        
+            call MUSG_Read_GWF_GSF(Modflow)
+            
+            modflow.GWF.ElementType='febrick'
+
+        end if
+
+        if(Modflow.iCLN /= 0) THEN
+            Modflow.CLN.Name='CLN'
+            modflow.CLN.ElementType='felineseg'
+            Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
+            inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
+            if(.not. FileExists) then
+                call Msg('No grid specification file: '//Modflow.FNameCLN_GSF)
+            else
+                call Msg('Modflow CLN GSF file: '//Modflow.FNameCLN_GSF)
+	            call getunit(Modflow.iCLN_GSF)
+                open(Modflow.iCLN_GSF,file=Modflow.FNameCLN_GSF,status='unknown',form='formatted')
+        
+                call MUSG_Read_CLN_GSF(Modflow)
+            end if
+        end if
+
+        if(Modflow.iSWF /= 0) THEN
+            Modflow.SWF.name='SWF'
+            Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.SWF.gsf'
+            inquire(file=Modflow.FNameSWF_GSF,exist=FileExists)
+            if(.not. FileExists) then
+                call Msg('No grid specification file: '//Modflow.FNameSWF_GSF)
+            else
+                call Msg('Modflow SWF GSF file: '//Modflow.FNameSWF_GSF)
+	            call getunit(Modflow.iSWF_GSF)
+                open(Modflow.iSWF_GSF,file=Modflow.FNameSWF_GSF,status='unknown',form='formatted')
+        
+                call MUSG_Read_SWF_GSF(Modflow)
+                
+                if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                    modflow.SWF.ElementType='fetriangle'
+                else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
+                    modflow.SWF.ElementType='fequadrilateral'
+                end if
+
+            end if
+        end if
+
+        ! Read data in Modflow-USG order
+
+        call Msg(' ')
+        call Msg('-------Read options from BAS6:')
+        call MUSG_ReadBAS6_Options(Modflow) ! based on subroutine SGWF2BAS8OPEN
+
+        call Msg(' ')
+        call Msg('-------Read first part of DISU:')
+        call MUSG_ReadDISU_pt1(Modflow)  ! based on subroutine SDIS2GLO8AR
+        NEQS = NODES
+
+        IF(Modflow.iCLN/=0) THEN
+            call Msg(' ')
+            call Msg('-------Read data from CLN pt1:')
+            call MUSG_ReadCLN(Modflow)  ! based on subroutine SDIS2CLN1AR
+            NEQS = NEQS + NCLNNDS
+
+            call MUSG_ReadCLN_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            call Msg(' ')
+            call Msg('-------Read data from SWF pt1:')
+            call MUSG_ReadSWF(Modflow)  ! based on subroutine SDIS2SWF1AR
+            NEQS = NEQS + NSWFNDS
+
+            ! Young-jin handles this in SDIS2SWF1AR above so I think not required
+            !call MUSG_ReadSWF_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
+        end if
+
+        !crm not reading ghost node stuff yet
+        !C---------------------------------------------------------------------
+        !C3-----READ GNC PACKAGE INPUT  (CONNECTIVITIES AND FRACTIONS)
+        !C---------------------------------------------------------------------
+
+        
+        !C5------ALLOCATE SPACE FOR PARAMETERS AND FLAGS.
+        ALLOCATE(IA(NEQS+1))
+        ALLOCATE (IBOUND(NEQS+1))
+        ALLOCATE(AREA(NEQS))
+        IA = 0
+
+
+        call Msg(' ')
+        call Msg('-------Read second part DISU:')
+        WRITE(FNumEco,11) Modflow.iDISu
+        11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',&
+            ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
+        if(Modflow.unstructured) then
+
+            !C     *****************************************************************
+            !C     READ AND SET NODLAY ARRAY, AND READ GEOMETRIC PARAMETERS AND
+            !C     MATRIX CONNECTIVITY FOR UNSTRUCTURED GRID
+            !C     *****************************************************************
+            call MUSG_ReadDISU_pt2(Modflow)  ! based on subroutine SGWF2DIS8UR
+            
+            ! Hardwired to read CLN and FAHL arrays for now 
+            call MUSG_ReadDISU_pt3(Modflow)  
+
+            !end if
+        else
+            ! call MUSG_ReadDISU_StucturedGridData(Modflow)
+        end if
+        
+        !!C--------------------------------------------------------------------------
+        !!C7H------PREPARE IDXGLO ARRAY FOR CLN/SWF DOMAIN
+        !IF(Modflow.iCLN/=0)THEN
+        !    !CALL FILLIDXGLO_CLN
+        !end if
+        !IF(Modflow.iSWF/=0) THEN
+        !    CALL FILLIDXGLO_SWF
+        !end if
+
+
+        call Msg(' ')
+        call Msg('-------Read Stress Period Data from DISU:')
+        call MUSG_ReadDISU_StressPeriodData(Modflow)   
+        
+        
+        !C7-----Allocate space for remaining global arrays.
+        ALLOCATE (HNEW(NEQS))
+        !ALLOCATE (HOLD(NEQS))
+        !ALLOCATE (IFMBC)
+        !IFMBC = 0
+        !ALLOCATE (FMBE(NEQS))
+        !ALLOCATE (Sn(NEQS),So(NEQS))
+        !Sn = 1.0
+        !So = 1.0
+        !ALLOCATE (RHS(NEQS))
+        !ALLOCATE (BUFF(NEQS))
+        ALLOCATE (STRT(NEQS))
+        !DDREF=>STRT
+        !ALLOCATE (LAYHDT(NLAY))
+        !ALLOCATE (LAYHDS(NLAY))
+        !WRITE(IOUT,'(//)')
+
+        !C------------------------------------------------------------------------
+        !C10------Read rest of groundwater BAS Package file (IBOUND and initial heads)
+        call Msg(' ')
+        call Msg('-------Read IBOUND and initial heads from BAS6:')
+        
+        ALLOCATE (modflow.GWF.IBOUND(modflow.GWF.ncells))
+        ALLOCATE (modflow.GWF.HNEW(Modflow.GWF.nCells))
+
+        IF(IUNSTR.EQ.0)THEN
+        !C10A-------FOR STRUCTURED GRIDS
+            !CALL SGWF2BAS8SR
+        ELSE
+        !C10B-------FOR UNSTRUCTURED GRIDS
+            CALL MUSG_ReadBAS6_IBOUND_IHEADS(Modflow)  ! based on subroutine SGWF2BAS8UR
+        end if
+
+        
+        !C
+        !C-----------------------------------------------------------------------
+        !C11-----SET UP OUTPUT CONTROL.
+        call Msg(' ')
+        call Msg('-------Read data from OC:')
+        CALL MUSG_ReadOC(Modflow) ! based on subroutine SGWF2BAS7I  
+        
+        IF(Modflow.iLPF/=0) THEN
+            !C
+            !C-----------------------------------------------------------------------
+            !C11-----Read LPF Package file 
+            call Msg(' ')
+            call Msg('-------Read data from LPF:')
+            CALL MUSG_ReadLPF(Modflow) ! based on subroutine SGWF2BAS7I  
+        end if
+        
+        IF(Modflow.iCLN/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read rest of CLN Package file (IBOUND and initial heads)
+            call Msg(' ')
+            call Msg('-------Read IBOUND and initial heads from CLN:')
+            ALLOCATE (modflow.CLN.IBOUND(modflow.CLN.ncells))
+            ALLOCATE (modflow.CLN.HNEW(Modflow.CLN.nCells))
+            CALL MUSG_ReadCLN_IBOUND_IHEADS(Modflow)  ! based on subroutine CLN2BAS1AR
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read rest of SWF Package file (IBOUND and initial heads)
+            call Msg(' ')
+            call Msg('-------Read IBOUND and initial heads from SWF:')
+            ALLOCATE (modflow.SWF.IBOUND(modflow.SWF.ncells))
+            ALLOCATE (modflow.SWF.HNEW(Modflow.SWF.nCells))
+            CALL MUSG_ReadSWF_IBOUND_IHEADS(Modflow)  ! based on subroutine SWF2BAS1AR
+        end if
+        
+        IF(Modflow.iWEL/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read WEL Package file
+            call Msg(' ')
+            call Msg('-------Read data from WEL:')
+            CALL MUSG_ReadWEL(Modflow)  ! based on subroutine GWF2WEL7U1AR
+        end if
+        
+        IF(Modflow.iCHD/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read CHD Package file
+            call Msg(' ')
+            call Msg('-------Read data from CHD:')
+            CALL MUSG_ReadCHD(Modflow)  ! based on subroutine GWF2CHD7U1AR
+        end if
+
+        IF(Modflow.iRCH/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read RCH Package file
+            call Msg(' ')
+            call Msg('-------Read data from RCH:')
+            CALL MUSG_ReadRCH(Modflow)  ! based on subroutine GWF2RCH8U1AR
+            call MUSG_ReadRCH_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
+        end if
+        
+        IF(Modflow.iDRN/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read DRN Package file
+            call Msg(' ')
+            call Msg('-------Read data from DRN:')
+            CALL MUSG_ReadDRN(Modflow)  ! based on subroutine GWF2RCH8U1AR
+            call MUSG_ReadDRN_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
+        end if
+        
+        IF(Modflow.iSWBC/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read RCH Package file
+            call Msg(' ')
+            call Msg('-------Read data from SWBC:')
+            CALL MUSG_ReadSWBC(Modflow)  ! based on subroutine SWF2BC1U1AR
+            call MUSG_ReadSWBC2(Modflow) ! based on subroutine SWF2BC1U1RP
+        end if
+        
+        IF(Modflow.iSMS/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read SMS Package file
+            call Msg(' ')
+            call Msg('-------Read data from SMS:')
+            CALL MUSG_ReadSMS(Modflow)  ! based on subroutine SMS7U1AR
+        end if
+
+        call MUSG_WriteVolumeBudgetToTecplot(Modflow)
+        
+        call MUSG_CreateStepPeriodTimeFile(Modflow)
+
+        
+        call MUSG_ReadBinary_HDS_File(Modflow,Modflow.GWF)
+        call MUSG_ReadBinary_DDN_File(Modflow,Modflow.GWF)
+        call MUSG_ReadBinary_CBB_File(Modflow, Modflow.GWF)
+        if(Modflow.GWF.IsDefined) then
+            call Msg(' ')
+		    call Msg('Generating mesh-based Tecplot output files for GWF:')
+            
+            
+            call MUSG_ToTecplot(Modflow,Modflow.GWF)
+
+            
+        else
+		   call Msg('Generating cell-based Tecplot output files for GWF:')
+           call MUSG_GWF_IBOUNDv2_ToTecplot(Modflow)
+        end if
+        
+        IF(Modflow.iCLN/=0) THEN
+            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.CLN)
+            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.CLN)
+            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.CLN)
+            if(Modflow.CLN.IsDefined) then
+    		    call Msg('Generating mesh-based Tecplot output files for CLN:')
+    
+                call MUSG_ToTecplot(Modflow,Modflow.CLN)
+                
+            else
+		       call Msg('No cell-based Tecplot output files for CLN:')
+               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
+            end if
+                    
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.SWF)
+            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.SWF)
+            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.SWF)
+            if(Modflow.SWF.IsDefined) then
+    		    call Msg('Generating mesh-based Tecplot output files for SWF:')
+
+                call MUSG_ToTecplot(Modflow,Modflow.SWF)
+                
+            else
+		       call Msg('No cell-based Tecplot output files for SWF:')
+               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
+            end if
+                    
+        end if
+        
+
+
+
+
+        !open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
+        !write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
+        write(Modflow.iSCAN,'(a,i8,a)') 'Found ',Modflow.nKeyWord,' keywords'
+        !do i=1,Modflow.nKeyWord
+        !    write(Modflow.iSCAN,'(a)',iostat=status) Modflow.KeyWord(i)
+        !end do
+        close(Modflow.iSCAN)
+        
+    end subroutine MUSG_ModflowOutputToModflowStructure
+    
+   
+   subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
         implicit none
 
         integer :: FNumMUT
@@ -631,7 +1115,6 @@
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TECPLOT_GWF
         type (TecplotDomain) TECPLOT_SWF
-        type (TecplotDomain) TECPLOT_CLN
         
         integer :: i
         
@@ -716,24 +1199,28 @@
                 Modflow.NodalControlVolume=.true.
                 call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
 
+            ! SMS parameter set assignment
             else if(index(MUSG_CMD, MUSG_SMS_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call DB_ReadSMS(FName) 
-            ! SMS parameter set assignment
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadSMS(trim(USERBIN)//'\'//trim(FName)) 
             else if(index(MUSG_CMD, MUSG_SMSParamterSetNumber_CMD)  /= 0) then
                 call MUSG_SMSParamterSetNumber(FnumMUT)
-
-                
             
             else if(index(MUSG_CMD, MUSG_GWFMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call DB_ReadGWFMaterials(FName) 
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
+
             else if(index(MUSG_CMD, MUSG_SWFMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call DB_ReadSWFMaterials(FName) 
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadSWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
+            
             else if(index(MUSG_CMD, MUSG_ET_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call DB_ReadET(FName) 
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
                 
             else if(index(MUSG_CMD, MUSG_2dMeshFromGb_CMD)  /= 0) then
                 ! Build the 2D template mesh from a grdbldr 2D mesh
@@ -824,6 +1311,20 @@
                     call MUSG_ClearAllNodes(modflow.SWF)
                 case (iCLN)
                     call MUSG_ClearAllNodes(modflow.CLN)
+                end select
+             
+             else if(index(MUSG_CMD, MUSG_ChooseNodeAtXYZ_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call MUSG_ChooseNodeAtXYZ(FnumMUT,TMPLT)
+                
+                ! these domains don't have nodes, they have cells
+                !case (iGWF)
+                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
+                !case (iSWF)
+                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.SWF)
+                !case (iCLN)
+                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
                 end select
 
              else if(index(MUSG_CMD, MUSG_ChooseAllCells_CMD)  /= 0) then
@@ -1015,6 +1516,8 @@
                 call MUSG_AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
             else if(index(MUSG_CMD, MUSG_AssignCriticalDepthtoSWF_CMD)  /= 0) then
                 call MUSG_AssignCriticalDepthtoDomain(Modflow,Modflow.SWF)
+            else if(index(MUSG_CMD, MUSG_AssignCriticalDepthtoCellsSide1_CMD)  /= 0) then
+                call MUSG_AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
             
             
             else if(index(MUSG_CMD, MUSG_GenOCFile_CMD)  /= 0) then
@@ -1023,91 +1526,6 @@
             else if(index(MUSG_CMD, MUSG_StressPeriod_CMD)  /= 0) then
                 call MUSG_StressPeriod(FNumMUT,Modflow)
                 
-                
-            ! ========================================================================
-            ! Post-processing instructions 
-            else if(index(MUSG_CMD, MUSG_ModflowOutputToModflowStructure_CMD)  /= 0) then
-                ! Create a Modflow data structure from an existing project including outputs
-                call MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
-
-            else if(index(MUSG_CMD, MUSG_TagFiles_CMD)  /= 0) then
-                Modflow.TagFiles=.true.
-
-
-                
-
-            
-            !! ========================================================================
-            !! Legacy Golder instructions that may be useful for something
-                
-            !else if(index(MUSG_CMD, MUSG_ReadAsciiHeadFile_CMD)  /= 0) then
-            !    call MUSG_ReadAsciiHeadFile(FNumMUT, Modflow)
-            !
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadAsciiKxFile_CMD)  /= 0) then
-            !    call MUSG_ReadAsciiKxFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadAsciiSsFile_CMD)  /= 0) then
-            !    call MUSG_ReadAsciiSsFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadAsciiSyFile_CMD)  /= 0) then
-            !    call MUSG_ReadAsciiSyFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadAsciiVanisFile_CMD)  /= 0) then
-            !    call MUSG_ReadAsciiVanisFile(FNumMUT, Modflow)
-            !
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadRiverFlowsAsciiFile_CMD)  /= 0) then
-            !    call MUSG_ReadRiverFlowsAsciiFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_RiverFlowsToTecplot_CMD)  /= 0) then
-            !    call MUSG_RiverFlowsToTecplot(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_ReadHeadCalibrationAsciiFile_CMD)  /= 0) then
-            !    call MUSG_ReadHeadCalibrationAsciiFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_HeadCalibrationToTecplot_CMD)  /= 0) then
-            !    call MUSG_HeadCalibrationToTecplot(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_RiverConductanceUpdate_CMD)  /= 0) then
-            !    call MUSG_RiverConductanceUpdate(FNumMUT)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_WellRatePenalties_CMD)  /= 0) then
-            !    call MUSG_PEST_WellRatePenalties(FNumMUT)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_UpdateWellRatePenalties_CMD)  /= 0) then
-            !    call MUSG_PEST_UpdateWellRatePenalties(FNumMUT)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_FlowSourceCapture_CMD)  /= 0) then
-            !    call MUSG_PEST_FlowSourceCapture(FNumMUT)
-
-            !else if(index(MUSG_CMD, MUSG_PEST_CLNFileCalculations_CMD)  /= 0) then
-            !    call MUSG_PEST_CLNFileCalculations(FNumMUT, Modflow)
-
-            !else if(index(MUSG_CMD, MUSG_PEST_EIWellCLNFileUpdate_CMD)  /= 0) then
-            !    call MUSG_PEST_EIWellCLNFileUpdate(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_CountParticlesToWells_CMD)  /= 0) then
-            !    call MUSG_PEST_CountParticlesToWells(FNumMUT)
-            !
-            !else if(index(MUSG_CMD, M2005_PEST_CountParticlesToWells_CMD)  /= 0) then
-            !    call M2005_PEST_CountParticlesToWells(FNumMUT)
-            !
-            !    
-            !else if(index(MUSG_CMD, MUSG_ReadWellConstructionCSVFile_CMD)  /= 0) then
-            !    call MUSG_ReadWellConstructionCSVFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_Read_EIWellCSVFile_CMD)  /= 0) then
-            !    call MUSG_Read_EIWellCSVFile(FNumMUT, Modflow)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_ExternalCodeExecute_CMD)  /= 0) then
-            !    call MUSG_PEST_ExternalCodeExecute(FNumMUT)
-            !
-            !else if(index(MUSG_CMD, MUSG_PEST_RTWellOptimization_CMD)  /= 0) then
-            !    call MUSG_PEST_RTWellOptimization(FNumMUT)
-
- 
-
             else
                 call ErrMsg('MUSG?:'//MUSG_CMD)
             end if
@@ -1115,26 +1533,9 @@
 
         10 continue
 
-    end subroutine ProcessModflowUSG
-   
-  !  !----------------------------------------------------------------------
-  !  subroutine DefineMaterialsDB(FNumMUT)
-  !      implicit none
-  !
-  !      integer :: FNumMUT
-  !      type (ModflowDomain) Domain
-  !      
-  !      integer :: i
-  !      integer :: maxnnp
-  !
-	 !   character(256) :: header
-  !
-		!read(FNumMUT,'(a)') FName
-		!call Msg(TAB//TAB//'Materials read from file '//trim(FName))
-  !  
-  !  end subroutine DefineMaterialsDB
-    
-    ! Pre-processing instructions
+    end subroutine BuildModflowUSG
+
+    ! Build routines
     !----------------------------------------------------------------------
     subroutine MUSG_2dMeshFromGb(FNumMUT,TMPLT)
         implicit none
@@ -1705,6 +2106,36 @@
 
     end subroutine MUSG_ChooseAllCells
     !----------------------------------------------------------------------
+    subroutine MUSG_ChooseNodeAtXYZ(FNumMut,Domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type(TecplotDomain) Domain
+
+	    integer :: i,iNode
+	    real(dr) :: x1,y1,z1,dist_min,f1
+
+        read(FNumMut,*) x1,y1,z1
+        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
+        call Msg(TMPStr)
+
+        dist_min=1.0e20
+	    do i=1,domain.nnodes
+		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
+		    if(f1.lt.dist_min) then
+			    inode=i
+			    dist_min=f1
+		    endif
+	    end do
+        call set(domain.Node_Is(iNode),chosen)
+        
+        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode)
+        call Msg(tmpSTR)
+		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1
+        call Msg(tmpSTR)
+
+    end subroutine MUSG_ChooseNodeAtXYZ
+    !----------------------------------------------------------------------
     subroutine MUSG_ChooseCellsByLayer(FNumMUT,domain) 
         implicit none
 
@@ -1756,9 +2187,9 @@
 	    end do
         call set(domain.Cell_Is(iCell),chosen)
         
-        write(tmpSTR,'(a14,3f17.5)') 'Found x, y, z  ',domain.xCell(iCell),domain.yCell(iCell),domain.zCell(iCell)
+        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.xCell(iCell),domain.yCell(iCell),domain.zCell(iCell)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3f17.5)') 'Delta x, y, z  ',domain.xCell(iCell)-x1,domain.yCell(iCell)-y1,domain.zCell(iCell)-z1
+		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.xCell(iCell)-x1,domain.yCell(iCell)-y1,domain.zCell(iCell)-z1
         call Msg(tmpSTR)
 
     end subroutine MUSG_ChooseCellAtXYZ
@@ -2335,11 +2766,11 @@
 		call Msg(TAB//'Chosen '//trim(domain.name)//' cells are assigned starting heads as a function of zCell')
 
         read(FNumMUT,*) z1,h1
-        write(TMPStr,*) 'At Z = ',z1,', Starting Head is ',h1
+        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z1,', Starting Head is ',h1
         call Msg(TMPStr)
 
         read(FNumMUT,*) z2,h2
-        write(TMPStr,*) 'At Z = ',z2,', Starting Head is ',h2
+        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z2,', Starting Head is ',h2
         call Msg(TMPStr)
 
 		ncount=0
@@ -2486,9 +2917,7 @@
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
 
-        if(.not. allocated(domain.Node_Is)) then 
-            call ErrMsg('Currently requires '//trim(domain.name)//' outer boundary nodes to be flagged') 
-        end if
+        call Msg('Assumes appropriate '//trim(domain.name)//' SWBC nodes flagged as boundary nodes') 
         
         if(Modflow.NodalControlVolume) then
             do i=1,domain.nCells
@@ -2551,7 +2980,52 @@
         end if
 
 
-    end subroutine MUSG_AssignCriticalDepthtoDomain
+    end subroutine MUSG_AssignCriticalDepthtoDomain    
+    !----------------------------------------------------------------------
+    subroutine MUSG_AssignCriticalDepthtoCellsSide1(modflow,domain) 
+        implicit none
+
+        type (ModflowProject) modflow
+        type (ModflowDomain) domain
+        
+        integer :: i, j, k, j1, j2, jNext, nNext, jLast, nLast
+        
+		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
+
+        call Msg(TAB//'Assumes SWBC Critical Depth Length equals cell side 1 length') 
+        
+        if(Modflow.NodalControlVolume) then
+            do i=1,domain.nCells
+                if(bcheck(domain.Cell_is(i),chosen)) then
+                    call set(domain.Cell_is(i),CriticalDepth)
+                    domain.nSWBCCells=domain.nSWBCCells+1
+                    domain.CriticalDepthLength(i)=domain.SideLength(1,k)
+                endif
+            end do
+        else    
+            do i=1,domain.nCells
+                if(bcheck(domain.Cell_is(i),chosen)) then
+                    call set(domain.Cell_is(i),CriticalDepth)
+                    domain.nSWBCCells=domain.nSWBCCells+1
+                    domain.CriticalDepthLength(i)=+domain.SideLength(1,i)
+                end if
+            end do
+        end if
+ 
+        if(Modflow.iSWBC == 0) then ! Initialize SWBC file and write data to NAM
+            Modflow.FNameSWBC=trim(Modflow.Prefix)//'.swbc'
+            call OpenAscii(Modflow.iSWBC,Modflow.FNameSWBC)
+            call Msg('  ')
+            call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
+            write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
+            write(Modflow.iSWBC,'(a,1pg10.1)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',MUTVersion
+        else
+            pause 'next stress period?'
+        end if
+
+
+    end subroutine MUSG_AssignCriticalDepthtoCellsSide1
+
 
     !----------------------------------------------------------------------
     subroutine MUSG_AssignCHDtoDomain(FNumMUT,modflow,domain) 
@@ -2667,13 +3141,13 @@
 		call Msg(trim(TmpSTR))
         domain.nRCHoption=nRCHoption
         IF(nRCHoption.EQ.1) then
-            call Msg('OPTION 1 -- RECHARGE TO TOP LAYER')
+            call Msg(TAB//'Option 1 -- recharge to top layer')
         else IF(nRCHoption.EQ.2) then
-            call Msg('OPTION 2 -- RECHARGE TO ONE SPECIFIED NODE IN EACH VERTICAL COLUMN') 
+            call Msg(TAB//'option 2 -- recharge to one specified node in each vertical column') 
         else IF(nRCHoption.EQ.3) then
-            call Msg('OPTION 3 -- RECHARGE TO HIGHEST ACTIVE NODE IN EACH VERTICAL COLUMN')
+            call Msg(TAB//'Option 3 -- recharge to highest active node in each vertical column')
         else IF(nRCHoption.EQ.4) then
-            call Msg('OPTION 4 -- RECHARGE TO SWF DOMAIN ON TOP OF EACH VERTICAL COLUMN')
+            call Msg(TAB//'Option 4 -- recharge to swf domain on top of each vertical column')
         endif
 
         
@@ -2792,6 +3266,7 @@
 
         
         TECPLOT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
+        TECPLOT_SWF.ElementType=TMPLT.ElementType
         TECPLOT_SWF.nElements=TMPLT.nElements
         
         ! Just define these for now
@@ -2831,7 +3306,6 @@
             if(TMPLT.iZone(j).gt.TECPLOT_SWF.nZones) TECPLOT_SWF.nZones=TMPLT.iZone(j)
         end do
 
-        TECPLOT_SWF.ElementType='fetriangle'
         TECPLOT_SWF.IsDefined=.true.
         
         allocate(TECPLOT_SWF.Element_Is(TECPLOT_SWF.nElements),stat=ialloc)
@@ -3399,18 +3873,36 @@
                 iConn=iConn+1
                 inBor=iNbor+1
                 ! SWF neighbours always in adjacent column
-                select case (TECPLOT_SWF.face(iNbor))
-                case ( 1 )
-                    modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
-                case ( 2 )
-                    modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
-                case ( 3 )
-                    modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
-                case ( 4 )  ! must be 8-node block
-                    call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
-                end select
-                modflow.SWF.ConnectionLength(iConn)=TMPLT.rCircle(i)
-                modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)*1.0d0  ! assume thickness of 1?
+                if(TMPLT.nNodesPerElement == 3) then
+                    select case (TECPLOT_SWF.face(iNbor))
+                        case ( 1 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
+                        case ( 2 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
+                        case ( 3 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
+                        case ( 4 )  ! must be 8-node block
+                            call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
+                    end select
+                    modflow.SWF.ConnectionLength(iConn)=TMPLT.rCircle(i)
+                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)*1.0d0  ! assume thickness of 1?
+                else if(TMPLT.nNodesPerElement == 4) then
+                    select case (TECPLOT_SWF.face(iNbor))
+                    case ( 1 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(1,i)/2.0d0
+                    case ( 2 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(2,i)/2.0d0
+                    case ( 3 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(3,i)/2.0d0
+                    case ( 4 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(4,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(4,i)/2.0d0
+                    end select
+                    modflow.GWF.PerpendicularArea(iConn)=modflow.GWF.PerpendicularArea(iConn)**1.0d0  ! assume thickness of 1?
+                end if
             end do
         end do
     
@@ -3611,7 +4103,8 @@
 
             if(index(MUSG_CMD,constant_elevation_cmd) /=0) then
 			    read(FNumMUT,*) top_elev(1)
-			    write(ieco,*) '         Top at ',top_elev(1)
+			    write(TmpSTR,'(2g15.5)') top_elev(1)
+                call Msg('          '//trim(TmpSTR))
 			    do j=2,TMPLT.nNodes
 				    top_elev(j)=top_elev(1)
 			    end do
@@ -3619,7 +4112,8 @@
             elseif(index(MUSG_CMD, offset_top_cmd) /=0) then
                 offset_top = .true.
                 read(FNumMUT,*) top_offset
-                write(ieco,*) '         Offset top by ',top_offset
+			    write(TmpSTR,'(2g15.5)') top_offset
+                call Msg('          '//trim(TmpSTR))
 
             elseif(index(MUSG_CMD, gb_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
@@ -3738,29 +4232,29 @@
                 exit read_layer_instructions
             else
                 call lcase(MUSG_CMD)
-                call Msg('          '//MUSG_CMD)
+                call Msg(TAB//MUSG_CMD)
             end if
 
             if(index(MUSG_CMD,layer_name_cmd) /=0) then
                 read(FNumMUT,'(a)') layer_name(nlayers)
-                call Msg('              '//layer_name(nlayers))
+                call Msg(TAB//layer_name(nlayers))
 
             elseif(index(MUSG_CMD,minimum_layer_thickness_cmd) /=0) then
 			    minimum_layer_thickness = .true.
 			    read(FNumMUT,*) z_added
-			    write(ieco,*) '         Enforce minimum layer thickness of ',z_added
+			    write(ieco,*) TAB//'Enforce minimum layer thickness of ',z_added
 
             elseif(index(MUSG_CMD,offset_base_cmd) /=0) then
 			    offset_base = .true.
 			    read(FNumMUT,*) base_offset
-			    write(ieco,*) '         Offset layer base by ',base_offset
+			    write(ieco,*) TAB//'Offset layer base by ',base_offset
 
             elseif(index(MUSG_CMD,uniform_sublayers_cmd) /=0) then
 			    read(FNumMUT,*) nsublayer(nlayers)
 			    nz_temp = nz_temp + nsublayer(nlayers) 		
 			    !call user_size_check(nz_temp,user_nz,user_nz_str)
 			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg('              Number of uniform sublayers '//trim(TmpSTR))
+			    call Msg(TAB//'Number of uniform sublayers '//trim(TmpSTR))
 
             elseif(index(MUSG_CMD,proportional_sublayers_cmd) /=0) then
 			    proportional_sublayering=.true.
@@ -3768,30 +4262,28 @@
 			    nz_temp = nz_temp + nsublayer(nlayers) 		
 			    !call user_size_check(nz_temp,user_nz,user_nz_str)
 			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg('              Number of proportional sublayers '//trim(TmpSTR))
+			    call Msg(TAB//'Number of proportional sublayers '//trim(TmpSTR))
 
                 allocate(sub_thick(nsublayer(nlayers)),stat=ialloc)
                 call AllocChk(ialloc,'new_layer proportional sublayering array')
                 sub_thick(: )= 0.0d0
                 tot_thick=0.0
-                do j=nsublayer(nlayers),1,-1
+                do j=1,nsublayer(nlayers)
                     read(FNumMUT,*) sub_thick(j)
                     tot_thick=tot_thick+sub_thick(j)
                 end do
-			    write(TmpSTR,'(g15.5)') tot_thick
-			    call Msg('             Thickness fractions for total thickness '//trim(TmpSTR))
-                call Msg('             Sub#   Thickness    Fraction')
+                call Msg(TAB//' Sub#   Thickness       Fraction')
 
                 do j=1,nsublayer(nlayers)
                     sub_thick(j)=sub_thick(j)/tot_thick
-			        write(TmpSTR,'(i5,2g15.5)') j,sub_thick(j)*tot_thick,sub_thick(j)
-                    call Msg('          '//trim(TmpSTR))
+			        write(TmpSTR,'(i4,2g15.5)') j,sub_thick(j)*tot_thick,sub_thick(j)
+                    call Msg(TAB//trim(TmpSTR))
                 end do
 
             elseif(index(MUSG_CMD,constant_elevation_cmd) /=0) then
 			    read(FNumMUT,*) base_elev(1)
 			    write(TmpSTR,'(2g15.5)') base_elev(1)
-                call Msg('          '//trim(TmpSTR))
+                call Msg(TAB//trim(TmpSTR))
 			    do j=2,TMPLT.nNodes
 				    base_elev(j)=base_elev(1)
 			    end do
@@ -3799,7 +4291,7 @@
 
             elseif(index(MUSG_CMD,gb_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') basefile
-			    call Msg('              Base elevation from '//trim(basefile))
+			    call Msg(TAB//'Base elevation from '//trim(basefile))
                 call read_gb_nprop(basefile,base_elev,TMPLT.nNodes)
 
             elseif(index(MUSG_CMD,xz_pairs_elevation_cmd) /=0) then
@@ -3821,7 +4313,7 @@
        !     
 
             else
-			    call ErrMsg('       Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction')
             end if
 
         end do read_layer_instructions
@@ -5100,16 +5592,31 @@
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' RCH", datapacking=point'
+                if(domain.Name == 'GWF') then
+                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells/domain.nLayers,', t="'//trim(domain.name)//' RCH", datapacking=point'
+                else if(domain.Name == 'SWF') then
+                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' RCH", datapacking=point'
+                else if(domain.Name == 'CLN') then
+                    call ErrMsg('Code for ModflowDomainScatterToTecplot for CLN RCH domain required')
+                end if    
         
                 write(FNum,'(a)') trim(ZoneSTR)
                     !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
                     !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
            
                 do i=1,domain.nCells
-                    write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                        domain.Recharge(i)
+                    if(domain.Name == 'GWF') then
+                        if(Modflow.GWF.iLayer(i)==1) then
+                            write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
+                                domain.Recharge(i)
+                        endif
+                    
+                    else if(domain.Name == 'SWF') then
+                        write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
+                            domain.Recharge(i)
+                    endif
                 end do
+
             
                 call FreeUnit(FNum)
             end if
@@ -5136,6 +5643,32 @@
                 do i=1,domain.nCells
                     if(bcheck(domain.Cell_is(i),CriticalDepth)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
                         domain.CriticalDepthLength(i)
+                end do
+            
+                call FreeUnit(FNum)
+            end if
+            if(domain.nDRNCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_DRN.tecplot.dat'
+            
+                call OpenAscii(FNum,FName)
+                call Msg('  ')
+                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' DRN"'
+
+                VarSTR='variables="X","Y","Z","DRN"'
+                nVar=3
+            
+                write(FNum,'(a)') trim(VarSTR)
+            
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nDRNCells,', t="'//trim(domain.name)//' DRN", datapacking=point'
+        
+                write(FNum,'(a)') trim(ZoneSTR)
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+           
+                do i=1,domain.nCells
+                    if(bcheck(domain.Cell_is(i),Drain)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
+                        domain.DrainConductance(i)
                 end do
             
                 call FreeUnit(FNum)
@@ -6224,857 +6757,6 @@
 !           
 !        return
 !    end subroutine NodeListToIaJaStructure_1
-    !-------------------------------------------------------------
-    ! Postprocessing routines
-    subroutine MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
-        implicit none
-        !-------ASSIGN VERSION NUMBER AND DATE
-        CHARACTER*40 VERSION
-        CHARACTER*14 MFVNAM
-        PARAMETER (VERSION='USG-TRANSPORT VERSION 2.02.1')
-        PARAMETER (MFVNAM='USG-TRANSPORT ') !USG = Un-Structured Grids
-        
-        integer :: FNumMUT
-        type (ModflowProject) Modflow
-        
-        integer :: i
-       
-        integer :: inunit
-        CHARACTER*4 CUNIT(NIUNIT)
-        DATA CUNIT/'BCF6', 'WEL ', 'DRN ', 'RIV ', 'EVT ', 'EVS ', 'GHB ',&  !  7  et time series is now EVS as ETS is for segmented ET&
-                'RCH ', 'RTS ', 'TIB ', 'DPF ', 'OC  ', 'SMS ', 'PCB ',&  ! 14
-                'BCT ', 'FHB ', 'RES ', 'STR ', 'IBS ', 'CHD ', 'HFB6',&  ! 21
-                'LAK ', 'LPF ', 'DIS ', 'DISU', 'PVAL', 'SGB ', 'HOB ',&  ! 28
-                'CLN ', 'DPT ', 'ZONE', 'MULT', 'DROB', 'RVOB', 'GBOB',&  ! 35
-                'GNC ', 'DDF ', 'CHOB', 'ETS ', 'DRT ', 'QRT ', 'GMG ',&  ! 42
-                'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
-                'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
-                'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
-                'TVM ', 'SWF ', 'SWBC', 34*'    '/
-
-        integer :: maxunit, nc 
-
-        INCLUDE 'openspec.inc'
-
-        
-        ! read prefix for project
-        read(FNumMUT,'(a)') Modflow.Prefix
-		call lcase(Modflow.Prefix)
-        call Msg('Modflow project prefix: '//Modflow.Prefix)
-        
-        modflow.GWF.Name='GWF'
-        
-        
-        ! Scan file
-        Modflow.FNameSCAN=trim(Modflow.MUTPrefix)//'o.scan'
-        open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
-        write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
-        Modflow.nKeyWord=0
-        allocate(Modflow.KeyWord(Modflow.nDim))
-        Modflow.KeyWord(:)='UNDEFINED'
-
-
-        ! Process NAM file
-        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
-        call openMUSGFile('NAM',' '//Modflow.FNameNAM,Modflow.Prefix,Modflow.iNAM,Modflow.FNameNAM)
-        INUNIT = 99
-        MAXUNIT= INUNIT
-        !
-        !4------OPEN NAME FILE.
-        OPEN (UNIT=INUNIT,FILE=Modflow.FNameNAM,STATUS='OLD',ACTION=ACTION(1))
-        NC=INDEX(Modflow.FNameNAM,' ')
-        WRITE(*,490)' Using NAME file: ',Modflow.FNameNAM(1:NC)
-490     FORMAT(A,A)
-        
-        ALLOCATE(IUNIT(NIUNIT))
-
-        call Msg(' ')
-        call Msg('-------Open and scan files listed in NAM file:')
-        !
-        !C2------Open all files in name file.
-        CALL SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,NIUNIT,&
-            VERSION,INBAS,MAXUNIT,modflow)
-        
-        !do i=1,niunit
-        !    write(iout,*) i, iunit(i),cunit(i)
-        !end do
-        !
-        
-        ! Unit numbering starts at BCF6=7 so add 6 to iunut index
-        Modflow.iBAS6 =inbas       
-        file_open_flag(inbas) = .true.
-        Modflow.iBCF6 =iunit(1)       
-        Modflow.iWEL  =iunit(2)       
-        Modflow.iDRN  =iunit(3)       
-        Modflow.iRIV  =iunit(4)       
-        Modflow.iEVT  =iunit(5)       
-        Modflow.iEVS  =iunit(6)       
-        Modflow.iGHB  =iunit(7)       
-        Modflow.iRCH  =iunit(8)       
-        Modflow.iRTS  =iunit(9)       
-        Modflow.iTIB =iunit(10)       
-        Modflow.iDPF =iunit(11)       
-        Modflow.iOC  =iunit(12)       
-        Modflow.iSMS =iunit(13)       
-        Modflow.iPCB =iunit(14)       
-        Modflow.iBCT =iunit(15)       
-        Modflow.iFHB =iunit(16)       
-        Modflow.iRES =iunit(17)       
-        Modflow.iSTR =iunit(18)       
-        Modflow.iIBS =iunit(19)       
-        Modflow.iCHD =iunit(20)       
-        Modflow.iHFB6=iunit(21)       
-        Modflow.iLAK =iunit(22)       
-        Modflow.iLPF =iunit(23)       
-        Modflow.iDIS =iunit(24)       
-        Modflow.iDISU=iunit(25)       
-        Modflow.iPVAL=iunit(26)       
-        Modflow.iSGB =iunit(27)       
-        Modflow.iHOB =iunit(28)       
-        Modflow.iCLN =iunit(29)       
-        Modflow.iDPT =iunit(30)       
-        Modflow.iZONE=iunit(31)       
-        Modflow.iMULT=iunit(32)       
-        Modflow.iDROB=iunit(33)       
-        Modflow.iRVOB=iunit(34)       
-        Modflow.iGBOB=iunit(35)       
-        Modflow.iGNC =iunit(36)       
-        Modflow.iDDF =iunit(37)       
-        Modflow.iCHOB=iunit(38)       
-        Modflow.iETS =iunit(39)       
-        Modflow.iDRT =iunit(40)       
-        Modflow.iQRT =iunit(41)       
-        Modflow.iGMG =iunit(42)       
-        Modflow.ihyd =iunit(43)       
-        Modflow.iSFR =iunit(44)       
-        Modflow.iMDT =iunit(45)       
-        Modflow.iGAGE=iunit(46)       
-        Modflow.iLVDA=iunit(47)       
-        Modflow.iSYF =iunit(48)       
-        Modflow.ilmt6=iunit(49)       
-        Modflow.iMNW1=iunit(50)       
-        Modflow.iKDEP=iunit(53)       
-        Modflow.iSUB =iunit(54)       
-        Modflow.iUZF =iunit(55)       
-        Modflow.igwm =iunit(56)       
-        Modflow.iSWT =iunit(57)       
-        Modflow.iPATH=iunit(58)       
-        Modflow.iPTH =iunit(59)       
-        Modflow.iTVM =iunit(64)  
-        Modflow.iSWF =iunit(65)   
-        Modflow.iSWBC =iunit(66)   
-        do i=1,65
-            if(iunit(i) > 0) then
-                file_open_flag(iunit(i)) = .true.
-            end if
-        end do
-
-        ! First read all GSF (grid specification) files for GWF domain, then CLN and SWF domains if present
-        call Msg(' ')
-        call Msg('-------Read all GSF (grid specification) files:')
-        Modflow.FNameGSF=trim(Modflow.Prefix)//'.GWF.gsf'
-        inquire(file=Modflow.FNameGSF,exist=FileExists)
-        if(.not. FileExists) then
-            call Msg('No grid specification file: '//Modflow.FNameGSF)
-        else
-            call Msg('Modflow GWF GSF file: '//Modflow.FNameGSF)
-	        call getunit(Modflow.iGSF)
-            open(Modflow.iGSF,file=Modflow.FNameGSF,status='unknown',form='formatted')
-        
-            call MUSG_Read_GWF_GSF(Modflow)
-            
-            modflow.GWF.ElementType='febrick'
-
-        end if
-
-        if(Modflow.iCLN /= 0) THEN
-            Modflow.CLN.Name='CLN'
-            modflow.CLN.ElementType='felineseg'
-            Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
-            inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
-            if(.not. FileExists) then
-                call Msg('No grid specification file: '//Modflow.FNameCLN_GSF)
-            else
-                call Msg('Modflow CLN GSF file: '//Modflow.FNameCLN_GSF)
-	            call getunit(Modflow.iCLN_GSF)
-                open(Modflow.iCLN_GSF,file=Modflow.FNameCLN_GSF,status='unknown',form='formatted')
-        
-                call MUSG_Read_CLN_GSF(Modflow)
-            end if
-        end if
-
-        if(Modflow.iSWF /= 0) THEN
-            Modflow.SWF.name='SWF'
-            Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.SWF.gsf'
-            inquire(file=Modflow.FNameSWF_GSF,exist=FileExists)
-            if(.not. FileExists) then
-                call Msg('No grid specification file: '//Modflow.FNameSWF_GSF)
-            else
-                call Msg('Modflow SWF GSF file: '//Modflow.FNameSWF_GSF)
-	            call getunit(Modflow.iSWF_GSF)
-                open(Modflow.iSWF_GSF,file=Modflow.FNameSWF_GSF,status='unknown',form='formatted')
-        
-                call MUSG_Read_SWF_GSF(Modflow)
-                
-                if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                    modflow.SWF.ElementType='fetriangle'
-                else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
-                    modflow.SWF.ElementType='fequadrilateral'
-                end if
-
-            end if
-        end if
-
-        ! Read data in Modflow-USG order
-
-        call Msg(' ')
-        call Msg('-------Read options from BAS6:')
-        call MUSG_ReadBAS6_Options(Modflow) ! based on subroutine SGWF2BAS8OPEN
-
-        call Msg(' ')
-        call Msg('-------Read first part of DISU:')
-        call MUSG_ReadDISU_pt1(Modflow)  ! based on subroutine SDIS2GLO8AR
-        NEQS = NODES
-
-        IF(Modflow.iCLN/=0) THEN
-            call Msg(' ')
-            call Msg('-------Read data from CLN pt1:')
-            call MUSG_ReadCLN(Modflow)  ! based on subroutine SDIS2CLN1AR
-            NEQS = NEQS + NCLNNDS
-
-            call MUSG_ReadCLN_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            call Msg(' ')
-            call Msg('-------Read data from SWF pt1:')
-            call MUSG_ReadSWF(Modflow)  ! based on subroutine SDIS2SWF1AR
-            NEQS = NEQS + NSWFNDS
-
-            ! Young-jin handles this in SDIS2SWF1AR above so I think not required
-            !call MUSG_ReadSWF_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
-        end if
-
-        !crm not reading ghost node stuff yet
-        !C---------------------------------------------------------------------
-        !C3-----READ GNC PACKAGE INPUT  (CONNECTIVITIES AND FRACTIONS)
-        !C---------------------------------------------------------------------
-
-        
-        !C5------ALLOCATE SPACE FOR PARAMETERS AND FLAGS.
-        ALLOCATE(IA(NEQS+1))
-        ALLOCATE (IBOUND(NEQS+1))
-        ALLOCATE(AREA(NEQS))
-        IA = 0
-
-
-        call Msg(' ')
-        call Msg('-------Read second part DISU:')
-        WRITE(FNumEco,11) Modflow.iDISu
-        11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',&
-            ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
-        if(Modflow.unstructured) then
-
-            !C     *****************************************************************
-            !C     READ AND SET NODLAY ARRAY, AND READ GEOMETRIC PARAMETERS AND
-            !C     MATRIX CONNECTIVITY FOR UNSTRUCTURED GRID
-            !C     *****************************************************************
-            call MUSG_ReadDISU_pt2(Modflow)  ! based on subroutine SGWF2DIS8UR
-            
-            ! Hardwired to read CLN and FAHL arrays for now 
-            call MUSG_ReadDISU_pt3(Modflow)  
-
-            !end if
-        else
-            ! call MUSG_ReadDISU_StucturedGridData(Modflow)
-        end if
-        
-        !!C--------------------------------------------------------------------------
-        !!C7H------PREPARE IDXGLO ARRAY FOR CLN/SWF DOMAIN
-        !IF(Modflow.iCLN/=0)THEN
-        !    !CALL FILLIDXGLO_CLN
-        !end if
-        !IF(Modflow.iSWF/=0) THEN
-        !    CALL FILLIDXGLO_SWF
-        !end if
-
-
-        call Msg(' ')
-        call Msg('-------Read Stress Period Data from DISU:')
-        call MUSG_ReadDISU_StressPeriodData(Modflow)   
-        
-        
-        !C7-----Allocate space for remaining global arrays.
-        ALLOCATE (HNEW(NEQS))
-        !ALLOCATE (HOLD(NEQS))
-        !ALLOCATE (IFMBC)
-        !IFMBC = 0
-        !ALLOCATE (FMBE(NEQS))
-        !ALLOCATE (Sn(NEQS),So(NEQS))
-        !Sn = 1.0
-        !So = 1.0
-        !ALLOCATE (RHS(NEQS))
-        !ALLOCATE (BUFF(NEQS))
-        ALLOCATE (STRT(NEQS))
-        !DDREF=>STRT
-        !ALLOCATE (LAYHDT(NLAY))
-        !ALLOCATE (LAYHDS(NLAY))
-        !WRITE(IOUT,'(//)')
-
-        !C------------------------------------------------------------------------
-        !C10------Read rest of groundwater BAS Package file (IBOUND and initial heads)
-        call Msg(' ')
-        call Msg('-------Read IBOUND and initial heads from BAS6:')
-        
-        ALLOCATE (modflow.GWF.IBOUND(modflow.GWF.ncells))
-        ALLOCATE (modflow.GWF.HNEW(Modflow.GWF.nCells))
-
-        IF(IUNSTR.EQ.0)THEN
-        !C10A-------FOR STRUCTURED GRIDS
-            !CALL SGWF2BAS8SR
-        ELSE
-        !C10B-------FOR UNSTRUCTURED GRIDS
-            CALL MUSG_ReadBAS6_IBOUND_IHEADS(Modflow)  ! based on subroutine SGWF2BAS8UR
-        end if
-
-        
-        !C
-        !C-----------------------------------------------------------------------
-        !C11-----SET UP OUTPUT CONTROL.
-        call Msg(' ')
-        call Msg('-------Read data from OC:')
-        CALL MUSG_ReadOC(Modflow) ! based on subroutine SGWF2BAS7I  
-        
-        IF(Modflow.iLPF/=0) THEN
-            !C
-            !C-----------------------------------------------------------------------
-            !C11-----Read LPF Package file 
-            call Msg(' ')
-            call Msg('-------Read data from LPF:')
-            CALL MUSG_ReadLPF(Modflow) ! based on subroutine SGWF2BAS7I  
-        end if
-        
-        IF(Modflow.iCLN/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read rest of CLN Package file (IBOUND and initial heads)
-            call Msg(' ')
-            call Msg('-------Read IBOUND and initial heads from CLN:')
-            ALLOCATE (modflow.CLN.IBOUND(modflow.CLN.ncells))
-            ALLOCATE (modflow.CLN.HNEW(Modflow.CLN.nCells))
-            CALL MUSG_ReadCLN_IBOUND_IHEADS(Modflow)  ! based on subroutine CLN2BAS1AR
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read rest of SWF Package file (IBOUND and initial heads)
-            call Msg(' ')
-            call Msg('-------Read IBOUND and initial heads from SWF:')
-            ALLOCATE (modflow.SWF.IBOUND(modflow.SWF.ncells))
-            ALLOCATE (modflow.SWF.HNEW(Modflow.SWF.nCells))
-            CALL MUSG_ReadSWF_IBOUND_IHEADS(Modflow)  ! based on subroutine SWF2BAS1AR
-        end if
-        
-        IF(Modflow.iWEL/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read WEL Package file
-            call Msg(' ')
-            call Msg('-------Read data from WEL:')
-            CALL MUSG_ReadWEL(Modflow)  ! based on subroutine GWF2WEL7U1AR
-        end if
-        
-        IF(Modflow.iCHD/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read CHD Package file
-            call Msg(' ')
-            call Msg('-------Read data from CHD:')
-            CALL MUSG_ReadCHD(Modflow)  ! based on subroutine GWF2CHD7U1AR
-        end if
-
-        IF(Modflow.iRCH/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read RCH Package file
-            call Msg(' ')
-            call Msg('-------Read data from RCH:')
-            CALL MUSG_ReadRCH(Modflow)  ! based on subroutine GWF2RCH8U1AR
-            call MUSG_ReadRCH_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
-        end if
-        
-        IF(Modflow.iDRN/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read DRN Package file
-            call Msg(' ')
-            call Msg('-------Read data from DRN:')
-            CALL MUSG_ReadDRN(Modflow)  ! based on subroutine GWF2RCH8U1AR
-            call MUSG_ReadDRN_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
-        end if
-        
-        IF(Modflow.iSWBC/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read RCH Package file
-            call Msg(' ')
-            call Msg('-------Read data from SWBC:')
-            CALL MUSG_ReadSWBC(Modflow)  ! based on subroutine SWF2BC1U1AR
-            call MUSG_ReadSWBC2(Modflow) ! based on subroutine SWF2BC1U1RP
-        end if
-        
-        IF(Modflow.iSMS/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read SMS Package file
-            call Msg(' ')
-            call Msg('-------Read data from SMS:')
-            CALL MUSG_ReadSMS(Modflow)  ! based on subroutine SMS7U1AR
-        end if
-
-        call MUSG_WriteVolumeBudgetToTecplot(Modflow)
-        
-        call MUSG_CreateStepPeriodTimeFile(Modflow)
-
-        
-        call MUSG_ReadBinary_HDS_File(Modflow,Modflow.GWF)
-        call MUSG_ReadBinary_DDN_File(Modflow,Modflow.GWF)
-        call MUSG_ReadBinary_CBB_File(Modflow, Modflow.GWF)
-        if(Modflow.GWF.IsDefined) then
-            call Msg(' ')
-		    call Msg('Generating mesh-based Tecplot output files for GWF:')
-            
-            
-            call MUSG_ToTecplot(Modflow,Modflow.GWF)
-
-            
-        else
-		   call Msg('Generating cell-based Tecplot output files for GWF:')
-           call MUSG_GWF_IBOUNDv2_ToTecplot(Modflow)
-        end if
-        
-        IF(Modflow.iCLN/=0) THEN
-            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.CLN)
-            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.CLN)
-            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.CLN)
-            if(Modflow.CLN.IsDefined) then
-    		    call Msg('Generating mesh-based Tecplot output files for CLN:')
-    
-                call MUSG_ToTecplot(Modflow,Modflow.CLN)
-                
-            else
-		       call Msg('No cell-based Tecplot output files for CLN:')
-               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
-            end if
-                    
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.SWF)
-            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.SWF)
-            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.SWF)
-            if(Modflow.SWF.IsDefined) then
-    		    call Msg('Generating mesh-based Tecplot output files for SWF:')
-
-                call MUSG_ToTecplot(Modflow,Modflow.SWF)
-                
-            else
-		       call Msg('No cell-based Tecplot output files for SWF:')
-               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
-            end if
-                    
-        end if
-        
-        if(Modflow.TagFiles) then
-            call MUSG_TagSMSFile(Modflow)
-        end if
-        
-
-
-
-
-        !open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
-        !write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
-        write(Modflow.iSCAN,'(a,i8,a)') 'Found ',Modflow.nKeyWord,' keywords'
-        !do i=1,Modflow.nKeyWord
-        !    write(Modflow.iSCAN,'(a)',iostat=status) Modflow.KeyWord(i)
-        !end do
-        close(Modflow.iSCAN)
-        
-    end subroutine MUSG_ModflowOutputToModflowStructure
-    
-    subroutine MUSG_TagSMSFile(Modflow)
-        implicit none
-        
-        character(200) :: line
-        character(200) :: opt(20)='none'
-        integer :: i, io_tagged
-        integer :: nOpt=0
-        REAL ::HCLOSE, HICLOSE
-        integer :: MXITER, ITER1, IPRSMS, NONLINMETH, LINMETH
-        real :: THETA, AKAPPA, GAMMA,AMOMENTUM,BTOL,BREDUC,RESLIM,RRCTOL,EPSRN,RCLOSEPCGU,RELAXPCGU
-        character(20) :: CLIN
-        integer :: NUMTRACK,IACL,NORDER,LEVEL,NORTH,IREDSYS,IDROPTOL,IPC,ISCL,IORD
-
-        
-        type (ModflowProject) Modflow
-        
-        FName=trim(Modflow.FNameSMS)//'_tagged'
-        call Msg('New SMS file: '//trim(FName))
-        call getunit(io_tagged)
-        open(io_tagged,file=FName,status='unknown',form='formatted')
-
-        write(io_tagged,'(a,1pg10.1)') '# This file tagged by Modflow-User-Tools version ',MUTVersion
-
-
-        rewind(Modflow.iSMS)
-        do 
-            read(Modflow.iSMS,'(a)',iostat=status) line
-            if(status/=0) then
-                call ErrMsg('Unexpected end of SMS file')
-            end if
-
-            if(line(1:1)=='#') then
-                !write(io_tagged,'(a)') line
-                cycle
-            else if(index(line,'SIMPLE') >0 .or. index(line,'MODERATE')  .or. index(line,'COMPLEX')) then
-                write(io_tagged,'(a)') '#----------------------------------------------------------------------------------------'
-                write(io_tagged,'(a)') '1a. OPTIONS'
-                nOpt=1
-                write(io_tagged,'(a)') line
-                cycle
-            else
-                write(io_tagged,'(a)') '#------------------------------------------------------------------------------------------'
-                write(io_tagged,'(a)') '#1b.     HCLOSE   HICLOSE      MXITER    ITER1     IPRSMS  NONLINMETH  LINMETH   Options...'
-                read(line,*,end=10) HCLOSE, HICLOSE, MXITER, ITER1, IPRSMS, NONLINMETH, LINMETH, (opt(i),i=1,20)
-10              write(TmpSTR,'(5x,2(1pg10.1),5(i10),10x)') HCLOSE, HICLOSE, MXITER, ITER1, IPRSMS, NONLINMETH, LINMETH
-                
-                do i=1,20
-                    if(opt(i) /= 'none') then
-                        TmpSTR=trim(TmpSTR)//'      '//trim(opt(i))
-                    end if
-                end do
-                write(io_tagged,'(a)') trim(TmpSTR)
-                
-                write(io_tagged,'(a)') '# HCLOSE—is the head change criterion for convergence of the outer (nonlinear)'
-                write(io_tagged,'(a)') '#    iterations, in units of length. When the maximum absolute value of the head'
-                write(io_tagged,'(a)') '#    change at all nodes during an iteration is less than or equal to HCLOSE,'
-                write(io_tagged,'(a)') '#    iteration stops. Commonly, HCLOSE equals 0.01.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#HICLOSE—is the head change criterion for convergence of the inner (linear)'
-                write(io_tagged,'(a)') '#    iterations, in units of length. When the maximum absolute value of the head'
-                write(io_tagged,'(a)') '#    change at all nodes during an iteration is less than or equal to HICLOSE, the'
-                write(io_tagged,'(a)') '#    matrix solver assumes convergence. Commonly, HICLOSE is set an order of'
-                write(io_tagged,'(a)') '#    magnitude less than HCLOSE.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#MXITER—is the maximum number of outer (nonlinear) iterations -- that is,'
-                write(io_tagged,'(a)') '#    calls to the solution routine. For a linear problem MXITER should be 1.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    ITER1—is the maximum number of inner (linear) iterations. The number'
-                write(io_tagged,'(a)') '#    typically depends on the characteristics of the matrix solution scheme being'
-                write(io_tagged,'(a)') '#    used. For nonlinear problems,'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    ITER1 usually ranges from 60 to 600; a value of 100 will be sufficient for'
-                write(io_tagged,'(a)') '#    most linear problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#IPRSMS—is a flag that controls printing of convergence information from the solver:'
-                write(io_tagged,'(a)') '#    0 – print nothing'
-                write(io_tagged,'(a)') '#    1 – print only the total number of iterations and nonlinear residual reduction summaries'
-                write(io_tagged,'(a)') '#    2 – print matrix solver information in addition to above'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#NONLINMETH—is a flag that controls the nonlinear solution method and under-relaxation schemes'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    0 – Picard iteration scheme is used without any under-relaxation schemes involved'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    > 0 – Newton-Raphson iteration scheme is used with under-relaxation. Note'
-                write(io_tagged,'(a)') '#    that the Newton-Raphson linearization scheme is available only for the'
-                write(io_tagged,'(a)') '#    upstream weighted solution scheme of the BCF and LPF packages.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    < 0 – Picard iteration scheme is used with under-relaxation.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    The absolute value of NONLINMETH determines the underrelaxation scheme used.'
-                write(io_tagged,'(a)') '#    1 or -1 – Delta-Bar-Delta under-relaxation is used.'
-                write(io_tagged,'(a)') '#    2 or -2 – Cooley under-relaxation scheme is used.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#    Note that the under-relaxation schemes are used in conjunction with'
-                write(io_tagged,'(a)') '#    gradient based methods, however, experience has indicated that the Cooley'
-                write(io_tagged,'(a)') '#    under-relaxation and damping work well also for the Picard scheme with'
-                write(io_tagged,'(a)') '#    the wet/dry options of MODFLOW.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#LINMETH—is a flag that controls the matrix solution method'
-                write(io_tagged,'(a)') '#    1 – the χMD solver of Ibaraki (2005) is used.'
-                write(io_tagged,'(a)') '#    2 – the unstructured pre-conditioned conjugate gradient solver of White'
-                write(io_tagged,'(a)') '#    and Hughes (2011) is used.'
-                write(io_tagged,'(a)') '#'
-                exit
-            end if
-
-        end do
-        
-        do 
-            read(Modflow.iSMS,'(a)',iostat=status) line
-            if(status/=0) then
-                call ErrMsg('Unexpected end of SMS file')
-            end if
-
-            if(line(1:1)=='#') then
-                !write(io_tagged,'(a)') line
-                cycle
-            else 
-                exit
-            end if
-        end do
-        
-        if(NONLINMETH /= 0 .and. nOpt==0) then
-            write(io_tagged,'(a)') '#----------------------------------------------------------------------------------------'
-            write(io_tagged,'(a)') '#2.    THETA     AKAPPA      GAMMA     AMOMENTUM    NUMTRACK  BTOL      BREDUC     RESLIM'
-            
-            read(line,*) THETA, AKAPPA, GAMMA, AMOMENTUM, NUMTRACK
-            
-            if(NUMTRACK > 0) then
-                read(line,*) THETA, AKAPPA, GAMMA, AMOMENTUM, NUMTRACK,BTOL, BREDUC, RESLIM 
-                
-                write(TmpSTR,'(5x,4(1pg10.1,1x),1(i10,1x),4(1pg10.1,1x))') THETA, AKAPPA, GAMMA, AMOMENTUM, NUMTRACK, BTOL, BREDUC, RESLIM
-                write(io_tagged,'(a)') trim(TmpSTR)
-                
-                write(io_tagged,'(a)') '#THETA—is the reduction factor for the learning rate (under-relaxation term)'
-                write(io_tagged,'(a)') '#    of the delta-bar-delta algorithm. The value of THETA is between zero and one.'
-                write(io_tagged,'(a)') '#    If the change in the variable (head) is of opposite sign to that of the'
-                write(io_tagged,'(a)') '#    previous iteration, the under-relaxation term is reduced by a factor of'
-                write(io_tagged,'(a)') '#    THETA. The value usually ranges from 0.3 to 0.9; a value of 0.7 works well'
-                write(io_tagged,'(a)') '#    for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#AKAPPA—is the increment for the learning rate (under-relaxation term) of the'
-                write(io_tagged,'(a)') '#    delta-bar-delta algorithm. The value of AKAPPA is between zero and one. If'
-                write(io_tagged,'(a)') '#    the change in the variable (head) is of the same sign to that of the previous'
-                write(io_tagged,'(a)') '#    iteration, the under-relaxation term is increased by an increment of AKAPPA.'
-                write(io_tagged,'(a)') '#    The value usually ranges from 0.03 to 0.3; a value of 0.1 works well for most'
-                write(io_tagged,'(a)') '#    problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#GAMMA—is the history or memory term factor of the delta-bar-delta algorithm.'
-                write(io_tagged,'(a)') '#    Gamma is between zero and 1 but cannot be equal to one. When GAMMA is zero,'
-                write(io_tagged,'(a)') '#    only the most recent history (previous iteration value) is maintained. As'
-                write(io_tagged,'(a)') '#    GAMMA is increased, past history of iteration changes has greater influence'
-                write(io_tagged,'(a)') '#    on the memory term. The memory term is maintained as an exponential average'
-                write(io_tagged,'(a)') '#    of past changes. Retaining some past history can overcome granular behavior'
-                write(io_tagged,'(a)') '#    in the calculated function surface and therefore helps to overcome cyclic'
-                write(io_tagged,'(a)') '#    patterns of non-convergence. The value usually ranges from 0.1 to 0.3; a'
-                write(io_tagged,'(a)') '#    value of 0.2 works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#AMOMENTUM—is the fraction of past history changes that is added as a momentum'
-                write(io_tagged,'(a)') '#    term to the step change for a nonlinear iteration. The value of AMOMENTUM is'
-                write(io_tagged,'(a)') '#    between zero and one. A large momentum term should only be used when small'
-                write(io_tagged,'(a)') '#    learning rates are expected. Small amounts of the momentum term help'
-                write(io_tagged,'(a)') '#    convergence. The value usually ranges from 0.0001 to 0.1; a value of 0.001'
-                write(io_tagged,'(a)') '#    works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#NUMTRACK—is the maximum number of backtracking iterations allowed for'
-                write(io_tagged,'(a)') '#    residual reduction computations. If NUMTRACK = 0 then the backtracking'
-                write(io_tagged,'(a)') '#    iterations are omitted. The value usually ranges from 2 to 20; a value of 10'
-                write(io_tagged,'(a)') '#    works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#BTOL—is the tolerance for residual change that is allowed for residual'
-                write(io_tagged,'(a)') '#    reduction computations. BTOL should not be less than one to avoid getting'
-                write(io_tagged,'(a)') '#    stuck in local minima. A large value serves to check for extreme residual'
-                write(io_tagged,'(a)') '#    increases, while a low value serves to control step size more severely. The'
-                write(io_tagged,'(a)') '#    value usually ranges from 1.0 to 106; a value of 104 works well for most'
-                write(io_tagged,'(a)') '#    problems but lower values like 1.1 may be required for harder problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#BREDUC—is the reduction in step size used for residual reduction'
-                write(io_tagged,'(a)') '#    computations. The value of BREDUC is between zero and one. The value usually'
-                write(io_tagged,'(a)') '#    ranges from 0.1 to 0.3; a value of 0.2 works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#RESLIM—is the limit to which the residual is reduced with backtracking. If'
-                write(io_tagged,'(a)') '#    the residual is smaller than RESLIM, then further backtracking is not'
-                write(io_tagged,'(a)') '#    performed. A value of 100 is suitable for large problems and residual'
-                write(io_tagged,'(a)') '#    reduction to smaller values may only slow down computations.' 
-                write(io_tagged,'(a)') '#'
-            else
-                write(TmpSTR,'(5x,4(1pg10.1,1x),1(i10,1x),4(1pg10.1,1x))') THETA, AKAPPA, GAMMA, AMOMENTUM, NUMTRACK
-                write(io_tagged,'(a)') trim(TmpSTR)
-                
-                write(io_tagged,'(a)') '#THETA—is the reduction factor for the learning rate (under-relaxation term)'
-                write(io_tagged,'(a)') '#    of the delta-bar-delta algorithm. The value of THETA is between zero and one.'
-                write(io_tagged,'(a)') '#    If the change in the variable (head) is of opposite sign to that of the'
-                write(io_tagged,'(a)') '#    previous iteration, the under-relaxation term is reduced by a factor of'
-                write(io_tagged,'(a)') '#    THETA. The value usually ranges from 0.3 to 0.9; a value of 0.7 works well'
-                write(io_tagged,'(a)') '#    for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#AKAPPA—is the increment for the learning rate (under-relaxation term) of the'
-                write(io_tagged,'(a)') '#    delta-bar-delta algorithm. The value of AKAPPA is between zero and one. If'
-                write(io_tagged,'(a)') '#    the change in the variable (head) is of the same sign to that of the previous'
-                write(io_tagged,'(a)') '#    iteration, the under-relaxation term is increased by an increment of AKAPPA.'
-                write(io_tagged,'(a)') '#    The value usually ranges from 0.03 to 0.3; a value of 0.1 works well for most'
-                write(io_tagged,'(a)') '#    problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#GAMMA—is the history or memory term factor of the delta-bar-delta algorithm.'
-                write(io_tagged,'(a)') '#    Gamma is between zero and 1 but cannot be equal to one. When GAMMA is zero,'
-                write(io_tagged,'(a)') '#    only the most recent history (previous iteration value) is maintained. As'
-                write(io_tagged,'(a)') '#    GAMMA is increased, past history of iteration changes has greater influence'
-                write(io_tagged,'(a)') '#    on the memory term. The memory term is maintained as an exponential average'
-                write(io_tagged,'(a)') '#    of past changes. Retaining some past history can overcome granular behavior'
-                write(io_tagged,'(a)') '#    in the calculated function surface and therefore helps to overcome cyclic'
-                write(io_tagged,'(a)') '#    patterns of non-convergence. The value usually ranges from 0.1 to 0.3; a'
-                write(io_tagged,'(a)') '#    value of 0.2 works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#AMOMENTUM—is the fraction of past history changes that is added as a momentum'
-                write(io_tagged,'(a)') '#    term to the step change for a nonlinear iteration. The value of AMOMENTUM is'
-                write(io_tagged,'(a)') '#    between zero and one. A large momentum term should only be used when small'
-                write(io_tagged,'(a)') '#    learning rates are expected. Small amounts of the momentum term help'
-                write(io_tagged,'(a)') '#    convergence. The value usually ranges from 0.0001 to 0.1; a value of 0.001'
-                write(io_tagged,'(a)') '#    works well for most problems.'
-                write(io_tagged,'(a)') '#'
-                write(io_tagged,'(a)') '#NUMTRACK—is the maximum number of backtracking iterations allowed for'
-                write(io_tagged,'(a)') '#    residual reduction computations. If NUMTRACK = 0 then the backtracking'
-                write(io_tagged,'(a)') '#    iterations are omitted. The value usually ranges from 2 to 20; a value of 10'
-                write(io_tagged,'(a)') '#    works well for most problems.'
-                write(io_tagged,'(a)') '#'
-            end if
-        end if
-
-        do 
-            read(Modflow.iSMS,'(a)',iostat=status) line
-            if(status/=0) then
-                call ErrMsg('Unexpected end of SMS file')
-            end if
-
-            if(line(1:1)=='#') then
-                !write(io_tagged,'(a)') line
-                cycle
-            else 
-                exit
-            end if
-        end do
-            
-        if(LINMETH == 1 .and. nOpt==0) then
-            write(io_tagged,'(a)') '#------------------------------------------------------------------------------------------'
-            write(io_tagged,'(a)') '#For the χMD solver (Ibaraki, 2005):'
-            write(io_tagged,'(a)') '#3.         IACL      NORDER     LEVEL      NORTH     IREDSYS RRCTOL        IDROPTOL  EPSRN'
-            
-            read(line,*) IACL, NORDER, LEVEL, NORTH, IREDSYS, RRCTOL, IDROPTOL, EPSRN
-            write(TmpSTR,'(5x,5(i10,1x),1(1pg10.1,1x),1(i10,1x),1(1pg10.1,1x))') IACL, NORDER, LEVEL, NORTH, IREDSYS, RRCTOL, IDROPTOL, EPSRN
-            write(io_tagged,'(a)') trim(TmpSTR)
-
-            write(io_tagged,'(a)') '#IACL—is the flag for choosing the acceleration method.'
-            write(io_tagged,'(a)') '#    0 – Conjugate Gradient – select this option if the matrix is symmetric.'
-            write(io_tagged,'(a)') '#    1 – ORTHOMIN'
-            write(io_tagged,'(a)') '#    2 - BiCGSTAB'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#NORDER—is the flag for choosing the ordering scheme.'
-            write(io_tagged,'(a)') '#    0 – original ordering'
-            write(io_tagged,'(a)') '#    1 – reverse Cuthill McKee ordering'
-            write(io_tagged,'(a)') '#    2 – Minimum degree ordering'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#LEVEL—is the level of fill for ILU decomposition. Higher levels of fill'
-            write(io_tagged,'(a)') '#    provide more robustness but also require more memory. For optimal'
-            write(io_tagged,'(a)') '#    performance, it is suggested that a large level of fill be applied (7 or 8)'
-            write(io_tagged,'(a)') '#    with use of drop tolerance.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#NORTH—is the number of orthogonalizations for the ORTHOMIN acceleration'
-            write(io_tagged,'(a)') '#    scheme. A number between 4 and 10 is appropriate. Small values require less'
-            write(io_tagged,'(a)') '#    storage but more iteration may be required. This number should equal 2 for'
-            write(io_tagged,'(a)') '#    the other acceleration methods.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#IREDSYS—is the index for creating a reduced system of equations using the'
-            write(io_tagged,'(a)') '#    red-black ordering scheme.'
-            write(io_tagged,'(a)') '#    0 – do not create reduced system'
-            write(io_tagged,'(a)') '#    1 – create reduced system using red-black ordering'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#RRCTOL—is a residual tolerance criterion for convergence. The root mean'
-            write(io_tagged,'(a)') '#    squared residual of the matrix solution is evaluated against this number to'
-            write(io_tagged,'(a)') '#    determine convergence. The solver assumes convergence if either HICLOSE (the'
-            write(io_tagged,'(a)') '#    absolute head tolerance value for the solver) or RRCTOL is achieved. Note'
-            write(io_tagged,'(a)') '#    that a value of zero ignores residual tolerance in favor of the absolute'
-            write(io_tagged,'(a)') '#    tolerance (HICLOSE) for closure of the matrix solver.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#IDROPTOL—is the flag to perform drop tolerance.'
-            write(io_tagged,'(a)') '#    0 – do not perform drop tolerance'
-            write(io_tagged,'(a)') '#    1 – perform drop tolerance'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#EPSRN—is the drop tolerance value. A value of 10-3 works well for most problems' 
-            write(io_tagged,'(a)') '#'
-        else if(LINMETH == 2 .and. nOpt==0) then
-            write(io_tagged,'(a)') '#----------------------------------------------------------------------------------------'
-            write(io_tagged,'(a)') '#For PCGU Solver (White and Hughes, 2011):'
-            write(io_tagged,'(a)') '#4. CLIN IPC ISCL IORD RCLOSEPCGU RELAXPCGU'
-            
-            read(line,*) CLIN, IPC, ISCL, IORD, RCLOSEPCGU, RELAXPCGU
-            write(TmpSTR,'(5x,1(1pg10.1,1x),3(i10,1x),2(1pg10.1,1x))') CLIN, IPC, ISCL, IORD, RCLOSEPCGU, RELAXPCGU
-            write(io_tagged,'(a)') trim(TmpSTR)
-            
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#CLIN— an option keyword that defines the linear acceleration method used by the PCGU solver.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    CLIN = ‘CG’, preconditioned conjugate gradient method.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    CLIN = ‘BCGS’, preconditioned bi-conjugate gradient stabilized method.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    If CLIN is not specified the preconditioned conjugate gradient method is'
-            write(io_tagged,'(a)') '#    used. The preconditioned conjugate gradient method should be used for'
-            write(io_tagged,'(a)') '#    problems with a symmetric coefficient matrix. The preconditioned'
-            write(io_tagged,'(a)') '#    bi-conjugate gradient stabilized method should be used for problems with'
-            write(io_tagged,'(a)') '#    a non-symmetric coefficient matrix (for example, with problems using the'
-            write(io_tagged,'(a)') '#    Newton-Raphson linearization scheme).'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#IPC— an integer value that defines the preconditioner.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    IPC = 0, No preconditioning.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    IPC = 1, Jacobi preconditioning.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    IPC = 2, ILU(0) preconditioning.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    IPC = 3, MILU(0) preconditioning.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    IPC=3 works best for most problems.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#ISCL - flag for choosing the matrix scaling approach used.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    0 – no matrix scaling applied'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    1 – symmetric matrix scaling using the scaling method by the POLCG'
-            write(io_tagged,'(a)') '#    preconditioner in Hill (1992).'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    2 – symmetric matrix scaling using the ℓ2 norm of each row of A (DR) and'
-            write(io_tagged,'(a)') '#    the ℓ2 norm of each row of DRA.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    If the ILU(0) or MILU(0) preconditioners (IPC = 2 or 3) are used and'
-            write(io_tagged,'(a)') '#    matrix reordering (IORD > 0) is selected, then ISCL must be 1 or 2.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#IORD is the flag for choosing the matrix reordering approach used.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    0 – original ordering'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    1 – reverse Cuthill McKee ordering'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    2 – minimum degree ordering'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#    If reordering is used, reverse Cuthill McKee ordering has been found to'
-            write(io_tagged,'(a)') '#    be a more effective reordering approach for the test problems evaluated.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#RCLOSEPCGU—a real value that defines the flow residual tolerance for'
-            write(io_tagged,'(a)') '#    convergence of the PCGU linear solver. This value represents the maximum'
-            write(io_tagged,'(a)') '#    allowable residual at any single node. Value is in units of length cubed per'
-            write(io_tagged,'(a)') '#    time, and must be consistent with MODFLOW-USG length and time units. Usually'
-            write(io_tagged,'(a)') '#    a value of 1.0×10-1 is sufficient for the flow-residual criteria when meters'
-            write(io_tagged,'(a)') '#    and seconds are the defined MODFLOW-USG length and time.'
-            write(io_tagged,'(a)') '#'
-            write(io_tagged,'(a)') '#RELAXPCGU—a real value that defines the relaxation factor used by the MILU(0)'
-            write(io_tagged,'(a)') '#    preconditioner. RELAXPCGU is unitless and should be greater than or equal to'
-            write(io_tagged,'(a)') '#    0.0 and less than or equal to 1.0. RELAXPCGU values of about 1.0 are commonly'
-            write(io_tagged,'(a)') '#    used, and experience suggests that convergence can be optimized in some cases'
-            write(io_tagged,'(a)') '#    with RELAXPCGU values of 0.97. A RELAXPCGU value of 0.0 will result in ILU(0)'
-            write(io_tagged,'(a)') '#    preconditioning. RELAXPCGU is only specified if IPC=3. If RELAXPCGU is not'
-            write(io_tagged,'(a)') '#    specified and IPC=3, then a default value of 0.97 will be assigned to'
-            write(io_tagged,'(a)') '#    RELAXPCGU.'
-        end if
-
-
-        close(Modflow.iSMS)
-        close(io_tagged)
-        
-        CmdLine='del '//trim(Modflow.FNameSMS)
-        CALL execute_command_line(CmdLine ) 
-        CmdLine='rename '//trim(FName)//' '//trim(Modflow.FNameSMS)
-        CALL execute_command_line(CmdLine ) 
-
-        
-        return
-        
-    end subroutine MUSG_TagSMSFile
     
     subroutine MUSG_GenOCFile(FNumMUT,Modflow)
         implicit none
@@ -7164,7 +6846,7 @@
                 exit read_StressPeriod_instructions
             else
                 call lcase(MUSG_CMD)
-                call Msg('          '//MUSG_CMD)
+                call Msg(TAB//MUSG_CMD)
             end if
 
             if(index(MUSG_CMD,StressPeriodType_cmd) /=0) then

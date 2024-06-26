@@ -23,6 +23,8 @@ module GeneralRoutines    !### bit setting routines
     integer, parameter :: MAXSTRING=1000
     integer, parameter :: MAXLBL=200
 
+    character(MAXSTRING) :: USERBIN
+    
     character(MAXSTRING) :: AStr
     character(1), parameter :: BLANK=' '
     character(1), parameter :: COMMA=','
@@ -102,7 +104,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.16'
+    character(5) :: MUTVersion=' 1.17'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1
