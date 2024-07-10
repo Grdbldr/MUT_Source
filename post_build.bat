@@ -1,2 +1,2 @@
-copy "x64\Debug\Modflow-User-Tools.exe"  "c:\program_files\bin\mut.exe"
+copy "x64\Debug\Modflow-User-Tools.exe"  %USERBIN%
 robocopy Database\  %USERBIN% *.txt

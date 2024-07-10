@@ -59,6 +59,7 @@ module GeneralRoutines    !### bit setting routines
     integer :: Recharge=3
     integer :: CriticalDepth=4
     integer :: BoundaryNode=5
+    integer :: Inactive=6
 
     !---------------------------------------------- Raster declarations
     integer :: nRaster ! number of rasters currently
