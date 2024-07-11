@@ -78,6 +78,9 @@
     character(60) :: MUSG_ChooseCellsFromGBElements_CMD	    =   'choose cells from gb elements'
     character(60) :: MUSG_ChooseCellsFromGBNodes_CMD	    =   'choose cells from gb nodes'
 
+    character(60) :: MUSG_ChooseCellsFromFile_CMD           =   'choose cells from file'
+    character(60) :: MUSG_FlagChosenCellInactive_CMD        =   'flag chosen cells inactive'
+
     character(60) :: MUSG_ClearAllZones_CMD	                =   'clear chosen zones'
     character(60) :: MUSG_ChooseAllZones_CMD  	            =   'choose all zones'
     character(60) :: MUSG_ChooseZoneNumber_CMD	            =   'choose zone number'
@@ -1416,6 +1419,18 @@
                     call MUSG_ChooseCellsFromGBNodes(FnumMUT,modflow.CLN,TMPLT)
                 end select
                 
+            else if(index(MUSG_CMD, MUSG_ChooseCellsFromFile_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    !call MUSG_ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                    ! this will be done later
+                case (iGWF)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.GWF,TMPLT)
+                case (iSWF)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.SWF,TMPLT)
+                case (iCLN)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.CLN,TMPLT)
+                end select
             
              else if(index(MUSG_CMD, MUSG_ChooseAllZones_CMD)  /= 0) then
                 select case(ActiveDomain)
@@ -1464,7 +1479,18 @@
                 case (iCLN)
                     call MUSG_FlagChosenNodesAsOuterBoundary(modflow.CLN)
                 end select
-                
+            
+            else if(index(MUSG_CMD, MUSG_FlagChosenCellInactive_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call MUSG_FlagChosenCellsInactiveTMPLT(TMPLT)
+                case (iGWF)
+                    call MUSG_FlagChosenCellsInactive(modflow.GWF)
+                case (iSWF)
+                    call MUSG_FlagChosenCellsInactive(modflow.SWF)
+                case (iCLN)
+                    call MUSG_FlagChosenCellsInactive(modflow.CLN)
+                end select
                 
             ! GWF properties assignment
             else if(index(MUSG_CMD, MUSG_AssignMaterialtoGWF_CMD)  /= 0) then
@@ -2491,7 +2517,147 @@
 
 
     end subroutine MUSG_ChooseCellsFromGBNodesTemplate
-   
+!----------------------------------------------------------------------
+    subroutine MUSG_ChooseCellsFromFile(FNumMUT,domain,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        type (TecplotDomain) TMPLT
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iCell,status2
+
+        character*80 fname
+!        character*80 dummy
+        logical togon(domain.nCells)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Cells from ascii file '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown')
+      !  read(itmp) dummy
+      !  read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
+      !  if(status /= 0) then
+		    !call ErrMsg('While reading: '//fname)
+      !  end if
+        togon(:)=.false.
+        do
+            read(itmp,*,iostat=status2) iCell
+            if(status2/=0) exit
+            togon(iCell)=.true.
+        enddo
+        
+        if(domain.name == 'GWF') then
+
+!            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            !nLayer_bot=max(nLayer_bot,1)
+            !nLayer_bot=min(nLayer_bot,Domain.nLayers)
+            !nLayer_top=min(nLayer_top,Domain.nLayers)
+            !nLayer_top=max(nLayer_top,1)
+        
+      !      write(TmpSTR,'(i5)') nLayer_top
+		    !call Msg(TAB//'From Layer: '//trim(TmpSTR))
+      !      write(TmpSTR,'(i5)') nLayer_bot
+		    !call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    !do j=nLayer_top,nLayer_bot
+                    !    iCell=(j-1)*domain.nCells+i
+                        call set(Domain.Cell_Is(i),chosen)
+                        ncount=ncount+1
+                    !end do
+                end if
+            end do
+        else
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    call set(Domain.Cell_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine MUSG_ChooseCellsFromFile
+!    !----------------------------------------------------------------------
+!    subroutine MUSG_ChooseCellsFromFileTemplate(FNumMUT,TMPLT) 
+!        implicit none
+!
+!        integer :: FNumMUT
+!        type (TecplotDomain) TMPLT
+!
+!        integer :: i, j
+!	    integer :: nLayer_bot, nLayer_top, ncount, iElement
+!
+!        character*80 fname
+!!        character*80 dummy
+!        logical togon(TMPLT.nCells)
+!
+!		read(FNumMUT,'(a)') fname
+!		call Msg(TAB//'Choose Cells from '//trim(fname))
+!
+!        call getunit(itmp)
+!        open(itmp,file=fname,status='unknown')
+!      !  read(itmp) dummy
+!      !  read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
+!      !  if(status /= 0) then
+!		    !call ErrMsg('While reading: '//fname)
+!      !  end if
+!        
+!        if(TMPLT.name == 'GWF') then
+!
+!            read(FNumMUT,*) nLayer_top,nLayer_bot
+!        
+!            nLayer_bot=max(nLayer_bot,1)
+!            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
+!            nLayer_top=min(nLayer_top,TMPLT.nLayers)
+!            nLayer_top=max(nLayer_top,1)
+!        
+!            write(TmpSTR,'(i5)') nLayer_top
+!		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+!            write(TmpSTR,'(i5)') nLayer_bot
+!		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+!
+!            ncount=0
+!            do i=1,TMPLT.nNodes
+!                if(togon(i)) then
+!                    do j=nLayer_top,nLayer_bot
+!                        iElement=(j-1)*TMPLT.nNodes+i
+!                        call set(TMPLT.Element_Is(iElement),chosen)
+!                        ncount=ncount+1
+!                    end do
+!                end if
+!            end do
+!        else
+!            ncount=0
+!            do i=1,TMPLT.nNodes
+!                if(togon(i)) then
+!                    call set(TMPLT.Element_Is(i),chosen)
+!                    ncount=ncount+1
+!                end if
+!            end do
+!        end if
+!
+!        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Nodes chosen: ',ncount
+!        call Msg(trim(TmpSTR))
+!	    if(ncount == 0) call ErrMsg('No Nodes chosen')
+!	    
+!        call freeunit(itmp)
+!
+!
+!    end subroutine MUSG_ChooseCellsFromFileTemplate
     !----------------------------------------------------------------------
     subroutine MUSG_FlagChosenNodesAsOuterBoundary(domain) 
         implicit none
@@ -2524,6 +2690,37 @@
     
     end subroutine MUSG_FlagChosenNodesAsOuterBoundaryTMPLT
 
+    !----------------------------------------------------------------------
+    subroutine MUSG_FlagChosenCellsInactive(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+        
+        integer :: i
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                call set(domain.Cell_Is(i),Inactive)
+            end if
+        end do
+    
+    end subroutine MUSG_FlagChosenCellsInactive
+
+     !----------------------------------------------------------------------
+    subroutine MUSG_FlagChosenCellsInactiveTMPLT(TMPLT) 
+        implicit none
+
+        type (TecplotDomain) TMPLT
+        
+        integer :: i
+
+        do i=1,TMPLT.nElements
+            if(bcheck(TMPLT.Element_is(i),chosen)) then
+                call set(TMPLT.Element_Is(i),Inactive)
+            end if
+        end do
+    
+    end subroutine MUSG_FlagChosenCellsInactiveTMPLT
    !----------------------------------------------------------------------
     subroutine MUSG_AssignMaterialtoGWF(FNumMUT, Domain) 
         implicit none
@@ -3902,7 +4099,7 @@
                         modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(4,i)   
                         modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(4,i)/2.0d0
                     end select
-                    modflow.GWF.PerpendicularArea(iConn)=modflow.GWF.PerpendicularArea(iConn)**1.0d0  ! assume thickness of 1?
+                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)**1.0d0  ! assume thickness of 1?
                 end if
             end do
         end do
@@ -5703,6 +5900,9 @@
             call AllocChk(ialloc,'Cell ibound array')            
             modflow.GWF.ibound(:)=1
         end if
+        do i=1,Modflow.GWF.nCells
+            if(bcheck(modflow.GWF.Cell_is(i),inactive)) modflow.GWF.ibound(i)=0
+        enddo
         !write(Modflow.iBAS6,'(a)') 'CONSTANT   1                               IBOUND'
         nStrt=1
         do i=1,Modflow.GWF.nLayers
@@ -6098,7 +6298,7 @@
         type (ModflowProject) Modflow
         type (TecplotDomain) TECPLOT_SWF
 
-        integer :: i, j, i1, i2
+        integer :: i, j, i1, i2,nStrt,nEnd,k
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
         write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, Modflow.SWF.njag, Modflow.SWF.nCells,modflow.SWF.nZones, &
@@ -6144,16 +6344,37 @@
             write(Modflow.iSWF,*) (modflow.SWF.PerpendicularArea(j),j=i1,i2)
             i1=i2+1
         end do
+
+        ! fix here YJP
+        if(.not. allocated(modflow.SWF.ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
+            allocate(modflow.SWF.ibound(modflow.SWF.nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell ibound array')            
+            modflow.SWF.ibound(:)=1
+        end if
+        do i=1,Modflow.SWF.nCells
+            if(bcheck(modflow.SWF.Cell_is(i),inactive)) modflow.SWF.ibound(i)=0
+        enddo
+        !write(Modflow.iBAS6,'(a)') 'CONSTANT   1                               IBOUND'
+        nStrt=1
+        do i=1,Modflow.SWF.nLayers
+            write(TmpSTR,'(i5)') i
+            write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
+            nEnd = nStrt + modflow.SWF.nodelay-1
+            write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=nStrt,nEnd)
+        end do
         
-        write(Modflow.iSWF,'(a)') 'CONSTANT   1                               IBOUND'
-        !nStrt=1
-        !do i=1,Modflow.SWF.nLayers
-        !    write(TmpSTR,'(i5)') i
-        !    write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
-        !    nEnd = nStrt + modflow.SWF.nodelay-1
-        !    write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=nStrt,nEnd)
-        !    nStrt=nEnd+1
-        !end do
+        !write(Modflow.iSWF,'(a)') 'CONSTANT   1                               IBOUND'
+        do i=1,Modflow.SWF.nCells
+            if(bcheck(modflow.SWF.Cell_is(i),inactive)) modflow.SWF.ibound(i)=0
+        enddo
+!        nStrt=1
+        do i=1,Modflow.SWF.nLayers
+            write(TmpSTR,'(i5)') i
+            write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
+            nEnd = nStrt + modflow.SWF.nodelay-1
+            write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=nStrt,nEnd)
+            nStrt=nEnd+1
+        end do
         
          if(.not. allocated(modflow.SWF.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
             allocate(modflow.SWF.StartingHeads(modflow.SWF.nCells),stat=ialloc)
