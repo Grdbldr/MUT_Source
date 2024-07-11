@@ -62,9 +62,6 @@ Module MeshGeneration
         real, allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
         integer :: nPoints  ! number of points in list
 
-        integer :: i, j
-	    real(dr) :: t
-                
         character(256) :: instruction
 
 	    allocate(xi(nSizeInit),yi(nSizeInit),zi(nSizeInit),stat=ialloc)
@@ -238,9 +235,9 @@ Module MeshGeneration
             TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(3,i)) + TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
             
             TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
-            TMPLT.SideLength(2,i)=abs(TMPLT.x(TMPLT.iNode(3,i)) - TMPLT.x(TMPLT.iNode(2,i)))
+            TMPLT.SideLength(2,i)=abs(TMPLT.y(TMPLT.iNode(3,i)) - TMPLT.y(TMPLT.iNode(2,i)))
             TMPLT.SideLength(3,i)=abs(TMPLT.x(TMPLT.iNode(4,i)) - TMPLT.x(TMPLT.iNode(3,i)))
-            TMPLT.SideLength(4,i)=abs(TMPLT.x(TMPLT.iNode(1,i)) - TMPLT.x(TMPLT.iNode(4,i)))
+            TMPLT.SideLength(4,i)=abs(TMPLT.y(TMPLT.iNode(1,i)) - TMPLT.y(TMPLT.iNode(4,i)))
 
 
         end do

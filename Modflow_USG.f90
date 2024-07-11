@@ -58,6 +58,7 @@
         character(60) :: gms_file_elevation_cmd		    =   'elevation from gms file'
         character(60) :: gb_file_elevation_cmd		    =   'elevation from gb file'
         character(60) :: raster_file_elevation_cmd		=   'elevation from raster file'
+        character(60) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
         character(60) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
         character(60) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
         character(60) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
@@ -2525,8 +2526,8 @@
         type (ModflowDomain) Domain
         type (TecplotDomain) TMPLT
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iCell,status2
+        integer :: i
+	    integer :: ncount, iCell,status2
 
         character*80 fname
 !        character*80 dummy
@@ -3187,7 +3188,7 @@
         type (ModflowProject) modflow
         type (ModflowDomain) domain
         
-        integer :: i, j, k, j1, j2, jNext, nNext, jLast, nLast
+        integer :: i, k
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
 
@@ -4321,6 +4322,11 @@
 			    call Msg('              Top elevation from '//trim(topfile))
                 call read_gb_nprop(topfile,top_elev,TMPLT.nNodes)
 
+            elseif(index(MUSG_CMD,ascii_file_elevation_cmd) /=0) then
+			    read(FNumMUT,'(a)') topfile
+			    call Msg('              Top elevation from '//trim(topfile))
+                call ascii_file_elevation(topfile,top_elev,TMPLT.nNodes)
+                
             elseif(index(MUSG_CMD, xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
                 
@@ -4384,6 +4390,33 @@
 	    call freeunit(itmp)
 
     end subroutine read_gb_nprop
+    !----------------------------------------------------------------------
+    subroutine ascii_file_elevation(fname,nprop,maxnnp)
+        implicit none
+
+        integer :: i
+        integer :: maxnnp
+
+        character*(*) fname
+        character*11 file_type
+        real*8 :: nprop(maxnnp)
+	    character(80) :: dtitle
+
+        inquire(file=fname,exist=FileExists,form=file_type)
+        if(.not. FileExists) then
+            call ErrMsg(' File not found: '//fname)
+        end if
+
+
+	    call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='formatted')
+
+	    read(itmp,'(a)') dtitle
+	    read(itmp,*) (nprop(i),i=1,maxnnp)
+
+	    call freeunit(itmp)
+
+    end subroutine ascii_file_elevation
     !----------------------------------------------------------------------
     subroutine new_layer(FNumMUT,TMPLT,zone_by_template)
         implicit none
@@ -4495,6 +4528,13 @@
 			    read(FNumMUT,'(a)') basefile
 			    call Msg(TAB//'Base elevation from '//trim(basefile))
                 call read_gb_nprop(basefile,base_elev,TMPLT.nNodes)
+
+            elseif(index(MUSG_CMD,ascii_file_elevation_cmd) /=0) then
+			    read(FNumMUT,'(a)') basefile
+			    call Msg(TAB//'Base elevation from '//trim(basefile))
+                call ascii_file_elevation(basefile,base_elev,TMPLT.nNodes)
+                
+                
 
             elseif(index(MUSG_CMD,xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,base_elev,TMPLT)
@@ -6354,29 +6394,10 @@
         do i=1,Modflow.SWF.nCells
             if(bcheck(modflow.SWF.Cell_is(i),inactive)) modflow.SWF.ibound(i)=0
         enddo
-        !write(Modflow.iBAS6,'(a)') 'CONSTANT   1                               IBOUND'
-        nStrt=1
-        do i=1,Modflow.SWF.nLayers
-            write(TmpSTR,'(i5)') i
-            write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.SWF.nodelay-1
-            write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=nStrt,nEnd)
-        end do
+        write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
+        write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=1,Modflow.SWF.nCells)
         
-        !write(Modflow.iSWF,'(a)') 'CONSTANT   1                               IBOUND'
-        do i=1,Modflow.SWF.nCells
-            if(bcheck(modflow.SWF.Cell_is(i),inactive)) modflow.SWF.ibound(i)=0
-        enddo
-!        nStrt=1
-        do i=1,Modflow.SWF.nLayers
-            write(TmpSTR,'(i5)') i
-            write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.SWF.nodelay-1
-            write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=nStrt,nEnd)
-            nStrt=nEnd+1
-        end do
-        
-         if(.not. allocated(modflow.SWF.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
+        if(.not. allocated(modflow.SWF.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
             allocate(modflow.SWF.StartingHeads(modflow.SWF.nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
             modflow.SWF.StartingHeads(:)=modflow.SWF.zcell(:)+1.0e-4

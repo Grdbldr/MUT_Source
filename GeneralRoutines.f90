@@ -105,7 +105,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.17'
+    character(5) :: MUTVersion=' 1.18'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1
