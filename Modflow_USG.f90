@@ -35,12 +35,14 @@
     ! There are many other possible 2d mesh definition options e.g.
     !character(60), parameter :: gv_rects            =   'generate variable rectangles'
     !character(60), parameter :: g_rects_i           =   'generate rectangles interactive' 
-
+    
     character(60) :: MUSG_GenerateSWFDomain_CMD		=   'generate swf domain'
+
+    ! Generate a CLN network
     character(60) :: MUSG_GenerateCLNDomain_CMD		=   'generate cln domain'
 
     
-    ! Interactively generate a layered 3D modflow mesh from a 2D mesh
+    ! Generate a layered 3D modflow mesh from a 2D mesh
     character(60) :: MUSG_GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
         ! MUSG_GenerateLayersInteractive_CMD subcommands
         character(60) :: zone_by_template_cmd			=   'zone by template'
@@ -1115,6 +1117,7 @@
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TECPLOT_GWF
         type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TECPLOT_CLN
         
         integer :: i
         
@@ -1178,7 +1181,7 @@
                 exit
             else
                 call Msg(' ')
-                call Msg('  '//MUSG_CMD)
+                call Msg(MUSG_CMD)
             end if
 
 
@@ -1247,8 +1250,7 @@
                 JustBuilt=.true.
             
             else if(index(MUSG_CMD, MUSG_GenerateCLNDomain_CMD)  /= 0) then
-                call ErrMsg('Still need to implement CLN domain generation')
-                !call MUSG_GenerateCLNDomain(FnumMUT,TMPLT,TECPLOT_CLN)
+                call MUSG_GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
                 !call TecplotToIaJaStructure(TECPLOT_CLN)
                 !call BuildModflowCLNDomain(FNumMUT,Modflow,TMPLT,TECPLOT_CLN)
                 !JustBuilt=.true.
@@ -3067,8 +3069,6 @@
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
             write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
             write(Modflow.iCHD,'(a,1pg10.1)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',MUTVersion
-        else
-            pause 'next stress period?'
         end if
 
     end subroutine MUSG_AssignCHDtoDomain
@@ -3235,13 +3235,14 @@
             read(FNumMUT,'(a60)',iostat=status) MUSG_CMD
             if(status /= 0) exit
 
+            call lcase(MUSG_CMD)
 
             if(index(MUSG_CMD,'end') /= 0) then
+                call Msg(TAB//'end generate swf domain instructions')
                 exit read_slice2lyr
             else
                 call Msg('')
-                call Msg('      '//MUSG_CMD)
-                call lcase(MUSG_CMD)
+                call Msg(TAB//MUSG_CMD)
             end if
                 
 
@@ -3253,7 +3254,7 @@
 
 
             else
-			    call ErrMsg('   Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
             end if
 
         end do read_slice2lyr
@@ -3976,13 +3977,14 @@
             read(FNumMUT,'(a60)',iostat=status) MUSG_CMD
             if(status /= 0) exit
 
+            call lcase(MUSG_CMD)
 
             if(index(MUSG_CMD,'end') /= 0) then
+                call Msg(TAB//'end generate gwf domain instructions')
                 exit read_slice2lyr
             else
                 call Msg('')
-                call Msg('      '//MUSG_CMD)
-                call lcase(MUSG_CMD)
+                call Msg(TAB//MUSG_CMD)
             end if
                 
 
@@ -4006,7 +4008,7 @@
 			    layer_defined=.true.
 
             else
-			    call ErrMsg('   Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction: generate gwf domain')
             end if
 
         end do read_slice2lyr
@@ -4076,7 +4078,7 @@
     end subroutine MUSG_GenerateLayeredGWFDomain
     !----------------------------------------------------------------------
     subroutine top_elevation(FNumMUT,TMPLT)
-	    implicit none
+        implicit none
 
         integer :: FNumMUT
         type (TecplotDomain) TMPLT
@@ -4096,24 +4098,26 @@
 
             call lcase(MUSG_CMD)
             if(index(MUSG_CMD, 'end') /=0) then
+                call Msg(TAB//'end top elevation instructions')
                 exit read_top
             else
-                call Msg('          '//MUSG_CMD)
+                call lcase(MUSG_CMD)
+                call Msg(TAB//MUSG_CMD)
             end if    
 
             if(index(MUSG_CMD,constant_elevation_cmd) /=0) then
-			    read(FNumMUT,*) top_elev(1)
-			    write(TmpSTR,'(2g15.5)') top_elev(1)
-                call Msg('          '//trim(TmpSTR))
-			    do j=2,TMPLT.nNodes
-				    top_elev(j)=top_elev(1)
-			    end do
+                read(FNumMUT,*) top_elev(1)
+                write(TmpSTR,'(2g15.5)') top_elev(1)
+                call Msg(TAB//trim(TmpSTR))
+                do j=2,TMPLT.nNodes
+	                top_elev(j)=top_elev(1)
+                end do
 
             elseif(index(MUSG_CMD, offset_top_cmd) /=0) then
                 offset_top = .true.
                 read(FNumMUT,*) top_offset
 			    write(TmpSTR,'(2g15.5)') top_offset
-                call Msg('          '//trim(TmpSTR))
+                call Msg(TAB//trim(TmpSTR))
 
             elseif(index(MUSG_CMD, gb_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
@@ -4139,7 +4143,7 @@
 
 
             else
-			    call ErrMsg('           Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction: top elevation')
             end if
 
         end do read_top
@@ -4227,11 +4231,12 @@
             read(FNumMUT,'(a)',iostat=status) MUSG_CMD
             if(status /= 0) exit
 
+            call lcase(MUSG_CMD)
             
             if(index(MUSG_CMD,'end') /=0) then
+                call Msg(TAB//'end new layer instructions')
                 exit read_layer_instructions
             else
-                call lcase(MUSG_CMD)
                 call Msg(TAB//MUSG_CMD)
             end if
 
@@ -4313,7 +4318,7 @@
        !     
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction: new layer')
             end if
 
         end do read_layer_instructions
@@ -6841,11 +6846,12 @@
             read(FNumMUT,'(a)',iostat=status) MUSG_CMD
             if(status /= 0) exit
 
+            call lcase(MUSG_CMD)
             
             if(index(MUSG_CMD,'end') /=0) then
+                call Msg(TAB//'end stress period instructions')
                 exit read_StressPeriod_instructions
             else
-                call lcase(MUSG_CMD)
                 call Msg(TAB//MUSG_CMD)
             end if
 
@@ -6862,7 +6868,7 @@
                 write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodLength(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
             else
-			    call ErrMsg('       Unrecognized instruction')
+			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
             end if
 
         end do read_StressPeriod_instructions

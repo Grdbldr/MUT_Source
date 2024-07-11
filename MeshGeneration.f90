@@ -6,6 +6,128 @@ Module MeshGeneration
     contains
 
     !----------------------------------------------------------------------
+    subroutine MUSG_GenerateCLNDomain(FNum,TECPLOT_CLN)
+        implicit none
+        integer :: FNum
+        type(TecplotDomain) TECPLOT_CLN
+        
+        character(256) :: Instruction
+        character(60) :: xyzListOfPoints_cmd			=   'xyz list of points'
+        character(60) :: CLNnCells_cmd			=   'cln number of cells'
+        
+        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        integer :: nPoints  ! number of points in list
+        real :: CLNnCells ! Desired number of cells along CLN
+        
+	    ! Process CLN grid generation instructions
+
+        read_Instructions: do
+            read(FNum,'(a60)',iostat=status) Instruction
+            if(status /= 0) exit
+
+		    call lcase(instruction)
+
+            if(index(Instruction,'end') /= 0) then
+                call Msg(TAB//'end generate cln domain instructions')
+                exit read_Instructions
+            else
+                call Msg('')
+                call Msg(TAB//Instruction)
+            end if
+                
+
+            if(index(Instruction, xyzListOfpoints_cmd)  /= 0) then
+                call GetXYZ(FNum,xi,yi,zi,nPoints)
+
+            else if(index(Instruction, CLNnCells_cmd)  /= 0) then
+                read(FNum,*) CLNnCells
+                
+            else
+			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
+            end if
+
+        end do read_Instructions
+        
+        
+        continue
+        
+    end subroutine MUSG_GenerateCLNDomain
+    !----------------------------------------------------------------------
+    subroutine GetXYZ(FNum,xi,yi,zi,nPoints)
+        implicit none
+        integer :: FNum
+        
+        integer :: nSizeInit=2
+        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        real, allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
+        integer :: nPoints  ! number of points in list
+
+        integer :: i, j
+	    real(dr) :: t
+                
+        character(256) :: instruction
+
+	    allocate(xi(nSizeInit),yi(nSizeInit),zi(nSizeInit),stat=ialloc)
+	    call AllocChk(ialloc,'xyz points arrays')
+	    xi(:) = -999.0d0
+	    yi(:) = -999.0d0
+	    zi(:) = -999.0d0
+	    allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'xyzTMP points arrays')
+	    xiTMP(:) = -999.0d0
+	    yiTMP(:) = -999.0d0
+	    ziTMP(:) = -999.0d0
+
+
+        call Msg(TAB//'                X         Y        Z')
+
+	    nPoints=0
+	    do
+		    read(FNum,'(a)',iostat=status) instruction
+		    if(status /= 0) exit
+
+		    call lcase(instruction)
+
+		    if(index(instruction,'end') > 0) then
+                call Msg(TAB//'end xyz list of points')
+			    exit
+		    else
+			    nPoints=nPoints+1
+                if(nPoints>nSizeInit) then
+                    xiTMP (1:nSizeInit) = xi 
+                    call move_alloc (xiTMP, xi)
+                    yiTMP (1:nSizeInit) = yi 
+                    call move_alloc (yiTMP, yi)
+                    ziTMP (1:nSizeInit) = zi 
+                    call move_alloc (ziTMP, zi)
+                    
+                    nSizeInit=nSizeInit*2
+                    allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
+	                call AllocChk(ialloc,'xyzTMP points arrays')
+	                xiTMP(:) = -999.0d0
+	                yiTMP(:) = -999.0d0
+	                ziTMP(:) = -999.0d0
+
+                endif
+                
+			    read(instruction,*,iostat=status) xi(nPoints),yi(nPoints),zi(nPoints)
+
+			    if(status /= 0) then
+				    call ErrMsg('Bad xz pair')
+                endif
+                
+                write(TmpSTR,'(i8,2x,3g15.5)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints)
+                call Msg(TAB//trim(TmpSTR))
+
+		    endif
+        end do
+        
+       
+        continue
+
+    end subroutine GetXYZ
+
+    !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
         implicit none
         integer :: FNum
@@ -157,20 +279,16 @@ Module MeshGeneration
         call Msg(TAB//'                X                Z')
 
 	    npairs=0
-	    do
+	    read_xz_pairs:do
 		    read(FNum,'(a)',iostat=status) instruction
 		    if(status /= 0) exit
 
 		    len=len_trim(instruction)
+            call lcase(instruction)
 
-		    !write(ieco,'(a,a)') 'XZ PAIRS:    ',instruction(:len)
-		    !write(*,'(a,a)') 'XZ PAIRS:    ',instruction(:len)
-		    call lcase(instruction)
-
-		    if(index(instruction,'end') > 0) then
-			    !write(ieco,'(a,a)') 'EXIT XZ PAIRS'
-			    !write(*,'(a,a)') 'EXIT XZ PAIRS'
-			    exit
+            if(index(instruction,'end') /= 0) then
+                call Msg(TAB//'end xz pairs instructions')
+                exit read_xz_pairs
 		    else
 			    npairs=npairs+1
 			    read(instruction,*,iostat=status) xp(npairs),zp(npairs)
@@ -189,7 +307,7 @@ Module MeshGeneration
                 call Msg(TAB//trim(TmpSTR))
 
 		    endif
-	    end do
+	    end do read_xz_pairs
 
 
         do i=1,TMPLT.nNodes
