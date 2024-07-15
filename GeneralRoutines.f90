@@ -81,8 +81,8 @@ module GeneralRoutines    !### bit setting routines
     integer :: status
 
     integer :: FnumEco
-    character(MAXLBL) :: FNameEco
-    character(MAXLBL) :: FNameInput
+    character(MAXSTRING) :: FNameEco
+    character(MAXSTRING) :: FNameInput
 
 
     integer :: itmp
@@ -105,7 +105,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.19'
+    character(5) :: MUTVersion=' 1.20'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1

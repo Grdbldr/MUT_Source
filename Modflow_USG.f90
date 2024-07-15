@@ -36,33 +36,13 @@
     !character(60), parameter :: gv_rects            =   'generate variable rectangles'
     !character(60), parameter :: g_rects_i           =   'generate rectangles interactive' 
     
-    character(60) :: MUSG_GenerateSWFDomain_CMD		=   'generate swf domain'
+    character(60) :: GenerateSWFDomain_CMD		=   'generate swf domain'
 
     ! Generate a CLN network
-    character(60) :: MUSG_GenerateCLNDomain_CMD		=   'generate cln domain'
-
+    character(60) :: GenerateCLNDomain_CMD		=   'generate cln domain'
     
     ! Generate a layered 3D modflow mesh from a 2D mesh
-    character(60) :: MUSG_GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
-        ! MUSG_GenerateLayersInteractive_CMD subcommands
-        character(60) :: zone_by_template_cmd			=   'zone by template'
-        character(60) :: top_elevation_cmd			    =   'top elevation'
-        character(60) :: new_layer_cmd				    =   'new layer'
-        character(60) :: layer_name_cmd				    =   'layer name'
-        character(60) :: minimum_layer_thickness_cmd    =   'minimum layer thickness'
-        character(60) :: offset_top_cmd				    =   'offset top'
-        character(60) :: offset_base_cmd			    =   'offset base'
-        character(60) :: uniform_sublayers_cmd		    =   'uniform sublayering'
-        character(60) :: proportional_sublayers_cmd	    =   'proportional sublayering'
-        character(60) :: constant_elevation_cmd		    =   'elevation constant'
-        character(60) :: gms_file_elevation_cmd		    =   'elevation from gms file'
-        character(60) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(60) :: raster_file_elevation_cmd		=   'elevation from raster file'
-        character(60) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
-        character(60) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
-        character(60) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
-        character(60) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
-        character(60) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
+    character(60) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
         
     !---------------------------------------------------Selection and assignment options
     character(60) :: MUSG_ActiveDomain_CMD	                =   'active domain'
@@ -143,32 +123,9 @@
     character(60) :: MUSG_End_CMD=	'end'
     character(256) :: MUSG_CMD
     
-    character(MAXLBL) :: FName
     integer  :: FNum
     character(MAXSTRING) :: line
-    
-    integer :: nn_temp, ne_temp
 
-    logical :: zone_by_template=.false.
-    logical :: layer_defined=.false.
-        
-    integer :: user_nz
-    integer :: user_maxnlayer=50
-    real(dr), allocatable  :: x(:)
-    real(dr), allocatable  :: y(:)
-    real(dr), allocatable  :: z(:)
-    integer, allocatable  :: in(:,:)
-    integer, allocatable  :: iprp(:)
-    integer, allocatable  :: ilyr(:)
-    real(dr), allocatable  :: zi(:)
-    real(dr), allocatable  :: top_elev(:)
-    real(dr), allocatable  :: base_elev(:)
-    character(60), allocatable  :: layer_name(:)
-    integer, allocatable  :: nsublayer(:)
-        
-    integer :: nsheet
-    integer :: nlayers
-    
     logical :: JustBuilt=.false.
     
     integer :: ActiveDomain=0
@@ -636,8 +593,6 @@
         integer :: FNumMUT
         character(*) :: prefix
         type (ModflowProject) Modflow
-        
-        integer :: i
         
         Modflow.MUTPrefix=prefix
            
@@ -1115,6 +1070,7 @@
    subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
         implicit none
 
+        character(MAXSTRING) :: FName
         integer :: FNumMUT
         character(*) :: prefix
         type (ModflowProject) Modflow
@@ -1248,19 +1204,19 @@
                 call TemplateToTecplot(Modflow,TMPLT)
                 call TecplotToIaJaStructure(TMPLT)
             
-            else if(index(MUSG_CMD, MUSG_GenerateSWFDomain_CMD)  /= 0) then
-                call MUSG_GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
+            else if(index(MUSG_CMD, GenerateSWFDomain_CMD)  /= 0) then
+                call GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
                 call BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
                 JustBuilt=.true.
             
-            else if(index(MUSG_CMD, MUSG_GenerateCLNDomain_CMD)  /= 0) then
-                call MUSG_GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
+            else if(index(MUSG_CMD, GenerateCLNDomain_CMD)  /= 0) then
+                call GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
                 !call TecplotToIaJaStructure(TECPLOT_CLN)
                 !call BuildModflowCLNDomain(FNumMUT,Modflow,TMPLT,TECPLOT_CLN)
                 !JustBuilt=.true.
 
-            else if(index(MUSG_CMD, MUSG_GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call MUSG_GenerateLayeredGWFDomain(FnumMUT,TMPLT,TECPLOT_GWF)
+            else if(index(MUSG_CMD, GenerateLayeredGWFDomain_CMD)  /= 0) then
+                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,TECPLOT_GWF)
                 if(Modflow.NodalControlVolume) then
                     call Msg('Build node-centred control volume ia,ja from SWF domain')
                     call NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
@@ -1426,11 +1382,11 @@
                     !call MUSG_ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
                     ! this will be done later
                 case (iGWF)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.GWF,TMPLT)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.GWF)
                 case (iSWF)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.SWF,TMPLT)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.SWF)
                 case (iCLN)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.CLN,TMPLT)
+                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.CLN)
                 end select
             
              else if(index(MUSG_CMD, MUSG_ChooseAllZones_CMD)  /= 0) then
@@ -1564,236 +1520,6 @@
 
     end subroutine BuildModflowUSG
 
-    ! Build routines
-    !----------------------------------------------------------------------
-    subroutine MUSG_2dMeshFromGb(FNumMUT,TMPLT)
-        implicit none
-    
-        integer :: FNumMUT
-        type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        
-        character(128) :: GBPrefix
-
-        integer :: i,j
-        real*8 :: x(3),y(3)
-        real*8 :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
-        
-        
-       TMPLT.name='TMPLT'
-
-        !rgm oct-95  added this so only grid builder prefix needed
-        !     prefix of grid files
-        read(FNumMut,'(a80)') GBPrefix
-
-        inquire(file=trim(GBprefix)//'.grd',exist=FileExists)
-        if(.not. FileExists) then
-            call ErrMsg('File not found: '//trim(GBprefix)//'.grd')
-        end if
-
-        TMPLT.nNodesPerElement=3
-        TMPLT.ElementType='fetriangle'
-        
-        !     NODE COORDINATES
-	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.xyc',form='unformatted')
-        read(itmp)TMPLT.nNodes
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d node arrays')
-        TMPLT.x = 0 ! automatic initialization
-        TMPLT.y = 0 ! automatic initialization
-        TMPLT.z = 0 ! automatic initialization
-        read(itmp) (TMPLT.x(i),TMPLT.y(i),i=1,TMPLT.nNodes)
-	    call freeunit(itmp)
-
-        !     ELEMENT INCIDENCES
-	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.in3',form='unformatted')
-        read(itmp)TMPLT.nElements
-        allocate(TMPLT.iZone(TMPLT.nElements),TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements),&
-           TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
-        TMPLT.iZone = 0 ! automatic initialization
-        TMPLT.iNode = 0 ! automatic initialization
-        TMPLT.iLayer = 1 ! automatic initialization
-        read(itmp) (TMPLT.iNode(1,i),TMPLT.iNode(2,i),TMPLT.iNode(3,i),i=1,TMPLT.nElements)
-	    call freeunit(itmp)
-
-        !     Element area numbers
-	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')
-        read(itmp) (TMPLT.iZone(i),i=1,TMPLT.nElements)
-	    call freeunit(itmp)
-        
-        allocate(TMPLT.ElementArea(TMPLT.nElements),TMPLT.rCircle(TMPLT.nElements),TMPLT.xCircle(TMPLT.nElements),&
-            TMPLT.yCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
-            TMPLT.zElement(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'GB Inner circle arrays')
-        
-        allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'GB SideLlength array')
-
-        do i=1,TMPLT.nElements
-            ! xc and yc from circumcircles
-            if(TMPLT.nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
-            do j=1,TMPLT.nNodesPerElement
-                x(j)=TMPLT.x(TMPLT.iNode(j,i))
-                y(j)=TMPLT.y(TMPLT.iNode(j,i))
-            end do
-            call InnerCircle(x,y,TMPLT.ElementArea(i),xc,yc,TMPLT.rCircle(i),lseg,aseg,dseg)
-            
-            TMPLT.SideLength(1,i)=lseg(1,2)
-            TMPLT.SideLength(2,i)=lseg(2,3)
-            TMPLT.SideLength(3,i)=lseg(3,1)
-           
-            TMPLT.xCircle(i)=xc
-            TMPLT.yCircle(i)=yc
-                
-                
-            ! zc from centroid of the iNode array coordinates
-            zc=0.0
-            do j=1,3
-                zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-            end do
-                
-            TMPLT.xElement(i)=xc
-            TMPLT.yElement(i)=yc
-            TMPLT.zElement(i)=zc/3
-           
-        end do
-                    
-        
-        TMPLT.InnerCircles=.true.
-        TMPLT.IsDefined=.true.
-        allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT Element_Is array')            
-        TMPLT.Element_Is(:)=0
-
-        write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT.nNodes
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)') '        Number of elements               ',TMPLT.nElements
-        call Msg(TmpSTR)
-
-        return
-    end subroutine MUSG_2dMeshFromGb
-    !----------------------------------------------------------------------
-    subroutine MUSG_2dQuadtreeMeshFromGWV(FNumMUT,TMPLT)
-        implicit none
-    
-        integer :: FNumMUT
-        type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        
-        integer :: i,j, i1, i2
-        real(dr) :: r1, r2, r3
-        
-        
-        TMPLT.name='TMPLT'
-
-		read(FNumMUT,'(a)') FName
-		call Msg(TAB//TAB//'Quadtree file '//trim(FName))
-
-        call OpenAscii(itmp,FName)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-        
-        ! read initial comment lines beginning with #
-        do 
-            read(itmp,'(a)') line
-            if(line(1:1).eq.'#') then
-                write(*,'(a)') line
-                cycle
-            end if
-            backspace(itmp)
-            exit
-        end do
-
-        read(itmp,*) TMPLT.meshtype
-        read(itmp,*) TMPLT.nElements, TMPLT.nLayers, i1, i2
-        read(itmp,*) TMPLT.nNodes
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes), stat=ialloc)
-        call AllocChk(ialloc,'SWF node coordinate arrays')
-        TMPLT.x = 0 ! automatic initialization
-        TMPLT.y = 0 ! automatic initialization
-        TMPLT.z = 0 ! automatic initialization
-        
-        read(itmp,*) (TMPLT.x(i),TMPLT.y(i),TMPLT.z(i),i=1,TMPLT.nNodes)
-        
-        ! determine the number of nodes per Element (TMPLT.nNodesPerElement)
-        read(itmp,*) i1,r1,r2,r3,i2,TMPLT.nNodesPerElement
-        backspace(itmp)
-        allocate(TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        allocate(TMPLT.xElement(TMPLT.nElements),TMPLT.yElement(TMPLT.nElements),TMPLT.zElement(TMPLT.nElements),TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'SWF iNode, xyzElement arrays')
-        
-        TMPLT.iNode = 0 ! automatic initialization
-        do i=1,TMPLT.nElements
-            read(itmp,*) i1,TMPLT.xElement(i),TMPLT.yElement(i),TMPLT.zElement(i),TMPLT.iLayer(i),i2,(TMPLT.iNode(j,i),j=1,TMPLT.nNodesPerElement)
-        end do
-	    call freeunit(itmp)
-        
-        TMPLT.IsDefined=.true.
-
-        write(TmpSTR,'(i10)') TMPLT.nElements 
-        call Msg('nElements: '//TmpSTR)
-        allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT Element_Is array')            
-        TMPLT.Element_Is(:)=0
-
-
-        TMPLT.ElementType='fequadrilateral'
-        
-        allocate(TMPLT.iZone(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT iZone array')
-        TMPLT.iZone(:) = 1 ! automatic initialization
-        
-        allocate(TMPLT.ElementArea(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT ElementArea array')
-        
-        !allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'GB SideLlength array')
-        
-        do i=1,TMPLT.nElements
-            ! xc and yc quadtree element side lengths
-            TMPLT.ElementArea(i)=(TMPLT.x(TMPLT.iNode(4,i))-TMPLT.x(TMPLT.iNode(1,i))) * &
-                                 (TMPLT.y(TMPLT.iNode(2,i))-TMPLT.y(TMPLT.iNode(1,i)))
-            !do j=1,TMPLT.nNodesPerElement
-            !    x(j)=TMPLT.x(TMPLT.iNode(j,i))
-            !    y(j)=TMPLT.y(TMPLT.iNode(j,i))
-            !end do
-            !call InnerCircle(x,y,TMPLT.ElementArea(i),xc,yc,TMPLT.rCircle(i),lseg,aseg,dseg)
-            !
-            !TMPLT.SideLength(1,i)=lseg(1,2)
-            !TMPLT.SideLength(2,i)=lseg(2,3)
-            !TMPLT.SideLength(3,i)=lseg(3,1)
-            !
-            !TMPLT.xCircle(i)=xc
-            !TMPLT.yCircle(i)=yc
-            !    
-            !    
-            !! zc from centroid of the iNode array coordinates
-            !zc=0.0
-            !do j=1,3
-            !    zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-            !end do
-            !    
-            !TMPLT.xElement(i)=xc
-            !TMPLT.yElement(i)=yc
-            !TMPLT.zElement(i)=zc/3
-            !
-        end do
-                    
-        
-        !TMPLT.InnerCircles=.true.
-        TMPLT.IsDefined=.true.
-    
-        write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT.nNodes
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)') '        Number of elements               ',TMPLT.nElements
-        call Msg(TmpSTR)
-
-        return
-    end subroutine MUSG_2dQuadtreeMeshFromGWV
        !----------------------------------------------------------------------
     subroutine MUSG_SMSParamterSetNumber(FNumMUT) 
         implicit none
@@ -1970,7 +1696,7 @@
         integer :: i, j
 	    integer :: nLayer_bot, nLayer_top, ncount, iNode
 
-        character*80 :: fname
+        character(MAXSTRING) :: FName
         character*80 :: dummy
         logical :: togon(domain.nNodes)
 
@@ -2046,7 +1772,7 @@
         integer :: i
 	    integer :: ncount
 
-        character*80 :: fname
+        character(MAXSTRING) :: FName
         character*80 :: dummy
         logical :: togon(TMPLT.nNodes)
 
@@ -2519,18 +2245,16 @@
 
     end subroutine MUSG_ChooseCellsFromGBNodesTemplate
 !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromFile(FNumMUT,domain,TMPLT) 
+    subroutine MUSG_ChooseCellsFromFile(FNumMUT,domain) 
         implicit none
 
         integer :: FNumMUT
         type (ModflowDomain) Domain
-        type (TecplotDomain) TMPLT
 
         integer :: i
 	    integer :: ncount, iCell,status2
 
         character*80 fname
-!        character*80 dummy
         logical togon(domain.nCells)
 
 		read(FNumMUT,'(a)') fname
@@ -2538,11 +2262,6 @@
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown')
-      !  read(itmp) dummy
-      !  read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
-      !  if(status /= 0) then
-		    !call ErrMsg('While reading: '//fname)
-      !  end if
         togon(:)=.false.
         do
             read(itmp,*,iostat=status2) iCell
@@ -2550,39 +2269,13 @@
             togon(iCell)=.true.
         enddo
         
-        if(domain.name == 'GWF') then
-
-!            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            !nLayer_bot=max(nLayer_bot,1)
-            !nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            !nLayer_top=min(nLayer_top,Domain.nLayers)
-            !nLayer_top=max(nLayer_top,1)
-        
-      !      write(TmpSTR,'(i5)') nLayer_top
-		    !call Msg(TAB//'From Layer: '//trim(TmpSTR))
-      !      write(TmpSTR,'(i5)') nLayer_bot
-		    !call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    !do j=nLayer_top,nLayer_bot
-                    !    iCell=(j-1)*domain.nCells+i
-                        call set(Domain.Cell_Is(i),chosen)
-                        ncount=ncount+1
-                    !end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    call set(Domain.Cell_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
+        ncount=0
+        do i=1,domain.nCells
+            if(togon(i)) then
+                call set(Domain.Cell_Is(i),chosen)
+                ncount=ncount+1
+            end if
+        end do
 
         write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
@@ -2592,73 +2285,7 @@
 
 
     end subroutine MUSG_ChooseCellsFromFile
-!    !----------------------------------------------------------------------
-!    subroutine MUSG_ChooseCellsFromFileTemplate(FNumMUT,TMPLT) 
-!        implicit none
-!
-!        integer :: FNumMUT
-!        type (TecplotDomain) TMPLT
-!
-!        integer :: i, j
-!	    integer :: nLayer_bot, nLayer_top, ncount, iElement
-!
-!        character*80 fname
-!!        character*80 dummy
-!        logical togon(TMPLT.nCells)
-!
-!		read(FNumMUT,'(a)') fname
-!		call Msg(TAB//'Choose Cells from '//trim(fname))
-!
-!        call getunit(itmp)
-!        open(itmp,file=fname,status='unknown')
-!      !  read(itmp) dummy
-!      !  read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
-!      !  if(status /= 0) then
-!		    !call ErrMsg('While reading: '//fname)
-!      !  end if
-!        
-!        if(TMPLT.name == 'GWF') then
-!
-!            read(FNumMUT,*) nLayer_top,nLayer_bot
-!        
-!            nLayer_bot=max(nLayer_bot,1)
-!            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-!            nLayer_top=min(nLayer_top,TMPLT.nLayers)
-!            nLayer_top=max(nLayer_top,1)
-!        
-!            write(TmpSTR,'(i5)') nLayer_top
-!		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-!            write(TmpSTR,'(i5)') nLayer_bot
-!		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-!
-!            ncount=0
-!            do i=1,TMPLT.nNodes
-!                if(togon(i)) then
-!                    do j=nLayer_top,nLayer_bot
-!                        iElement=(j-1)*TMPLT.nNodes+i
-!                        call set(TMPLT.Element_Is(iElement),chosen)
-!                        ncount=ncount+1
-!                    end do
-!                end if
-!            end do
-!        else
-!            ncount=0
-!            do i=1,TMPLT.nNodes
-!                if(togon(i)) then
-!                    call set(TMPLT.Element_Is(i),chosen)
-!                    ncount=ncount+1
-!                end if
-!            end do
-!        end if
-!
-!        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Nodes chosen: ',ncount
-!        call Msg(trim(TmpSTR))
-!	    if(ncount == 0) call ErrMsg('No Nodes chosen')
-!	    
-!        call freeunit(itmp)
-!
-!
-!    end subroutine MUSG_ChooseCellsFromFileTemplate
+
     !----------------------------------------------------------------------
     subroutine MUSG_FlagChosenNodesAsOuterBoundary(domain) 
         implicit none
@@ -3401,118 +3028,6 @@
     end subroutine MUSG_AssignRCHtoDomain
    
     !----------------------------------------------------------------------
-    subroutine MUSG_GenerateSWFDomain(FNumMUT,TMPLT,TECPLOT_SWF)
-        implicit none
-    
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
-
-	    ! Given the template (i.e. a 2D mesh), define SWF TECPLOT_SWF 
-
-        integer :: i, j
-        
-        ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
-
-        ! Copy the template data to the Modflow SWF data structure
-        TECPLOT_SWF.name='TECPLOT_SWF'
-        TECPLOT_SWF.meshtype='UNSTRUCTURED'
-        
-        TECPLOT_SWF.nNodes=TMPLT.nNodes
-        allocate(TECPLOT_SWF.x(TECPLOT_SWF.nNodes),TECPLOT_SWF.y(TECPLOT_SWF.nNodes),TECPLOT_SWF.z(TECPLOT_SWF.nNodes), stat=ialloc)
-        call AllocChk(ialloc,'SWF node coordinate arrays')
-        TECPLOT_SWF.x(:)= TMPLT.x(:)
-        TECPLOT_SWF.y(:)= TMPLT.y(:)
-
-        ! Define elevation (z coordinate) of SWF TECPLOT_SWF
-        allocate(top_elev(TMPLT.nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Template top elevation arrays')
-
-	    ! Process slice to layer instructions
-        read_slice2lyr: do
-            read(FNumMUT,'(a60)',iostat=status) MUSG_CMD
-            if(status /= 0) exit
-
-            call lcase(MUSG_CMD)
-
-            if(index(MUSG_CMD,'end') /= 0) then
-                call Msg(TAB//'end generate swf domain instructions')
-                exit read_slice2lyr
-            else
-                call Msg('')
-                call Msg(TAB//MUSG_CMD)
-            end if
-                
-
-            if(index(MUSG_CMD, top_elevation_cmd)  /= 0) then
-                call top_elevation(FNumMUT,TMPLT)
-			    do j=1,TMPLT.nNodes
-				    TECPLOT_SWF.z(j)=top_elev(j)
-			    end do
-
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
-            end if
-
-        end do read_slice2lyr
-        
-        
-        
-        TECPLOT_SWF.nLayers=1
-        !TECPLOT_SWF.iz=0
-        !TECPLOT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
-
-        
-        TECPLOT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-        TECPLOT_SWF.ElementType=TMPLT.ElementType
-        TECPLOT_SWF.nElements=TMPLT.nElements
-        
-        ! Just define these for now
-        !TECPLOT_SWF.ic=0
-        
-        ! Element node list
-        allocate(TECPLOT_SWF.iNode(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element node list array')
-        do i=1,TECPLOT_SWF.nElements
-            do j=1,TECPLOT_SWF.nNodesPerElement
-                TECPLOT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
-            end do
-        end do
-        
-        ! Element side lengths
-        allocate(TECPLOT_SWF.SideLength(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element SideLength array')
-        do i=1,TECPLOT_SWF.nElements
-            do j=1,TECPLOT_SWF.nNodesPerElement
-                TECPLOT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
-            end do
-        end do
-        
-        ! Element layer number
-        allocate(TECPLOT_SWF.iLayer(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element layer number array')
-        do i=1,TECPLOT_SWF.nElements
-            TECPLOT_SWF.iLayer(i) = 1
-        end do
-        
-
-        ! Element zone number
-        allocate(TECPLOT_SWF.iZone(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' iZone arrays')
-        do i=1,TECPLOT_SWF.nElements
-            TECPLOT_SWF.iZone(i) = TMPLT.iZone(i) 
-            if(TMPLT.iZone(j).gt.TECPLOT_SWF.nZones) TECPLOT_SWF.nZones=TMPLT.iZone(j)
-        end do
-
-        TECPLOT_SWF.IsDefined=.true.
-        
-        allocate(TECPLOT_SWF.Element_Is(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element_Is array')            
-        TECPLOT_SWF.Element_Is(:)=0
-    
-    end subroutine MUSG_GenerateSWFDomain
-    !----------------------------------------------------------------------
     subroutine BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
         implicit none
     
@@ -4106,584 +3621,6 @@
         end do
     
     end subroutine MeshCentredSWFCellGeometry
-    !----------------------------------------------------------------------
-    subroutine MUSG_GenerateLayeredGWFDomain(FNumMUT,TMPLT,TECPLOT_GWF)
-        implicit none
-    
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_GWF
-
-	    ! Given a 2D mesh, define top elevation, layer bottoms and sublayering interactively.
-
-        integer :: i, j
-        
-        if(TMPLT.nNodes < 1000) then
-            user_nz=1000
-        else
-            user_nz=60
-        endif
-
-        nn_temp=user_nz*TMPLT.nNodes
-        ne_temp=(user_nz-1)*TMPLT.nElements
-        
-        ! NOTE: Option exists to search GB .grd file for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
-        !blockel=.false.
-        nln=TMPLT.nNodesPerElement*2
-
-        ! Set up arrays to store grid
-	    allocate(x(nn_temp),y(nn_temp),z(nn_temp),in(nln,ne_temp),iprp(ne_temp),ilyr(ne_temp),zi(user_nz),stat=ialloc)
-        call AllocChk(ialloc,'3d temp grid arrays')
-        x(:) = 0.0d0
-        y(:) = 0.0d0
-        z(:) = 0.0d0
-        in(:,:) = 0
-        iprp(:) = 0
-        ilyr(:) = 0
-        zi(:) = 0.0d0
-
-        if(.not. allocated(top_elev)) then  ! could have been allocated if SWF TECPLOT_GWF defined
-            allocate(base_elev(TMPLT.nNodes),top_elev(TMPLT.nNodes),stat=ialloc)
-        else
-            allocate(base_elev(TMPLT.nNodes),stat=ialloc)
-        end if
-        call AllocChk(ialloc,'Slice2lyr base/top arrays')
-
-	    ! set default base and top elevation for problem
-        base_elev(: ) = 0.0d0
-        top_elev(: ) = 0.0d0
-
-	    ! Assign xyz coordinates for top
-        do j=1,TMPLT.nNodes
-            x(j)=TMPLT.x(j)
-            y(j)=TMPLT.y(j)
-            z(j)=top_elev(j)
-        end do
-
-        TECPLOT_GWF.nZones=1
-        nsheet=1
-
-	    ! Define mesh layers and sublayers
-        allocate(layer_name(user_maxnlayer),nsublayer(user_maxnlayer),stat=ialloc)
-        call AllocChk(ialloc,'slice2lyr_interactive layer arrays')
-        layer_name(: ) = ''
-        nsublayer(: ) = 0
-
-	    ! Process slice to layer instructions
-
-        read_slice2lyr: do
-            read(FNumMUT,'(a60)',iostat=status) MUSG_CMD
-            if(status /= 0) exit
-
-            call lcase(MUSG_CMD)
-
-            if(index(MUSG_CMD,'end') /= 0) then
-                call Msg(TAB//'end generate gwf domain instructions')
-                exit read_slice2lyr
-            else
-                call Msg('')
-                call Msg(TAB//MUSG_CMD)
-            end if
-                
-
-            if(index(MUSG_CMD, zone_by_template_cmd)  /= 0) then
-			    if(layer_defined) then
-                    call ErrMsg('   Use this instruction before defining any new layers')
-			    end if
-                zone_by_template=.true.
-
-            else if(index(MUSG_CMD, top_elevation_cmd)  /= 0) then
-			    if(layer_defined) then
-                    call ErrMsg('   Use this instruction before defining any new layers')
-			    end if
-                call top_elevation(FNumMUT,TMPLT)
-			    do j=1,TMPLT.nNodes
-				    z(j)=top_elev(j)
-			    end do
-
-            else if(index(MUSG_CMD, new_layer_cmd)  /= 0) then
-                call new_layer(FNumMUT,TMPLT,zone_by_template)
-			    layer_defined=.true.
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate gwf domain')
-            end if
-
-        end do read_slice2lyr
-        
-        
-        ! Copy the local mesh the the Modflow GWF data structure
-        TECPLOT_GWF.name='TECPLOT_GWF'
-        TECPLOT_GWF.meshtype='UNSTRUCTURED'
-        TECPLOT_GWF.nNodes=TMPLT.nNodes*nsheet
-        allocate(TECPLOT_GWF.x(TECPLOT_GWF.nNodes),TECPLOT_GWF.y(TECPLOT_GWF.nNodes),TECPLOT_GWF.z(TECPLOT_GWF.nNodes), stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' node coordinate arrays')
-        do i=1,TECPLOT_GWF.nNodes
-            TECPLOT_GWF.x(i)= x(i)
-            TECPLOT_GWF.y(i)= y(i)
-            TECPLOT_GWF.z(i)= z(i)
-        end do
-        
-        TECPLOT_GWF.nLayers=nsheet-1
-        
-        TECPLOT_GWF.nNodesPerElement=TMPLT.nNodesPerElement*2
-        TECPLOT_GWF.nElements=TMPLT.nElements*(nsheet-1)
-        
-        ! Just define these for now
-        !TECPLOT_GWF.ic=0
-        
-        
-        ! Cell node list
-        allocate(TECPLOT_GWF.iNode(TECPLOT_GWF.nNodesPerElement,TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element node list array')
-        do i=1,TECPLOT_GWF.nElements
-            do j=1,TECPLOT_GWF.nNodesPerElement
-                TECPLOT_GWF.iNode(j,i) = in(j,i) 
-            end do
-        end do
-        
-        ! Element layer number
-        allocate(TECPLOT_GWF.iLayer(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element layer number array')
-        do i=1,TECPLOT_GWF.nElements
-            TECPLOT_GWF.iLayer(i) = ilyr(i) 
-        end do
-        
-
-        ! Element zone number
-        allocate(TECPLOT_GWF.iZone(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' iZone arrays')
-        do i=1,TECPLOT_GWF.nElements
-            TECPLOT_GWF.iZone(i) = iprp(i) 
-        end do
-        if(zone_by_template) then
-            TECPLOT_GWF.nZones=TMPLT.nZones
-        else
-            TECPLOT_GWF.nZones=nlayers
-        end if
-        
-        TECPLOT_GWF.ElementType='febrick'
-
-        nz=nsheet
-        zi(nsheet)=z((nsheet-1)*TMPLT.nNodes+1)
-        
-        TECPLOT_GWF.IsDefined=.true.
-
-        allocate(TECPLOT_GWF.Element_Is(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element_Is array')            
-        TECPLOT_GWF.Element_Is(:)=0
-    
-    end subroutine MUSG_GenerateLayeredGWFDomain
-    !----------------------------------------------------------------------
-    subroutine top_elevation(FNumMUT,TMPLT)
-        implicit none
-
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-
-        integer :: j
-        character(120) :: topfile
-        real(dr) :: top_offset
-        logical :: offset_top
-
-	    offset_top = .false.
-	    top_offset=0.0
-
-	    ! Change default behaviours and top elevation
-        read_top: do
-            read(FNumMUT,'(a)',iostat=status) MUSG_CMD
-            if(status /= 0) exit
-
-            call lcase(MUSG_CMD)
-            if(index(MUSG_CMD, 'end') /=0) then
-                call Msg(TAB//'end top elevation instructions')
-                exit read_top
-            else
-                call lcase(MUSG_CMD)
-                call Msg(TAB//MUSG_CMD)
-            end if    
-
-            if(index(MUSG_CMD,constant_elevation_cmd) /=0) then
-                read(FNumMUT,*) top_elev(1)
-                write(TmpSTR,'(2g15.5)') top_elev(1)
-                call Msg(TAB//trim(TmpSTR))
-                do j=2,TMPLT.nNodes
-	                top_elev(j)=top_elev(1)
-                end do
-
-            elseif(index(MUSG_CMD, offset_top_cmd) /=0) then
-                offset_top = .true.
-                read(FNumMUT,*) top_offset
-			    write(TmpSTR,'(2g15.5)') top_offset
-                call Msg(TAB//trim(TmpSTR))
-
-            elseif(index(MUSG_CMD, gb_file_elevation_cmd) /=0) then
-			    read(FNumMUT,'(a)') topfile
-			    call Msg('              Top elevation from '//trim(topfile))
-                call read_gb_nprop(topfile,top_elev,TMPLT.nNodes)
-
-            elseif(index(MUSG_CMD,ascii_file_elevation_cmd) /=0) then
-			    read(FNumMUT,'(a)') topfile
-			    call Msg('              Top elevation from '//trim(topfile))
-                call ascii_file_elevation(topfile,top_elev,TMPLT.nNodes)
-                
-            elseif(index(MUSG_CMD, xz_pairs_elevation_cmd) /=0) then
-                call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
-                
-       !     elseif(instruction .eq. raster_file_elevation_cmd) /=0) then
-			    !read(FNumMUT,'(a)') topfile
-			    !write(ieco,*) 'System top from file ',topfile
-       !         call read_raster_to_mesh_elev(topfile,top_elev)
-
-       !     elseif(index(MUSG_CMD, bilinear_function_elevation_cmd) /=0) then
-       !         call bilinear_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-       !
-       !     elseif(index(MUSG_CMD, sine_function_elevation_cmd) /=0) then
-       !         call sine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-       !
-       !     elseif(index(MUSG_CMD, cosine_function_elevation_cmd) /=0) then
-       !         call cosine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: top elevation')
-            end if
-
-        end do read_top
-    
-	    if(offset_top) then
-            do j=1,TMPLT.nNodes
-                top_elev(j)=top_elev(j)+top_offset
-		    end do
-
-	    end if
-    
-
-
-    end subroutine top_elevation
-    !----------------------------------------------------------------------
-    subroutine read_gb_nprop(fname,nprop,maxnnp)
-        implicit none
-
-        integer :: i
-        integer :: maxnnp
-
-        character*(*) fname
-        character*11 file_type
-        real*8 :: nprop(maxnnp)
-        real*4 :: nprop_gb(maxnnp)
-	    character(80) :: dtitle
-
-        inquire(file=fname,exist=FileExists,form=file_type)
-        if(.not. FileExists) then
-            call ErrMsg(' File not found: '//fname)
-        end if
-
-
-	    call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-
-	    read(itmp) dtitle
-	    read(itmp) (nprop_gb(i),i=1,maxnnp)
-	    nprop(:) =nprop_gb(:)
-
-	    call freeunit(itmp)
-
-    end subroutine read_gb_nprop
-    !----------------------------------------------------------------------
-    subroutine ascii_file_elevation(fname,nprop,maxnnp)
-        implicit none
-
-        integer :: i
-        integer :: maxnnp
-
-        character*(*) fname
-        character*11 file_type
-        real*8 :: nprop(maxnnp)
-	    character(80) :: dtitle
-
-        inquire(file=fname,exist=FileExists,form=file_type)
-        if(.not. FileExists) then
-            call ErrMsg(' File not found: '//fname)
-        end if
-
-
-	    call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='formatted')
-
-	    read(itmp,'(a)') dtitle
-	    read(itmp,*) (nprop(i),i=1,maxnnp)
-
-	    call freeunit(itmp)
-
-    end subroutine ascii_file_elevation
-    !----------------------------------------------------------------------
-    subroutine new_layer(FNumMUT,TMPLT,zone_by_template)
-        implicit none
-        
-        integer :: FNumMUT
-        type (TecplotDomain)  TMPLT
-
-        integer :: j,k
-        logical :: zone_by_template
-        character(120) :: basefile
-
-        real(dr), allocatable :: sub_thick(:)
-        !real(dr) :: zelev
-        real(dr) :: z_added
-        !real(dr) :: zelev_proportional
-        real(dr) :: sub_thick_frac
-	    real(dr) :: tot_thick
-        real(dr) :: base_offset
-
-	    integer :: node_fixed
-	    integer :: node3d
-	    integer :: nel3d
-
-        logical :: minimum_layer_thickness
-        logical :: offset_base
-	    logical :: proportional_sublayering
-
-	    integer :: nz_temp=0	
-
-        nlayers=nlayers+1
-
-	    proportional_sublayering=.false.
-	    minimum_layer_thickness = .false.
-	    offset_base = .false.
-	    base_offset=0.0
-	    nsublayer(nlayers)=1  ! default - no sublayering
-
-        write(layer_name(nlayers),'(a,i5)') 'Layer ',nlayers ! default name
-
-
-        read_layer_instructions: do
-            read(FNumMUT,'(a)',iostat=status) MUSG_CMD
-            if(status /= 0) exit
-
-            call lcase(MUSG_CMD)
-            
-            if(index(MUSG_CMD,'end') /=0) then
-                call Msg(TAB//'end new layer instructions')
-                exit read_layer_instructions
-            else
-                call Msg(TAB//MUSG_CMD)
-            end if
-
-            if(index(MUSG_CMD,layer_name_cmd) /=0) then
-                read(FNumMUT,'(a)') layer_name(nlayers)
-                call Msg(TAB//layer_name(nlayers))
-
-            elseif(index(MUSG_CMD,minimum_layer_thickness_cmd) /=0) then
-			    minimum_layer_thickness = .true.
-			    read(FNumMUT,*) z_added
-			    write(ieco,*) TAB//'Enforce minimum layer thickness of ',z_added
-
-            elseif(index(MUSG_CMD,offset_base_cmd) /=0) then
-			    offset_base = .true.
-			    read(FNumMUT,*) base_offset
-			    write(ieco,*) TAB//'Offset layer base by ',base_offset
-
-            elseif(index(MUSG_CMD,uniform_sublayers_cmd) /=0) then
-			    read(FNumMUT,*) nsublayer(nlayers)
-			    nz_temp = nz_temp + nsublayer(nlayers) 		
-			    !call user_size_check(nz_temp,user_nz,user_nz_str)
-			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg(TAB//'Number of uniform sublayers '//trim(TmpSTR))
-
-            elseif(index(MUSG_CMD,proportional_sublayers_cmd) /=0) then
-			    proportional_sublayering=.true.
-			    read(FNumMUT,*) nsublayer(nlayers)
-			    nz_temp = nz_temp + nsublayer(nlayers) 		
-			    !call user_size_check(nz_temp,user_nz,user_nz_str)
-			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg(TAB//'Number of proportional sublayers '//trim(TmpSTR))
-
-                allocate(sub_thick(nsublayer(nlayers)),stat=ialloc)
-                call AllocChk(ialloc,'new_layer proportional sublayering array')
-                sub_thick(: )= 0.0d0
-                tot_thick=0.0
-                do j=1,nsublayer(nlayers)
-                    read(FNumMUT,*) sub_thick(j)
-                    tot_thick=tot_thick+sub_thick(j)
-                end do
-                call Msg(TAB//' Sub#   Thickness       Fraction')
-
-                do j=1,nsublayer(nlayers)
-                    sub_thick(j)=sub_thick(j)/tot_thick
-			        write(TmpSTR,'(i4,2g15.5)') j,sub_thick(j)*tot_thick,sub_thick(j)
-                    call Msg(TAB//trim(TmpSTR))
-                end do
-
-            elseif(index(MUSG_CMD,constant_elevation_cmd) /=0) then
-			    read(FNumMUT,*) base_elev(1)
-			    write(TmpSTR,'(2g15.5)') base_elev(1)
-                call Msg(TAB//trim(TmpSTR))
-			    do j=2,TMPLT.nNodes
-				    base_elev(j)=base_elev(1)
-			    end do
-
-
-            elseif(index(MUSG_CMD,gb_file_elevation_cmd) /=0) then
-			    read(FNumMUT,'(a)') basefile
-			    call Msg(TAB//'Base elevation from '//trim(basefile))
-                call read_gb_nprop(basefile,base_elev,TMPLT.nNodes)
-
-            elseif(index(MUSG_CMD,ascii_file_elevation_cmd) /=0) then
-			    read(FNumMUT,'(a)') basefile
-			    call Msg(TAB//'Base elevation from '//trim(basefile))
-                call ascii_file_elevation(basefile,base_elev,TMPLT.nNodes)
-                
-                
-
-            elseif(index(MUSG_CMD,xz_pairs_elevation_cmd) /=0) then
-                call xz_pairs_elevation(FNumMUT,base_elev,TMPLT)
-            
-       !     elseif(index(MUSG_CMD,raster_file_elevation_cmd) /=0) then
-			    !read(FNumMUT,'(a)') topfile
-			    !write(ieco,*) 'Layer top elevation from gb file  ',topfile
-       !         call read_raster_to_mesh_elev(topfile,top_elev)
-       !     
-       !     elseif(index(MUSG_CMD,bilinear_function_elevation_cmd) /=0) then
-       !         call bilinear_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-       !     
-       !     elseif(index(MUSG_CMD,sine_function_elevation_cmd) /=0) then
-       !         call sine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-       !     
-       !     elseif(index(MUSG_CMD,cosine_function_elevation_cmd) /=0) then
-       !         call cosine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
-       !     
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: new layer')
-            end if
-
-        end do read_layer_instructions
-
-	    if(offset_base) then
-            do j=1,TMPLT.nNodes
-                base_elev(j)=base_elev(j)+base_offset
-		    end do
-
-	    end if
-
-	    sub_thick_frac=0.0
-        do k=1,nsublayer(nlayers)
-            if(proportional_sublayering) sub_thick_frac=sub_thick_frac+sub_thick(k)
-
-           !         new nodes
-            node_fixed=0
-            do j=1,TMPLT.nNodes
-                if(base_elev(j) >= top_elev(j)) then
-                    !rt-jun01
-                    if(.not. minimum_layer_thickness) then
-                        write(ieco,*) ' Error: Base of layer ',nlayers,' >= top'
-                        write(ieco,*) ' At x: ',TMPLT.x(j),' y: ',TMPLT.y(j)
-                        write(ieco,*) ' Base elev= ', base_elev(j),' top elev= ',top_elev(j)
-
-                        write(*,*) ' Error: Base of layer ',nlayers,' >= top'
-                        write(*,*) ' At x: ',TMPLT.x(j),' y: ',TMPLT.y(j)
-                        write(*,*) ' Base elev= ', base_elev(j),' top elev= ',top_elev(j)
-                        call ErrMsg('Base elevation > top. See above.')
-                    else
-                        base_elev(j) = top_elev(j) - z_added
-                        node_fixed = node_fixed + 1
-                    end if
-                else if(minimum_layer_thickness .and. (base_elev(j) + top_elev(j) > z_added)) then
-                    base_elev(j) = top_elev(j) - z_added
-                    node_fixed = node_fixed + 1
-                end if
-                node3d=nsheet*TMPLT.nNodes+j
-                x(node3d)=TMPLT.x(j)
-                y(node3d)=TMPLT.y(j)
-                if(proportional_sublayering) then
-                    z(node3d)=zelev_proportional(top_elev(j),base_elev(j),sub_thick_frac,1.0d0)
-                else
-                    z(node3d)=zelev(top_elev(j),base_elev(j),k,nsublayer(nlayers))
-                end if
-            end do
-
-            !         new elements
-            do j=1,TMPLT.nElements
-                nel3d=(nsheet-1)*TMPLT.nElements+j
-                ilyr(nel3d)=nsheet
-                if(nln==6) then ! prisms from triangles
-                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNodes
-                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNodes
-                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNodes
-                    in(4,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNodes
-                    in(5,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNodes
-                    in(6,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNodes
-                    if(zone_by_template) then
-                        iprp(nel3d)=TMPLT.iZone(j)
-                    else
-                        iprp(nel3d)=nlayers
-                    end if
-                else ! blocks from rectangles, not currently supported
-                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNodes
-                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNodes
-                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNodes
-                    in(4,nel3d)=TMPLT.iNode(4,j)+nsheet*TMPLT.nNodes
-				    in(5,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNodes
-                    in(6,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNodes
-                    in(7,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNodes
-                    in(8,nel3d)=TMPLT.iNode(4,j)+(nsheet-1)*TMPLT.nNodes
-        
-                    if(zone_by_template) then
-                        iprp(nel3d)=TMPLT.iZone(j)
-                    else
-                        iprp(nel3d)=nlayers
-                    end if
-    
-                end if
-            end do
-
-
-            zi(nsheet)=z((nsheet-1)*TMPLT.nNodes+1)
-            nsheet=nsheet+1
-            !call user_size_check(nsheet+1,user_nz,user_nz_str)
-        end do
-
-        if(minimum_layer_thickness) then
-            write(ieco,*) ' Number of nodes for layer ',nlayers
-            write(ieco,*) '  that have had their base elevation modified'
-            write(ieco,*) ' by subtracting ',z_added,' is equal to',node_fixed
-        end if
-
-	    ! initialize base elevation for (potential) next layer
-        do j=1,TMPLT.nNodes
-            top_elev(j)=base_elev(j)
-        end do
-
-        if(allocated(sub_thick)) deallocate(sub_thick)
-        
-
-    end subroutine new_layer
-
-    !----------------------------------------------------------------------
-    function zelev(top,base,k,nk)
-        implicit none
-
-        real(dr) :: zelev
-	    integer :: k, nk
-	    real(dr) :: base, top
-
-        zelev=top-(top-base)*k/(nk)
-
-    end function zelev
-
-    !----------------------------------------------------------------------
-    function zelev_proportional(top,base,rsub,rsubtot)
-        implicit none
-
-	    real(dr) :: zelev_proportional
-	
-	    real(dr) :: base, top, rsub, rsubtot
-
-        zelev_proportional=top-(top-base)*rsub/(rsubtot)
-
-        return
-    end function zelev_proportional
 
 
     !-------------------------------------------------------------
@@ -5269,7 +4206,7 @@
         type(TecplotDomain) domain
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i, j
 
         
@@ -5328,7 +4265,7 @@
         type(TecplotDomain) TMPLT
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i, j
 
         ! tecplot output file
@@ -5410,7 +4347,7 @@
         type(TecplotDomain) TECPLOT_SWF
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i, j
 
         ! tecplot output file
@@ -5517,7 +4454,7 @@
         type(TecplotDomain) TECPLOT_GWF
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i, j
 
         ! tecplot output file
@@ -5701,6 +4638,7 @@
         type(TecplotDomain) TMPLT
         
         integer :: i, j
+        character(MAXSTRING) :: FName
         
         if(TMPLT.InnerCircles) then
             FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_CircleCentres.tecplot.dat'
@@ -5756,10 +4694,6 @@
             call FreeUnit(FNum)
         
         end if
-        
-
-       
-
     
     end subroutine ModflowTMPLTScatterToTecplot
         !-------------------------------------------------------------
@@ -5769,6 +4703,7 @@
         type(ModflowDomain) domain
         
         integer :: i
+        character(MAXSTRING) :: FName
         
         If(allocated(domain.xCell)) then
             ! Write Modflow cell coordinates as tecplot scatter data
@@ -6338,7 +5273,7 @@
         type (ModflowProject) Modflow
         type (TecplotDomain) TECPLOT_SWF
 
-        integer :: i, j, i1, i2,nStrt,nEnd,k
+        integer :: i, j, i1, i2,k
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
         write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, Modflow.SWF.njag, Modflow.SWF.nCells,modflow.SWF.nZones, &
@@ -6462,8 +5397,8 @@
         type(TecplotDomain) domain
 
         integer :: Fnum
-        character(MAXLBL) :: FName
-        character(MAXLBL) :: FNameTecplotDat
+        character(MAXSTRING) :: FName
+        character(MAXSTRING) :: FNameTecplotDat
         integer :: i, j, nFaceNeighborConnections, nNodes, nElements, iNja 
         character(4000) :: output_line
         character(4000) :: var_line
@@ -15017,7 +13952,7 @@
 
         integer :: Fnum
         integer :: FnumTecplot
-        character(MAXLBL) :: FNameTecplot
+        character(MAXSTRING) :: FNameTecplot
         
         
         character(20) :: Varname(100)
@@ -15230,7 +14165,7 @@
         
         integer :: Fnum
         integer :: FNumStepPeriodTime
-        character(MAXLBL) :: FNameStepPeriodTime
+        character(MAXSTRING) :: FNameStepPeriodTime
         
         
         integer :: iTStep
@@ -15289,7 +14224,7 @@
         type (ModflowDomain) Domain
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i, j, nvar, nVarShared
 
         character(4000) :: VarSharedStr
@@ -15544,7 +14479,7 @@
         type (ModflowProject) Modflow
 
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         integer :: i
 
        

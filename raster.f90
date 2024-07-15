@@ -117,7 +117,7 @@ module Raster
 
         character(80) :: line
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         real :: min_elev, max_elev 
 
         ! Fracman mafic file 
@@ -223,7 +223,7 @@ module Raster
 
         integer :: j, k
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
 
         ! Fracman mafic file 
         read(FnumTG,'(a)') FName
@@ -376,10 +376,10 @@ module Raster
 
         integer :: i, j, k
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
 
         integer :: FnumXYZ
-        character(MAXLBL) :: FNameXYZ
+        character(MAXSTRING) :: FNameXYZ
 
         character(MAXLBL) :: line
        

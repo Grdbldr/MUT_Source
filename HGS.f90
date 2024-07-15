@@ -396,9 +396,9 @@ module HGS !
     integer :: FNumCoor
     integer :: FNumElem
     integer :: FNumActive
-    character(MAXLBL) :: FNameActive
+    character(MAXSTRING) :: FNameActive
     integer :: FNumContrib
-    character(MAXLBL) :: FNameContrib
+    character(MAXSTRING) :: FNameContrib
     integer :: FnumIhead
     integer :: FnumElemSet        
     integer :: FnumNodeSet        
@@ -684,7 +684,7 @@ module HGS !
         
         integer :: i, j
         logical :: FileExists
-        character(MAXLBL) :: fname
+        character(MAXSTRING) :: FName
 
      !   character(60) :: HGS_PorousMedia_CMD="porous media"
      !   character(60) :: HGS_Surface_CMD="surface"
@@ -971,7 +971,7 @@ module HGS !
         
         integer :: FnumTG
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         
         integer :: i, j
 
@@ -1071,7 +1071,7 @@ module HGS !
 !        type (HGSProject) hgs
 !        
 !        integer :: i
-!        character(MAXLBL) :: fname
+!        character(MAXSTRING) :: FName
 !    
 !    
 !	    call getunit(itmp)
@@ -1100,7 +1100,7 @@ module HGS !
 !        type (HGSProject) hgs
 !        
 !        integer :: i, j
-!        character(MAXLBL) :: fname
+!        character(MAXSTRING) :: FName
 !
 !        call getunit(itmp)
 !        open(itmp,file=fname,status='unknown',form='unformatted')
@@ -1124,7 +1124,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1145,7 +1145,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1168,7 +1168,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !
@@ -1193,7 +1193,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1225,7 +1225,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1249,7 +1249,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1273,7 +1273,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1296,7 +1296,7 @@ module HGS !
 !        integer :: i, j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !        
@@ -1366,7 +1366,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1454,7 +1454,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1542,7 +1542,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1630,7 +1630,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1715,7 +1715,7 @@ module HGS !
 !        integer :: j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        type (HGSProject) hgs
 !
@@ -1744,7 +1744,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        
 !        character(MAXLBL) :: line
 !
@@ -1787,7 +1787,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        
 !        character(MAXLBL) :: line
 !
@@ -1831,7 +1831,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum, FnumFluidProps
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        
 !        character(61), parameter :: kg_m_s_str			=   'units: kilogram-metre-second'
@@ -2079,7 +2079,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !                
 !        integer :: i, j
 !        integer :: node3d
@@ -2170,7 +2170,7 @@ module HGS !
 !                
 !        integer :: i
 !        integer :: FnumGbNchos
-!        character(MAXLBL) :: FnameGbNchos
+!        character(MAXSTRING) :: FNameGbNchos
 !
 !        character(80)       :: dummy 
 !        
@@ -2250,7 +2250,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !                
 !        integer :: i
 !	    real(dr) :: xe, ye, ze
@@ -2277,11 +2277,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumDt
-!        character(MAXLBL) :: FNameDt
+!        character(MAXSTRING) :: FNameDt
 !        integer :: FnumNewtNodes
-!        character(MAXLBL) :: FNameNewtNodes
+!        character(MAXSTRING) :: FNameNewtNodes
 !                
 !        integer :: i
 !        
@@ -2358,11 +2358,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FNumMnthlyFlow
-!        character(MAXLBL) :: FNameMnthlyFlow
+!        character(MAXSTRING) :: FNameMnthlyFlow
 !        integer :: FNumMnthlyFlow2
-!        character(MAXLBL) :: FNameMnthlyFlow2
+!        character(MAXSTRING) :: FNameMnthlyFlow2
 !                
 !        integer :: i, nvar
 !        
@@ -2479,9 +2479,9 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: FNumCumulCSV
-!        character(MAXLBL) :: FNameCumulCSV
+!        character(MAXSTRING) :: FNameCumulCSV
 !        integer :: FNumCumulDAT
-!        character(MAXLBL) :: FNameCumulDAT
+!        character(MAXSTRING) :: FNameCumulDAT
 !                
 !        integer :: i, j, k
 !        
@@ -2604,11 +2604,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FNumNrmlDrainDown
-!        character(MAXLBL) :: FNameNrmlDrainDown
+!        character(MAXSTRING) :: FNameNrmlDrainDown
 !        integer :: FNumNrmlDrainDownCSV
-!        character(MAXLBL) :: FNameNrmlDrainDownCSV
+!        character(MAXSTRING) :: FNameNrmlDrainDownCSV
 !                
 !        integer :: i, nvar
 !        
@@ -2752,11 +2752,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FNumFlow
-!        character(MAXLBL) :: FNameFlow
+!        character(MAXSTRING) :: FNameFlow
 !        integer :: FNumFlow2
-!        character(MAXLBL) :: FNameFlow2
+!        character(MAXSTRING) :: FNameFlow2
 !                
 !        integer :: i, nvar
 !        
@@ -2840,9 +2840,9 @@ module HGS !
 !         
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumPt
-!        character(MAXLBL) :: FNamePt
+!        character(MAXSTRING) :: FNamePt
 !
 !        character(MAXLBL) :: line
 !        character(MAXLBL) :: linePt
@@ -2904,9 +2904,9 @@ module HGS !
 !         
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumPt
-!        character(MAXLBL) :: FNamePt
+!        character(MAXSTRING) :: FNamePt
 !
 !        character(MAXLBL) :: line
 !                
@@ -2984,9 +2984,9 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumPt
-!        character(MAXLBL) :: FNamePt
+!        character(MAXSTRING) :: FNamePt
 !
 !        character(MAXLBL) :: line
 !                
@@ -3058,9 +3058,9 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: ZoneNum, MaxZoneNum
 !        integer :: FNumZoneBudget
-!        character(MAXLBL) :: FNameZoneBudget
+!        character(MAXSTRING) :: FNameZoneBudget
 !        integer :: FNumTecplotZoneBudget
-!        character(MAXLBL) :: FNameTecplotZoneBudget
+!        character(MAXSTRING) :: FNameTecplotZoneBudget
 !        logical :: ZonesLinked
 !        integer :: npcon, npact
 !        logical :: TecplotOutput
@@ -3207,7 +3207,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumGbNprop
-!        character(MAXLBL) :: FnameGbNprop
+!        character(MAXSTRING) :: FNameGbNprop
 !
 !        integer :: FnumTG
 !        
@@ -3253,7 +3253,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumGbNprop
-!        character(MAXLBL) :: FnameGbNprop
+!        character(MAXSTRING) :: FNameGbNprop
 !
 !        integer :: FnumTG
 !        
@@ -3290,7 +3290,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumHGSHeads
-!        character(MAXLBL) :: FnameHGSHeads
+!        character(MAXSTRING) :: FNameHGSHeads
 !
 !        integer :: FnumTG
 !        
@@ -3333,7 +3333,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !                
 !        integer :: i
 !        real(dr) :: stime
@@ -3362,7 +3362,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -3647,7 +3647,7 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !
 !        type (HGSProject) hgs
@@ -3748,7 +3748,7 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !
 !        type (HGSProject) hgs
@@ -4018,9 +4018,9 @@ module HGS !
 !        integer :: i,j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumFS
-!        character(MAXLBL) :: FNameFS
+!        character(MAXSTRING) :: FNameFS
 !
 !        type (HGSProject) hgs
 !        
@@ -4083,9 +4083,9 @@ module HGS !
 !        integer :: i,j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FnumFS
-!        character(MAXLBL) :: FNameFS
+!        character(MAXSTRING) :: FNameFS
 !
 !        type (HGSProject) hgs
 !        
@@ -4179,10 +4179,10 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXLBL) :: FNameCSV
+!        character(MAXSTRING) :: FNameCSV
 !
 !        character(MAXLBL) :: line
 !        
@@ -4340,16 +4340,16 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXLBL) :: FNameCSV
+!        character(MAXSTRING) :: FNameCSV
 !
 !        integer :: FNumXYZ
-!        character(MAXLBL) :: FNAMEXYZ 
+!        character(MAXSTRING) :: FNameXYZ 
 !        
 !        integer :: FNumLables
-!        character(MAXLBL) :: FNAMELables 
+!        character(MAXSTRING) :: FNameLables 
 !
 !        character(MAXLBL) :: line
 !        
@@ -4523,14 +4523,14 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXLBL) :: FNameCSV
+!        character(MAXSTRING) :: FNameCSV
 !
 !       
 !        integer :: FNumLables
-!        character(MAXLBL) :: FNAMELables 
+!        character(MAXSTRING) :: FNameLables 
 !
 !        character(MAXLBL) :: line
 !        
@@ -4567,7 +4567,7 @@ module HGS !
 !        Real(dr) :: NRMSD
 !        
 !        integer :: FNumScatter
-!        character(MAXLBL) :: FNAMEScatter 
+!        character(MAXSTRING) :: FNameScatter 
 !       
 !        integer :: TextHeight
 !        !-------------------------------------------------------------
@@ -4900,10 +4900,10 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXLBL) :: FNameCSV
+!        character(MAXSTRING) :: FNameCSV
 !        character(MAXSTRING) :: PathSim
 !        character(MAXSTRING) :: PathField
 !
@@ -5131,10 +5131,10 @@ module HGS !
 !        integer :: FnumTG
 !        
 !        integer :: FnumEco
-!        character(MAXLBL) :: FNameEco
+!        character(MAXSTRING) :: FNameEco
 !
 !        integer :: FNumCustomLabels
-!        character(MAXLBL) :: FNameCustomLabels
+!        character(MAXSTRING) :: FNameCustomLabels
 !
 !        type (HGSProject) hgs
 !        
@@ -5386,7 +5386,7 @@ module HGS !
 !        integer :: ZoneECount(1000)
 !
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        
 !        real(dr),allocatable :: minKx(:)
 !        real(dr),allocatable :: maxKx(:)
@@ -5618,11 +5618,11 @@ module HGS !
 !
 !
 !        integer :: Fnum
-!        character(MAXLBL) :: FName
+!        character(MAXSTRING) :: FName
 !        integer :: FNumTecplot
-!        character(MAXLBL) :: FNameTecplot
+!        character(MAXSTRING) :: FNameTecplot
 !        integer :: FNumTecplotBuild
-!        character(MAXLBL) :: FNameTecplotBuild
+!        character(MAXSTRING) :: FNameTecplotBuild
 !        
 !        character(MAXLBL) :: ObsWellName
 !        character(MAXLBL) :: LocalPrefix
@@ -6263,7 +6263,7 @@ end subroutine sort_faces
 !        integer :: FnumTG
 !    
 !        integer :: FNumNList
-!        character(MAXLBL) :: FNAMENodeList   
+!        character(MAXSTRING) :: FNameNodeList   
 !        
 !        integer :: iNd
 !       

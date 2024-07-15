@@ -4556,7 +4556,7 @@ module Tecplot !
         integer :: i
         
         integer :: Fnum
-        character(MAXLBL) :: FName
+        character(MAXSTRING) :: FName
         character(MAXSTRING) :: line
 
         inquire(file = trim(LocalPrefix)//'o.species', exist=SpeciesFileExists)
@@ -5209,7 +5209,7 @@ end subroutine enter_prefix
         integer :: i
         
         integer :: FnumEco
-        character(MAXLBL) :: FNameEco
+        character(MAXSTRING) :: FNameEco
 
         type(HGSTecplotdomain) medium
         type(HGSTecplotdomain) global
