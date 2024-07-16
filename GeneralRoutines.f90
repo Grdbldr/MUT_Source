@@ -20,12 +20,13 @@ module GeneralRoutines    !### bit setting routines
     real(dr), parameter :: Third=1.0d0/3.0d0
 	
     !---------------------------------------------- String declarations
-    integer, parameter :: MAXSTRING=1000
-    integer, parameter :: MAXLBL=200
+    integer, parameter :: MAX_STR=1000
+    integer, parameter :: MAX_LBL=200
+    integer, parameter :: MAX_INST=200
 
-    character(MAXSTRING) :: USERBIN
+    character(MAX_STR) :: USERBIN
     
-    character(MAXSTRING) :: AStr
+    character(MAX_STR) :: AStr
     character(1), parameter :: BLANK=' '
     character(1), parameter :: COMMA=','
     character(1), parameter :: DASH='-'
@@ -36,7 +37,7 @@ module GeneralRoutines    !### bit setting routines
     character(1) :: DateDelim
 
     character(512) :: TmpSTR
-    character(MAXLBL) :: CmdLine
+    character(MAX_LBL) :: CmdLine
 
     character(1) :: str1
     character(2) :: str2
@@ -64,7 +65,7 @@ module GeneralRoutines    !### bit setting routines
     !---------------------------------------------- Raster declarations
     integer :: nRaster ! number of rasters currently
     type ArcAscii
-        character(MAXLBL) :: Lbl ! info lable, user defined (eg 'Grid data')
+        character(MAX_LBL) :: Lbl ! info lable, user defined (eg 'Grid data')
         integer :: ncols ! number of columns
         integer :: nrows ! number of rows
         real(dr) :: xllcorner
@@ -81,8 +82,8 @@ module GeneralRoutines    !### bit setting routines
     integer :: status
 
     integer :: FnumEco
-    character(MAXSTRING) :: FNameEco
-    character(MAXSTRING) :: FNameInput
+    character(MAX_STR) :: FNameEco
+    character(MAX_STR) :: FNameInput
 
 
     integer :: itmp
@@ -93,19 +94,19 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- Error Message declarations
     integer :: ErrFNum
-    character(MAXSTRING) :: ErrStr
+    character(MAX_STR) :: ErrStr
 
     !---------------------------------------------- Stopwatch (elapsed time)
-    character(60) :: StopWatch_CMD="stopwatch"
-    character(60) :: SplitTime_CMD="split time"
-    character(60) :: ElapsedTime_CMD="elapsed time"
+    character(MAX_INST) :: StopWatch_CMD="stopwatch"
+    character(MAX_INST) :: SplitTime_CMD="split time"
+    character(MAX_INST) :: ElapsedTime_CMD="elapsed time"
 
     REAL :: time_begin(100), time_end(100)
     character(40) :: StopWatchLbl(100)
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.20'
+    character(5) :: MUTVersion=' 1.21'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1
@@ -4176,7 +4177,7 @@ module GeneralRoutines    !### bit setting routines
     subroutine StopWatch(iwatch,istr)
         integer :: iwatch
         character(*) :: istr
-        character(maxlbl) :: EtimeMsg
+        character(MAX_LBL) :: EtimeMsg
         character(8) whatimeisit
 
         StopWatchLbl(iwatch)=istr
@@ -4191,7 +4192,7 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine SplitTime(iwatch)
         integer :: iwatch
-        character(maxlbl) :: EtimeMsg
+        character(MAX_LBL) :: EtimeMsg
 
         CALL CPU_TIME ( time_end(iwatch) )
         write(EtimeMsg,'(a,f10.0)') trim(StopWatchLbl(iwatch))//' split (seconds):', time_end(iwatch) &
@@ -4202,7 +4203,7 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine ElapsedTime(iwatch)
         integer :: iwatch
-        character(maxlbl) :: EtimeMsg
+        character(MAX_LBL) :: EtimeMsg
 
         CALL CPU_TIME ( time_end(iwatch) )
         write(EtimeMsg,'(a,f10.0)') trim(StopWatchLbl(iwatch))//' elapsed (seconds):', time_end(iwatch) &
@@ -4331,14 +4332,14 @@ module GeneralRoutines    !### bit setting routines
 
         logical :: PfxFileExists
         integer :: PfxFNum
-        character(MAXLBL) :: PfxFName
+        character(MAX_LBL) :: PfxFName
 
         logical :: DfltFileExists
-        character(MAXLBL) :: DfltFName
+        character(MAX_LBL) :: DfltFName
 
         logical :: UserFileExists
         integer :: UserFNum
-        character(MAXLBL) :: UserFName
+        character(MAX_LBL) :: UserFName
 
         character*40 prefix
         character*(*) ext
@@ -4543,7 +4544,7 @@ module GeneralRoutines    !### bit setting routines
 
 	    integer :: i
         real(dr) :: ExcelDay
-        character(MAXSTRING) ::DStr  ! a string extracted at a specific row and column
+        character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 	
         character*(*) :: datestring
 	    integer :: year, month, day, hour, minute, second
@@ -4588,7 +4589,7 @@ module GeneralRoutines    !### bit setting routines
 
 	    real(dr) :: DecimalYear
 	    real(dr) :: test
-        character(MAXSTRING) ::DStr  ! a string extracted at a specific row and column
+        character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
         logical :: YearFirst=.false.
 
         integer :: LeapDay = 0
@@ -4740,7 +4741,7 @@ module GeneralRoutines    !### bit setting routines
     function DecimalYear_MDYFormat(datestring,timestring) !--- Convert date (eg. 11-May-2009) & time (hh:mm:ss) string to decimal year e.g. 2013.4
 
 	    real(dr) :: DecimalYear_MDYFormat
-        character(MAXSTRING) ::DStr  ! a string extracted at a specific row and column
+        character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 
         integer :: LeapDay = 0
 
@@ -4876,7 +4877,7 @@ module GeneralRoutines    !### bit setting routines
     function DecimalDay(datestring,timestring) !--- Convert date (eg. 11-May-2009) & time (hh:mm:ss) string to decimal day e.g. 40233.183
 
 	    real(dr) :: DecimalDay
-        character(MAXSTRING) ::DStr  ! a string extracted at a specific row and column
+        character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 	    real(dr) :: test
         logical :: YearFirst=.false.
     	
@@ -5092,13 +5093,13 @@ module GeneralRoutines    !### bit setting routines
 
     end subroutine BlanksToUnderscore
 
-    character(MAXSTRING) function GetColStr(str,i,delim) !--- Extract the data string at column i
+    character(MAX_STR) function GetColStr(str,i,delim) !--- Extract the data string at column i
         character(*) :: str
         character(*) :: delim
         integer :: i
         integer :: j
         integer :: k
-        character(MAXSTRING) :: line
+        character(MAX_STR) :: line
         line=str
         do j=1,i
             k=index(line,delim)-1
@@ -5536,7 +5537,7 @@ module GeneralRoutines    !### bit setting routines
     END SUBROUTINE INDEXX_int
     SUBROUTINE INDEXX_char(N,ARRIN,INDX)
 	    integer :: i, n, j, l, ir, indxt
-	    character(maxlbl) :: q
+	    character(MAX_LBL) :: q
 
 	    character(*) :: arrin(n)
 	    integer :: indx(n)

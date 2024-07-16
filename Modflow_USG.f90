@@ -13,6 +13,7 @@
     
     ! Pre/Post-processor for Modflow project files Fall 2023
     ! Added instructions
+    character(MAX_INST) :: instruction
     
     ! Pre-processing i.e. building a modflow structure
     ! By default, we will assume a node-centred control volume
@@ -20,111 +21,107 @@
     ! --------------------------------------------------Mesh definition section
     ! By default, the 2D template mesh is converted to Modflow mesh using a mesh-centred control volume approach
     ! This option changes it to a node-centred control volume approach
-    character(60) :: MUSG_NodalControlVolumes_CMD='nodal control volumes'
+    character(MAX_INST) :: NodalControlVolumes_CMD='nodal control volumes'
 
     !---------------------------------------------------Database
-    character(60) :: MUSG_SMS_Database_CMD	        =   'sms database'
-    character(60) :: MUSG_GWFMaterialsDatabase_CMD	=   'gwf materials database'
-    character(60) :: MUSG_SWFMaterialsDatabase_CMD	=   'swf materials database'
-    character(60) :: MUSG_ET_Database_CMD	        =   'et database'
+    character(MAX_INST) :: SMS_Database_CMD	        =   'sms database'
+    character(MAX_INST) :: GWFMaterialsDatabase_CMD	=   'gwf materials database'
+    character(MAX_INST) :: SWFMaterialsDatabase_CMD	=   'swf materials database'
+    character(MAX_INST) :: ET_Database_CMD	        =   'et database'
 
     ! Ways to define the 2D template mesh
-    character(60) :: MUSG_2dMeshFromGb_CMD          =   '2d mesh from gb'
-    character(60) :: MUSG_2dQuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
-    character(60) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
+    character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'
+    character(MAX_INST) :: QuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
+    character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
     ! There are many other possible 2d mesh definition options e.g.
-    !character(60), parameter :: gv_rects            =   'generate variable rectangles'
-    !character(60), parameter :: g_rects_i           =   'generate rectangles interactive' 
+    !character(MAX_INST), parameter :: gv_rects            =   'generate variable rectangles'
+    !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
     
-    character(60) :: GenerateSWFDomain_CMD		=   'generate swf domain'
+    character(MAX_INST) :: GenerateSWFDomain_CMD		=   'generate swf domain'
 
     ! Generate a CLN network
-    character(60) :: GenerateCLNDomain_CMD		=   'generate cln domain'
+    character(MAX_INST) :: GenerateCLNDomain_CMD		=   'generate cln domain'
     
     ! Generate a layered 3D modflow mesh from a 2D mesh
-    character(60) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
+    character(MAX_INST) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
         
     !---------------------------------------------------Selection and assignment options
-    character(60) :: MUSG_ActiveDomain_CMD	                =   'active domain'
+    character(MAX_INST) :: ActiveDomain_CMD	                =   'active domain'
 
-    character(60) :: MUSG_ClearAllNodes_CMD	                =   'clear chosen nodes'
-    character(60) :: MUSG_ChooseAllNodes_CMD                =   'choose all nodes'
-    character(60) :: MUSG_ChooseNodeAtXYZ_CMD               =   'choose node at xyz'
-    character(60) :: MUSG_ChooseGBNodes_CMD	                =   'choose gb nodes'
+    character(MAX_INST) :: ClearAllNodes_CMD	                =   'clear chosen nodes'
+    character(MAX_INST) :: ChooseAllNodes_CMD                =   'choose all nodes'
+    character(MAX_INST) :: ChooseNodeAtXYZ_CMD               =   'choose node at xyz'
+    character(MAX_INST) :: ChooseGBNodes_CMD	                =   'choose gb nodes'
 
-    character(60) :: MUSG_ClearAllCells_CMD	                =   'clear chosen cells'
-    character(60) :: MUSG_ChooseAllCells_CMD  	            =   'choose all cells'
-    character(60) :: MUSG_ChooseCellsByLayer_CMD  	        =   'choose cells by layer'
-    character(60) :: MUSG_ChooseCellAtXYZ_CMD               =   'choose cell at xyz'
-    character(60) :: MUSG_ChooseCellsFromGBElements_CMD	    =   'choose cells from gb elements'
-    character(60) :: MUSG_ChooseCellsFromGBNodes_CMD	    =   'choose cells from gb nodes'
+    character(MAX_INST) :: ClearAllCells_CMD	                =   'clear chosen cells'
+    character(MAX_INST) :: ChooseAllCells_CMD  	            =   'choose all cells'
+    character(MAX_INST) :: ChooseCellsByLayer_CMD  	        =   'choose cells by layer'
+    character(MAX_INST) :: ChooseCellAtXYZ_CMD               =   'choose cell at xyz'
+    character(MAX_INST) :: ChooseCellsFromGBElements_CMD	    =   'choose cells from gb elements'
+    character(MAX_INST) :: ChooseCellsFromGBNodes_CMD	    =   'choose cells from gb nodes'
 
-    character(60) :: MUSG_ChooseCellsFromFile_CMD           =   'choose cells from file'
-    character(60) :: MUSG_FlagChosenCellInactive_CMD        =   'flag chosen cells inactive'
+    character(MAX_INST) :: ChooseCellsFromFile_CMD           =   'choose cells from file'
+    character(MAX_INST) :: FlagChosenCellInactive_CMD        =   'flag chosen cells inactive'
 
-    character(60) :: MUSG_ClearAllZones_CMD	                =   'clear chosen zones'
-    character(60) :: MUSG_ChooseAllZones_CMD  	            =   'choose all zones'
-    character(60) :: MUSG_ChooseZoneNumber_CMD	            =   'choose zone number'
+    character(MAX_INST) :: ClearAllZones_CMD	                =   'clear chosen zones'
+    character(MAX_INST) :: ChooseAllZones_CMD  	            =   'choose all zones'
+    character(MAX_INST) :: ChooseZoneNumber_CMD	            =   'choose zone number'
     
-    character(60) :: MUSG_FlagChosenNodesAsOuterBoundary_CMD		=   'flag chosen nodes as outer boundary'
+    character(MAX_INST) :: FlagChosenNodesAsOuterBoundary_CMD		=   'flag chosen nodes as outer boundary'
     
 
     !---------------------------------------------------Initial conditions
-    character(60) :: MUSG_AssignStartingHeadtoGWF_CMD	=   'gwf initial head'
-    character(60) :: InitialHeadFunctionOfZtoGWF_CMD    =   'gwf initial head function of z' 
-    character(60) :: MUSG_AssignStartingDepthtoSWF_CMD	=   'swf initial depth'
+    character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	=   'gwf initial head'
+    character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD    =   'gwf initial head function of z' 
+    character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	=   'swf initial depth'
     
     !---------------------------------------------------Boundary conditions
-    character(60) :: MUSG_AssignCHDtoGWF_CMD		    =   'gwf constant head'
-    character(60) :: MUSG_AssignDRNtoGWF_CMD		    =   'gwf drain'
-    character(60) :: MUSG_AssignRCHtoGWF_CMD		    =   'gwf recharge'
-    character(60) :: MUSG_AssignCHDtoSWF_CMD		    =   'swf constant head'
-    character(60) :: MUSG_AssignRCHtoSWF_CMD		    =   'swf recharge'
-    character(60) :: MUSG_AssignCriticalDepthtoSWF_CMD	=   'swf critical depth'
-    character(60) :: MUSG_AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
+    character(MAX_INST) :: AssignCHDtoGWF_CMD		    =   'gwf constant head'
+    character(MAX_INST) :: AssignDRNtoGWF_CMD		    =   'gwf drain'
+    character(MAX_INST) :: AssignRCHtoGWF_CMD		    =   'gwf recharge'
+    character(MAX_INST) :: AssignCHDtoSWF_CMD		    =   'swf constant head'
+    character(MAX_INST) :: AssignRCHtoSWF_CMD		    =   'swf recharge'
+    character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	=   'swf critical depth'
+    character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
     
     !---------------------------------------------------GWF Properties
-    character(60) :: MUSG_AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
-    character(60) :: MUSG_AssignKhtoGWF_CMD		        =   'gwf kh'
-    character(60) :: MUSG_AssignKvtoGWF_CMD		        =   'gwf kv'
-    character(60) :: MUSG_AssignSstoGWF_CMD		        =   'gwf ss'
-    character(60) :: MUSG_AssignSytoGWF_CMD		        =   'gwf sy'
-    character(60) :: MUSG_AssignAlphatoGWF_CMD	    	=   'gwf alpha'
-    character(60) :: MUSG_AssignBetatoGWF_CMD	    	=   'gwf beta'
-    character(60) :: MUSG_AssignSrtoGWF_CMD		        =   'gwf sr'
-    character(60) :: MUSG_AssignBrookstoGWF_CMD		    =   'gwf brooks'
+    character(MAX_INST) :: AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
+    character(MAX_INST) :: AssignKhtoGWF_CMD		        =   'gwf kh'
+    character(MAX_INST) :: AssignKvtoGWF_CMD		        =   'gwf kv'
+    character(MAX_INST) :: AssignSstoGWF_CMD		        =   'gwf ss'
+    character(MAX_INST) :: AssignSytoGWF_CMD		        =   'gwf sy'
+    character(MAX_INST) :: AssignAlphatoGWF_CMD	    	=   'gwf alpha'
+    character(MAX_INST) :: AssignBetatoGWF_CMD	    	=   'gwf beta'
+    character(MAX_INST) :: AssignSrtoGWF_CMD		        =   'gwf sr'
+    character(MAX_INST) :: AssignBrookstoGWF_CMD		    =   'gwf brooks'
         
     !---------------------------------------------------SWF Properties
-    character(60) :: MUSG_AssignMaterialtoSWF_CMD		    =   'chosen zones use swf material number'
-    character(60) :: MUSG_AssignSgcltoSWF_CMD		        =   'swf to gwf connection length'
-    character(60) :: MUSG_AssignManningtoSWF_CMD		    =   'swf manning'
-    character(60) :: MUSG_AssignDepthForSmoothingtoSWF_CMD	=   'swf depth for smoothing'
+    character(MAX_INST) :: AssignMaterialtoSWF_CMD		    =   'chosen zones use swf material number'
+    character(MAX_INST) :: AssignSgcltoSWF_CMD		        =   'swf to gwf connection length'
+    character(MAX_INST) :: AssignManningtoSWF_CMD		    =   'swf manning'
+    character(MAX_INST) :: AssignDepthForSmoothingtoSWF_CMD	=   'swf depth for smoothing'
         
     !---------------------------------------------------SMS Dataset
-    character(60) :: MUSG_SMSParamterSetNumber_CMD		    =   'sms parameter set number'
+    character(MAX_INST) :: SMSParamterSetNumber_CMD		    =   'sms parameter set number'
 
 
     ! --------------------------------------------------Modflow project definition section
-    character(60) :: MUSG_ModflowPrefix_CMD='modflow prefix'
-    character(60) :: MUSG_GenOCFile_CMD='generate output control file'
+    character(MAX_INST) :: ModflowPrefix_CMD='modflow prefix'
+    character(MAX_INST) :: GenOCFile_CMD='generate output control file'
 
-    character(60) :: MUSG_StressPeriod_CMD='stress period'
-        ! MUSG_StressPeriod_CMD subcommands
-        character(60) :: StressPeriodType_CMD	    =   'type'
-        character(60) :: StressPeriodDuration_CMD	=   'duration'
+    character(MAX_INST) :: StressPeriod_CMD='stress period'
+        ! StressPeriod_CMD subcommands
+        character(MAX_INST) :: StressPeriodType_CMD	    =   'type'
+        character(MAX_INST) :: StressPeriodDuration_CMD	=   'duration'
 
-    character(60) :: MUSG_HGSToModflowStructure_CMD='hgs to modflow structure'
+    character(MAX_INST) :: HGSToModflowStructure_CMD='hgs to modflow structure'
 
 
     ! Post-processing modflow output files
-    character(60) :: MUSG_ModflowOutputToModflowStructure_CMD='modflow output to modflow structure'
-
-
-    character(60) :: MUSG_End_CMD=	'end'
-    character(256) :: MUSG_CMD
+    character(MAX_INST) :: ModflowOutputToModflowStructure_CMD='modflow output to modflow structure'
     
     integer  :: FNum
-    character(MAXSTRING) :: line
+    character(MAX_STR) :: line
 
     logical :: JustBuilt=.false.
     
@@ -182,6 +179,10 @@
         
         real(dr), allocatable :: ConnectionLength(:)    ! CLN in modflow
         real(dr), allocatable :: PerpendicularArea(:)   ! FAHL in modflow
+        
+        integer :: NCLNGWC       ! # of CLN to GWF connections
+        
+        
 
         !! Tecplot face neighbours
         !integer, allocatable :: cell(:)
@@ -442,7 +443,7 @@
         ! Scan file
         integer :: nDim=10000
         integer :: nKeyWord
-        character(MAXSTRING), ALLOCATABLE :: KeyWord(:) ! read buffer for location data
+        character(MAX_STR), ALLOCATABLE :: KeyWord(:) ! read buffer for location data
         character(128) :: FNameSCAN
         integer :: iSCAN
         
@@ -586,1896 +587,89 @@
     
     contains
 
-    ! Postprocessing routines
-    subroutine PostprocessExistingModflowModel(FNumMUT, Modflow,prefix) !--- Post-process existing Modflow model from instructions
-        implicit none
-
-        integer :: FNumMUT
-        character(*) :: prefix
-        type (ModflowProject) Modflow
-        
-        Modflow.MUTPrefix=prefix
-           
-        call MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
-    
-    end subroutine PostprocessExistingModflowModel
     !-------------------------------------------------------------
-    subroutine MUSG_ModflowOutputToModflowStructure(FNumMUT, Modflow)
+    subroutine AddSWFFiles(Modflow)
         implicit none
-        !-------ASSIGN VERSION NUMBER AND DATE
-        CHARACTER*40 VERSION
-        CHARACTER*14 MFVNAM
-        PARAMETER (VERSION='USG-TRANSPORT VERSION 2.02.1')
-        PARAMETER (MFVNAM='USG-TRANSPORT ') !USG = Un-Structured Grids
         
-        integer :: FNumMUT
         type (ModflowProject) Modflow
         
-        integer :: i
-       
-        integer :: inunit
-        CHARACTER*4 CUNIT(NIUNIT)
-        DATA CUNIT/'BCF6', 'WEL ', 'DRN ', 'RIV ', 'EVT ', 'EVS ', 'GHB ',&  !  7  et time series is now EVS as ETS is for segmented ET&
-                'RCH ', 'RTS ', 'TIB ', 'DPF ', 'OC  ', 'SMS ', 'PCB ',&  ! 14
-                'BCT ', 'FHB ', 'RES ', 'STR ', 'IBS ', 'CHD ', 'HFB6',&  ! 21
-                'LAK ', 'LPF ', 'DIS ', 'DISU', 'PVAL', 'SGB ', 'HOB ',&  ! 28
-                'CLN ', 'DPT ', 'ZONE', 'MULT', 'DROB', 'RVOB', 'GBOB',&  ! 35
-                'GNC ', 'DDF ', 'CHOB', 'ETS ', 'DRT ', 'QRT ', 'GMG ',&  ! 42
-                'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
-                'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
-                'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
-                'TVM ', 'SWF ', 'SWBC', 34*'    '/
-
-        integer :: maxunit, nc 
-
-        INCLUDE 'openspec.inc'
+        
+        ! Initialize SWF file and write data to NAM
+        Modflow.FNameSWF=trim(Modflow.Prefix)//'.swf'
+        call OpenAscii(Modflow.iSWF,Modflow.FNameSWF)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF))
+        write(Modflow.iNAM,'(a,i4,a)') 'SWF ',Modflow.iSWF,' '//trim(Modflow.FNameSWF)
+        write(Modflow.iSWF,'(a,1pg10.1)') '# MODFLOW-USG SWF file written by Modflow-User-Tools version ',MUTVersion
 
         
-        ! read prefix for project
-        read(FNumMUT,'(a)') Modflow.Prefix
-		call lcase(Modflow.Prefix)
-        call Msg('Modflow project prefix: '//Modflow.Prefix)
+        Modflow.SWF.FNameCBB=trim(Modflow.Prefix)//'.SWF.cbb'
+        call getunit(Modflow.SWF.iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iCBB,' '//trim(Modflow.SWF.FNameCBB)
         
-        modflow.GWF.Name='GWF'
+        Modflow.SWF.FNameHDS=trim(Modflow.Prefix)//'.SWF.HDS'
+        call getunit(Modflow.SWF.iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iHDS,' '//trim(Modflow.SWF.FNameHDS)
         
-        
-        ! Scan file
-        Modflow.FNameSCAN=trim(Modflow.MUTPrefix)//'o.scan'
-        open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
-        write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
-        Modflow.nKeyWord=0
-        allocate(Modflow.KeyWord(Modflow.nDim))
-        Modflow.KeyWord(:)='UNDEFINED'
-
-
-        ! Process NAM file
-        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
-        call openMUSGFile('NAM',' '//Modflow.FNameNAM,Modflow.Prefix,Modflow.iNAM,Modflow.FNameNAM)
-        INUNIT = 99
-        MAXUNIT= INUNIT
-        !
-        !4------OPEN NAME FILE.
-        OPEN (UNIT=INUNIT,FILE=Modflow.FNameNAM,STATUS='OLD',ACTION=ACTION(1))
-        NC=INDEX(Modflow.FNameNAM,' ')
-        WRITE(*,490)' Using NAME file: ',Modflow.FNameNAM(1:NC)
-490     FORMAT(A,A)
-        
-        ALLOCATE(IUNIT(NIUNIT))
-
-        call Msg(' ')
-        call Msg('-------Open and scan files listed in NAM file:')
-        !
-        !C2------Open all files in name file.
-        CALL SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,NIUNIT,&
-            VERSION,INBAS,MAXUNIT,modflow)
-        
-        !do i=1,niunit
-        !    write(iout,*) i, iunit(i),cunit(i)
-        !end do
-        !
-        
-        ! Unit numbering starts at BCF6=7 so add 6 to iunut index
-        Modflow.iBAS6 =inbas       
-        file_open_flag(inbas) = .true.
-        Modflow.iBCF6 =iunit(1)       
-        Modflow.iWEL  =iunit(2)       
-        Modflow.iDRN  =iunit(3)       
-        Modflow.iRIV  =iunit(4)       
-        Modflow.iEVT  =iunit(5)       
-        Modflow.iEVS  =iunit(6)       
-        Modflow.iGHB  =iunit(7)       
-        Modflow.iRCH  =iunit(8)       
-        Modflow.iRTS  =iunit(9)       
-        Modflow.iTIB =iunit(10)       
-        Modflow.iDPF =iunit(11)       
-        Modflow.iOC  =iunit(12)       
-        Modflow.iSMS =iunit(13)       
-        Modflow.iPCB =iunit(14)       
-        Modflow.iBCT =iunit(15)       
-        Modflow.iFHB =iunit(16)       
-        Modflow.iRES =iunit(17)       
-        Modflow.iSTR =iunit(18)       
-        Modflow.iIBS =iunit(19)       
-        Modflow.iCHD =iunit(20)       
-        Modflow.iHFB6=iunit(21)       
-        Modflow.iLAK =iunit(22)       
-        Modflow.iLPF =iunit(23)       
-        Modflow.iDIS =iunit(24)       
-        Modflow.iDISU=iunit(25)       
-        Modflow.iPVAL=iunit(26)       
-        Modflow.iSGB =iunit(27)       
-        Modflow.iHOB =iunit(28)       
-        Modflow.iCLN =iunit(29)       
-        Modflow.iDPT =iunit(30)       
-        Modflow.iZONE=iunit(31)       
-        Modflow.iMULT=iunit(32)       
-        Modflow.iDROB=iunit(33)       
-        Modflow.iRVOB=iunit(34)       
-        Modflow.iGBOB=iunit(35)       
-        Modflow.iGNC =iunit(36)       
-        Modflow.iDDF =iunit(37)       
-        Modflow.iCHOB=iunit(38)       
-        Modflow.iETS =iunit(39)       
-        Modflow.iDRT =iunit(40)       
-        Modflow.iQRT =iunit(41)       
-        Modflow.iGMG =iunit(42)       
-        Modflow.ihyd =iunit(43)       
-        Modflow.iSFR =iunit(44)       
-        Modflow.iMDT =iunit(45)       
-        Modflow.iGAGE=iunit(46)       
-        Modflow.iLVDA=iunit(47)       
-        Modflow.iSYF =iunit(48)       
-        Modflow.ilmt6=iunit(49)       
-        Modflow.iMNW1=iunit(50)       
-        Modflow.iKDEP=iunit(53)       
-        Modflow.iSUB =iunit(54)       
-        Modflow.iUZF =iunit(55)       
-        Modflow.igwm =iunit(56)       
-        Modflow.iSWT =iunit(57)       
-        Modflow.iPATH=iunit(58)       
-        Modflow.iPTH =iunit(59)       
-        Modflow.iTVM =iunit(64)  
-        Modflow.iSWF =iunit(65)   
-        Modflow.iSWBC =iunit(66)   
-        do i=1,65
-            if(iunit(i) > 0) then
-                file_open_flag(iunit(i)) = .true.
-            end if
-        end do
-
-        ! First read all GSF (grid specification) files for GWF domain, then CLN and SWF domains if present
-        call Msg(' ')
-        call Msg('-------Read all GSF (grid specification) files:')
-        Modflow.FNameGSF=trim(Modflow.Prefix)//'.GWF.gsf'
-        inquire(file=Modflow.FNameGSF,exist=FileExists)
-        if(.not. FileExists) then
-            call Msg('No grid specification file: '//Modflow.FNameGSF)
-        else
-            call Msg('Modflow GWF GSF file: '//Modflow.FNameGSF)
-	        call getunit(Modflow.iGSF)
-            open(Modflow.iGSF,file=Modflow.FNameGSF,status='unknown',form='formatted')
-        
-            call MUSG_Read_GWF_GSF(Modflow)
-            
-            modflow.GWF.ElementType='febrick'
-
-        end if
-
-        if(Modflow.iCLN /= 0) THEN
-            Modflow.CLN.Name='CLN'
-            modflow.CLN.ElementType='felineseg'
-            Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
-            inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
-            if(.not. FileExists) then
-                call Msg('No grid specification file: '//Modflow.FNameCLN_GSF)
-            else
-                call Msg('Modflow CLN GSF file: '//Modflow.FNameCLN_GSF)
-	            call getunit(Modflow.iCLN_GSF)
-                open(Modflow.iCLN_GSF,file=Modflow.FNameCLN_GSF,status='unknown',form='formatted')
-        
-                call MUSG_Read_CLN_GSF(Modflow)
-            end if
-        end if
-
-        if(Modflow.iSWF /= 0) THEN
-            Modflow.SWF.name='SWF'
-            Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.SWF.gsf'
-            inquire(file=Modflow.FNameSWF_GSF,exist=FileExists)
-            if(.not. FileExists) then
-                call Msg('No grid specification file: '//Modflow.FNameSWF_GSF)
-            else
-                call Msg('Modflow SWF GSF file: '//Modflow.FNameSWF_GSF)
-	            call getunit(Modflow.iSWF_GSF)
-                open(Modflow.iSWF_GSF,file=Modflow.FNameSWF_GSF,status='unknown',form='formatted')
-        
-                call MUSG_Read_SWF_GSF(Modflow)
-                
-                if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                    modflow.SWF.ElementType='fetriangle'
-                else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
-                    modflow.SWF.ElementType='fequadrilateral'
-                end if
-
-            end if
-        end if
-
-        ! Read data in Modflow-USG order
-
-        call Msg(' ')
-        call Msg('-------Read options from BAS6:')
-        call MUSG_ReadBAS6_Options(Modflow) ! based on subroutine SGWF2BAS8OPEN
-
-        call Msg(' ')
-        call Msg('-------Read first part of DISU:')
-        call MUSG_ReadDISU_pt1(Modflow)  ! based on subroutine SDIS2GLO8AR
-        NEQS = NODES
-
-        IF(Modflow.iCLN/=0) THEN
-            call Msg(' ')
-            call Msg('-------Read data from CLN pt1:')
-            call MUSG_ReadCLN(Modflow)  ! based on subroutine SDIS2CLN1AR
-            NEQS = NEQS + NCLNNDS
-
-            call MUSG_ReadCLN_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            call Msg(' ')
-            call Msg('-------Read data from SWF pt1:')
-            call MUSG_ReadSWF(Modflow)  ! based on subroutine SDIS2SWF1AR
-            NEQS = NEQS + NSWFNDS
-
-            ! Young-jin handles this in SDIS2SWF1AR above so I think not required
-            !call MUSG_ReadSWF_pt2(Modflow)  ! based on subroutine SDIS2CLN1AR
-        end if
-
-        !crm not reading ghost node stuff yet
-        !C---------------------------------------------------------------------
-        !C3-----READ GNC PACKAGE INPUT  (CONNECTIVITIES AND FRACTIONS)
-        !C---------------------------------------------------------------------
-
-        
-        !C5------ALLOCATE SPACE FOR PARAMETERS AND FLAGS.
-        ALLOCATE(IA(NEQS+1))
-        ALLOCATE (IBOUND(NEQS+1))
-        ALLOCATE(AREA(NEQS))
-        IA = 0
-
-
-        call Msg(' ')
-        call Msg('-------Read second part DISU:')
-        WRITE(FNumEco,11) Modflow.iDISu
-        11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',&
-            ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
-        if(Modflow.unstructured) then
-
-            !C     *****************************************************************
-            !C     READ AND SET NODLAY ARRAY, AND READ GEOMETRIC PARAMETERS AND
-            !C     MATRIX CONNECTIVITY FOR UNSTRUCTURED GRID
-            !C     *****************************************************************
-            call MUSG_ReadDISU_pt2(Modflow)  ! based on subroutine SGWF2DIS8UR
-            
-            ! Hardwired to read CLN and FAHL arrays for now 
-            call MUSG_ReadDISU_pt3(Modflow)  
-
-            !end if
-        else
-            ! call MUSG_ReadDISU_StucturedGridData(Modflow)
-        end if
-        
-        !!C--------------------------------------------------------------------------
-        !!C7H------PREPARE IDXGLO ARRAY FOR CLN/SWF DOMAIN
-        !IF(Modflow.iCLN/=0)THEN
-        !    !CALL FILLIDXGLO_CLN
-        !end if
-        !IF(Modflow.iSWF/=0) THEN
-        !    CALL FILLIDXGLO_SWF
-        !end if
-
-
-        call Msg(' ')
-        call Msg('-------Read Stress Period Data from DISU:')
-        call MUSG_ReadDISU_StressPeriodData(Modflow)   
-        
-        
-        !C7-----Allocate space for remaining global arrays.
-        ALLOCATE (HNEW(NEQS))
-        !ALLOCATE (HOLD(NEQS))
-        !ALLOCATE (IFMBC)
-        !IFMBC = 0
-        !ALLOCATE (FMBE(NEQS))
-        !ALLOCATE (Sn(NEQS),So(NEQS))
-        !Sn = 1.0
-        !So = 1.0
-        !ALLOCATE (RHS(NEQS))
-        !ALLOCATE (BUFF(NEQS))
-        ALLOCATE (STRT(NEQS))
-        !DDREF=>STRT
-        !ALLOCATE (LAYHDT(NLAY))
-        !ALLOCATE (LAYHDS(NLAY))
-        !WRITE(IOUT,'(//)')
-
-        !C------------------------------------------------------------------------
-        !C10------Read rest of groundwater BAS Package file (IBOUND and initial heads)
-        call Msg(' ')
-        call Msg('-------Read IBOUND and initial heads from BAS6:')
-        
-        ALLOCATE (modflow.GWF.IBOUND(modflow.GWF.ncells))
-        ALLOCATE (modflow.GWF.HNEW(Modflow.GWF.nCells))
-
-        IF(IUNSTR.EQ.0)THEN
-        !C10A-------FOR STRUCTURED GRIDS
-            !CALL SGWF2BAS8SR
-        ELSE
-        !C10B-------FOR UNSTRUCTURED GRIDS
-            CALL MUSG_ReadBAS6_IBOUND_IHEADS(Modflow)  ! based on subroutine SGWF2BAS8UR
-        end if
-
-        
-        !C
-        !C-----------------------------------------------------------------------
-        !C11-----SET UP OUTPUT CONTROL.
-        call Msg(' ')
-        call Msg('-------Read data from OC:')
-        CALL MUSG_ReadOC(Modflow) ! based on subroutine SGWF2BAS7I  
-        
-        IF(Modflow.iLPF/=0) THEN
-            !C
-            !C-----------------------------------------------------------------------
-            !C11-----Read LPF Package file 
-            call Msg(' ')
-            call Msg('-------Read data from LPF:')
-            CALL MUSG_ReadLPF(Modflow) ! based on subroutine SGWF2BAS7I  
-        end if
-        
-        IF(Modflow.iCLN/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read rest of CLN Package file (IBOUND and initial heads)
-            call Msg(' ')
-            call Msg('-------Read IBOUND and initial heads from CLN:')
-            ALLOCATE (modflow.CLN.IBOUND(modflow.CLN.ncells))
-            ALLOCATE (modflow.CLN.HNEW(Modflow.CLN.nCells))
-            CALL MUSG_ReadCLN_IBOUND_IHEADS(Modflow)  ! based on subroutine CLN2BAS1AR
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read rest of SWF Package file (IBOUND and initial heads)
-            call Msg(' ')
-            call Msg('-------Read IBOUND and initial heads from SWF:')
-            ALLOCATE (modflow.SWF.IBOUND(modflow.SWF.ncells))
-            ALLOCATE (modflow.SWF.HNEW(Modflow.SWF.nCells))
-            CALL MUSG_ReadSWF_IBOUND_IHEADS(Modflow)  ! based on subroutine SWF2BAS1AR
-        end if
-        
-        IF(Modflow.iWEL/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read WEL Package file
-            call Msg(' ')
-            call Msg('-------Read data from WEL:')
-            CALL MUSG_ReadWEL(Modflow)  ! based on subroutine GWF2WEL7U1AR
-        end if
-        
-        IF(Modflow.iCHD/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read CHD Package file
-            call Msg(' ')
-            call Msg('-------Read data from CHD:')
-            CALL MUSG_ReadCHD(Modflow)  ! based on subroutine GWF2CHD7U1AR
-        end if
-
-        IF(Modflow.iRCH/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read RCH Package file
-            call Msg(' ')
-            call Msg('-------Read data from RCH:')
-            CALL MUSG_ReadRCH(Modflow)  ! based on subroutine GWF2RCH8U1AR
-            call MUSG_ReadRCH_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
-        end if
-        
-        IF(Modflow.iDRN/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read DRN Package file
-            call Msg(' ')
-            call Msg('-------Read data from DRN:')
-            CALL MUSG_ReadDRN(Modflow)  ! based on subroutine GWF2RCH8U1AR
-            call MUSG_ReadDRN_StressPeriods(Modflow) ! based on subroutine GWF2RCH8U1RP
-        end if
-        
-        IF(Modflow.iSWBC/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read RCH Package file
-            call Msg(' ')
-            call Msg('-------Read data from SWBC:')
-            CALL MUSG_ReadSWBC(Modflow)  ! based on subroutine SWF2BC1U1AR
-            call MUSG_ReadSWBC2(Modflow) ! based on subroutine SWF2BC1U1RP
-        end if
-        
-        IF(Modflow.iSMS/=0) THEN
-            !C------------------------------------------------------------------------
-            !C------Read SMS Package file
-            call Msg(' ')
-            call Msg('-------Read data from SMS:')
-            CALL MUSG_ReadSMS(Modflow)  ! based on subroutine SMS7U1AR
-        end if
-
-        call MUSG_WriteVolumeBudgetToTecplot(Modflow)
-        
-        call MUSG_CreateStepPeriodTimeFile(Modflow)
-
-        
-        call MUSG_ReadBinary_HDS_File(Modflow,Modflow.GWF)
-        call MUSG_ReadBinary_DDN_File(Modflow,Modflow.GWF)
-        call MUSG_ReadBinary_CBB_File(Modflow, Modflow.GWF)
-        if(Modflow.GWF.IsDefined) then
-            call Msg(' ')
-		    call Msg('Generating mesh-based Tecplot output files for GWF:')
-            
-            
-            call MUSG_ToTecplot(Modflow,Modflow.GWF)
-
-            
-        else
-		   call Msg('Generating cell-based Tecplot output files for GWF:')
-           call MUSG_GWF_IBOUNDv2_ToTecplot(Modflow)
-        end if
-        
-        IF(Modflow.iCLN/=0) THEN
-            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.CLN)
-            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.CLN)
-            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.CLN)
-            if(Modflow.CLN.IsDefined) then
-    		    call Msg('Generating mesh-based Tecplot output files for CLN:')
+        Modflow.SWF.FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
+        call getunit(Modflow.SWF.iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iDDN,' '//trim(Modflow.SWF.FNameDDN)
+    end subroutine AddSWFFiles
     
-                call MUSG_ToTecplot(Modflow,Modflow.CLN)
-                
-            else
-		       call Msg('No cell-based Tecplot output files for CLN:')
-               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
-            end if
-                    
-        end if
-        
-        IF(Modflow.iSWF/=0) THEN
-            call MUSG_ReadBinary_HDS_File(Modflow,Modflow.SWF)
-            call MUSG_ReadBinary_DDN_File(Modflow,Modflow.SWF)
-            call MUSG_ReadBinary_CBB_File(Modflow, Modflow.SWF)
-            if(Modflow.SWF.IsDefined) then
-    		    call Msg('Generating mesh-based Tecplot output files for SWF:')
-
-                call MUSG_ToTecplot(Modflow,Modflow.SWF)
-                
-            else
-		       call Msg('No cell-based Tecplot output files for SWF:')
-               !call MUSG_CLN_IBOUNDv2_ToTecplot(Modflow)
-            end if
-                    
-        end if
-        
-
-
-
-
-        !open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
-        !write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
-        write(Modflow.iSCAN,'(a,i8,a)') 'Found ',Modflow.nKeyWord,' keywords'
-        !do i=1,Modflow.nKeyWord
-        !    write(Modflow.iSCAN,'(a)',iostat=status) Modflow.KeyWord(i)
-        !end do
-        close(Modflow.iSCAN)
-        
-    end subroutine MUSG_ModflowOutputToModflowStructure
-    
-   
-   subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
+    !-------------------------------------------------------------
+    subroutine AddToScan(PKey, Modflow)
         implicit none
-
-        character(MAXSTRING) :: FName
-        integer :: FNumMUT
-        character(*) :: prefix
+        
+        
         type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_GWF
-        type (TecplotDomain) TECPLOT_SWF
-        type (TecplotDomain) TECPLOT_CLN
+
+        character(*) :: PKey
         
-        integer :: i
-        
-        Modflow.MUTPrefix=prefix
-
-        read(FNumMUT,'(a)',iostat=status,end=10) MUSG_CMD
-            
-        if(index(MUSG_CMD, MUSG_ModflowPrefix_CMD)  /= 0) then
-            read(FnumMUT,'(a)') Modflow.prefix
-            call Msg(TAB//trim(Modflow.Prefix))
-        else 
-            backspace(FNumMUT)
-        endif
-        call MUSG_InitializeModflowFiles(Modflow)
-
-        do
-            
-            read(FNumMUT,'(a)',iostat=status,end=10) MUSG_CMD
-    
-            if(index(MUSG_CMD, MUSG_End_CMD)  /= 0) then
-                if(JustBuilt) then ! Modflow project file creation
-                    call ModflowTMPLTScatterToTecplot(Modflow,TMPLT)                
-
-                    if(modflow.GWF.nCells >0) then
-                        call WriteGWFFiles(Modflow,TECPLOT_GWF)
-                        call GWFToTecplot(Modflow,TECPLOT_GWF)
-                        call ModflowDomainScatterToTecplot(Modflow,Modflow.GWF)  
-                    end if
-                    
-                   
-                    if(modflow.SWF.nCells >0) then
-                        call MUSG_AddSWFFiles(Modflow)
-                        call WriteSWFFiles(Modflow,TECPLOT_SWF)
-                        call SWFToTecplot(Modflow,TECPLOT_SWF)
-                        call ModflowDomainScatterToTecplot(Modflow,Modflow.SWF)                
-                    end if
-                
-                    if(modflow.CLN.nCells >0) then
-                        call MUSG_AddCLNFiles(Modflow)
-                        call WriteCLNFiles(Modflow)
-                        !call ModflowDomainToTecplot(Modflow,TECPLOT_CLN)
-                        !call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
-                    end if
-                    
-                    if(modflow.iCHD>0) call WriteCHDFile(Modflow)
-                    if(modflow.iDRN>0) call WriteDRNFile(Modflow)
-                    
-                    ! Default boundary conditions for extra stress periods
-                    if(Modflow.nPeriods>1) then
-                        do i=2,Modflow.nPeriods
-                            if(modflow.iCHD>0) write(modflow.iCHD,'(i10)') -1
-                            if(modflow.iDRN>0) write(modflow.iDRN,'(i10)') -1
-                            if(modflow.iRCH>0) write(modflow.iRCH,'(i10)') -1
-                            if(modflow.iSWBC>0) write(modflow.iSWBC,'(i10)') -1
-                        end do
-                     end if   
-                    
-                end if
-                
-                
-                exit
-            else
-                call Msg(' ')
-                call Msg(MUSG_CMD)
-            end if
-
-
-            if(status/=0) then
- 		        write(ErrStr,'(a)') 'File: a.MUSG'
-		        l1=len_trim(ErrStr)
-		        write(ErrStr,'(a)') ErrStr(:l1)//New_line(a)//'Error reading file'
-			    call ErrMsg(ErrStr)
-            end if
-            
-            
-            ! ========================================================================
-            ! Pre-processing instructions 
-            
-
-            if(index(MUSG_CMD, MUSG_NodalControlVolumes_CMD)  /= 0) then
-                ! Generate node centred control volume domains (default is mesh centred)
-                Modflow.NodalControlVolume=.true.
-                call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
-
-            ! SMS parameter set assignment
-            else if(index(MUSG_CMD, MUSG_SMS_Database_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
-                call DB_ReadSMS(trim(USERBIN)//'\'//trim(FName)) 
-            else if(index(MUSG_CMD, MUSG_SMSParamterSetNumber_CMD)  /= 0) then
-                call MUSG_SMSParamterSetNumber(FnumMUT)
-            
-            else if(index(MUSG_CMD, MUSG_GWFMaterialsDatabase_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
-                call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
-
-            else if(index(MUSG_CMD, MUSG_SWFMaterialsDatabase_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
-                call DB_ReadSWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
-            
-            else if(index(MUSG_CMD, MUSG_ET_Database_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
-                call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
-                
-            else if(index(MUSG_CMD, MUSG_2dMeshFromGb_CMD)  /= 0) then
-                ! Build the 2D template mesh from a grdbldr 2D mesh
-                call MUSG_2dMeshFromGb(FnumMUT,TMPLT)
-                call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
-
-            else if(index(MUSG_CMD, GenerateUniformRectangles_CMD)  /= 0) then
-                ! Build the 2D template mesh from a simple 2D rectangular mesh
-                call GenerateUniformRectangles(FnumMUT,TMPLT)
-                call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
-                JustBuilt=.true.
-            
-            else if(index(MUSG_CMD, MUSG_2dQuadtreeMeshFromGWV_CMD)  /= 0) then
-                ! Build the 2D template mesh from a grdbldr 2D mesh
-                call MUSG_2dQuadtreeMeshFromGWV(FnumMUT,TMPLT)
-                call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
-            
-            else if(index(MUSG_CMD, GenerateSWFDomain_CMD)  /= 0) then
-                call GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
-                call BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
-                JustBuilt=.true.
-            
-            else if(index(MUSG_CMD, GenerateCLNDomain_CMD)  /= 0) then
-                call GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
-                !call TecplotToIaJaStructure(TECPLOT_CLN)
-                !call BuildModflowCLNDomain(FNumMUT,Modflow,TMPLT,TECPLOT_CLN)
-                !JustBuilt=.true.
-
-            else if(index(MUSG_CMD, GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,TECPLOT_GWF)
-                if(Modflow.NodalControlVolume) then
-                    call Msg('Build node-centred control volume ia,ja from SWF domain')
-                    call NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
-                else
-                    call TecplotToIaJaStructure(TECPLOT_GWF)
-                end if
-                call BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
-                JustBuilt=.true.
-           
-            else if(index(MUSG_CMD, MUSG_HGSToModflowStructure_CMD)  /= 0) then
-                ! Add components to Modflow data structure from an existing HGS model
-                call MUSG_HGSToModflowStructure(FnumMUT,Modflow,TECPLOT_GWF,TECPLOT_SWF)
-                call TecplotToIaJaStructure(TECPLOT_GWF)
-                JustBuilt=.true.
-
-
-            else if(index(MUSG_CMD, MUSG_ActiveDomain_CMD)  /= 0) then
-                read(FNumMUT,'(a)') ActiveDomainSTR
-                call lcase(ActiveDomainSTR)
-                select case(ActiveDomainSTR)
-                case ('TMPLT')
-                    ActiveDomain=iTMPLT
-                case ('gwf')
-                    ActiveDomain=iGWF
-                case ('swf')
-                    ActiveDomain=iSWF
-                case ('cln')
-                    ActiveDomain=iCLN
-                case default
-                    call ErrMsg('Domain type '//trim(ActiveDomainSTR)//' not supported')
-                end select
-                call Msg(TAB//trim(ActiveDomainSTR))
-                
-
-            else if(index(MUSG_CMD, MUSG_ChooseAllNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseAllNodes(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseAllNodes(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseAllNodes(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseAllNodes(modflow.CLN)
-                end select
-
-             else if(index(MUSG_CMD, MUSG_ClearAllNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ClearAllNodes(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ClearAllNodes(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ClearAllNodes(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ClearAllNodes(modflow.CLN)
-                end select
-             
-             else if(index(MUSG_CMD, MUSG_ChooseNodeAtXYZ_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_ChooseNodeAtXYZ(FnumMUT,TMPLT)
-                
-                ! these domains don't have nodes, they have cells
-                !case (iGWF)
-                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
-                !case (iSWF)
-                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.SWF)
-                !case (iCLN)
-                !    call MUSG_ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
-                end select
-
-             else if(index(MUSG_CMD, MUSG_ChooseAllCells_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseAllCells(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseAllCells(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseAllCells(modflow.CLN)
-                end select
-                
-             else if(index(MUSG_CMD, MUSG_ChooseCellsByLayer_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseCellsByLayer(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseCellsByLayer(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseCellsByLayer(FnumMUT,modflow.CLN)
-                end select
-
-             
-             else if(index(MUSG_CMD, MUSG_ChooseCellAtXYZ_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseCellAtXYZ(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseCellAtXYZ(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseCellAtXYZ(FnumMUT,modflow.CLN)
-                end select
-                
-            
-            else if(index(MUSG_CMD, MUSG_ClearAllCells_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ClearAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ClearAllCells(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ClearAllCells(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ClearAllCells(modflow.CLN)
-                end select
-
-            
-            else if(index(MUSG_CMD, MUSG_ChooseGBNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_ChooseGBNodesTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseGBNodes(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseGBNodes(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseGBNodes(FnumMUT,modflow.CLN)
-                end select
-            
-            else if(index(MUSG_CMD, MUSG_ChooseCellsFromGBElements_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_ChooseCellsFromGBElementsTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseCellsFromGBElements(FnumMUT,modflow.GWF,TMPLT)
-                case (iSWF)
-                    call MUSG_ChooseCellsFromGBElements(FnumMUT,modflow.SWF,TMPLT)
-                case (iCLN)
-                    call MUSG_ChooseCellsFromGBElements(FnumMUT,modflow.CLN,TMPLT)
-                end select
-
-            else if(index(MUSG_CMD, MUSG_ChooseCellsFromGBNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_ChooseCellsFromGBNodesTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseCellsFromGBNodes(FnumMUT,modflow.GWF,TMPLT)
-                case (iSWF)
-                    call MUSG_ChooseCellsFromGBNodes(FnumMUT,modflow.SWF,TMPLT)
-                case (iCLN)
-                    call MUSG_ChooseCellsFromGBNodes(FnumMUT,modflow.CLN,TMPLT)
-                end select
-                
-            else if(index(MUSG_CMD, MUSG_ChooseCellsFromFile_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    !call MUSG_ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                    ! this will be done later
-                case (iGWF)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseCellsFromFile(FnumMUT,modflow.CLN)
-                end select
-            
-             else if(index(MUSG_CMD, MUSG_ChooseAllZones_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseAllZones(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseAllZones(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseAllZones(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseAllZones(modflow.CLN)
-                end select
-             
-             else if(index(MUSG_CMD, MUSG_ClearAllZones_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ClearAllZones(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ClearAllZones(modflow.GWF)
-                case (iSWF)
-                    call MUSG_ClearAllZones(modflow.SWF)
-                case (iCLN)
-                    call MUSG_ClearAllZones(modflow.CLN)
-                end select
-
-             else if(index(MUSG_CMD, MUSG_ChooseZoneNumber_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call MUSG_ChooseZoneNumber(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call MUSG_ChooseZoneNumber(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call MUSG_ChooseZoneNumber(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call MUSG_ChooseZoneNumber(FnumMUT,modflow.CLN)
-                end select
-                
-            else if(index(MUSG_CMD, MUSG_FlagChosenNodesAsOuterBoundary_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_FlagChosenNodesAsOuterBoundaryTMPLT(TMPLT)
-                case (iGWF)
-                    call MUSG_FlagChosenNodesAsOuterBoundary(modflow.GWF)
-                case (iSWF)
-                    call MUSG_FlagChosenNodesAsOuterBoundary(modflow.SWF)
-                case (iCLN)
-                    call MUSG_FlagChosenNodesAsOuterBoundary(modflow.CLN)
-                end select
-            
-            else if(index(MUSG_CMD, MUSG_FlagChosenCellInactive_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call MUSG_FlagChosenCellsInactiveTMPLT(TMPLT)
-                case (iGWF)
-                    call MUSG_FlagChosenCellsInactive(modflow.GWF)
-                case (iSWF)
-                    call MUSG_FlagChosenCellsInactive(modflow.SWF)
-                case (iCLN)
-                    call MUSG_FlagChosenCellsInactive(modflow.CLN)
-                end select
-                
-            ! GWF properties assignment
-            else if(index(MUSG_CMD, MUSG_AssignMaterialtoGWF_CMD)  /= 0) then
-                call MUSG_AssignMaterialtoGWF(FnumMUT,modflow.GWF )
-            else if(index(MUSG_CMD, MUSG_AssignKhtoGWF_CMD)  /= 0) then
-                call MUSG_AssignKhtoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignKvtoGWF_CMD)  /= 0) then
-                call MUSG_AssignKvtoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignSstoGWF_CMD)  /= 0) then
-                call MUSG_AssignSstoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignSytoGWF_CMD)  /= 0) then
-                call MUSG_AssignSytoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignAlphatoGWF_CMD)  /= 0) then
-                call MUSG_AssignAlphatoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignBetatoGWF_CMD)  /= 0) then
-                call MUSG_AssignBetatoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignSrtoGWF_CMD)  /= 0) then
-                call MUSG_AssignSrtoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignBrookstoGWF_CMD)  /= 0) then
-                call MUSG_AssignBrookstoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignStartingheadtoGWF_CMD)  /= 0) then
-                call MUSG_AssignStartingHeadtoDomain(FnumMUT,modflow.GWF)
-            else if(index(MUSG_CMD, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
-                call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
-
-                
-            ! SWF properties assignment
-            else if(index(MUSG_CMD, MUSG_AssignMaterialtoSWF_CMD)  /= 0) then
-                call MUSG_AssignMaterialtoSWF(FnumMUT,modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignSgcltoSWF_CMD)  /= 0) then
-                call MUSG_AssignSgcltoDomain(FnumMUT,modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignStartingDepthtoSWF_CMD)  /= 0) then
-                call MUSG_AssignStartingDepthtoDomain(FnumMUT,modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignManningtoSWF_CMD)  /= 0) then
-                call MUSG_AssignManningtoSWF(FnumMUT,modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignDepthForSmoothingtoSWF_CMD)  /= 0) then
-                call MUSG_AssignDepthForSmoothingtoSWF(FnumMUT,modflow.SWF)
-
-            ! GWF boundary contitions
-            else if(index(MUSG_CMD, MUSG_AssignCHDtoGWF_CMD)  /= 0) then
-                call MUSG_AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignDRNtoGWF_CMD)  /= 0) then
-                call MUSG_AssignDRNtoDomain(FnumMUT,Modflow,Modflow.GWF)
-            else if(index(MUSG_CMD, MUSG_AssignRCHtoGWF_CMD)  /= 0) then
-                call MUSG_AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
-
-            ! SWF boundary contitions
-            else if(index(MUSG_CMD, MUSG_AssignCHDtoSWF_CMD)  /= 0) then
-                call MUSG_AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignRCHtoSWF_CMD)  /= 0) then
-                call MUSG_AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignCriticalDepthtoSWF_CMD)  /= 0) then
-                call MUSG_AssignCriticalDepthtoDomain(Modflow,Modflow.SWF)
-            else if(index(MUSG_CMD, MUSG_AssignCriticalDepthtoCellsSide1_CMD)  /= 0) then
-                call MUSG_AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
-            
-            
-            else if(index(MUSG_CMD, MUSG_GenOCFile_CMD)  /= 0) then
-                call MUSG_GenOCFile(FNumMUT,Modflow)
-                
-            else if(index(MUSG_CMD, MUSG_StressPeriod_CMD)  /= 0) then
-                call MUSG_StressPeriod(FNumMUT,Modflow)
-                
-            else
-                call ErrMsg('MUSG?:'//MUSG_CMD)
-            end if
-        end do
-
-        10 continue
-
-    end subroutine BuildModflowUSG
-
-       !----------------------------------------------------------------------
-    subroutine MUSG_SMSParamterSetNumber(FNumMUT) 
-        implicit none
-
-        integer :: FNumMUT
-        
-        read(FNumMUT,*) iSMSParameterSet
-        write(TmpSTR,'(i4)') iSMSParameterSet
-        call Msg(TAB//'Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
-
-    end subroutine MUSG_SMSParamterSetNumber
-
-
-!----------------------------------------------------------------------
-    subroutine MUSG_ClearAllZones(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
-
-        do i=1,domain.nZones
-            call clear(domain.Zone_Is(i),chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain.nZones
-            if(bcheck(domain.Zone_Is(i),chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Zones chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some Zones chosen')
-
-    end subroutine MUSG_ClearAllZones
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseAllZones(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-
-        
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
-        
-        ncount=0
-        do i=1,domain.nZones
-            call set(domain.Zone_Is(i),chosen)
-            ncount=ncount+1
-        end do
-
-        write(ieco,*) 'Zones chosen: ',ncount
-	    if(ncount == 0) call ErrMsg('No Zones chosen')
-	    
-    end subroutine MUSG_ChooseAllZones
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseZoneNumber(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer :: i
-        integer :: number
-        
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
-
-		read(FNumMUT,*) number
-        write(TmpSTR,'(a,i8)') TAB//'Adding zone number: ',number
-		call Msg(trim(TmpSTR))
-        
-        if(number <= 0 .or. number > domain.nZones) then
-            write(TmpSTR,'(a,i8)') 'Number must be between 1 and ',domain.nZones
-            call Errmsg(trim(TmpSTR))
-        end if
-
-        call set(domain.Zone_Is(number),chosen)
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' zone numbers currently chosen: '
-        call Msg(trim(TmpSTR))
-        do i=1,domain.nZones
-            if(bcheck(domain.Zone_Is(i),chosen)) then
-                write(TmpSTR,'(a,i5)') TAB,i
-                call Msg(trim(TmpSTR))
-            endif
-        end do
-                
-    
-    end subroutine MUSG_ChooseZoneNumber
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseAllNodes(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-
-        
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
-        
-        ncount=0
-        do i=1,domain.nNodes
-            call set(domain.Node_Is(i),chosen)
-            ncount=ncount+1
-        end do
-
-        write(ieco,*) 'Nodes chosen: ',ncount
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-    end subroutine MUSG_ChooseAllNodes
-!----------------------------------------------------------------------
-    subroutine MUSG_ClearAllNodes(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
-            call AllocChk(ialloc,'Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
-
-        do i=1,domain.nNodes
-            call clear(domain.Node_Is(i),chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain.nNodes
-            if(bcheck(domain.Node_Is(i),chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some nodes chosen')
-
-
-    end subroutine MUSG_ClearAllNodes
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseGBNodes(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iNode
-
-        character(MAXSTRING) :: FName
-        character*80 :: dummy
-        logical :: togon(domain.nNodes)
-
-        
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain.nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain.name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain.nNodes
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iNode=(j-1)*domain.nNodes+i
-                        call set(Domain.Node_Is(iNode),chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-       
-         else
-            ncount=0
-            do i=1,domain.nNodes
-                if(togon(i)) then
-                    call set(domain.Node_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseGBNodes
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseGBNodesTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-
-        integer :: i
-	    integer :: ncount
-
-        character(MAXSTRING) :: FName
-        character*80 :: dummy
-        logical :: togon(TMPLT.nNodes)
-
-        
-        if(.not. allocated(TMPLT.Node_Is)) then 
-            allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
-            TMPLT.Node_Is(:)=0
-        end if
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-      !  if(TMPLT.name == 'GWF') then
-      !
-      !      read(FNumMUT,*) nLayer_top,nLayer_bot
-      !  
-      !      nLayer_bot=max(nLayer_bot,1)
-      !      nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-      !      nLayer_top=min(nLayer_top,TMPLT.nLayers)
-      !      nLayer_top=max(nLayer_top,1)
-      !  
-      !      write(TmpSTR,'(i5)') nLayer_top
-		    !call Msg(TAB//'From Layer: '//trim(TmpSTR))
-      !      write(TmpSTR,'(i5)') nLayer_bot
-		    !call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-      !
-      !      ncount=0
-      !      do i=1,TMPLT.nNodes
-      !          if(togon(i)) then
-      !              do j=nLayer_top,nLayer_bot
-      !                  iNode=(j-1)*TMPLT.nNodes+i
-      !                  call set(TMPLT.Node_Is(iNode),chosen)
-      !                  ncount=ncount+1
-      !              end do
-      !          end if
-      !      end do
-      ! 
-      !   else
-            ncount=0
-            do i=1,TMPLT.nNodes
-                if(togon(i)) then
-                    call set(TMPLT.Node_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
+        !if(Modflow.nKeyWord .gt. 0) then
+        !    if(Modflow.Keyword(Modflow.nKeyWord) .eq. PKey) then
+        !        !write(Modflow.iSCAN,'(a)',iostat=status) 'Repeat: '// trim(PKey)
+        !        return
+        !    end if
         !end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
         
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-        call freeunit(itmp)
+        Modflow.nKeyWord=Modflow.nKeyWord+1
+        if(Modflow.nKeyWord>Modflow.nDim) call GrowKeywordArray(Modflow,Modflow.nDim)
+        Modflow.Keyword(Modflow.nKeyWord)=PKey
+        write(Modflow.iSCAN,'(a)',iostat=status) Modflow.Keyword(Modflow.nKeyWord)
 
-
-    end subroutine MUSG_ChooseGBNodesTemplate
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseAllCells(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-
-        ncount=0
-        do i=1,domain.nCells
-            call set(domain.Cell_Is(i),chosen)
-            ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
         
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-
-    end subroutine MUSG_ChooseAllCells
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseNodeAtXYZ(FNumMut,Domain)
-        implicit none
         
-        integer :: FNumMUT
-        type(TecplotDomain) Domain
-
-	    integer :: i,iNode
-	    real(dr) :: x1,y1,z1,dist_min,f1
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain.nnodes
-		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
-		    if(f1.lt.dist_min) then
-			    inode=i
-			    dist_min=f1
-		    endif
-	    end do
-        call set(domain.Node_Is(iNode),chosen)
-        
-        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode)
-        call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1
-        call Msg(tmpSTR)
-
-    end subroutine MUSG_ChooseNodeAtXYZ
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsByLayer(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer :: i, iLyr
-	    integer :: ncount
-
-        read(FNumMut,*) iLyr
-        write(TMPStr,*) TAB//'Choose cells in layer: ',iLyr
-        call Msg(TMPStr)
-
-        ncount=0
-        do i=1,domain.nCells
-            if(domain.iLayer(i) == iLyr) then
-                call set(domain.Cell_Is(i),chosen)
-                ncount=ncount+1
-            endif
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen in layer: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-
-    end subroutine MUSG_ChooseCellsByLayer
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellAtXYZ(FNumMut,Domain)
-        implicit none
-        
-        integer :: FNumMUT
-        type(ModflowDomain) Domain
-
-	    integer :: i,iCell
-	    real(dr) :: x1,y1,z1,dist_min,f1
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//'Find cell closest to XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain.nCells
-		    f1=sqrt((x1-domain.xCell(i))**2+((y1-domain.yCell(i)))**2+((z1-domain.zCell(i)))**2)
-		    if(f1.lt.dist_min) then
-			    iCell=i
-			    dist_min=f1
-		    endif
-	    end do
-        call set(domain.Cell_Is(iCell),chosen)
-        
-        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.xCell(iCell),domain.yCell(iCell),domain.zCell(iCell)
-        call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.xCell(iCell)-x1,domain.yCell(iCell)-y1,domain.zCell(iCell)-z1
-        call Msg(tmpSTR)
-
-    end subroutine MUSG_ChooseCellAtXYZ
-!----------------------------------------------------------------------
-    subroutine MUSG_ClearAllCells(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount
-
-
-        do i=1,domain.nCells
-            call clear(domain.Cell_Is(i),chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_Is(i),chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some Cells chosen')
-
-    end subroutine MUSG_ClearAllCells
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromGBElements(FNumMUT,domain,TMPLT) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        type (TecplotDomain) TMPLT
-
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iCell
-
-        character*80 fname
-        character*80 dummy
-        logical togon(domain.nCells)
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from gb chosen elements file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nElements)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain.name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*TMPLT.nElements+i
-                        call set(Domain.Cell_Is(iCell),chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    call set(Domain.Cell_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseCellsFromGBElements
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromGBElementsTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iElement
-
-        character*80 fname
-        character*80 dummy
-        logical togon(TMPLT.nElements)
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Elements from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nElements)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(TMPLT.name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-            nLayer_top=min(nLayer_top,TMPLT.nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,TMPLT.nElements
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iElement=(j-1)*TMPLT.nElements+i
-                        call set(TMPLT.Element_Is(iElement),chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,TMPLT.nElements
-                if(togon(i)) then
-                    call set(TMPLT.Element_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Elements chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Elements chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseCellsFromGBElementsTemplate
-   
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromGBNodes(FNumMUT,domain,TMPLT) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        type (TecplotDomain) TMPLT
-
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iCell
-
-        character*80 fname
-        character*80 dummy
-        logical togon(domain.nCells)
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from GB chosen nodes file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain.name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*TMPLT.nNodes+i
-                        call set(Domain.Cell_Is(iCell),chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,domain.nCells
-                if(togon(i)) then
-                    call set(Domain.Cell_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseCellsFromGBNodes
-    !----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromGBNodesTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iElement
-
-        character*80 fname
-        character*80 dummy
-        logical togon(TMPLT.nNodes)
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(TMPLT.name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-            nLayer_top=min(nLayer_top,TMPLT.nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,TMPLT.nNodes
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iElement=(j-1)*TMPLT.nNodes+i
-                        call set(TMPLT.Element_Is(iElement),chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,TMPLT.nNodes
-                if(togon(i)) then
-                    call set(TMPLT.Element_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Nodes chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseCellsFromGBNodesTemplate
-!----------------------------------------------------------------------
-    subroutine MUSG_ChooseCellsFromFile(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer :: i
-	    integer :: ncount, iCell,status2
-
-        character*80 fname
-        logical togon(domain.nCells)
-
-		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from ascii file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown')
-        togon(:)=.false.
-        do
-            read(itmp,*,iostat=status2) iCell
-            if(status2/=0) exit
-            togon(iCell)=.true.
-        enddo
-        
-        ncount=0
-        do i=1,domain.nCells
-            if(togon(i)) then
-                call set(Domain.Cell_Is(i),chosen)
-                ncount=ncount+1
-            end if
-        end do
-
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine MUSG_ChooseCellsFromFile
-
-    !----------------------------------------------------------------------
-    subroutine MUSG_FlagChosenNodesAsOuterBoundary(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-        
-        integer :: i
-
-        do i=1,domain.nNodes
-            if(bcheck(domain.Node_is(i),chosen)) then
-                call set(domain.Node_Is(i),BoundaryNode)
-            end if
-        end do
+    end subroutine AddToScan
     
-    end subroutine MUSG_FlagChosenNodesAsOuterBoundary
-
-     !----------------------------------------------------------------------
-    subroutine MUSG_FlagChosenNodesAsOuterBoundaryTMPLT(TMPLT) 
+    !-------------------------------------------------------------
+    subroutine AddCLNFiles(Modflow)
         implicit none
-
-        type (TecplotDomain) TMPLT
         
-        integer :: i
+        type (ModflowProject) Modflow
+        
+        ! Initialize CLN file and write data to NAM
+        Modflow.FNameCLN=trim(Modflow.Prefix)//'.CLN'
+        call OpenAscii(Modflow.iCLN,Modflow.FNameCLN)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN))
+        write(Modflow.iNAM,'(a,i4,a)') 'CLN ',Modflow.iCLN,' '//trim(Modflow.FNameCLN)
+        write(Modflow.iCLN,'(a,1pg10.1)') '# MODFLOW-USG CLN file written by Modflow-User-Tools version ',MUTVersion
 
-        do i=1,TMPLT.nNodes
-            if(bcheck(TMPLT.Node_is(i),chosen)) then
-                call set(TMPLT.Node_Is(i),BoundaryNode)
-            end if
-        end do
+        Modflow.CLN.FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
+        call getunit(Modflow.CLN.iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iCBB,' '//trim(Modflow.CLN.FNameCBB)
+        
+        Modflow.CLN.FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
+        call getunit(Modflow.CLN.iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iHDS,' '//trim(Modflow.CLN.FNameHDS)
+        
+        Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
+        call getunit(Modflow.CLN.iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
+    end subroutine AddCLNFiles
     
-    end subroutine MUSG_FlagChosenNodesAsOuterBoundaryTMPLT
-
     !----------------------------------------------------------------------
-    subroutine MUSG_FlagChosenCellsInactive(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-        
-        integer :: i
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                call set(domain.Cell_Is(i),Inactive)
-            end if
-        end do
-    
-    end subroutine MUSG_FlagChosenCellsInactive
-
-     !----------------------------------------------------------------------
-    subroutine MUSG_FlagChosenCellsInactiveTMPLT(TMPLT) 
-        implicit none
-
-        type (TecplotDomain) TMPLT
-        
-        integer :: i
-
-        do i=1,TMPLT.nElements
-            if(bcheck(TMPLT.Element_is(i),chosen)) then
-                call set(TMPLT.Element_Is(i),Inactive)
-            end if
-        end do
-    
-    end subroutine MUSG_FlagChosenCellsInactiveTMPLT
-   !----------------------------------------------------------------------
-    subroutine MUSG_AssignMaterialtoGWF(FNumMUT, Domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        integer :: iMaterial
-        
-        read(FNumMUT,*) iMaterial
-        write(TmpSTR,'(g15.5)') iMaterial
-        
-        do i=1,nGWFMaterials
-            if(iMaterial == GWFMaterialID(i)) then
-                iMaterial=i
-                exit
-            endif
-        end do
-        
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWFMaterialName(iMaterial)))
-        
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                if(domain.name == 'GWF') then
-                    domain.Kh(i)=Kh_Kx(iMaterial)
-                    domain.Kv(i)=Kv_Kz(iMaterial)
-                    domain.Ss(i)=Specificstorage(iMaterial)
-                    domain.Sy(i)=SpecificYield(iMaterial)
-                    domain.Brooks(i)=Brooks_Corey(iMaterial)
-                    domain.Alpha(i)=Alpha(iMaterial)
-                    domain.Beta(i)=Beta(iMaterial)
-                    domain.Sr(i)=Sr(iMaterial)
-                endif
-            end if
-        end do
-        
-        continue
-    
-    end subroutine MUSG_AssignMaterialtoGWF
-   !----------------------------------------------------------------------
-    subroutine MUSG_AssignKhtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kh of '//trim(TmpSTR))
-        
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Kh(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignKhtoDomain
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignKvtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kv of '//trim(TmpSTR))
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Kv(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignKvtoDomain
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignSstoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Ss of '//trim(TmpSTR))
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Ss(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignSstoDomain
-
-        !----------------------------------------------------------------------
-    subroutine MUSG_AssignSytoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sy of '//trim(TmpSTR))
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Sy(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignSytoDomain
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignAlphatoDomain(FNumMUT,domain) 
+    subroutine AssignAlphatoDomain(FNumMUT,domain) 
         implicit none
 
         integer :: FNumMUT
@@ -2494,9 +688,10 @@
             end if
         end do
     
-    end subroutine MUSG_AssignAlphatoDomain
+    end subroutine AssignAlphatoDomain
+    
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignBetatoDomain(FNumMUT,domain) 
+    subroutine AssignBetatoDomain(FNumMUT,domain) 
         implicit none
 
         integer :: FNumMUT
@@ -2515,30 +710,10 @@
             end if
         end do
     
-    end subroutine MUSG_AssignBetatoDomain
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignSrtoDomain(FNumMUT,domain) 
-        implicit none
+    end subroutine AssignBetatoDomain
 
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sr of '//trim(TmpSTR))
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Sr(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignSrtoDomain
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignBrookstoDomain(FNumMUT,domain) 
+    subroutine AssignBrookstoDomain(FNumMUT,domain) 
         implicit none
 
         integer :: FNumMUT
@@ -2557,184 +732,54 @@
             end if
         end do
     
-    end subroutine MUSG_AssignBrookstoDomain
+    end subroutine AssignBrookstoDomain
+
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignStartingHeadtoDomain(FNumMUT,domain) 
+    subroutine AssignCHDtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
         integer :: FNumMUT
+        type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
         integer :: i
-        real(dr) :: value
+        real(dr) :: head
         
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells starting heads of '//trim(TmpSTR))
+        read(FNumMUT,*) head
+        write(TmpSTR,'(a,g15.5)') TAB//'Assigning '//domain.name//' constant head: ',head
+		call Msg(trim(TmpSTR))
 
+
+        if(.not. allocated(domain.ConstantHead)) then 
+            allocate(domain.ConstantHead(domain.nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell constant head array')            
+            domain.ConstantHead(:)=-999.d0
+        end if
+        
+        call Msg(TAB//'    Cell    Constant head')
         do i=1,domain.nCells
             if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.StartingHeads(i)=value
+                call set(domain.Cell_Is(i),ConstantHead)
+                domain.nCHDCells=domain.nCHDCells+1
+                domain.ConstantHead(i)=head
+                write(TmpSTR,'(i8,2x,g15.5)') i,domain.ConstantHead(i)
+                call Msg(TAB//trim(TmpSTR))
             end if
         end do
-    
-    end subroutine MUSG_AssignStartingHeadtoDomain
-    
-    !----------------------------------------------------------------------
-    subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain) 
-        implicit none
+        
+        if(modflow.iCHD == 0) then ! Initialize CHD file and write data to NAM
+            Modflow.FNameCHD=trim(Modflow.Prefix)//'.chd'
+            call OpenAscii(Modflow.iCHD,Modflow.FNameCHD)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
+            write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
+            write(Modflow.iCHD,'(a,1pg10.1)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',MUTVersion
+        end if
 
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-   	    
-        integer :: i, ncount	!tg-jan10
-   	    real(dr) :: z1, h1, z2, h2
-
-		call Msg(TAB//'Chosen '//trim(domain.name)//' cells are assigned starting heads as a function of zCell')
-
-        read(FNumMUT,*) z1,h1
-        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z1,', Starting Head is ',h1
-        call Msg(TMPStr)
-
-        read(FNumMUT,*) z2,h2
-        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z2,', Starting Head is ',h2
-        call Msg(TMPStr)
-
-		ncount=0
-		do i=1,domain.nCells
-			if(bcheck(domain.Cell_Is(i),chosen)) then
-				ncount=ncount+1
-				domain.StartingHeads(i)=h1-(h1-h2)*(domain.zCell(i)-z1)/(z2-z1)
-			endif
-		end do
-		write(ieco,*) 'Nodes affected: ',ncount
-		if(ncount == 0) call ErrMsg('Ncount zero from last command')
-
-    end subroutine InitialHeadFunctionOfZtoGWF
-
+    end subroutine AssignCHDtoDomain
 
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignSgcltoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells an Sgcl of '//trim(TmpSTR))
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.Sgcl(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignSgcltoDomain
-
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignStartingDepthtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a starting depth of '//trim(TmpSTR))
-
-
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                domain.StartingHeads(i)=domain.zCell(i)+value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignStartingDepthtoDomain
-
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignMaterialtoSWF(FnumMUT,domain)
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: iMaterial
-        
-        read(FNumMUT,*) iMaterial
-        write(TmpSTR,'(g15.5)') iMaterial
-        
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWFMaterialName(iMaterial)))
-
-       
-        do i=1,domain.nZones
-            if(bcheck(domain.Zone_is(i),chosen)) then
-                domain.Manning(i)=ManningCoefficient(iMaterial)
-                domain.DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)
-                domain.ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)
-                domain.H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)
-                domain.H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)
-            end if
-        end do
-    
-    end subroutine MUSG_AssignMaterialtoSWF
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignManningtoSWF(FnumMUT,domain)
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//trim(domain.name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
-
-
-        do i=1,domain.nZones
-            if(bcheck(domain.Zone_is(i),chosen)) then
-                domain.Manning(i)=value
-            end if
-        end do
-    
-    end subroutine MUSG_AssignManningtoSWF
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignDepthForSmoothingtoSWF(FnumMUT,domain)
-        implicit none
-
-        integer :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer :: i
-        real(dr) :: value1, value2
-        
-        read(FNumMUT,*) value1, value2
-        write(TmpSTR,'(1pg15.5)') value1
-		call Msg(TAB//trim(domain.name)//' H1 depth for smoothing: '//trim(TmpSTR))
-        write(TmpSTR,'(1pg15.5)') value2
-		call Msg(TAB//trim(domain.name)//' H2 depth for smoothing: '//trim(TmpSTR))
-
-        
-        do i=1,domain.nZones
-            if(bcheck(domain.Zone_is(i),chosen)) then
-                domain.H1DepthForSmoothing(i)=value1
-                domain.H2DepthForSmoothing(i)=value2
-            end if
-        end do
-
-    end subroutine MUSG_AssignDepthForSmoothingtoSWF
-    
-    !----------------------------------------------------------------------
-    subroutine MUSG_AssignCriticalDepthtoDomain(modflow,domain) 
+    subroutine AssignCriticalDepthtoDomain(modflow,domain) 
         implicit none
 
         type (ModflowProject) modflow
@@ -2807,9 +852,10 @@
         end if
 
 
-    end subroutine MUSG_AssignCriticalDepthtoDomain    
+    end subroutine AssignCriticalDepthtoDomain    
+    
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignCriticalDepthtoCellsSide1(modflow,domain) 
+    subroutine AssignCriticalDepthtoCellsSide1(modflow,domain) 
         implicit none
 
         type (ModflowProject) modflow
@@ -2851,55 +897,36 @@
         end if
 
 
-    end subroutine MUSG_AssignCriticalDepthtoCellsSide1
-
+    end subroutine AssignCriticalDepthtoCellsSide1
 
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignCHDtoDomain(FNumMUT,modflow,domain) 
+    subroutine AssignDepthForSmoothingtoSWF(FnumMUT,domain)
         implicit none
 
         integer :: FNumMUT
-        type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
         integer :: i
-        real(dr) :: head
+        real(dr) :: value1, value2
         
-        read(FNumMUT,*) head
-        write(TmpSTR,'(a,g15.5)') TAB//'Assigning '//domain.name//' constant head: ',head
-		call Msg(trim(TmpSTR))
+        read(FNumMUT,*) value1, value2
+        write(TmpSTR,'(1pg15.5)') value1
+		call Msg(TAB//trim(domain.name)//' H1 depth for smoothing: '//trim(TmpSTR))
+        write(TmpSTR,'(1pg15.5)') value2
+		call Msg(TAB//trim(domain.name)//' H2 depth for smoothing: '//trim(TmpSTR))
 
-
-        if(.not. allocated(domain.ConstantHead)) then 
-            allocate(domain.ConstantHead(domain.nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell constant head array')            
-            domain.ConstantHead(:)=-999.d0
-        end if
         
-        call Msg(TAB//'    Cell    Constant head')
-        do i=1,domain.nCells
-            if(bcheck(domain.Cell_is(i),chosen)) then
-                call set(domain.Cell_Is(i),ConstantHead)
-                domain.nCHDCells=domain.nCHDCells+1
-                domain.ConstantHead(i)=head
-                write(TmpSTR,'(i8,2x,g15.5)') i,domain.ConstantHead(i)
-                call Msg(TAB//trim(TmpSTR))
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                domain.H1DepthForSmoothing(i)=value1
+                domain.H2DepthForSmoothing(i)=value2
             end if
         end do
-        
-        if(modflow.iCHD == 0) then ! Initialize CHD file and write data to NAM
-            Modflow.FNameCHD=trim(Modflow.Prefix)//'.chd'
-            call OpenAscii(Modflow.iCHD,Modflow.FNameCHD)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
-            write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
-            write(Modflow.iCHD,'(a,1pg10.1)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',MUTVersion
-        end if
 
-    end subroutine MUSG_AssignCHDtoDomain
+    end subroutine AssignDepthForSmoothingtoSWF
 
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignDRNtoDomain(FNumMUT,modflow,domain) 
+    subroutine AssignDRNtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
         integer :: FNumMUT
@@ -2943,11 +970,145 @@
             pause 'next stress period?'
         end if
 
-    end subroutine MUSG_AssignDRNtoDomain
-    
+    end subroutine AssignDRNtoDomain
     
     !----------------------------------------------------------------------
-    subroutine MUSG_AssignRCHtoDomain(FNumMUT,modflow,domain) 
+    subroutine AssignKhtoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kh of '//trim(TmpSTR))
+        
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Kh(i)=value
+            end if
+        end do
+    
+    end subroutine AssignKhtoDomain
+    !----------------------------------------------------------------------
+    subroutine AssignKvtoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kv of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Kv(i)=value
+            end if
+        end do
+    
+    end subroutine AssignKvtoDomain
+   
+    !----------------------------------------------------------------------
+    subroutine AssignManningtoSWF(FnumMUT,domain)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//trim(domain.name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
+
+
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                domain.Manning(i)=value
+            end if
+        end do
+    
+    end subroutine AssignManningtoSWF
+
+    !----------------------------------------------------------------------
+    subroutine AssignMaterialtoGWF(FNumMUT, Domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        integer :: iMaterial
+        
+        read(FNumMUT,*) iMaterial
+        write(TmpSTR,'(g15.5)') iMaterial
+        
+        do i=1,nGWFMaterials
+            if(iMaterial == GWFMaterialID(i)) then
+                iMaterial=i
+                exit
+            endif
+        end do
+        
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWFMaterialName(iMaterial)))
+        
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                if(domain.name == 'GWF') then
+                    domain.Kh(i)=Kh_Kx(iMaterial)
+                    domain.Kv(i)=Kv_Kz(iMaterial)
+                    domain.Ss(i)=Specificstorage(iMaterial)
+                    domain.Sy(i)=SpecificYield(iMaterial)
+                    domain.Brooks(i)=Brooks_Corey(iMaterial)
+                    domain.Alpha(i)=Alpha(iMaterial)
+                    domain.Beta(i)=Beta(iMaterial)
+                    domain.Sr(i)=Sr(iMaterial)
+                endif
+            end if
+        end do
+        
+        continue
+    
+    end subroutine AssignMaterialtoGWF
+    
+    !----------------------------------------------------------------------
+    subroutine AssignMaterialtoSWF(FnumMUT,domain)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: iMaterial
+        
+        read(FNumMUT,*) iMaterial
+        write(TmpSTR,'(g15.5)') iMaterial
+        
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWFMaterialName(iMaterial)))
+
+       
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                domain.Manning(i)=ManningCoefficient(iMaterial)
+                domain.DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)
+                domain.ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)
+                domain.H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)
+                domain.H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)
+            end if
+        end do
+    
+    end subroutine AssignMaterialtoSWF
+
+    !----------------------------------------------------------------------
+    subroutine AssignRCHtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
         integer :: FNumMUT
@@ -3021,12 +1182,595 @@
                 write(Modflow.iRCH,'(5(1pg15.5))') (domain.recharge(i),i=1,domain.nCells)
             endif                
         end if
-        
-
-
+    end subroutine AssignRCHtoDomain
     
-    end subroutine MUSG_AssignRCHtoDomain
-   
+    !----------------------------------------------------------------------
+    subroutine AssignSgcltoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells an Sgcl of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Sgcl(i)=value
+            end if
+        end do
+    
+    end subroutine AssignSgcltoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignSrtoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sr of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Sr(i)=value
+            end if
+        end do
+    
+    end subroutine AssignSrtoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignSstoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Ss of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Ss(i)=value
+            end if
+        end do
+    
+    end subroutine AssignSstoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignStartingDepthtoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a starting depth of '//trim(TmpSTR))
+
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.StartingHeads(i)=domain.zCell(i)+value
+            end if
+        end do
+    
+    end subroutine AssignStartingDepthtoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignStartingHeadtoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells starting heads of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.StartingHeads(i)=value
+            end if
+        end do
+    
+    end subroutine AssignStartingHeadtoDomain
+    
+    !----------------------------------------------------------------------
+    subroutine AssignSytoDomain(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sy of '//trim(TmpSTR))
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.Sy(i)=value
+            end if
+        end do
+    
+    end subroutine AssignSytoDomain
+
+    !-------------------------------------------------------------
+    subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
+        implicit none
+
+        character(MAX_STR) :: FName
+        integer :: FNumMUT
+        character(*) :: prefix
+        type (ModflowProject) Modflow
+        type (TecplotDomain) TMPLT
+        type (TecplotDomain) TECPLOT_GWF
+        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TECPLOT_CLN
+        
+        integer :: i
+        
+        Modflow.MUTPrefix=prefix
+
+        read(FNumMUT,'(a)',iostat=status,end=10) instruction
+            
+        if(index(instruction, ModflowPrefix_CMD)  /= 0) then
+            read(FnumMUT,'(a)') Modflow.prefix
+            call Msg(TAB//trim(Modflow.Prefix))
+        else 
+            backspace(FNumMUT)
+        endif
+        call InitializeModflowFiles(Modflow)
+
+        do
+            
+            read(FNumMUT,'(a)',iostat=status,end=10) instruction
+    
+            if(index(instruction, 'end')  /= 0) then
+                if(JustBuilt) then ! Modflow project file creation
+                    call ModflowTMPLTScatterToTecplot(Modflow,TMPLT)                
+
+                    if(modflow.GWF.nCells >0) then
+                        call WriteGWFFiles(Modflow,TECPLOT_GWF)
+                        call GWFToTecplot(Modflow,TECPLOT_GWF)
+                        call ModflowDomainScatterToTecplot(Modflow,Modflow.GWF)  
+                    end if
+                    
+                   
+                    if(modflow.SWF.nCells >0) then
+                        call AddSWFFiles(Modflow)
+                        call WriteSWFFiles(Modflow,TECPLOT_SWF)
+                        call SWFToTecplot(Modflow,TECPLOT_SWF)
+                        call ModflowDomainScatterToTecplot(Modflow,Modflow.SWF)                
+                    end if
+                
+                    if(modflow.CLN.nCells >0) then
+                        call AddCLNFiles(Modflow)
+                        call WriteCLNFiles(Modflow)
+                        !call ModflowDomainToTecplot(Modflow,TECPLOT_CLN)
+                        !call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
+                    end if
+                    
+                    if(modflow.iCHD>0) call WriteCHDFile(Modflow)
+                    if(modflow.iDRN>0) call WriteDRNFile(Modflow)
+                    
+                    ! Default boundary conditions for extra stress periods
+                    if(Modflow.nPeriods>1) then
+                        do i=2,Modflow.nPeriods
+                            if(modflow.iCHD>0) write(modflow.iCHD,'(i10)') -1
+                            if(modflow.iDRN>0) write(modflow.iDRN,'(i10)') -1
+                            if(modflow.iRCH>0) write(modflow.iRCH,'(i10)') -1
+                            if(modflow.iSWBC>0) write(modflow.iSWBC,'(i10)') -1
+                        end do
+                     end if   
+                    
+                end if
+                
+                
+                exit
+            else
+                call Msg(' ')
+                call Msg(instruction)
+            end if
+
+
+            if(status/=0) then
+ 		        write(ErrStr,'(a)') 'File: a.MUSG'
+		        l1=len_trim(ErrStr)
+		        write(ErrStr,'(a)') ErrStr(:l1)//New_line(a)//'Error reading file'
+			    call ErrMsg(ErrStr)
+            end if
+            
+            
+            ! ========================================================================
+            ! Pre-processing instructions 
+            
+
+            if(index(instruction, NodalControlVolumes_CMD)  /= 0) then
+                ! Generate node centred control volume domains (default is mesh centred)
+                Modflow.NodalControlVolume=.true.
+                call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
+
+            ! SMS parameter set assignment
+            else if(index(instruction, SMS_Database_CMD)  /= 0) then
+                read(FnumMUT,'(a)') FName
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadSMS(trim(USERBIN)//'\'//trim(FName)) 
+            else if(index(instruction, SMSParamterSetNumber_CMD)  /= 0) then
+                call SMSParamterSetNumber(FnumMUT)
+            
+            else if(index(instruction, GWFMaterialsDatabase_CMD)  /= 0) then
+                read(FnumMUT,'(a)') FName
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
+
+            else if(index(instruction, SWFMaterialsDatabase_CMD)  /= 0) then
+                read(FnumMUT,'(a)') FName
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadSWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
+            
+            else if(index(instruction, ET_Database_CMD)  /= 0) then
+                read(FnumMUT,'(a)') FName
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
+                
+            else if(index(instruction, MeshFromGb_CMD)  /= 0) then
+                ! Build the 2D template mesh from a grdbldr 2D mesh
+                call MeshFromGb(FnumMUT,TMPLT)
+                call TemplateToTecplot(Modflow,TMPLT)
+                call TecplotToIaJaStructure(TMPLT)
+
+            else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
+                ! Build the 2D template mesh from a simple 2D rectangular mesh
+                call GenerateUniformRectangles(FnumMUT,TMPLT)
+                call TemplateToTecplot(Modflow,TMPLT)
+                call TecplotToIaJaStructure(TMPLT)
+                JustBuilt=.true.
+            
+            else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
+                ! Build the 2D template mesh from a grdbldr 2D mesh
+                call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
+                call TemplateToTecplot(Modflow,TMPLT)
+                call TecplotToIaJaStructure(TMPLT)
+            
+            else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
+                call GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
+                call BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
+                JustBuilt=.true.
+            
+            else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
+                call GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
+                !call TecplotToIaJaStructure(TECPLOT_CLN)
+                !call BuildModflowCLNDomain(FNumMUT,Modflow,TMPLT,TECPLOT_CLN)
+                !JustBuilt=.true.
+
+            else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
+                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,TECPLOT_GWF)
+                if(Modflow.NodalControlVolume) then
+                    call Msg('Build node-centred control volume ia,ja from SWF domain')
+                    call NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
+                else
+                    call TecplotToIaJaStructure(TECPLOT_GWF)
+                end if
+                call BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
+                JustBuilt=.true.
+           
+            else if(index(instruction, HGSToModflowStructure_CMD)  /= 0) then
+                ! Add components to Modflow data structure from an existing HGS model
+                call HGSToModflowStructure(FnumMUT,Modflow,TECPLOT_GWF,TECPLOT_SWF)
+                call TecplotToIaJaStructure(TECPLOT_GWF)
+                JustBuilt=.true.
+
+
+            else if(index(instruction, ActiveDomain_CMD)  /= 0) then
+                read(FNumMUT,'(a)') ActiveDomainSTR
+                call lcase(ActiveDomainSTR)
+                select case(ActiveDomainSTR)
+                case ('TMPLT')
+                    ActiveDomain=iTMPLT
+                case ('gwf')
+                    ActiveDomain=iGWF
+                case ('swf')
+                    ActiveDomain=iSWF
+                case ('cln')
+                    ActiveDomain=iCLN
+                case default
+                    call ErrMsg('Domain type '//trim(ActiveDomainSTR)//' not supported')
+                end select
+                call Msg(TAB//trim(ActiveDomainSTR))
+                
+
+            else if(index(instruction, ChooseAllNodes_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllNodes(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseAllNodes(modflow.GWF)
+                case (iSWF)
+                    call ChooseAllNodes(modflow.SWF)
+                case (iCLN)
+                    call ChooseAllNodes(modflow.CLN)
+                end select
+
+             else if(index(instruction, ClearAllNodes_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ClearAllNodes(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ClearAllNodes(modflow.GWF)
+                case (iSWF)
+                    call ClearAllNodes(modflow.SWF)
+                case (iCLN)
+                    call ClearAllNodes(modflow.CLN)
+                end select
+             
+             else if(index(instruction, ChooseNodeAtXYZ_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call ChooseNodeAtXYZ(FnumMUT,TMPLT)
+                
+                ! these domains don't have nodes, they have cells
+                !case (iGWF)
+                !    call ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
+                !case (iSWF)
+                !    call ChooseNodeAtXYZ(FnumMUT,modflow.SWF)
+                !case (iCLN)
+                !    call ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
+                end select
+
+             else if(index(instruction, ChooseAllCells_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseAllCells(modflow.GWF)
+                case (iSWF)
+                    call ChooseAllCells(modflow.SWF)
+                case (iCLN)
+                    call ChooseAllCells(modflow.CLN)
+                end select
+                
+             else if(index(instruction, ChooseCellsByLayer_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseCellsByLayer(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellsByLayer(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellsByLayer(FnumMUT,modflow.CLN)
+                end select
+
+             
+             else if(index(instruction, ChooseCellAtXYZ_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseCellAtXYZ(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellAtXYZ(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellAtXYZ(FnumMUT,modflow.CLN)
+                end select
+                
+            
+            else if(index(instruction, ClearAllCells_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ClearAllCells(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ClearAllCells(modflow.GWF)
+                case (iSWF)
+                    call ClearAllCells(modflow.SWF)
+                case (iCLN)
+                    call ClearAllCells(modflow.CLN)
+                end select
+
+            
+            else if(index(instruction, ChooseGBNodes_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call ChooseGBNodesTemplate(FnumMUT,TMPLT)
+                case (iGWF)
+                    call ChooseGBNodes(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseGBNodes(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseGBNodes(FnumMUT,modflow.CLN)
+                end select
+            
+            else if(index(instruction, ChooseCellsFromGBElements_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call ChooseCellsFromGBElementsTemplate(FnumMUT,TMPLT)
+                case (iGWF)
+                    call ChooseCellsFromGBElements(FnumMUT,modflow.GWF,TMPLT)
+                case (iSWF)
+                    call ChooseCellsFromGBElements(FnumMUT,modflow.SWF,TMPLT)
+                case (iCLN)
+                    call ChooseCellsFromGBElements(FnumMUT,modflow.CLN,TMPLT)
+                end select
+
+            else if(index(instruction, ChooseCellsFromGBNodes_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call ChooseCellsFromGBNodesTemplate(FnumMUT,TMPLT)
+                case (iGWF)
+                    call ChooseCellsFromGBNodes(FnumMUT,modflow.GWF,TMPLT)
+                case (iSWF)
+                    call ChooseCellsFromGBNodes(FnumMUT,modflow.SWF,TMPLT)
+                case (iCLN)
+                    call ChooseCellsFromGBNodes(FnumMUT,modflow.CLN,TMPLT)
+                end select
+                
+            else if(index(instruction, ChooseCellsFromFile_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                    ! this will be done later
+                case (iGWF)
+                    call ChooseCellsFromFile(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellsFromFile(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellsFromFile(FnumMUT,modflow.CLN)
+                end select
+            
+             else if(index(instruction, ChooseAllZones_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllZones(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseAllZones(modflow.GWF)
+                case (iSWF)
+                    call ChooseAllZones(modflow.SWF)
+                case (iCLN)
+                    call ChooseAllZones(modflow.CLN)
+                end select
+             
+             else if(index(instruction, ClearAllZones_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ClearAllZones(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ClearAllZones(modflow.GWF)
+                case (iSWF)
+                    call ClearAllZones(modflow.SWF)
+                case (iCLN)
+                    call ClearAllZones(modflow.CLN)
+                end select
+
+             else if(index(instruction, ChooseZoneNumber_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseZoneNumber(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseZoneNumber(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseZoneNumber(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseZoneNumber(FnumMUT,modflow.CLN)
+                end select
+                
+            else if(index(instruction, FlagChosenNodesAsOuterBoundary_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call FlagChosenNodesAsOuterBoundaryTMPLT(TMPLT)
+                case (iGWF)
+                    call FlagChosenNodesAsOuterBoundary(modflow.GWF)
+                case (iSWF)
+                    call FlagChosenNodesAsOuterBoundary(modflow.SWF)
+                case (iCLN)
+                    call FlagChosenNodesAsOuterBoundary(modflow.CLN)
+                end select
+            
+            else if(index(instruction, FlagChosenCellInactive_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    call FlagChosenCellsInactiveTMPLT(TMPLT)
+                case (iGWF)
+                    call FlagChosenCellsInactive(modflow.GWF)
+                case (iSWF)
+                    call FlagChosenCellsInactive(modflow.SWF)
+                case (iCLN)
+                    call FlagChosenCellsInactive(modflow.CLN)
+                end select
+                
+            ! GWF properties assignment
+            else if(index(instruction, AssignMaterialtoGWF_CMD)  /= 0) then
+                call AssignMaterialtoGWF(FnumMUT,modflow.GWF )
+            else if(index(instruction, AssignKhtoGWF_CMD)  /= 0) then
+                call AssignKhtoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignKvtoGWF_CMD)  /= 0) then
+                call AssignKvtoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignSstoGWF_CMD)  /= 0) then
+                call AssignSstoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignSytoGWF_CMD)  /= 0) then
+                call AssignSytoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignAlphatoGWF_CMD)  /= 0) then
+                call AssignAlphatoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignBetatoGWF_CMD)  /= 0) then
+                call AssignBetatoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignSrtoGWF_CMD)  /= 0) then
+                call AssignSrtoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignBrookstoGWF_CMD)  /= 0) then
+                call AssignBrookstoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, AssignStartingheadtoGWF_CMD)  /= 0) then
+                call AssignStartingHeadtoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
+                call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
+
+                
+            ! SWF properties assignment
+            else if(index(instruction, AssignMaterialtoSWF_CMD)  /= 0) then
+                call AssignMaterialtoSWF(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignSgcltoSWF_CMD)  /= 0) then
+                call AssignSgcltoDomain(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignStartingDepthtoSWF_CMD)  /= 0) then
+                call AssignStartingDepthtoDomain(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignManningtoSWF_CMD)  /= 0) then
+                call AssignManningtoSWF(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignDepthForSmoothingtoSWF_CMD)  /= 0) then
+                call AssignDepthForSmoothingtoSWF(FnumMUT,modflow.SWF)
+
+            ! GWF boundary contitions
+            else if(index(instruction, AssignCHDtoGWF_CMD)  /= 0) then
+                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)
+            else if(index(instruction, AssignDRNtoGWF_CMD)  /= 0) then
+                call AssignDRNtoDomain(FnumMUT,Modflow,Modflow.GWF)
+            else if(index(instruction, AssignRCHtoGWF_CMD)  /= 0) then
+                call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
+
+            ! SWF boundary contitions
+            else if(index(instruction, AssignCHDtoSWF_CMD)  /= 0) then
+                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            else if(index(instruction, AssignRCHtoSWF_CMD)  /= 0) then
+                call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            else if(index(instruction, AssignCriticalDepthtoSWF_CMD)  /= 0) then
+                call AssignCriticalDepthtoDomain(Modflow,Modflow.SWF)
+            else if(index(instruction, AssignCriticalDepthtoCellsSide1_CMD)  /= 0) then
+                call AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
+            
+            
+            else if(index(instruction, GenOCFile_CMD)  /= 0) then
+                call GenOCFile(FNumMUT,Modflow)
+                
+            else if(index(instruction, StressPeriod_CMD)  /= 0) then
+                call StressPeriod(FNumMUT,Modflow)
+                
+            else
+                call ErrMsg('MUSG?:'//instruction)
+            end if
+        end do
+
+        10 continue
+
+    end subroutine BuildModflowUSG
+
     !----------------------------------------------------------------------
     subroutine BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
         implicit none
@@ -3483,300 +2227,1270 @@
         Modflow.SWF.Cell_Is(:)=0
    
     end subroutine BuildModflowSWFDomain
+
     !----------------------------------------------------------------------
-    subroutine NodeCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+    subroutine ChooseAllZones(domain) 
         implicit none
-    
-        type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
-        integer :: i, j
 
-        ! For modflow cell connection and area calculations
-        integer :: j1, j2
-        real(dr) :: TriangleArea
+        type (ModflowDomain) Domain
 
-        ! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
-        call NodeListToIaJaStructure(TECPLOT_SWF,TMPLT)
-            
-        Modflow.SWF.njag=TECPLOT_SWF.njag
+        integer :: i
+	    integer :: ncount
+
+
         
-        allocate(Modflow.SWF.ia(TECPLOT_SWF.nNodes),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF ia, ja arrays')
-        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
-        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+        if(.not. allocated(domain.Zone_Is)) then 
+            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
+            domain.Zone_Is(:)=0
+        end if
         
-        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:)= TECPLOT_SWF.ConnectionLength(:)
-        Modflow.SWF.PerpendicularArea(:)=TECPLOT_SWF.PerpendicularArea(:)
-      
-        ! Cell horizontal areas
-        ! calculate node-centred cell area based on TMPLT.CellArea
-        allocate(Modflow.SWF.CellArea(TMPLT.nNodes),stat=ialloc)
-        call AllocChk(ialloc,'SWF cell horizontal area arrays')
-        Modflow.SWF.CellArea(:)=0.0d0
-        do i=1,TMPLT.nElements
-            do j=1,TMPLT.nNodesPerElement
-                j1=TMPLT.iNode(j,i)
-                if(j < TMPLT.nNodesPerElement) then
-                    j2=TMPLT.iNode(j+1,i)
-                else
-                    j2=TMPLT.iNode(1,i)
-                end if
+        ncount=0
+        do i=1,domain.nZones
+            call set(domain.Zone_Is(i),chosen)
+            ncount=ncount+1
+        end do
+
+        write(ieco,*) 'Zones chosen: ',ncount
+	    if(ncount == 0) call ErrMsg('No Zones chosen')
+	    
+    end subroutine ChooseAllZones
+    !----------------------------------------------------------------------
+    subroutine ChooseZoneNumber(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+
+        integer :: i
+        integer :: number
+        
+        if(.not. allocated(domain.Zone_Is)) then 
+            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
+            domain.Zone_Is(:)=0
+        end if
+
+		read(FNumMUT,*) number
+        write(TmpSTR,'(a,i8)') TAB//'Adding zone number: ',number
+		call Msg(trim(TmpSTR))
+        
+        if(number <= 0 .or. number > domain.nZones) then
+            write(TmpSTR,'(a,i8)') 'Number must be between 1 and ',domain.nZones
+            call Errmsg(trim(TmpSTR))
+        end if
+
+        call set(domain.Zone_Is(number),chosen)
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' zone numbers currently chosen: '
+        call Msg(trim(TmpSTR))
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_Is(i),chosen)) then
+                write(TmpSTR,'(a,i5)') TAB,i
+                call Msg(trim(TmpSTR))
+            endif
+        end do
                 
-                call area_triangle(TMPLT.x(j1),TMPLT.y(j1),0.0d0, &
-                        &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
-                        &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
-                        &          TriangleArea)
-                Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
+    
+    end subroutine ChooseZoneNumber
+    !----------------------------------------------------------------------
+    subroutine ChooseAllNodes(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount
+
+
         
-                call area_triangle(TMPLT.x(j2),TMPLT.y(j2),0.0d0, &
-                        &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
-                        &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
-                        &          TriangleArea)
-                Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
+        if(.not. allocated(domain.Node_Is)) then 
+            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
+            domain.Node_Is(:)=0
+        end if
+        
+        ncount=0
+        do i=1,domain.nNodes
+            call set(domain.Node_Is(i),chosen)
+            ncount=ncount+1
+        end do
+
+        write(ieco,*) 'Nodes chosen: ',ncount
+	    if(ncount == 0) call ErrMsg('No nodes chosen')
+	    
+    end subroutine ChooseAllNodes
+
+    !----------------------------------------------------------------------
+    subroutine ChooseGBNodes(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iNode
+
+        character(MAX_STR) :: FName
+        character*80 :: dummy
+        logical :: togon(domain.nNodes)
+
+        
+        if(.not. allocated(domain.Node_Is)) then 
+            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
+            domain.Node_Is(:)=0
+        end if
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose nodes from '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,domain.nNodes)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+        if(domain.name == 'GWF') then
+
+            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            nLayer_bot=max(nLayer_bot,1)
+            nLayer_bot=min(nLayer_bot,Domain.nLayers)
+            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_top=max(nLayer_top,1)
+        
+            write(TmpSTR,'(i5)') nLayer_top
+		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+            write(TmpSTR,'(i5)') nLayer_bot
+		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,domain.nNodes
+                if(togon(i)) then
+                    do j=nLayer_top,nLayer_bot
+                        iNode=(j-1)*domain.nNodes+i
+                        call set(Domain.Node_Is(iNode),chosen)
+                        ncount=ncount+1
+                    end do
+                end if
             end do
+       
+         else
+            ncount=0
+            do i=1,domain.nNodes
+                if(togon(i)) then
+                    call set(domain.Node_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount == 0) call ErrMsg('No nodes chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseGBNodes
+    !----------------------------------------------------------------------
+    subroutine ChooseGBNodesTemplate(FNumMUT,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (TecplotDomain) TMPLT
+
+        integer :: i
+	    integer :: ncount
+
+        character(MAX_STR) :: FName
+        character*80 :: dummy
+        logical :: togon(TMPLT.nNodes)
+
+        
+        if(.not. allocated(TMPLT.Node_Is)) then 
+            allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
+            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
+            TMPLT.Node_Is(:)=0
+        end if
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose nodes from '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+      !  if(TMPLT.name == 'GWF') then
+      !
+      !      read(FNumMUT,*) nLayer_top,nLayer_bot
+      !  
+      !      nLayer_bot=max(nLayer_bot,1)
+      !      nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
+      !      nLayer_top=min(nLayer_top,TMPLT.nLayers)
+      !      nLayer_top=max(nLayer_top,1)
+      !  
+      !      write(TmpSTR,'(i5)') nLayer_top
+		    !call Msg(TAB//'From Layer: '//trim(TmpSTR))
+      !      write(TmpSTR,'(i5)') nLayer_bot
+		    !call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+      !
+      !      ncount=0
+      !      do i=1,TMPLT.nNodes
+      !          if(togon(i)) then
+      !              do j=nLayer_top,nLayer_bot
+      !                  iNode=(j-1)*TMPLT.nNodes+i
+      !                  call set(TMPLT.Node_Is(iNode),chosen)
+      !                  ncount=ncount+1
+      !              end do
+      !          end if
+      !      end do
+      ! 
+      !   else
+            ncount=0
+            do i=1,TMPLT.nNodes
+                if(togon(i)) then
+                    call set(TMPLT.Node_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        !end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' nodes chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount == 0) call ErrMsg('No nodes chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseGBNodesTemplate
+    !----------------------------------------------------------------------
+    subroutine ChooseAllCells(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount
+
+
+        ncount=0
+        do i=1,domain.nCells
+            call set(domain.Cell_Is(i),chosen)
+            ncount=ncount+1
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+
+    end subroutine ChooseAllCells
+    !----------------------------------------------------------------------
+    subroutine ChooseNodeAtXYZ(FNumMut,Domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type(TecplotDomain) Domain
+
+	    integer :: i,iNode
+	    real(dr) :: x1,y1,z1,dist_min,f1
+
+        read(FNumMut,*) x1,y1,z1
+        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
+        call Msg(TMPStr)
+
+        dist_min=1.0e20
+	    do i=1,domain.nnodes
+		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
+		    if(f1.lt.dist_min) then
+			    inode=i
+			    dist_min=f1
+		    endif
+	    end do
+        call set(domain.Node_Is(iNode),chosen)
+        
+        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode)
+        call Msg(tmpSTR)
+		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1
+        call Msg(tmpSTR)
+
+    end subroutine ChooseNodeAtXYZ
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsByLayer(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+
+        integer :: i, iLyr
+	    integer :: ncount
+
+        read(FNumMut,*) iLyr
+        write(TMPStr,*) TAB//'Choose cells in layer: ',iLyr
+        call Msg(TMPStr)
+
+        ncount=0
+        do i=1,domain.nCells
+            if(domain.iLayer(i) == iLyr) then
+                call set(domain.Cell_Is(i),chosen)
+                ncount=ncount+1
+            endif
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen in layer: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+
+    end subroutine ChooseCellsByLayer
+    !----------------------------------------------------------------------
+    subroutine ChooseCellAtXYZ(FNumMut,Domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type(ModflowDomain) Domain
+
+	    integer :: i,iCell
+	    real(dr) :: x1,y1,z1,dist_min,f1
+
+        read(FNumMut,*) x1,y1,z1
+        write(TMPStr,*) TAB//'Find cell closest to XYZ: ',x1, y1, z1
+        call Msg(TMPStr)
+
+        dist_min=1.0e20
+	    do i=1,domain.nCells
+		    f1=sqrt((x1-domain.xCell(i))**2+((y1-domain.yCell(i)))**2+((z1-domain.zCell(i)))**2)
+		    if(f1.lt.dist_min) then
+			    iCell=i
+			    dist_min=f1
+		    endif
+	    end do
+        call set(domain.Cell_Is(iCell),chosen)
+        
+        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.xCell(iCell),domain.yCell(iCell),domain.zCell(iCell)
+        call Msg(tmpSTR)
+		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.xCell(iCell)-x1,domain.yCell(iCell)-y1,domain.zCell(iCell)-z1
+        call Msg(tmpSTR)
+
+    end subroutine ChooseCellAtXYZ
+
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsFromFile(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount, iCell,status2
+
+        character*80 fname
+        logical togon(domain.nCells)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Cells from ascii file '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown')
+        togon(:)=.false.
+        do
+            read(itmp,*,iostat=status2) iCell
+            if(status2/=0) exit
+            togon(iCell)=.true.
+        enddo
+        
+        ncount=0
+        do i=1,domain.nCells
+            if(togon(i)) then
+                call set(Domain.Cell_Is(i),chosen)
+                ncount=ncount+1
+            end if
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseCellsFromFile
+
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsFromGBElements(FNumMUT,domain,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        type (TecplotDomain) TMPLT
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iCell
+
+        character*80 fname
+        character*80 dummy
+        logical togon(domain.nCells)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Cells from gb chosen elements file '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nElements)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+        if(domain.name == 'GWF') then
+
+            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            nLayer_bot=max(nLayer_bot,1)
+            nLayer_bot=min(nLayer_bot,Domain.nLayers)
+            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_top=max(nLayer_top,1)
+        
+            write(TmpSTR,'(i5)') nLayer_top
+		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+            write(TmpSTR,'(i5)') nLayer_bot
+		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    do j=nLayer_top,nLayer_bot
+                        iCell=(j-1)*TMPLT.nElements+i
+                        call set(Domain.Cell_Is(iCell),chosen)
+                        ncount=ncount+1
+                    end do
+                end if
+            end do
+        else
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    call set(Domain.Cell_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseCellsFromGBElements
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsFromGBElementsTemplate(FNumMUT,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (TecplotDomain) TMPLT
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iElement
+
+        character*80 fname
+        character*80 dummy
+        logical togon(TMPLT.nElements)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Elements from '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nElements)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+        if(TMPLT.name == 'GWF') then
+
+            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            nLayer_bot=max(nLayer_bot,1)
+            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
+            nLayer_top=min(nLayer_top,TMPLT.nLayers)
+            nLayer_top=max(nLayer_top,1)
+        
+            write(TmpSTR,'(i5)') nLayer_top
+		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+            write(TmpSTR,'(i5)') nLayer_bot
+		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,TMPLT.nElements
+                if(togon(i)) then
+                    do j=nLayer_top,nLayer_bot
+                        iElement=(j-1)*TMPLT.nElements+i
+                        call set(TMPLT.Element_Is(iElement),chosen)
+                        ncount=ncount+1
+                    end do
+                end if
+            end do
+        else
+            ncount=0
+            do i=1,TMPLT.nElements
+                if(togon(i)) then
+                    call set(TMPLT.Element_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Elements chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Elements chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseCellsFromGBElementsTemplate
+   
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsFromGBNodes(FNumMUT,domain,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        type (TecplotDomain) TMPLT
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iCell
+
+        character*80 fname
+        character*80 dummy
+        logical togon(domain.nCells)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Cells from GB chosen nodes file '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+        if(domain.name == 'GWF') then
+
+            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            nLayer_bot=max(nLayer_bot,1)
+            nLayer_bot=min(nLayer_bot,Domain.nLayers)
+            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_top=max(nLayer_top,1)
+        
+            write(TmpSTR,'(i5)') nLayer_top
+		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+            write(TmpSTR,'(i5)') nLayer_bot
+		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    do j=nLayer_top,nLayer_bot
+                        iCell=(j-1)*TMPLT.nNodes+i
+                        call set(Domain.Cell_Is(iCell),chosen)
+                        ncount=ncount+1
+                    end do
+                end if
+            end do
+        else
+            ncount=0
+            do i=1,domain.nCells
+                if(togon(i)) then
+                    call set(Domain.Cell_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseCellsFromGBNodes
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsFromGBNodesTemplate(FNumMUT,TMPLT) 
+        implicit none
+
+        integer :: FNumMUT
+        type (TecplotDomain) TMPLT
+
+        integer :: i, j
+	    integer :: nLayer_bot, nLayer_top, ncount, iElement
+
+        character*80 fname
+        character*80 dummy
+        logical togon(TMPLT.nNodes)
+
+		read(FNumMUT,'(a)') fname
+		call Msg(TAB//'Choose Nodes from '//trim(fname))
+
+        call getunit(itmp)
+        open(itmp,file=fname,status='unknown',form='unformatted')
+        read(itmp) dummy
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nNodes)
+        if(status /= 0) then
+		    call ErrMsg('While reading: '//fname)
+        end if
+        
+        if(TMPLT.name == 'GWF') then
+
+            read(FNumMUT,*) nLayer_top,nLayer_bot
+        
+            nLayer_bot=max(nLayer_bot,1)
+            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
+            nLayer_top=min(nLayer_top,TMPLT.nLayers)
+            nLayer_top=max(nLayer_top,1)
+        
+            write(TmpSTR,'(i5)') nLayer_top
+		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+            write(TmpSTR,'(i5)') nLayer_bot
+		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+
+            ncount=0
+            do i=1,TMPLT.nNodes
+                if(togon(i)) then
+                    do j=nLayer_top,nLayer_bot
+                        iElement=(j-1)*TMPLT.nNodes+i
+                        call set(TMPLT.Element_Is(iElement),chosen)
+                        ncount=ncount+1
+                    end do
+                end if
+            end do
+        else
+            ncount=0
+            do i=1,TMPLT.nNodes
+                if(togon(i)) then
+                    call set(TMPLT.Element_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end do
+        end if
+
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Nodes chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Nodes chosen')
+	    
+        call freeunit(itmp)
+
+
+    end subroutine ChooseCellsFromGBNodesTemplate
+    
+    !----------------------------------------------------------------------
+    subroutine ClearAllCells(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount
+
+
+        do i=1,domain.nCells
+            call clear(domain.Cell_Is(i),chosen)
+        end do
+        
+        ncount=0
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_Is(i),chosen)) ncount=ncount+1
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount /= 0) call ErrMsg('Some Cells chosen')
+
+    end subroutine ClearAllCells
+    
+    !----------------------------------------------------------------------
+    subroutine ClearAllNodes(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount
+
+        if(.not. allocated(domain.Node_Is)) then 
+            allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
+            call AllocChk(ialloc,'Node_Is array')            
+            domain.Node_Is(:)=0
+        end if
+
+        do i=1,domain.nNodes
+            call clear(domain.Node_Is(i),chosen)
+        end do
+        
+        ncount=0
+        do i=1,domain.nNodes
+            if(bcheck(domain.Node_Is(i),chosen)) ncount=ncount+1
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount /= 0) call ErrMsg('Some nodes chosen')
+
+
+    end subroutine ClearAllNodes
+    
+    !----------------------------------------------------------------------
+    subroutine ClearAllZones(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i
+	    integer :: ncount
+
+        if(.not. allocated(domain.Zone_Is)) then 
+            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
+            domain.Zone_Is(:)=0
+        end if
+
+        do i=1,domain.nZones
+            call clear(domain.Zone_Is(i),chosen)
+        end do
+        
+        ncount=0
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_Is(i),chosen)) ncount=ncount+1
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Zones chosen: ',ncount
+        call Msg(trim(TmpSTR))
+        
+	    if(ncount /= 0) call ErrMsg('Some Zones chosen')
+
+    end subroutine ClearAllZones
+
+    !-------------------------------------------------------------
+    subroutine CreateStepPeriodTimeFile(Modflow)
+        implicit none
+
+        type (ModflowProject) Modflow
+        
+        integer :: Fnum
+        integer :: FNumStepPeriodTime
+        character(MAX_STR) :: FNameStepPeriodTime
+        
+        
+        integer :: iTStep
+        integer :: iPeriod
+        real(dr) :: TotalTime
+        real(dr) :: dum1, dum2, dum3, dum4
+        
+        character(4000) :: line
+
+        FNum=Modflow.iLIST
+        rewind(FNum)
+
+        FNameStepPeriodTime=trim(Modflow.MUTPrefix)//'o.StepPeriodTime'
+        call OpenAscii(FNumStepPeriodTime,FNameStepPeriodTime)
+        call Msg( 'Time step, stress period, time to file: '//trim(FNameStepPeriodTime))
+
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status /= 0) return
+            
+            if(index(line,'TIME SUMMARY AT END OF TIME STEP').gt.0) then
+                line=line(index(line,'STEP')+5:)
+                read(line,*) iTStep
+                line=line(index(line,'PERIOD')+7:)
+                read(line,*) iPeriod
+                
+                loop: do
+                    read(FNum,'(a)',iostat=status) line
+                    if(status /= 0) return
+                    if(index(line,'TOTAL TIME').gt.0) then
+                        l1=index(line,'TOTAL TIME')
+                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
+                            read(line(l1+10:),*) TotalTime
+                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
+                            read(line(l1+10:),*) dum1, TotalTime
+                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, TotalTime
+                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
+                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
+                        end if
+                        exit loop
+                    end if
+                end do loop
+                
+                write(FNumStepPeriodTime,*) iTStep, iPeriod, TotalTime
+            end if
+        end do
+                
+    end subroutine CreateStepPeriodTimeFile
+
+    !-------------------------------------------------------------
+    subroutine DisplayDomainAttributes(domain)
+        implicit none
+        type (TecplotDomain) Domain
+        
+        
+        call Msg('*** Derived '//trim(domain.name)//' mesh attributes:')
+        call Msg('    Tecplot Element Type: '//trim(domain.ElementType))
+        write(TMPStr,'(i10)') domain.nElements
+        call Msg(trim(TmpSTR)//' Elements')
+        write(TMPStr,'(i10)') domain.nLayers
+        call Msg(trim(TmpSTR)//' Layers')
+        write(TMPStr,'(i10)') domain.nNodes
+        call Msg(trim(TmpSTR)//' Nodes')
+        write(TMPStr,'(i10)') domain.nNodesPerElement
+        call Msg(trim(TmpSTR)//' Nodes Per Element')
+        
+        return
+    end  subroutine DisplayDomainAttributes
+
+    !!-------------------------------------------------------------
+    !subroutine FindNeighbours(Modflow,domain)
+    !    implicit none
+    !    type (ModflowProject) Modflow
+    !    type(ModflowDomain) domain
+    !    
+    !    integer :: i
+    !    
+    !    if(domain.name == 'GWF') then
+    !        if(domain.nNodesPerElement==6) then 
+    !            domain.nEdgesPerCell=9
+    !        else if(domain.nNodesPerElement==8) then
+    !            domain.nEdgesPerCell=12
+    !        else
+    !            write(TmpSTR,'(i2)') Modflow.GWF.nNodesPerElement
+    !            call ErrMsg('Modflow.GWF.nNodesPerElement not supported yet: '//trim(TmpSTR))
+    !        end if
+    !        allocate(Modflow.GWF.xEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),&
+    !                Modflow.GWF.yEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),&
+    !                Modflow.GWF.zEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),stat=ialloc)
+    !        call AllocChk(ialloc,'GWF edge centroid arrays')
+    !    else if(domain.name == 'SWF') then
+    !        if(Modflow.SWF.nNodesPerElement==3) then ! Assume 4-node rectangular element output for Tecplot repeat node 3
+    !            Modflow.SWF.nEdgesPerCell=3
+    !        else if(Modflow.SWF.nNodesPerElement==4) then
+    !            Modflow.SWF.nEdgesPerCell=4
+    !        else
+    !            write(TmpSTR,'(i2)') Modflow.SWF.nNodesPerElement
+    !            call ErrMsg('Modflow.SWF.nNodesPerElement not supported yet: '//trim(TmpSTR))
+    !        end if
+    !        allocate(Modflow.SWF.xEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),&
+    !                Modflow.SWF.yEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),&
+    !                Modflow.SWF.zEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),stat=ialloc)
+    !        call AllocChk(ialloc,'SWF edge centroid arrays')
+    !    end if
+    !    
+    !    
+    !    do i=1,domain.nCells
+    !    if(domain.name == 'GWF') then
+    !    else if(domain.name == 'SWF') then
+    !        domain.xEdge(i,1)=(domain.x(i,1)+domain.x(i,2))/2.0d0
+    !        domain.yEdge(i,1)=(domain.y(i,1)+domain.y(i,2))/2.0d0
+    !        domain.zEdge(i,1)=(domain.z(i,1)+domain.z(i,2))/2.0d0
+    !            
+    !        domain.xEdge(i,2)=(domain.x(i,2)+domain.x(i,3))/2.0d0
+    !        domain.yEdge(i,2)=(domain.y(i,2)+domain.y(i,3))/2.0d0
+    !        domain.zEdge(i,2)=(domain.z(i,2)+domain.z(i,3))/2.0d0
+    !            
+    !        domain.xEdge(i,3)=(domain.x(i,3)+domain.x(i,1))/2.0d0
+    !        domain.yEdge(i,3)=(domain.y(i,3)+domain.y(i,1))/2.0d0
+    !        domain.zEdge(i,3)=(domain.z(i,3)+domain.z(i,1))/2.0d0
+    !    end if    
+    !    end do
+    !    
+    !    do i=1,nCells
+    !        do j=i,nCells
+    !            
+    !    
+    !    call FreeUnit(FNum)
+    !
+    !end subroutine FindNeighbours
+
+    !----------------------------------------------------------------------
+    subroutine FlagChosenCellsInactive(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+        
+        integer :: i
+
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                call set(domain.Cell_Is(i),Inactive)
+            end if
+        end do
+    
+    end subroutine FlagChosenCellsInactive
+
+     !----------------------------------------------------------------------
+    subroutine FlagChosenCellsInactiveTMPLT(TMPLT) 
+        implicit none
+
+        type (TecplotDomain) TMPLT
+        
+        integer :: i
+
+        do i=1,TMPLT.nElements
+            if(bcheck(TMPLT.Element_is(i),chosen)) then
+                call set(TMPLT.Element_Is(i),Inactive)
+            end if
+        end do
+    
+    end subroutine FlagChosenCellsInactiveTMPLT
+    
+    !----------------------------------------------------------------------
+    subroutine FlagChosenNodesAsOuterBoundary(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+        
+        integer :: i
+
+        do i=1,domain.nNodes
+            if(bcheck(domain.Node_is(i),chosen)) then
+                call set(domain.Node_Is(i),BoundaryNode)
+            end if
+        end do
+    
+    end subroutine FlagChosenNodesAsOuterBoundary
+
+    !----------------------------------------------------------------------
+    subroutine FlagChosenNodesAsOuterBoundaryTMPLT(TMPLT) 
+        implicit none
+
+        type (TecplotDomain) TMPLT
+        
+        integer :: i
+
+        do i=1,TMPLT.nNodes
+            if(bcheck(TMPLT.Node_is(i),chosen)) then
+                call set(TMPLT.Node_Is(i),BoundaryNode)
+            end if
+        end do
+    
+    end subroutine FlagChosenNodesAsOuterBoundaryTMPLT
+
+    !-------------------------------------------------------------
+    subroutine FlipHGSNumsBottomToTop(Hgs)
+        implicit none
+        type (HgsProject) Hgs
+        
+        integer :: i, nsheet
+        
+        ! Node number 
+        do i=1,1375
+            nSheet=int(i/hgs.nn2d)
+            write(*,*) i,nsheet
+        end do
+    end subroutine FlipHGSNumsBottomToTop
+
+    !-------------------------------------------------------------
+    subroutine GenOCFile(FNumMUT,Modflow)
+        implicit none
+        
+        integer :: FNumMUT
+        
+        integer :: i
+        
+        type (ModflowProject) Modflow
+        
+        
+        read(FNumMut, *) modflow.nOutputTimes
+        allocate(modflow.OutputTimes(modflow.nOutputTimes),stat=ialloc)
+        call AllocChk(ialloc,'Output time array')  
+        read(FNumMut,*) (modflow.OutputTimes(i),i=1,modflow.nOutputTimes)
+        
+        call Msg(TAB//'   #     Output time')
+        call Msg(TAB//'--------------------')
+        do i=1,modflow.nOutputTimes
+            write(TmpSTR,'(i4,2x,g15.5)') i, modflow.OutputTimes(i)
+            call Msg(TAB//trim(TmpSTR))
+        end do
+    
+        return
+        
+    end subroutine GenOCFile
+    
+    !-------------------------------------------------------------
+    subroutine GrowKeyWordArray(Modflow,ndim) !--- during run if necessary 
+        type (ModflowProject) Modflow
+	    real, parameter :: nf_mult=2
+	    integer :: ndim_new
+	    integer :: ndim,i
+	    character(MAX_STR), allocatable :: KeyWord_tmp(:) 
+
+	    ndim_new=nint(ndim*nf_mult)
+        write(*,*) 'ndim_new ', ndim_new
+
+	    allocate(Keyword_tmp(ndim_new), stat=ialloc)
+	    call AllocChk(ialloc,'allocate Keyword_tmp arrays')
+	    Keyword_tmp(:)=char(0)
+
+	    ! copy current data
+	    do i=1,ndim
+		    Keyword_tmp(i)	=	Modflow.Keyword(i)
+	    end do
+
+	    ! destroy arrays
+	    deallocate(Modflow.Keyword)
+	    ! reallocate
+	    allocate(Modflow.Keyword(ndim_new), stat=ialloc)
+	    call AllocChk(ialloc,'reallocate Modflow.Keyword arrays')
+	    Modflow.Keyword(:)=char(0)
+
+	    ! copy current data
+	    do i=1,ndim
+		    Modflow.Keyword(i)	=	Keyword_tmp(i)	
+	    end do
+
+	    ndim=ndim_new
+	    
+	    deallocate(Keyword_tmp)
+
+    end subroutine GrowKeyWordArray
+
+    !-------------------------------------------------------------
+    subroutine GWF_IBOUNDv2_ToTecplot(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        integer :: i
+
+       
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.IBOUNDv2.tecplot.dat'
+        call OpenAscii(FNum,FName)
+        call Msg( 'To File: '//trim(FName))
+
+        write(FNum,*) 'Title = "Modflow IBOUND file Outputs "'
+
+        write(FNum,'(a)') 'variables="X","Y","Z","IBOUND"'
+        
+        write(FNum,'(a)')'ZONE t="GWF IBOUND v2" '
+
+        write(FNum,'(a)') '# x, y, z, ibound'
+        do i=1, Modflow.GWF.nCells
+            write(FNum,'(5e20.12)') Modflow.GWF.xcell(i),Modflow.GWF.ycell(i),Modflow.GWF.zcell(i),IBOUND(i)
         end do
    
-    end subroutine NodeCentredSWFCellGeometry
-    !----------------------------------------------------------------------
-    subroutine MeshCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+        
+        call FreeUnit(FNum)
+
+    end subroutine GWF_IBOUNDv2_ToTecplot
+
+    !-------------------------------------------------------------
+    subroutine GWFToTecplot(Modflow,TECPLOT_GWF)
         implicit none
-    
-        type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
+        type(ModflowProject) Modflow
+        type(TecplotDomain) TECPLOT_GWF
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
         integer :: i, j
 
-        ! For modflow cell connection and area calculations
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.GWF.name)//'.tecplot.dat'
         
-        integer :: iConn, iNbor
-
-
-        ! Generate ia/ja from face neighbour data calculated by Tecplot
-        call TecplotToIaJaStructure(TECPLOT_SWF)
-
-        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:)=0.0d0
-        Modflow.SWF.PerpendicularArea(:)=0.0d0
-
-        Modflow.SWF.njag=TECPLOT_SWF.njag
         
-        allocate(Modflow.SWF.ia(TECPLOT_SWF.nElements),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF ia, ja arrays')
-        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
-        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        ! Cell horizontal areas
-        ! use existing TMPLT.CellArea (e.g. area of triangle)  
-        allocate(Modflow.SWF.CellArea(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF cell horizontal area arrays')
-        do i=1,Modflow.SWF.nCells
-            Modflow.SWF.CellArea(i)=TMPLT.ElementArea(i)
+        write(FNum,*) 'Title = "'//trim(TECPLOT_GWF.name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","'//trim(modflow.GWF.name)//' Layer","'//trim(modflow.GWF.name)//' Zone",'
+        nVar=5
+            
+        if(allocated(Modflow.GWF.Top)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Top",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.GWF.Bottom)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Bottom",'
+            nVar=nVar+1
+        end if
+
+        if(allocated(Modflow.GWF.Kh)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kh",'
+            nVar=nVar+1
+        end if
+
+        if(allocated(Modflow.GWF.Kv)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kv",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.GWF.Ss)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Ss",'
+            nVar=nVar+1
+        end if
+
+        if(allocated(Modflow.GWF.Sy)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sy",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.GWF.Alpha)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Alpha",'
+            nVar=nVar+1
+        end if
+        if(allocated(Modflow.GWF.Beta)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Beta",'
+            nVar=nVar+1
+        end if
+        if(allocated(Modflow.GWF.Sr)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sr",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.GWF.Brooks)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Brooks",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.GWF.StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Initial head",'
+            nVar=nVar+1
+        end if
+
+        write(FNum,'(a)') trim(VarSTR)
+          
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',TECPLOT_GWF.nNodes,', E=',TECPLOT_GWF.nElements,&
+        ', datapacking=block, zonetype='//trim(TECPLOT_GWF.elementtype)
+        
+        if(modflow.NodalControlVolume) then
+            write(FNum,'(a)') trim(ZoneSTR) !//&
+                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+        else
+            CellCenteredSTR=', VARLOCATION=([4'
+            if(nVar.ge.5) then
+                do j=5,nVar
+                    write(str2,'(i2)') j
+                    CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+                end do
+            end if
+            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+
+            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)  !//&
+                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+        end if
+        
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5e20.12)') (TECPLOT_GWF.x(i),i=1,TECPLOT_GWF.nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5e20.12)') (TECPLOT_GWF.y(i),i=1,TECPLOT_GWF.nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5e20.12)') (TECPLOT_GWF.z(i),i=1,TECPLOT_GWF.nNodes)
+        
+            
+            write(FNum,'(a)') '# layer'
+            write(FNum,'(5i8)') (Modflow.GWF.iLayer(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(a)') '# zone'
+            write(FNum,'(5i8)') (Modflow.GWF.iZone(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(a)') '# cell top'
+            write(FNum,'(5e20.12)') (Modflow.GWF.Top(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(a)') '# cell bottom'
+            write(FNum,'(5e20.12)') (Modflow.GWF.Bottom(i),i=1,Modflow.GWF.nCells)
+            
+            if(allocated(Modflow.GWF.Kh)) then
+                write(FNum,'(a)') '# Kh'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Kh(i),i=1,Modflow.GWF.nCells)
+            end if
+            
+            if(allocated(Modflow.GWF.Kv)) then
+                write(FNum,'(a)') '# Kv'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Kv(i),i=1,Modflow.GWF.nCells)
+            end if
+            
+            if(allocated(Modflow.GWF.Ss)) then
+                write(FNum,'(a)') '# Ss'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Ss(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            
+            if(allocated(Modflow.GWF.Sy)) then
+                write(FNum,'(a)') '# Sy'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Sy(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            
+            if(allocated(Modflow.GWF.Alpha)) then
+                write(FNum,'(a)') '# Alpha'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Alpha(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            
+            if(allocated(Modflow.GWF.Beta)) then
+                write(FNum,'(a)') '# Beta'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Beta(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            
+            if(allocated(Modflow.GWF.Sr)) then
+                write(FNum,'(a)') '# Sr'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Sr(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            
+            if(allocated(Modflow.GWF.Brooks)) then
+                write(FNum,'(a)') '# Brooks'
+                write(FNum,'(5e20.12)') (Modflow.GWF.Brooks(i),i=1,Modflow.GWF.nCells)
+            end if
+
+            if(allocated(Modflow.GWF.StartingHeads)) then
+                write(FNum,'(a)') '# Initial head'
+                write(FNum,'(5e20.12)') (Modflow.GWF.StartingHeads(i),i=1,Modflow.GWF.nCells)
+            end if
+
+        
+        
+        do i=1,TECPLOT_GWF.nElements
+            if(TECPLOT_GWF.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
+                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,3), TECPLOT_GWF.iNode(3,i),(TECPLOT_GWF.iNode(j,i),j=4,6), TECPLOT_GWF.iNode(6,i) 
+            else if(TECPLOT_GWF.nNodesPerElement==8) then ! 8-node brick 
+                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,8) 
+            else
+                write(TmpSTR,'(i2)') TECPLOT_GWF.nNodesPerElement
+                call ErrMsg(trim(TECPLOT_GWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
         end do
-
-        ! Cell connection length and perpendicular area arrays
-        iConn=0
-        iNbor=0
-        do i=1,modflow.SWF.nCells
-            iConn=iConn+1
-                    
-            do j=2,modflow.SWF.ia(i)
-                iConn=iConn+1
-                inBor=iNbor+1
-                ! SWF neighbours always in adjacent column
-                if(TMPLT.nNodesPerElement == 3) then
-                    select case (TECPLOT_SWF.face(iNbor))
-                        case ( 1 )
-                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
-                        case ( 2 )
-                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
-                        case ( 3 )
-                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
-                        case ( 4 )  ! must be 8-node block
-                            call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
-                    end select
-                    modflow.SWF.ConnectionLength(iConn)=TMPLT.rCircle(i)
-                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)*1.0d0  ! assume thickness of 1?
-                else if(TMPLT.nNodesPerElement == 4) then
-                    select case (TECPLOT_SWF.face(iNbor))
-                    case ( 1 )
-                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
-                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(1,i)/2.0d0
-                    case ( 2 )
-                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
-                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(2,i)/2.0d0
-                    case ( 3 )
-                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
-                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(3,i)/2.0d0
-                    case ( 4 )
-                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(4,i)   
-                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(4,i)/2.0d0
-                    end select
-                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)**1.0d0  ! assume thickness of 1?
-                end if
-            end do
-        end do
-    
-    end subroutine MeshCentredSWFCellGeometry
-
+       
+        call FreeUnit(FNum)
+        
+    end subroutine GWFToTecplot
 
     !-------------------------------------------------------------
-    subroutine MUSG_InitializeModflowFiles(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-               
-        call Msg('  ')
-        call Msg('  Initialize Modflow project files with prefix: '//Modflow.Prefix)
-        
-        ! Initialize NAM fil
-        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
-        call OpenAscii(Modflow.iNAM,Modflow.FNameNAM)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameNAM))
-        write(Modflow.iNAM,'(a,1pg10.1)') '# MODFLOW-USG NAM file written by Modflow-User-Tools version ',MUTVersion
-
-        ! Get unit number for LST file and write data to NAM
-        Modflow.FNameLIST=trim(Modflow.Prefix)//'.lst'
-        call getunit(Modflow.iLIST)
-        write(Modflow.iNAM,'(a,i4,a)') 'LIST ',Modflow.iLIST,' '//trim(Modflow.FNameLIST)
-
-        ! Initialize BAS6 file and write data to NAM
-        Modflow.FNameBAS6=trim(Modflow.Prefix)//'.bas'
-        call OpenAscii(Modflow.iBAS6,Modflow.FNameBAS6)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameBAS6))
-        write(Modflow.iNAM,'(a,i4,a)') 'BAS6 ',Modflow.iBAS6,' '//trim(Modflow.FNameBAS6)
-        write(Modflow.iBAS6,'(a)') '# MODFLOW-USGs Basic Package'
-        write(Modflow.iBAS6,'(a,1pg10.1)') '# MODFLOW-USG BAS6 file written by Modflow-User-Tools version ',MUTVersion
-
-        ! Initialize SMS file and write data to NAM
-        Modflow.FNameSMS=trim(Modflow.Prefix)//'.sms'
-        call OpenAscii(Modflow.iSMS,Modflow.FNameSMS)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSMS))
-        write(Modflow.iNAM,'(a,i4,a)') 'SMS  ',Modflow.iSMS,' '//trim(Modflow.FNameSMS)
-        write(Modflow.iSMS,'(a,1pg10.1)') '# MODFLOW-USG SMS file written by Modflow-User-Tools version ',MUTVersion
-
-        ! Initialize OC file and write data to NAM
-        Modflow.FNameOC=trim(Modflow.Prefix)//'.oc'
-        call OpenAscii(Modflow.iOC,Modflow.FNameOC)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOC))
-        write(Modflow.iNAM,'(a,i4,a)') 'OC   ',Modflow.iOC,' '//trim(Modflow.FNameOC)
-        write(Modflow.iOC,'(a,1pg10.1)') '# MODFLOW-USG OC file written by Modflow-User-Tools version ',MUTVersion
-        
-        
-        ! Initialize LPF file and write data to NAM
-        Modflow.FNameLPF=trim(Modflow.Prefix)//'.lpf'
-        call OpenAscii(Modflow.iLPF,Modflow.FNameLPF)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameLPF))
-        write(Modflow.iNAM,'(a,i4,a)') 'LPF  ',Modflow.iLPF,' '//trim(Modflow.FNameLPF)
-        write(Modflow.iLPF,'(a,1pg10.1)') '# MODFLOW-USG Layer Property Flow (LPF) Package written by Modflow-User-Tools version ',MUTVersion
-        
-        ! Initialize GSF file and write data to NAM
-        Modflow.FNameGSF=trim(Modflow.Prefix)//'.gwf.gsf'
-        call OpenAscii(Modflow.iGSF,Modflow.FNameGSF)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameGSF))
-        write(Modflow.iGSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (GSF) written by Modflow-User-Tools version ',MUTVersion
-        
-        ! Initialize SWF_GSF file and write data to NAM
-        Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.swf.gsf'
-        call OpenAscii(Modflow.iSWF_GSF,Modflow.FNameSWF_GSF)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF_GSF))
-        write(Modflow.iSWF_GSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (SWF_GSF) Package written by Modflow-User-Tools version ',MUTVersion
-
-                ! Initialize DIS file and write data to NAM
-        Modflow.FNameDISU=trim(Modflow.Prefix)//'.dis'
-        call OpenAscii(Modflow.iDISU,Modflow.FNameDISU)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDISU))
-        write(Modflow.iNAM,'(a,i4,a)') 'DISU ',Modflow.iDISU,' '//trim(Modflow.FNameDISU)
-        write(Modflow.iDISU,'(a,1pg10.1)') '# MODFLOW-USG DIS file written by Modflow-User-Tools version ',MUTVersion
-        
-        Modflow.GWF.FNameCBB=trim(Modflow.Prefix)//'.GWF.cbb'
-        call getunit(Modflow.GWF.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iCBB,' '//trim(Modflow.GWF.FNameCBB)
-        
-        Modflow.GWF.FNameHDS=trim(Modflow.Prefix)//'.GWF.HDS'
-        call getunit(Modflow.GWF.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iHDS,' '//trim(Modflow.GWF.FNameHDS)
-        
-        Modflow.GWF.FNameDDN=trim(Modflow.Prefix)//'.GWF.DDN'
-        call getunit(Modflow.GWF.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iDDN,' '//trim(Modflow.GWF.FNameDDN)
-
-        return
-    end subroutine MUSG_InitializeModflowFiles
-    !-------------------------------------------------------------
-    subroutine MUSG_AddSWFFiles(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-        
-        
-        ! Initialize SWF file and write data to NAM
-        Modflow.FNameSWF=trim(Modflow.Prefix)//'.swf'
-        call OpenAscii(Modflow.iSWF,Modflow.FNameSWF)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF))
-        write(Modflow.iNAM,'(a,i4,a)') 'SWF ',Modflow.iSWF,' '//trim(Modflow.FNameSWF)
-        write(Modflow.iSWF,'(a,1pg10.1)') '# MODFLOW-USG SWF file written by Modflow-User-Tools version ',MUTVersion
-
-        
-        Modflow.SWF.FNameCBB=trim(Modflow.Prefix)//'.SWF.cbb'
-        call getunit(Modflow.SWF.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iCBB,' '//trim(Modflow.SWF.FNameCBB)
-        
-        Modflow.SWF.FNameHDS=trim(Modflow.Prefix)//'.SWF.HDS'
-        call getunit(Modflow.SWF.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iHDS,' '//trim(Modflow.SWF.FNameHDS)
-        
-        Modflow.SWF.FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
-        call getunit(Modflow.SWF.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iDDN,' '//trim(Modflow.SWF.FNameDDN)
-        
-
-        
-    end subroutine MUSG_AddSWFFiles
-    !-------------------------------------------------------------
-    subroutine MUSG_AddCLNFiles(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-        
-        ! Initialize CLN file and write data to NAM
-        Modflow.FNameCLN=trim(Modflow.Prefix)//'.CLN'
-        call OpenAscii(Modflow.iCLN,Modflow.FNameCLN)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN))
-        write(Modflow.iNAM,'(a,i4,a)') 'CLN ',Modflow.iCLN,' '//trim(Modflow.FNameCLN)
-        write(Modflow.iCLN,'(a,1pg10.1)') '# MODFLOW-USG CLN file written by Modflow-User-Tools version ',MUTVersion
-
-        Modflow.CLN.FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
-        call getunit(Modflow.CLN.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iCBB,' '//trim(Modflow.CLN.FNameCBB)
-        
-        Modflow.CLN.FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
-        call getunit(Modflow.CLN.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iHDS,' '//trim(Modflow.CLN.FNameHDS)
-        
-        Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
-        call getunit(Modflow.CLN.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
-        
-
-        
-    end subroutine MUSG_AddCLNFiles
-    
-    !-------------------------------------------------------------
-    subroutine MUSG_HGSToModflowStructure(FNumMUT, Modflow, TECPLOT_GWF, TECPLOT_SWF)
+    subroutine HGSToModflowStructure(FNumMUT, Modflow, TECPLOT_GWF, TECPLOT_SWF)
         implicit none
         
 
@@ -3819,7 +3533,7 @@
             
         ! Overland flow aka SWF data
         if(hgs.mesh.nolfe>0) then  ! olf domain present
-            !call MUSG_AddSWFFiles(FNumMUT, Modflow)
+            !call AddSWFFiles(FNumMUT, Modflow)
             select case (hgs.mesh.olfnln)
             case (4)
                 if(hgs.mesh.inolf(4,1)==0) then
@@ -3860,48 +3574,14 @@
         call TecplotToIaJaStructure(Tecplot_GWF)
         !call WriteGWFFiles(Modflow)
         
-    ! Fracture element data
-    if(hgs.mesh.nef>0) then  ! fracture domain present
-        call Msg('*** HGS fracture domain present but not supported')
-    end if
+        ! Fracture element data
+        if(hgs.mesh.nef>0) then  ! fracture domain present
+            call Msg('*** HGS fracture domain present but not supported')
+        end if
         
-    end subroutine MUSG_HGSToModflowStructure
+    end subroutine HGSToModflowStructure
     
     !-------------------------------------------------------------
-    subroutine FlipHGSNumsBottomToTop(Hgs)
-        implicit none
-        type (HgsProject) Hgs
-        
-        integer :: i, nsheet
-        
-        ! Node number 
-        do i=1,1375
-            nSheet=int(i/hgs.nn2d)
-            write(*,*) i,nsheet
-        end do
-    end subroutine FlipHGSNumsBottomToTop
-    
-    
-    !-------------------------------------------------------------
-    subroutine DisplayDomainAttributes(domain)
-        implicit none
-        type (TecplotDomain) Domain
-        
-        
-        call Msg('*** Derived '//trim(domain.name)//' mesh attributes:')
-        call Msg('    Tecplot Element Type: '//trim(domain.ElementType))
-        write(TMPStr,'(i10)') domain.nElements
-        call Msg(trim(TmpSTR)//' Elements')
-        write(TMPStr,'(i10)') domain.nLayers
-        call Msg(trim(TmpSTR)//' Layers')
-        write(TMPStr,'(i10)') domain.nNodes
-        call Msg(trim(TmpSTR)//' Nodes')
-        write(TMPStr,'(i10)') domain.nNodesPerElement
-        call Msg(trim(TmpSTR)//' Nodes Per Element')
-        
-        return
-    end  subroutine DisplayDomainAttributes
-
 
   !  !-------------------------------------------------------------
   !  subroutine HgsPmToMeshCenteredModflow(Hgs,TECPLOT_GWF)
@@ -4139,74 +3819,219 @@
   !      
   !  end subroutine HgsOlfToMeshCenteredModflow
  
-    !!-------------------------------------------------------------
-    !subroutine FindNeighbours(Modflow,domain)
-    !    implicit none
-    !    type (ModflowProject) Modflow
-    !    type(ModflowDomain) domain
-    !    
-    !    integer :: i
-    !    
-    !    if(domain.name == 'GWF') then
-    !        if(domain.nNodesPerElement==6) then 
-    !            domain.nEdgesPerCell=9
-    !        else if(domain.nNodesPerElement==8) then
-    !            domain.nEdgesPerCell=12
-    !        else
-    !            write(TmpSTR,'(i2)') Modflow.GWF.nNodesPerElement
-    !            call ErrMsg('Modflow.GWF.nNodesPerElement not supported yet: '//trim(TmpSTR))
-    !        end if
-    !        allocate(Modflow.GWF.xEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),&
-    !                Modflow.GWF.yEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),&
-    !                Modflow.GWF.zEdge(Modflow.GWF.nCells,Modflow.GWF.nNodesPerElement),stat=ialloc)
-    !        call AllocChk(ialloc,'GWF edge centroid arrays')
-    !    else if(domain.name == 'SWF') then
-    !        if(Modflow.SWF.nNodesPerElement==3) then ! Assume 4-node rectangular element output for Tecplot repeat node 3
-    !            Modflow.SWF.nEdgesPerCell=3
-    !        else if(Modflow.SWF.nNodesPerElement==4) then
-    !            Modflow.SWF.nEdgesPerCell=4
-    !        else
-    !            write(TmpSTR,'(i2)') Modflow.SWF.nNodesPerElement
-    !            call ErrMsg('Modflow.SWF.nNodesPerElement not supported yet: '//trim(TmpSTR))
-    !        end if
-    !        allocate(Modflow.SWF.xEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),&
-    !                Modflow.SWF.yEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),&
-    !                Modflow.SWF.zEdge(Modflow.SWF.nCells,Modflow.SWF.nEdgesPerCell),stat=ialloc)
-    !        call AllocChk(ialloc,'SWF edge centroid arrays')
-    !    end if
-    !    
-    !    
-    !    do i=1,domain.nCells
-    !    if(domain.name == 'GWF') then
-    !    else if(domain.name == 'SWF') then
-    !        domain.xEdge(i,1)=(domain.x(i,1)+domain.x(i,2))/2.0d0
-    !        domain.yEdge(i,1)=(domain.y(i,1)+domain.y(i,2))/2.0d0
-    !        domain.zEdge(i,1)=(domain.z(i,1)+domain.z(i,2))/2.0d0
-    !            
-    !        domain.xEdge(i,2)=(domain.x(i,2)+domain.x(i,3))/2.0d0
-    !        domain.yEdge(i,2)=(domain.y(i,2)+domain.y(i,3))/2.0d0
-    !        domain.zEdge(i,2)=(domain.z(i,2)+domain.z(i,3))/2.0d0
-    !            
-    !        domain.xEdge(i,3)=(domain.x(i,3)+domain.x(i,1))/2.0d0
-    !        domain.yEdge(i,3)=(domain.y(i,3)+domain.y(i,1))/2.0d0
-    !        domain.zEdge(i,3)=(domain.z(i,3)+domain.z(i,1))/2.0d0
-    !    end if    
-    !    end do
-    !    
-    !    do i=1,nCells
-    !        do j=i,nCells
-    !            
-    !    
-    !    call FreeUnit(FNum)
-    !
-    !end subroutine FindNeighbours
+    !----------------------------------------------------------------------
+    subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+   	    
+        integer :: i, ncount	!tg-jan10
+   	    real(dr) :: z1, h1, z2, h2
+
+		call Msg(TAB//'Chosen '//trim(domain.name)//' cells are assigned starting heads as a function of zCell')
+
+        read(FNumMUT,*) z1,h1
+        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z1,', Starting Head is ',h1
+        call Msg(TMPStr)
+
+        read(FNumMUT,*) z2,h2
+        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z2,', Starting Head is ',h2
+        call Msg(TMPStr)
+
+		ncount=0
+		do i=1,domain.nCells
+			if(bcheck(domain.Cell_Is(i),chosen)) then
+				ncount=ncount+1
+				domain.StartingHeads(i)=h1-(h1-h2)*(domain.zCell(i)-z1)/(z2-z1)
+			endif
+		end do
+		write(ieco,*) 'Nodes affected: ',ncount
+		if(ncount == 0) call ErrMsg('Ncount zero from last command')
+
+    end subroutine InitialHeadFunctionOfZtoGWF
+   
+    !-------------------------------------------------------------
+    subroutine InitializeModflowFiles(Modflow)
+        implicit none
+        
+        type (ModflowProject) Modflow
+               
+        call Msg('  ')
+        call Msg('  Initialize Modflow project files with prefix: '//Modflow.Prefix)
+        
+        ! Initialize NAM fil
+        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
+        call OpenAscii(Modflow.iNAM,Modflow.FNameNAM)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameNAM))
+        write(Modflow.iNAM,'(a,1pg10.1)') '# MODFLOW-USG NAM file written by Modflow-User-Tools version ',MUTVersion
+
+        ! Get unit number for LST file and write data to NAM
+        Modflow.FNameLIST=trim(Modflow.Prefix)//'.lst'
+        call getunit(Modflow.iLIST)
+        write(Modflow.iNAM,'(a,i4,a)') 'LIST ',Modflow.iLIST,' '//trim(Modflow.FNameLIST)
+
+        ! Initialize BAS6 file and write data to NAM
+        Modflow.FNameBAS6=trim(Modflow.Prefix)//'.bas'
+        call OpenAscii(Modflow.iBAS6,Modflow.FNameBAS6)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameBAS6))
+        write(Modflow.iNAM,'(a,i4,a)') 'BAS6 ',Modflow.iBAS6,' '//trim(Modflow.FNameBAS6)
+        write(Modflow.iBAS6,'(a)') '# MODFLOW-USGs Basic Package'
+        write(Modflow.iBAS6,'(a,1pg10.1)') '# MODFLOW-USG BAS6 file written by Modflow-User-Tools version ',MUTVersion
+
+        ! Initialize SMS file and write data to NAM
+        Modflow.FNameSMS=trim(Modflow.Prefix)//'.sms'
+        call OpenAscii(Modflow.iSMS,Modflow.FNameSMS)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSMS))
+        write(Modflow.iNAM,'(a,i4,a)') 'SMS  ',Modflow.iSMS,' '//trim(Modflow.FNameSMS)
+        write(Modflow.iSMS,'(a,1pg10.1)') '# MODFLOW-USG SMS file written by Modflow-User-Tools version ',MUTVersion
+
+        ! Initialize OC file and write data to NAM
+        Modflow.FNameOC=trim(Modflow.Prefix)//'.oc'
+        call OpenAscii(Modflow.iOC,Modflow.FNameOC)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOC))
+        write(Modflow.iNAM,'(a,i4,a)') 'OC   ',Modflow.iOC,' '//trim(Modflow.FNameOC)
+        write(Modflow.iOC,'(a,1pg10.1)') '# MODFLOW-USG OC file written by Modflow-User-Tools version ',MUTVersion
+        
+        
+        ! Initialize LPF file and write data to NAM
+        Modflow.FNameLPF=trim(Modflow.Prefix)//'.lpf'
+        call OpenAscii(Modflow.iLPF,Modflow.FNameLPF)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameLPF))
+        write(Modflow.iNAM,'(a,i4,a)') 'LPF  ',Modflow.iLPF,' '//trim(Modflow.FNameLPF)
+        write(Modflow.iLPF,'(a,1pg10.1)') '# MODFLOW-USG Layer Property Flow (LPF) Package written by Modflow-User-Tools version ',MUTVersion
+        
+        ! Initialize GSF file and write data to NAM
+        Modflow.FNameGSF=trim(Modflow.Prefix)//'.gwf.gsf'
+        call OpenAscii(Modflow.iGSF,Modflow.FNameGSF)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameGSF))
+        write(Modflow.iGSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (GSF) written by Modflow-User-Tools version ',MUTVersion
+        
+        ! Initialize SWF_GSF file and write data to NAM
+        Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.swf.gsf'
+        call OpenAscii(Modflow.iSWF_GSF,Modflow.FNameSWF_GSF)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF_GSF))
+        write(Modflow.iSWF_GSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (SWF_GSF) Package written by Modflow-User-Tools version ',MUTVersion
+
+                ! Initialize DIS file and write data to NAM
+        Modflow.FNameDISU=trim(Modflow.Prefix)//'.dis'
+        call OpenAscii(Modflow.iDISU,Modflow.FNameDISU)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDISU))
+        write(Modflow.iNAM,'(a,i4,a)') 'DISU ',Modflow.iDISU,' '//trim(Modflow.FNameDISU)
+        write(Modflow.iDISU,'(a,1pg10.1)') '# MODFLOW-USG DIS file written by Modflow-User-Tools version ',MUTVersion
+        
+        Modflow.GWF.FNameCBB=trim(Modflow.Prefix)//'.GWF.cbb'
+        call getunit(Modflow.GWF.iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iCBB,' '//trim(Modflow.GWF.FNameCBB)
+        
+        Modflow.GWF.FNameHDS=trim(Modflow.Prefix)//'.GWF.HDS'
+        call getunit(Modflow.GWF.iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iHDS,' '//trim(Modflow.GWF.FNameHDS)
+        
+        Modflow.GWF.FNameDDN=trim(Modflow.Prefix)//'.GWF.DDN'
+        call getunit(Modflow.GWF.iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iDDN,' '//trim(Modflow.GWF.FNameDDN)
+
+        return
+    end subroutine InitializeModflowFiles
+
+    !----------------------------------------------------------------------
+    subroutine MeshCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+        implicit none
+    
+        type (ModflowProject) Modflow
+        type (TecplotDomain) TMPLT
+        type (TecplotDomain) TECPLOT_SWF
+        integer :: i, j
+
+        ! For modflow cell connection and area calculations
+        
+        integer :: iConn, iNbor
+
+
+        ! Generate ia/ja from face neighbour data calculated by Tecplot
+        call TecplotToIaJaStructure(TECPLOT_SWF)
+
+        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        Modflow.SWF.ConnectionLength(:)=0.0d0
+        Modflow.SWF.PerpendicularArea(:)=0.0d0
+
+        Modflow.SWF.njag=TECPLOT_SWF.njag
+        
+        allocate(Modflow.SWF.ia(TECPLOT_SWF.nElements),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF ia, ja arrays')
+        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
+        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+
+        ! Cell horizontal areas
+        ! use existing TMPLT.CellArea (e.g. area of triangle)  
+        allocate(Modflow.SWF.CellArea(Modflow.SWF.nCells),stat=ialloc)
+        call AllocChk(ialloc,'SWF cell horizontal area arrays')
+        do i=1,Modflow.SWF.nCells
+            Modflow.SWF.CellArea(i)=TMPLT.ElementArea(i)
+        end do
+
+        ! Cell connection length and perpendicular area arrays
+        iConn=0
+        iNbor=0
+        do i=1,modflow.SWF.nCells
+            iConn=iConn+1
+                    
+            do j=2,modflow.SWF.ia(i)
+                iConn=iConn+1
+                inBor=iNbor+1
+                ! SWF neighbours always in adjacent column
+                if(TMPLT.nNodesPerElement == 3) then
+                    select case (TECPLOT_SWF.face(iNbor))
+                        case ( 1 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
+                        case ( 2 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
+                        case ( 3 )
+                            modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
+                        case ( 4 )  ! must be 8-node block
+                            call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
+                    end select
+                    modflow.SWF.ConnectionLength(iConn)=TMPLT.rCircle(i)
+                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)*1.0d0  ! assume thickness of 1?
+                else if(TMPLT.nNodesPerElement == 4) then
+                    select case (TECPLOT_SWF.face(iNbor))
+                    case ( 1 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(1,i)/2.0d0
+                    case ( 2 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(2,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(2,i)/2.0d0
+                    case ( 3 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(3,i)/2.0d0
+                    case ( 4 )
+                        modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(4,i)   
+                        modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(4,i)/2.0d0
+                    end select
+                    modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)**1.0d0  ! assume thickness of 1?
+                end if
+            end do
+        end do
+    
+    end subroutine MeshCentredSWFCellGeometry
+
     !-------------------------------------------------------------
     subroutine ModflowDomainGridToTecplot(FName,domain)
         implicit none
         type(TecplotDomain) domain
 
         integer :: Fnum
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
         integer :: i, j
 
         
@@ -4259,451 +4084,13 @@
     end subroutine ModflowDomainGridToTecplot
     
     !-------------------------------------------------------------
-    subroutine TemplateToTecplot(Modflow,TMPLT)
-        implicit none
-        type(ModflowProject) Modflow
-        type(TecplotDomain) TMPLT
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        integer :: i, j
-
-        ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'.tecplot.dat'
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(TMPLT.name)//'"'
-
-        ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(TMPLT.name)//' Zone","'//trim(TMPLT.name)//' Element Area",'
-        nVar=5
-
-        if(allocated(TMPLT.rCircle)) then
-            VarSTR=trim(VarSTR)//'"'//trim(TMPLT.name)//'Inner circle radius",'
-            nVar=nVar+1
-        end if
-            
-        write(FNum,'(a)') trim(VarSTR)
-
-
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(TMPLT.name)//'"  ,N=',TMPLT.nNodes,', E=',TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(TMPLT.elementtype)
-        
-        CellCenteredSTR=', VARLOCATION=([4,5'
-        if(nVar.ge.6) then
-            do j=6,nVar
-                write(str2,'(i2)') j
-                CellCenteredSTR=trim(CellCenteredSTR)//','//str2
-            end do
-        end if
-        CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
-        write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
-
-        write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (TMPLT.x(i),i=1,TMPLT.nNodes)
-        write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (TMPLT.y(i),i=1,TMPLT.nNodes)
-        write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (TMPLT.z(i),i=1,TMPLT.nNodes)
-        
-        write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (TMPLT.iZone(i),i=1,TMPLT.nElements)
-            
-        write(FNum,'(a)') '# element area'
-        write(FNum,'(5e20.12)') (TMPLT.ElementArea(i),i=1,TMPLT.nElements)
-            
-        if(allocated(TMPLT.rCircle)) then
-            write(FNum,'(a)') '# circle radius'
-            write(FNum,'(5e20.12)') (TMPLT.rCircle(i),i=1,TMPLT.nElements)
-        end if
-            
-        
-        do i=1,TMPLT.nElements
-            if(TMPLT.nNodesPerElement==3) then ! 3-node triangle
-                write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3)
-            else if(TMPLT.nNodesPerElement==4) then ! 4-node quadrilateral
-                if(TMPLT.iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,4) 
-                else
-                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3), TMPLT.iNode(3,i) 
-                end if
-            else
-                write(TmpSTR,'(i2)')TMPLT.nNodesPerElement
-                call ErrMsg(trim(TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-            end if
-
-        end do
-       
-        call FreeUnit(FNum)
-        
-    end subroutine TemplateToTecplot
-    !-------------------------------------------------------------
-    subroutine SWFToTecplot(Modflow,TECPLOT_SWF)
-        implicit none
-        type(ModflowProject) Modflow
-        type(TecplotDomain) TECPLOT_SWF
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        integer :: i, j
-
-        ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.SWF.name)//'.tecplot.dat'
-        
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(TECPLOT_SWF.name)//'"'
-
-        ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(modflow.SWF.name)//' Zone","'//trim(modflow.SWF.name)//' zCell",'
-        nVar=5
-            
-        if(allocated(Modflow.SWF.Sgcl)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' SWF-GWF connection length",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.SWF.StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Initial Depth",'
-            nVar=nVar+1
-        end if
-        
-        if(allocated(Modflow.SWF.CellArea)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Cell area",'
-            nVar=nVar+1
-        end if
-                
-        write(FNum,'(a)') trim(VarSTR)
-          
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',TECPLOT_SWF.nNodes,', E=',TECPLOT_SWF.nElements,&
-        ', datapacking=block, zonetype='//trim(TECPLOT_SWF.elementtype)
-            
-        if(modflow.NodalControlVolume) then
-            write(FNum,'(a)') trim(ZoneSTR) 
-        else
-            CellCenteredSTR=', VARLOCATION=([4'
-            if(nVar.ge.5) then
-                do j=5,nVar
-                    if(.not. Modflow.NodalControlVolume) then  ! z Cell is not CELLCENTERED
-                        write(str2,'(i2)') j
-                        CellCenteredSTR=trim(CellCenteredSTR)//','//str2
-                    end if
-                end do
-            end if
-            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
-
-            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR) 
-        end if
-        
-        write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.x(i),i=1,TECPLOT_SWF.nNodes)
-        write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.y(i),i=1,TECPLOT_SWF.nNodes)
-        write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.z(i),i=1,TECPLOT_SWF.nNodes)
-        
-        write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (Modflow.SWF.iZone(i),i=1,Modflow.SWF.nCells)
-            
-        write(FNum,'(a)') '# zCell i.e. cell bottom'
-        write(FNum,'(5e20.12)') (Modflow.SWF.zCell(i),i=1,Modflow.SWF.nCells)
-            
-        if(allocated(Modflow.SWF.Sgcl)) then
-            write(FNum,'(a)') '# SW-GW connection length'
-            write(FNum,'(5e20.12)') (Modflow.SWF.Sgcl(i),i=1,Modflow.SWF.nCells)
-        end if
-
-        if(allocated(Modflow.SWF.StartingHeads)) then
-            write(FNum,'(a)') '# Starting depth'
-            write(FNum,'(5e20.12)') (Modflow.SWF.StartingHeads(i)-Modflow.SWF.ZCell(i),i=1,Modflow.SWF.nCells)
-        end if
-
-        if(allocated(Modflow.SWF.CellArea)) then
-            write(FNum,'(a)') '# Cell Area'
-            write(FNum,'(5e20.12)') (Modflow.SWF.CellArea(i),i=1,Modflow.SWF.nCells)
-        end if
-        
-        do i=1,TECPLOT_SWF.nElements
-            if(TECPLOT_SWF.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3) !, TECPLOT_SWF.iNode(3,i) 
-            else if(TECPLOT_SWF.nNodesPerElement==4) then ! 4-node quadrilateral
-                if(TECPLOT_SWF.iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,4) 
-                else
-                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3), TECPLOT_SWF.iNode(3,i) 
-                end if
-            else
-                write(TmpSTR,'(i2)') TECPLOT_SWF.nNodesPerElement
-                call ErrMsg(trim(TECPLOT_SWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-            end if
-        end do
-       
-        call FreeUnit(FNum)
-        
-    end subroutine SWFToTecplot
-    !-------------------------------------------------------------
-    subroutine GWFToTecplot(Modflow,TECPLOT_GWF)
-        implicit none
-        type(ModflowProject) Modflow
-        type(TecplotDomain) TECPLOT_GWF
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        integer :: i, j
-
-        ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.GWF.name)//'.tecplot.dat'
-        
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(TECPLOT_GWF.name)//'"'
-
-        ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(modflow.GWF.name)//' Layer","'//trim(modflow.GWF.name)//' Zone",'
-        nVar=5
-            
-        if(allocated(Modflow.GWF.Top)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Top",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.Bottom)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Bottom",'
-            nVar=nVar+1
-        end if
-
-        if(allocated(Modflow.GWF.Kh)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kh",'
-            nVar=nVar+1
-        end if
-
-        if(allocated(Modflow.GWF.Kv)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kv",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.Ss)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Ss",'
-            nVar=nVar+1
-        end if
-
-        if(allocated(Modflow.GWF.Sy)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sy",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.Alpha)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Alpha",'
-            nVar=nVar+1
-        end if
-        if(allocated(Modflow.GWF.Beta)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Beta",'
-            nVar=nVar+1
-        end if
-        if(allocated(Modflow.GWF.Sr)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sr",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.Brooks)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Brooks",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Initial head",'
-            nVar=nVar+1
-        end if
-
-        write(FNum,'(a)') trim(VarSTR)
-          
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',TECPLOT_GWF.nNodes,', E=',TECPLOT_GWF.nElements,&
-        ', datapacking=block, zonetype='//trim(TECPLOT_GWF.elementtype)
-        
-        if(modflow.NodalControlVolume) then
-            write(FNum,'(a)') trim(ZoneSTR) !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-        else
-            CellCenteredSTR=', VARLOCATION=([4'
-            if(nVar.ge.5) then
-                do j=5,nVar
-                    write(str2,'(i2)') j
-                    CellCenteredSTR=trim(CellCenteredSTR)//','//str2
-                end do
-            end if
-            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
-
-            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)  !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-        end if
-        
-        write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.x(i),i=1,TECPLOT_GWF.nNodes)
-        write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.y(i),i=1,TECPLOT_GWF.nNodes)
-        write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.z(i),i=1,TECPLOT_GWF.nNodes)
-        
-            
-            write(FNum,'(a)') '# layer'
-            write(FNum,'(5i8)') (Modflow.GWF.iLayer(i),i=1,Modflow.GWF.nCells)
-            write(FNum,'(a)') '# zone'
-            write(FNum,'(5i8)') (Modflow.GWF.iZone(i),i=1,Modflow.GWF.nCells)
-            write(FNum,'(a)') '# cell top'
-            write(FNum,'(5e20.12)') (Modflow.GWF.Top(i),i=1,Modflow.GWF.nCells)
-            write(FNum,'(a)') '# cell bottom'
-            write(FNum,'(5e20.12)') (Modflow.GWF.Bottom(i),i=1,Modflow.GWF.nCells)
-            
-            if(allocated(Modflow.GWF.Kh)) then
-                write(FNum,'(a)') '# Kh'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Kh(i),i=1,Modflow.GWF.nCells)
-            end if
-            
-            if(allocated(Modflow.GWF.Kv)) then
-                write(FNum,'(a)') '# Kv'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Kv(i),i=1,Modflow.GWF.nCells)
-            end if
-            
-            if(allocated(Modflow.GWF.Ss)) then
-                write(FNum,'(a)') '# Ss'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Ss(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            
-            if(allocated(Modflow.GWF.Sy)) then
-                write(FNum,'(a)') '# Sy'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Sy(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            
-            if(allocated(Modflow.GWF.Alpha)) then
-                write(FNum,'(a)') '# Alpha'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Alpha(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            
-            if(allocated(Modflow.GWF.Beta)) then
-                write(FNum,'(a)') '# Beta'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Beta(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            
-            if(allocated(Modflow.GWF.Sr)) then
-                write(FNum,'(a)') '# Sr'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Sr(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            
-            if(allocated(Modflow.GWF.Brooks)) then
-                write(FNum,'(a)') '# Brooks'
-                write(FNum,'(5e20.12)') (Modflow.GWF.Brooks(i),i=1,Modflow.GWF.nCells)
-            end if
-
-            if(allocated(Modflow.GWF.StartingHeads)) then
-                write(FNum,'(a)') '# Initial head'
-                write(FNum,'(5e20.12)') (Modflow.GWF.StartingHeads(i),i=1,Modflow.GWF.nCells)
-            end if
-
-        
-        
-        do i=1,TECPLOT_GWF.nElements
-            if(TECPLOT_GWF.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
-                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,3), TECPLOT_GWF.iNode(3,i),(TECPLOT_GWF.iNode(j,i),j=4,6), TECPLOT_GWF.iNode(6,i) 
-            else if(TECPLOT_GWF.nNodesPerElement==8) then ! 8-node brick 
-                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,8) 
-            else
-                write(TmpSTR,'(i2)') TECPLOT_GWF.nNodesPerElement
-                call ErrMsg(trim(TECPLOT_GWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-            end if
-        end do
-       
-        call FreeUnit(FNum)
-        
-    end subroutine GWFToTecplot
-    !-------------------------------------------------------------
-    subroutine ModflowTMPLTScatterToTecplot(Modflow,TMPLT)
-        implicit none
-        type (ModflowProject) Modflow
-        type(TecplotDomain) TMPLT
-        
-        integer :: i, j
-        character(MAXSTRING) :: FName
-        
-        if(TMPLT.InnerCircles) then
-            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_CircleCentres.tecplot.dat'
-            
-            call OpenAscii(FNum,FName)
-            call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
-
-            VarSTR='variables="X","Y"'
-            nVar=3
-            
-            write(FNum,'(a)') trim(VarSTR)
-            
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Circle Centres", datapacking=point'
-        
-            write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-           
-            do i=1,TMPLT.nElements
-                    write(FNum,'(3(1pg20.9))') TMPLT.xcircle(i),TMPLT.ycircle(i)
-            end do
-
-            call FreeUnit(FNum)
-        endif
-        
-        if(Modflow.NodalControlVolume) then
-            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_EdgePoints.tecplot.dat'
-            
-            call OpenAscii(FNum,FName)
-            call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
-
-            VarSTR='variables="X","Y"'
-            nVar=3
-            
-            write(FNum,'(a)') trim(VarSTR)
-            
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements*TMPLT.nNodesPerElement,', t="'//trim(TMPLT.name)//' Edge Points", datapacking=point'
-        
-            write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-           
-            do i=1,TMPLT.nElements
-                    do j=1,TMPLT.nNodesPerElement
-                        write(FNum,'(3(1pg20.9))') TMPLT.xSide(j,i),TMPLT.ySide(j,i)
-                    end do
-            end do
-
-            call FreeUnit(FNum)
-        
-        end if
-    
-    end subroutine ModflowTMPLTScatterToTecplot
-        !-------------------------------------------------------------
     subroutine ModflowDomainScatterToTecplot(Modflow,domain)
         implicit none
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
         
         integer :: i
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
         
         If(allocated(domain.xCell)) then
             ! Write Modflow cell coordinates as tecplot scatter data
@@ -4851,11 +4238,1825 @@
                 call FreeUnit(FNum)
             end if
         end if
-
-    
     end subroutine ModflowDomainScatterToTecplot
 
+    !-------------------------------------------------------------
+    subroutine ModflowOutputToModflowStructure(FNumMUT, Modflow)
+        implicit none
+        !-------ASSIGN VERSION NUMBER AND DATE
+        CHARACTER*40 VERSION
+        CHARACTER*14 MFVNAM
+        PARAMETER (VERSION='USG-TRANSPORT VERSION 2.02.1')
+        PARAMETER (MFVNAM='USG-TRANSPORT ') !USG = Un-Structured Grids
+        
+        integer :: FNumMUT
+        type (ModflowProject) Modflow
+        
+        integer :: i
+       
+        integer :: inunit
+        CHARACTER*4 CUNIT(NIUNIT)
+        DATA CUNIT/'BCF6', 'WEL ', 'DRN ', 'RIV ', 'EVT ', 'EVS ', 'GHB ',&  !  7  et time series is now EVS as ETS is for segmented ET&
+                'RCH ', 'RTS ', 'TIB ', 'DPF ', 'OC  ', 'SMS ', 'PCB ',&  ! 14
+                'BCT ', 'FHB ', 'RES ', 'STR ', 'IBS ', 'CHD ', 'HFB6',&  ! 21
+                'LAK ', 'LPF ', 'DIS ', 'DISU', 'PVAL', 'SGB ', 'HOB ',&  ! 28
+                'CLN ', 'DPT ', 'ZONE', 'MULT', 'DROB', 'RVOB', 'GBOB',&  ! 35
+                'GNC ', 'DDF ', 'CHOB', 'ETS ', 'DRT ', 'QRT ', 'GMG ',&  ! 42
+                'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
+                'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
+                'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
+                'TVM ', 'SWF ', 'SWBC', 34*'    '/
+
+        integer :: maxunit, nc 
+
+        INCLUDE 'openspec.inc'
+
+        
+        ! read prefix for project
+        read(FNumMUT,'(a)') Modflow.Prefix
+		call lcase(Modflow.Prefix)
+        call Msg('Modflow project prefix: '//Modflow.Prefix)
+        
+        modflow.GWF.Name='GWF'
+        
+        
+        ! Scan file
+        Modflow.FNameSCAN=trim(Modflow.MUTPrefix)//'o.scan'
+        open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
+        write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
+        Modflow.nKeyWord=0
+        allocate(Modflow.KeyWord(Modflow.nDim))
+        Modflow.KeyWord(:)='UNDEFINED'
+
+
+        ! Process NAM file
+        Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
+        call openMUSGFile('NAM',' '//Modflow.FNameNAM,Modflow.Prefix,Modflow.iNAM,Modflow.FNameNAM)
+        INUNIT = 99
+        MAXUNIT= INUNIT
+        !
+        !4------OPEN NAME FILE.
+        OPEN (UNIT=INUNIT,FILE=Modflow.FNameNAM,STATUS='OLD',ACTION=ACTION(1))
+        NC=INDEX(Modflow.FNameNAM,' ')
+        WRITE(*,490)' Using NAME file: ',Modflow.FNameNAM(1:NC)
+490     FORMAT(A,A)
+        
+        ALLOCATE(IUNIT(NIUNIT))
+
+        call Msg(' ')
+        call Msg('-------Open and scan files listed in NAM file:')
+        !
+        !C2------Open all files in name file.
+        CALL SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,NIUNIT,&
+            VERSION,INBAS,MAXUNIT,modflow)
+        
+        !do i=1,niunit
+        !    write(iout,*) i, iunit(i),cunit(i)
+        !end do
+        !
+        
+        ! Unit numbering starts at BCF6=7 so add 6 to iunut index
+        Modflow.iBAS6 =inbas       
+        file_open_flag(inbas) = .true.
+        Modflow.iBCF6 =iunit(1)       
+        Modflow.iWEL  =iunit(2)       
+        Modflow.iDRN  =iunit(3)       
+        Modflow.iRIV  =iunit(4)       
+        Modflow.iEVT  =iunit(5)       
+        Modflow.iEVS  =iunit(6)       
+        Modflow.iGHB  =iunit(7)       
+        Modflow.iRCH  =iunit(8)       
+        Modflow.iRTS  =iunit(9)       
+        Modflow.iTIB =iunit(10)       
+        Modflow.iDPF =iunit(11)       
+        Modflow.iOC  =iunit(12)       
+        Modflow.iSMS =iunit(13)       
+        Modflow.iPCB =iunit(14)       
+        Modflow.iBCT =iunit(15)       
+        Modflow.iFHB =iunit(16)       
+        Modflow.iRES =iunit(17)       
+        Modflow.iSTR =iunit(18)       
+        Modflow.iIBS =iunit(19)       
+        Modflow.iCHD =iunit(20)       
+        Modflow.iHFB6=iunit(21)       
+        Modflow.iLAK =iunit(22)       
+        Modflow.iLPF =iunit(23)       
+        Modflow.iDIS =iunit(24)       
+        Modflow.iDISU=iunit(25)       
+        Modflow.iPVAL=iunit(26)       
+        Modflow.iSGB =iunit(27)       
+        Modflow.iHOB =iunit(28)       
+        Modflow.iCLN =iunit(29)       
+        Modflow.iDPT =iunit(30)       
+        Modflow.iZONE=iunit(31)       
+        Modflow.iMULT=iunit(32)       
+        Modflow.iDROB=iunit(33)       
+        Modflow.iRVOB=iunit(34)       
+        Modflow.iGBOB=iunit(35)       
+        Modflow.iGNC =iunit(36)       
+        Modflow.iDDF =iunit(37)       
+        Modflow.iCHOB=iunit(38)       
+        Modflow.iETS =iunit(39)       
+        Modflow.iDRT =iunit(40)       
+        Modflow.iQRT =iunit(41)       
+        Modflow.iGMG =iunit(42)       
+        Modflow.ihyd =iunit(43)       
+        Modflow.iSFR =iunit(44)       
+        Modflow.iMDT =iunit(45)       
+        Modflow.iGAGE=iunit(46)       
+        Modflow.iLVDA=iunit(47)       
+        Modflow.iSYF =iunit(48)       
+        Modflow.ilmt6=iunit(49)       
+        Modflow.iMNW1=iunit(50)       
+        Modflow.iKDEP=iunit(53)       
+        Modflow.iSUB =iunit(54)       
+        Modflow.iUZF =iunit(55)       
+        Modflow.igwm =iunit(56)       
+        Modflow.iSWT =iunit(57)       
+        Modflow.iPATH=iunit(58)       
+        Modflow.iPTH =iunit(59)       
+        Modflow.iTVM =iunit(64)  
+        Modflow.iSWF =iunit(65)   
+        Modflow.iSWBC =iunit(66)   
+        do i=1,65
+            if(iunit(i) > 0) then
+                file_open_flag(iunit(i)) = .true.
+            end if
+        end do
+
+        ! First read all GSF (grid specification) files for GWF domain, then CLN and SWF domains if present
+        call Msg(' ')
+        call Msg('-------Read all GSF (grid specification) files:')
+        Modflow.FNameGSF=trim(Modflow.Prefix)//'.GWF.gsf'
+        inquire(file=Modflow.FNameGSF,exist=FileExists)
+        if(.not. FileExists) then
+            call Msg('No grid specification file: '//Modflow.FNameGSF)
+        else
+            call Msg('Modflow GWF GSF file: '//Modflow.FNameGSF)
+	        call getunit(Modflow.iGSF)
+            open(Modflow.iGSF,file=Modflow.FNameGSF,status='unknown',form='formatted')
+        
+            call Read_GWF_GSF(Modflow)
+            
+            modflow.GWF.ElementType='febrick'
+
+        end if
+
+        if(Modflow.iCLN /= 0) THEN
+            Modflow.CLN.Name='CLN'
+            modflow.CLN.ElementType='felineseg'
+            Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
+            inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
+            if(.not. FileExists) then
+                call Msg('No grid specification file: '//Modflow.FNameCLN_GSF)
+            else
+                call Msg('Modflow CLN GSF file: '//Modflow.FNameCLN_GSF)
+	            call getunit(Modflow.iCLN_GSF)
+                open(Modflow.iCLN_GSF,file=Modflow.FNameCLN_GSF,status='unknown',form='formatted')
+        
+                call Read_CLN_GSF(Modflow)
+            end if
+        end if
+
+        if(Modflow.iSWF /= 0) THEN
+            Modflow.SWF.name='SWF'
+            Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.SWF.gsf'
+            inquire(file=Modflow.FNameSWF_GSF,exist=FileExists)
+            if(.not. FileExists) then
+                call Msg('No grid specification file: '//Modflow.FNameSWF_GSF)
+            else
+                call Msg('Modflow SWF GSF file: '//Modflow.FNameSWF_GSF)
+	            call getunit(Modflow.iSWF_GSF)
+                open(Modflow.iSWF_GSF,file=Modflow.FNameSWF_GSF,status='unknown',form='formatted')
+        
+                call Read_SWF_GSF(Modflow)
+                
+                if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                    modflow.SWF.ElementType='fetriangle'
+                else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
+                    modflow.SWF.ElementType='fequadrilateral'
+                end if
+
+            end if
+        end if
+
+        ! Read data in Modflow-USG order
+
+        call Msg(' ')
+        call Msg('-------Read options from BAS6:')
+        call ReadBAS6_Options(Modflow) ! based on modflow routine SGWF2BAS8OPEN
+
+        call Msg(' ')
+        call Msg('-------Read first part of DISU:')
+        call ReadDISU_pt1(Modflow)  ! based on modflow routine SDIS2GLO8AR
+        NEQS = NODES
+
+        IF(Modflow.iCLN/=0) THEN
+            call Msg(' ')
+            call Msg('-------Read data from CLN pt1:')
+            call ReadCLN(Modflow)  ! based on modflow routine SDIS2CLN1AR
+            NEQS = NEQS + NCLNNDS
+
+            call ReadCLN_pt2(Modflow)  ! based on modflow routine SDIS2CLN1AR
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            call Msg(' ')
+            call Msg('-------Read data from SWF pt1:')
+            call ReadSWF(Modflow)  ! based on modflow routine SDIS2SWF1AR
+            NEQS = NEQS + NSWFNDS
+
+            ! Young-jin handles this in SDIS2SWF1AR above so I think not required
+            !call ReadSWF_pt2(Modflow)  ! based on modflow routine SDIS2CLN1AR
+        end if
+
+        !crm not reading ghost node stuff yet
+        !C---------------------------------------------------------------------
+        !C3-----READ GNC PACKAGE INPUT  (CONNECTIVITIES AND FRACTIONS)
+        !C---------------------------------------------------------------------
+
+        
+        !C5------ALLOCATE SPACE FOR PARAMETERS AND FLAGS.
+        ALLOCATE(IA(NEQS+1))
+        ALLOCATE (IBOUND(NEQS+1))
+        ALLOCATE(AREA(NEQS))
+        IA = 0
+
+
+        call Msg(' ')
+        call Msg('-------Read second part DISU:')
+        WRITE(FNumEco,11) Modflow.iDISu
+        11 FORMAT(1X,/1X,'DIS -- UNSTRUCTURED GRID DISCRETIZATION PACKAGE,',&
+            ' VERSION 1 : 5/17/2010 - INPUT READ FROM UNIT ',I4)
+        if(Modflow.unstructured) then
+
+            !C     *****************************************************************
+            !C     READ AND SET NODLAY ARRAY, AND READ GEOMETRIC PARAMETERS AND
+            !C     MATRIX CONNECTIVITY FOR UNSTRUCTURED GRID
+            !C     *****************************************************************
+            call ReadDISU_pt2(Modflow)  ! based on modflow routine SGWF2DIS8UR
+            
+            ! Hardwired to read CLN and FAHL arrays for now 
+            call ReadDISU_pt3(Modflow)  
+
+            !end if
+        else
+            ! call ReadDISU_StucturedGridData(Modflow)
+        end if
+        
+        !!C--------------------------------------------------------------------------
+        !!C7H------PREPARE IDXGLO ARRAY FOR CLN/SWF DOMAIN
+        !IF(Modflow.iCLN/=0)THEN
+        !    !CALL FILLIDXGLO_CLN
+        !end if
+        !IF(Modflow.iSWF/=0) THEN
+        !    CALL FILLIDXGLO_SWF
+        !end if
+
+
+        call Msg(' ')
+        call Msg('-------Read Stress Period Data from DISU:')
+        call ReadDISU_StressPeriodData(Modflow)   
+        
+        
+        !C7-----Allocate space for remaining global arrays.
+        ALLOCATE (HNEW(NEQS))
+        !ALLOCATE (HOLD(NEQS))
+        !ALLOCATE (IFMBC)
+        !IFMBC = 0
+        !ALLOCATE (FMBE(NEQS))
+        !ALLOCATE (Sn(NEQS),So(NEQS))
+        !Sn = 1.0
+        !So = 1.0
+        !ALLOCATE (RHS(NEQS))
+        !ALLOCATE (BUFF(NEQS))
+        ALLOCATE (STRT(NEQS))
+        !DDREF=>STRT
+        !ALLOCATE (LAYHDT(NLAY))
+        !ALLOCATE (LAYHDS(NLAY))
+        !WRITE(IOUT,'(//)')
+
+        !C------------------------------------------------------------------------
+        !C10------Read rest of groundwater BAS Package file (IBOUND and initial heads)
+        call Msg(' ')
+        call Msg('-------Read IBOUND and initial heads from BAS6:')
+        
+        ALLOCATE (modflow.GWF.IBOUND(modflow.GWF.ncells))
+        ALLOCATE (modflow.GWF.HNEW(Modflow.GWF.nCells))
+
+        IF(IUNSTR.EQ.0)THEN
+        !C10A-------FOR STRUCTURED GRIDS
+            !CALL SGWF2BAS8SR
+        ELSE
+        !C10B-------FOR UNSTRUCTURED GRIDS
+            CALL ReadBAS6_IBOUND_IHEADS(Modflow)  ! based on modflow routine SGWF2BAS8UR
+        end if
+
+        
+        !C
+        !C-----------------------------------------------------------------------
+        !C11-----SET UP OUTPUT CONTROL.
+        call Msg(' ')
+        call Msg('-------Read data from OC:')
+        CALL ReadOC(Modflow) ! based on modflow routine SGWF2BAS7I  
+        
+        IF(Modflow.iLPF/=0) THEN
+            !C
+            !C-----------------------------------------------------------------------
+            !C11-----Read LPF Package file 
+            call Msg(' ')
+            call Msg('-------Read data from LPF:')
+            CALL ReadLPF(Modflow) ! based on modflow routine SGWF2BAS7I  
+        end if
+        
+        IF(Modflow.iCLN/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read rest of CLN Package file (IBOUND and initial heads)
+            call Msg(' ')
+            call Msg('-------Read IBOUND and initial heads from CLN:')
+            ALLOCATE (modflow.CLN.IBOUND(modflow.CLN.ncells))
+            ALLOCATE (modflow.CLN.HNEW(Modflow.CLN.nCells))
+            CALL ReadCLN_IBOUND_IHEADS(Modflow)  ! based on modflow routine CLN2BAS1AR
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read rest of SWF Package file (IBOUND and initial heads)
+            call Msg(' ')
+            call Msg('-------Read IBOUND and initial heads from SWF:')
+            ALLOCATE (modflow.SWF.IBOUND(modflow.SWF.ncells))
+            ALLOCATE (modflow.SWF.HNEW(Modflow.SWF.nCells))
+            CALL ReadSWF_IBOUND_IHEADS(Modflow)  ! based on modflow routine SWF2BAS1AR
+        end if
+        
+        IF(Modflow.iWEL/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read WEL Package file
+            call Msg(' ')
+            call Msg('-------Read data from WEL:')
+            CALL ReadWEL(Modflow)  ! based on modflow routine GWF2WEL7U1AR
+        end if
+        
+        IF(Modflow.iCHD/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read CHD Package file
+            call Msg(' ')
+            call Msg('-------Read data from CHD:')
+            CALL ReadCHD(Modflow)  ! based on modflow routine GWF2CHD7U1AR
+        end if
+
+        IF(Modflow.iRCH/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read RCH Package file
+            call Msg(' ')
+            call Msg('-------Read data from RCH:')
+            CALL ReadRCH(Modflow)  ! based on modflow routine GWF2RCH8U1AR
+            call ReadRCH_StressPeriods(Modflow) ! based on modflow routine GWF2RCH8U1RP
+        end if
+        
+        IF(Modflow.iDRN/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read DRN Package file
+            call Msg(' ')
+            call Msg('-------Read data from DRN:')
+            CALL ReadDRN(Modflow)  ! based on modflow routine GWF2RCH8U1AR
+            call ReadDRN_StressPeriods(Modflow) ! based on modflow routine GWF2RCH8U1RP
+        end if
+        
+        IF(Modflow.iSWBC/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read RCH Package file
+            call Msg(' ')
+            call Msg('-------Read data from SWBC:')
+            CALL ReadSWBC(Modflow)  ! based on modflow routine SWF2BC1U1AR
+            call ReadSWBC2(Modflow) ! based on modflow routine SWF2BC1U1RP
+        end if
+        
+        IF(Modflow.iSMS/=0) THEN
+            !C------------------------------------------------------------------------
+            !C------Read SMS Package file
+            call Msg(' ')
+            call Msg('-------Read data from SMS:')
+            CALL ReadSMS(Modflow)  ! based on modflow routine SMS7U1AR
+        end if
+
+        call WriteVolumeBudgetToTecplot(Modflow)
+        
+        call CreateStepPeriodTimeFile(Modflow)
+
+        
+        call ReadBinary_HDS_File(Modflow,Modflow.GWF)
+        call ReadBinary_DDN_File(Modflow,Modflow.GWF)
+        call ReadBinary_CBB_File(Modflow, Modflow.GWF)
+        if(Modflow.GWF.IsDefined) then
+            call Msg(' ')
+		    call Msg('Generating mesh-based Tecplot output files for GWF:')
+            
+            
+            call ModflowResultsToTecplot(Modflow,Modflow.GWF)
+
+            
+        else
+		   call Msg('Generating cell-based Tecplot output files for GWF:')
+           call GWF_IBOUNDv2_ToTecplot(Modflow)
+        end if
+        
+        IF(Modflow.iCLN/=0) THEN
+            call ReadBinary_HDS_File(Modflow,Modflow.CLN)
+            call ReadBinary_DDN_File(Modflow,Modflow.CLN)
+            call ReadBinary_CBB_File(Modflow, Modflow.CLN)
+            if(Modflow.CLN.IsDefined) then
+    		    call Msg('Generating mesh-based Tecplot output files for CLN:')
     
+                call ModflowResultsToTecplot(Modflow,Modflow.CLN)
+                
+            else
+		       call Msg('No cell-based Tecplot output files for CLN:')
+               !call CLN_IBOUNDv2_ToTecplot(Modflow)
+            end if
+                    
+        end if
+        
+        IF(Modflow.iSWF/=0) THEN
+            call ReadBinary_HDS_File(Modflow,Modflow.SWF)
+            call ReadBinary_DDN_File(Modflow,Modflow.SWF)
+            call ReadBinary_CBB_File(Modflow, Modflow.SWF)
+            if(Modflow.SWF.IsDefined) then
+    		    call Msg('Generating mesh-based Tecplot output files for SWF:')
+
+                call ModflowResultsToTecplot(Modflow,Modflow.SWF)
+                
+            else
+		       call Msg('No cell-based Tecplot output files for SWF:')
+               !call CLN_IBOUNDv2_ToTecplot(Modflow)
+            end if
+                    
+        end if
+        
+
+
+
+
+        !open(Modflow.iSCAN,file=Modflow.FNameSCAN,status='unknown',form='formatted')
+        !write(Modflow.iSCAN,'(a)') 'Scan file from project '//trim(Modflow.Prefix)
+        write(Modflow.iSCAN,'(a,i8,a)') 'Found ',Modflow.nKeyWord,' keywords'
+        !do i=1,Modflow.nKeyWord
+        !    write(Modflow.iSCAN,'(a)',iostat=status) Modflow.KeyWord(i)
+        !end do
+        close(Modflow.iSCAN)
+        
+    end subroutine ModflowOutputToModflowStructure
+    
+    !-------------------------------------------------------------
+    subroutine ModflowResultsToTecplot(Modflow,domain)
+        implicit none
+        type (ModflowProject) Modflow
+        type (ModflowDomain) Domain
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        integer :: i, j, nvar, nVarShared
+
+        character(4000) :: VarSharedStr
+
+
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'.tecplot.dat'
+        call OpenAscii(FNum,FName)
+        call Msg( 'To File: '//trim(FName))
+
+        write(FNum,*) 'Title = "Modflow Project: '//trim(Modflow.Prefix)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","'//trim(domain.name)//' z Cell","'//trim(domain.name)//' Layer","'//trim(domain.name)//' Ibound","'//trim(domain.name)//' Initial head",'
+        nVar=7
+       
+        if(allocated(domain.head)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Head",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.Drawdown)) then
+            if(domain.name == 'GWF') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Saturation",'
+            else if(domain.name == 'SWF') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
+            endif
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_STORAGE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to STORAGE",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_CONSTANT_HEAD)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CONSTANT_HEAD",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_RECHARGE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to RECHARGE",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_DRAINS)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to DRAINS",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_CLN)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CLN",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_SWF)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWF",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_GWF)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to GWF",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_FLOW_FACE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to FLOW_FACES",'
+            nVar=nVar+1
+        end if
+        if(allocated(domain.cbb_SWBC)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWBC",'
+            nVar=nVar+1
+        end if
+        
+        
+        write(FNum,'(a)') trim(VarSTR)
+            
+        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1),',N=',domain.nNodes,', E=',domain.nElements,&
+            ', datapacking=block, zonetype='//trim(domain.elementtype)
+        
+        if(Modflow.NodalControlVolume) then
+            write(FNum,'(a)') trim(ZoneSTR)//&
+                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+        
+        else
+        
+            CellCenteredSTR=', VARLOCATION=([4'
+            if(nVar.ge.5) then
+                do j=5,nVar
+                    write(str2,'(i2)') j
+                    CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+                end do
+            end if
+            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+
+            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//&
+                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+        endif
+        
+
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5e20.12)') (domain.x(i),i=1,domain.nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5e20.12)') (domain.y(i),i=1,domain.nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5e20.12)') (domain.z(i),i=1,domain.nNodes)
+        write(FNum,'(a)') '# z cell'
+        write(FNum,'(5e20.12)') (domain.zCell(i),i=1,domain.nCells)
+        write(FNum,'(a)') '# layer'
+        write(FNum,'(5i8)') (domain.iLayer(i),i=1,domain.nCells)
+        write(FNum,'(a)') '# ibound'
+        write(FNum,'(5i8)') (domain.ibound(i),i=1,domain.nCells)
+        write(FNum,'(a)') '# hnew'
+        write(FNum,'(5e20.12)') (domain.hnew(i),i=1,domain.nCells)
+        nVarShared=7
+       
+        if(allocated(domain.head)) then
+            write(FNum,'(a)') '# head'
+            write(FNum,'(5e20.12)') (domain.head(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.Drawdown)) then
+            write(FNum,'(a)') '# saturation'
+            write(FNum,'(5e20.12)') (domain.Drawdown(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_STORAGE)) then
+            write(FNum,'(a)') '# cbb_STORAGE'
+            write(FNum,'(5e20.12)') (domain.cbb_STORAGE(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_CONSTANT_HEAD)) then
+            write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
+            write(FNum,'(5e20.12)') (domain.cbb_CONSTANT_HEAD(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_RECHARGE)) then
+            write(FNum,'(a)') '# cbb_RECHARGE'
+            write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_DRAINS)) then
+            write(FNum,'(a)') '# cbb_DRAINS'
+            write(FNum,'(5e20.12)') (domain.cbb_DRAINS(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_CLN)) then
+            write(FNum,'(a)') '# cbb_CLN'
+            write(FNum,'(5e20.12)') (domain.cbb_CLN(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_SWF)) then
+            write(FNum,'(a)') '# cbb_SWF'
+            write(FNum,'(5e20.12)') (domain.cbb_SWF(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_GWF)) then
+            write(FNum,'(a)') '# cbb_GWF'
+            write(FNum,'(5e20.12)') (domain.cbb_GWF(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_FLOW_FACE)) then
+            write(FNum,'(a)') '# cbb_FLOW_FACE'
+            write(FNum,'(5e20.12)') (domain.cbb_FLOW_FACE(i,1),i=1,domain.nCells)
+        end if
+        if(allocated(domain.cbb_SWBC)) then
+            write(FNum,'(a)') '# cbb_SWBC'
+            write(FNum,'(5e20.12)') (domain.cbb_SWBC(i,1),i=1,domain.nCells)
+        end if
+        
+        do i=1,domain.nElements
+            if(domain.nNodesPerCell==8) then
+                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,domain.nNodesPerCell)
+            else if(domain.nNodesPerCell==6) then
+                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i)     
+            else if(domain.nNodesPerCell==3) then
+                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3)    
+            else if(domain.nNodesPerCell==4) then
+                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,4)    
+            end if
+        end do
+        
+        VarSharedSTR=', VARSHARELIST=([1,2,3,4,5,6,7'
+        if(nVarShared > 7) then
+            do j=8,nVarShared
+                write(str2,'(i2)') j
+                VarSharedSTR=trim(VarSharedSTR)//','//str2
+            end do
+        end if
+        VarSharedSTR=trim(VarSharedSTR)//'])'
+        
+        do j=2,Modflow.ntime
+            
+            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNodes,', &
+                E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
+            
+            if(Modflow.NodalControlVolume) then
+                write(FNum,'(a)') trim(ZoneSTR)// & 
+                    trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
+                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+            else
+        
+                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)&
+                    //trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
+                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+            end if
+        
+            if(allocated(domain.head)) then
+                write(FNum,'(a)') '# head'
+                write(FNum,'(5e20.12)') (domain.head(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.Drawdown)) then
+                write(FNum,'(a)') '# saturation'
+                write(FNum,'(5e20.12)') (domain.Drawdown(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_STORAGE)) then
+                write(FNum,'(a)') '# cbb_STORAGE'
+                write(FNum,'(5e20.12)') (domain.cbb_STORAGE(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_CONSTANT_HEAD)) then
+                write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
+                write(FNum,'(5e20.12)') (domain.cbb_CONSTANT_HEAD(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_RECHARGE)) then
+                write(FNum,'(a)') '# cbb_RECHARGE'
+                write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_DRAINS)) then
+                write(FNum,'(a)') '# cbb_DRAINS'
+                write(FNum,'(5e20.12)') (domain.cbb_DRAINS(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_CLN)) then
+                write(FNum,'(a)') '# cbb_CLN'
+                write(FNum,'(5e20.12)') (domain.cbb_CLN(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_SWF)) then
+                write(FNum,'(a)') '# cbb_SWF'
+                write(FNum,'(5e20.12)') (domain.cbb_SWF(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_GWF)) then
+                write(FNum,'(a)') '# cbb_GWF'
+                write(FNum,'(5e20.12)') (domain.cbb_GWF(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_FLOW_FACE)) then
+                write(FNum,'(a)') '# cbb_FLOW_FACE'
+                write(FNum,'(5e20.12)') (domain.cbb_FLOW_FACE(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_SWBC)) then
+                write(FNum,'(a)') '# cbb_SWBC'
+                write(FNum,'(5e20.12)') (domain.cbb_SWBC(i,j),i=1,domain.nCells)
+            end if
+            !write(FNum,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="GWF" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNodes,', E=',domain.nCells,', datapacking=block, &
+            !zonetype=febrick, VARLOCATION=([4,5,6]=CELLCENTERED), VARSHARELIST=([1,2,3,4,]), CONNECTIVITYSHAREZONE=1 '
+            !write(FNum,'(a)') '# head'
+            !write(FNum,'(5e20.12)') (domain.head(i,j),i=1,domain.nCells)
+            !write(FNum,'(a)') '# Drawdown'
+            !write(FNum,'(5e20.12)') (domain.Drawdown(i,j),i=1,domain.nCells)
+        end do
+        
+        call FreeUnit(FNum)
+
+    end subroutine ModflowResultsToTecplot
+
+    !-------------------------------------------------------------
+    subroutine ModflowTMPLTScatterToTecplot(Modflow,TMPLT)
+        implicit none
+        type (ModflowProject) Modflow
+        type(TecplotDomain) TMPLT
+        
+        integer :: i, j
+        character(MAX_STR) :: FName
+        
+        if(TMPLT.InnerCircles) then
+            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_CircleCentres.tecplot.dat'
+            
+            call OpenAscii(FNum,FName)
+            call Msg('  ')
+            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
+
+            VarSTR='variables="X","Y"'
+            nVar=3
+            
+            write(FNum,'(a)') trim(VarSTR)
+            
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Circle Centres", datapacking=point'
+        
+            write(FNum,'(a)') trim(ZoneSTR)
+            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+           
+            do i=1,TMPLT.nElements
+                    write(FNum,'(3(1pg20.9))') TMPLT.xcircle(i),TMPLT.ycircle(i)
+            end do
+
+            call FreeUnit(FNum)
+        endif
+        
+        if(Modflow.NodalControlVolume) then
+            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_EdgePoints.tecplot.dat'
+            
+            call OpenAscii(FNum,FName)
+            call Msg('  ')
+            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
+
+            VarSTR='variables="X","Y"'
+            nVar=3
+            
+            write(FNum,'(a)') trim(VarSTR)
+            
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements*TMPLT.nNodesPerElement,', t="'//trim(TMPLT.name)//' Edge Points", datapacking=point'
+        
+            write(FNum,'(a)') trim(ZoneSTR)
+            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+           
+            do i=1,TMPLT.nElements
+                    do j=1,TMPLT.nNodesPerElement
+                        write(FNum,'(3(1pg20.9))') TMPLT.xSide(j,i),TMPLT.ySide(j,i)
+                    end do
+            end do
+
+            call FreeUnit(FNum)
+        
+        end if
+    
+    end subroutine ModflowTMPLTScatterToTecplot
+    
+    !----------------------------------------------------------------------
+    subroutine NodeCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+        implicit none
+    
+        type (ModflowProject) Modflow
+        type (TecplotDomain) TMPLT
+        type (TecplotDomain) TECPLOT_SWF
+        integer :: i, j
+
+        ! For modflow cell connection and area calculations
+        integer :: j1, j2
+        real(dr) :: TriangleArea
+
+        ! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
+        call NodeListToIaJaStructure(TECPLOT_SWF,TMPLT)
+            
+        Modflow.SWF.njag=TECPLOT_SWF.njag
+        
+        allocate(Modflow.SWF.ia(TECPLOT_SWF.nNodes),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF ia, ja arrays')
+        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
+        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+        
+        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        Modflow.SWF.ConnectionLength(:)= TECPLOT_SWF.ConnectionLength(:)
+        Modflow.SWF.PerpendicularArea(:)=TECPLOT_SWF.PerpendicularArea(:)
+      
+        ! Cell horizontal areas
+        ! calculate node-centred cell area based on TMPLT.CellArea
+        allocate(Modflow.SWF.CellArea(TMPLT.nNodes),stat=ialloc)
+        call AllocChk(ialloc,'SWF cell horizontal area arrays')
+        Modflow.SWF.CellArea(:)=0.0d0
+        do i=1,TMPLT.nElements
+            do j=1,TMPLT.nNodesPerElement
+                j1=TMPLT.iNode(j,i)
+                if(j < TMPLT.nNodesPerElement) then
+                    j2=TMPLT.iNode(j+1,i)
+                else
+                    j2=TMPLT.iNode(1,i)
+                end if
+                
+                call area_triangle(TMPLT.x(j1),TMPLT.y(j1),0.0d0, &
+                        &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
+                        &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
+                        &          TriangleArea)
+                Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
+        
+                call area_triangle(TMPLT.x(j2),TMPLT.y(j2),0.0d0, &
+                        &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
+                        &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
+                        &          TriangleArea)
+                Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
+            end do
+        end do
+   
+    end subroutine NodeCentredSWFCellGeometry
+
+    !-------------------------------------------------------------
+    subroutine NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
+        implicit none
+        type(TecplotDomain) TECPLOT_SWF
+        type(TecplotDomain) TECPLOT_GWF
+        
+        integer, parameter :: MAXCONNECTIONS=20
+
+        integer :: i, j, k, iGWF_Cell, kCell
+        
+        
+        integer :: nCellsGWF
+        
+        integer , allocatable :: ia_TMP(:)
+        integer , allocatable :: ja_TMP(:,:)
+        integer , allocatable :: ja_TMP2(:,:)
+        real(dr) , allocatable :: ConnectionLength_TMP(:,:)
+        real(dr) , allocatable :: PerpendicularArea_TMP(:,:)
+        
+        
+        integer :: iSort(MAXCONNECTIONS)
+
+        integer :: iNjag
+        
+        nCellsGWF=TECPLOT_SWF.nNodes*(TECPLOT_GWF.nLayers+1)
+        
+        allocate(ia_TMP(nCellsGWF), ja_TMP(MAXCONNECTIONS,nCellsGWF), ja_TMP2(MAXCONNECTIONS,nCellsGWF), &
+            ConnectionLength_TMP(MAXCONNECTIONS,nCellsGWF),PerpendicularArea_TMP(MAXCONNECTIONS,nCellsGWF), stat=ialloc)
+        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' cell build arrays')
+        
+
+        
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TECPLOT_GWF.name)//'...')
+        
+        ia_TMP(:)=0
+        ja_TMP(:,:)=0
+        ConnectionLength_TMP(:,:)=0
+        PerpendicularArea_TMP(:,:)=0
+        
+        ! Form GWF ia, ja from SWF ia, ja
+        do j=1,TECPLOT_GWF.nLayers+1
+            iNjag=0
+            do i=1,TECPLOT_SWF.nNodes
+                iGWF_Cell=(j-1)*TECPLOT_SWF.nNodes+i
+                ia_TMP(iGWF_Cell)=TECPLOT_SWF.ia(i)
+                do k=1,TECPLOT_SWF.ia(i)
+                    iNjag=iNjag+1
+                    kCell=(j-1)*TECPLOT_SWF.nNodes+TECPLOT_SWF.ja(iNJag)
+                    if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
+                    ja_TMP(k,iGWF_Cell)=kCell
+                    
+                    ! For now, assume we can inherit these from SWF domain.  Should really come from TMPLT.
+                    ConnectionLength_TMP(k,iGWF_Cell)=TECPLOT_SWF.ConnectionLength(iNjag)
+                    PerpendicularArea_TMP(k,iGWF_Cell)=TECPLOT_SWF.PerpendicularArea(iNjag)
+                end do
+                    
+                if(j < TECPLOT_GWF.nLayers+1) then ! downward connection
+                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell+TECPLOT_SWF.nNodes
+                end if
+                if(j > 1) then ! upward connection
+                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell-TECPLOT_SWF.nNodes
+                end if
+            end do
+        end do
+                        
+                        
+        ! Sort cell connection list, remove duplicates and determine ia
+        allocate(TECPLOT_GWF.ia(nCellsGWF),stat=ialloc)
+        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' ia array')
+        !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
+        !call Msg(trim(TMPStr))
+        do i=1,nCellsGWF
+            call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
+            !do j=1,MAXCONNECTIONS 
+            !    if(ja_TMP(isort(j),i) /= 0) then
+            !        write(TMPStr,'(i4,2(1pg20.5))') ja_TMP(isort(j),i) ,ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
+            !        call Msg(trim(TMPStr))
+            !    end if
+            !end do
+            TECPLOT_GWF.ia(i)=0
+            !ja_TMP2(1,i)=i
+            do j=1,MAXCONNECTIONS
+                if(ja_TMP(isort(j),i) == 0) cycle
+                !if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
+                TECPLOT_GWF.ia(i)=TECPLOT_GWF.ia(i)+1
+                ja_TMP2(TECPLOT_GWF.ia(i),i)=ja_TMP(isort(j),i)
+            end do
+!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,TECPLOT_GWF.ia(i))
+        end do
+        
+        ! Determine size of ja (njag) and copy ja_TMP to ja 
+        TECPLOT_GWF.njag=0
+        do i=1,nCellsGWF
+            TECPLOT_GWF.njag=TECPLOT_GWF.njag+TECPLOT_GWF.ia(i)
+        end do
+        allocate(TECPLOT_GWF.ja(TECPLOT_GWF.njag),TECPLOT_GWF.jaElement(TECPLOT_GWF.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' node neighbour ja, jaElement array')
+        allocate(TECPLOT_GWF.ConnectionLength(TECPLOT_GWF.njag),TECPLOT_GWF.PerpendicularArea(TECPLOT_GWF.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        TECPLOT_GWF.ConnectionLength(:)=0.0d0
+        TECPLOT_GWF.PerpendicularArea(:)=0.0d0
+
+        
+        iNJag=0
+        do i=1,nCellsGWF
+            do j=1,TECPLOT_GWF.ia(i)
+                iNjag=iNjag+1
+                TECPLOT_GWF.ja(iNJag)=abs(ja_TMP2(j,i))  ! restore first entry to positive number
+                !TECPLOT_GWF.jaElement(iNJag)=ja_TMP2_Element(j,i)
+                TECPLOT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
+                TECPLOT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+            end do
+        end do
+           
+        return
+    end subroutine NodeCentredSWFIaJaStructureToGWF
+
+    !-------------------------------------------------------------
+    subroutine NodeListToIaJaStructure(domain,TMPLT)
+        implicit none
+        type(TecplotDomain) domain
+        type(TecplotDomain) TMPLT
+        
+        integer, parameter :: MAXCONNECTIONS=20
+
+        integer :: i, j, jNode, kNode
+        
+        real(dr) :: FractionSide
+        
+        integer :: ia_TMP(domain.nNodes)
+        integer :: ja_TMP(MAXCONNECTIONS,domain.nNodes)
+        integer :: ja_TMP2(MAXCONNECTIONS,domain.nNodes)
+        integer :: ja_TMP2_element(MAXCONNECTIONS,domain.nNodes)
+        real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,domain.nNodes)
+        real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,domain.nNodes)
+        
+        
+        integer :: iSort(MAXCONNECTIONS)
+
+        integer :: iNjag, iConn
+        
+        ! For xSide, ySide intercept calc
+	    real(dr) :: xc1, yc1, xc2, yc2
+	    real(dr) :: xs1, ys1, xs2, ys2
+	    !real(dr) :: x_tmp, y_tmp
+	    real(dr) :: del, del2
+	    real(dr) :: rseg, rcut
+        
+        ! For xSide, ySide circle tangent
+        integer :: j1, j2
+        real(dr) :: D, DC, D1, D2, RC
+
+
+        ! For modflow cell connection and area calculations we need xSide, ySide array coordinates
+        allocate(TMPLT.xSide(TMPLT.nNodesPerElement,TMPLT.nElements),&
+                    TMPLT.ySide(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
+        call AllocChk(ialloc,'GB xSide, ySide')
+        
+        ! xSide, ySide at circle centre intersections for neighbouring elements
+        iNjag=0
+        iConn=0
+        do i=1,TMPLT.nElements
+            iNjag=iNjag+1
+            do j=2,TMPLT.ia(i)
+                iConn=iConn+1
+                iNjag=iNjag+1
+                !write(TmpSTR,*) i, TMPLT.element(iconn), TMPLT.face(iconn), TMPLT.neighbour(iconn)
+                !call Msg(Trim(TmpSTR))
+                
+                ! Coordinates of face endpoints
+                xc1=TMPLT.x(TMPLT.iNode(TMPLT.face(iConn),TMPLT.element(iconn)))
+			    yc1=TMPLT.y(TMPLT.iNode(TMPLT.face(iConn),TMPLT.element(iconn)))
+                if(TMPLT.face(iConn) < TMPLT.nNodesPerElement) then ! connect to next node
+                    xc2=TMPLT.x(TMPLT.iNode(TMPLT.face(iConn)+1,TMPLT.element(iconn)))
+			        yc2=TMPLT.y(TMPLT.iNode(TMPLT.face(iConn)+1,TMPLT.element(iconn)))
+                else ! connect to node 1
+                    xc2=TMPLT.x(TMPLT.iNode(1,TMPLT.element(iconn)))
+			        yc2=TMPLT.y(TMPLT.iNode(1,TMPLT.element(iconn)))
+                end if
+                
+                ! Coordinates of neighbour circle centres
+			    xs1=TMPLT.xCircle(TMPLT.element(iconn))
+			    ys1=TMPLT.yCircle(TMPLT.element(iconn))
+			    xs2=TMPLT.xCircle(TMPLT.neighbour(iconn))
+			    ys2=TMPLT.yCircle(TMPLT.neighbour(iconn))
+			    !
+			    !  The following 6 lines determine if the two segments intersect
+			    del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
+			    del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
+			    if (abs(del).gt.0.0 .and. abs(del2).gt.0.0) then
+				    rseg=1.-((yc2-yc1)*(xc2-xs2)-(xc2-xc1)*(yc2-ys2))/del
+				    rcut=1.-((ys2-ys1)*(xs2-xc2)-(xs2-xs1)*(ys2-yc2))/del2
+				    if (rseg.ge.0.0  .AND. rseg.le.1.0 .AND. rcut.ge.0.0 .AND. rcut.le.1.0)    then
+					    TMPLT.xSide(TMPLT.face(iConn),TMPLT.element(iconn))=xs1*(1.0-rseg)+xs2*rseg
+					    TMPLT.ySide(TMPLT.face(iConn),TMPLT.element(iconn))=ys1*(1.0-rseg)+ys2*rseg
+                    else
+                        call ErrMsg('Lines do not intersect')
+                    end if
+                end if
+
+            end do
+        end do
+        
+        ! xSide, ySide at circle tangent for boundary element sides
+        do i=1,TMPLT.nElements
+            do j=1,TMPLT.nNodesPerElement
+                j1=TMPLT.iNode(j,i)
+                if(j < TMPLT.nNodesPerElement) then
+                    j2=TMPLT.iNode(j+1,i)
+                else
+                    j2=TMPLT.iNode(1,i)
+                end if
+                if(bcheck(TMPLT.Node_is(j1),BoundaryNode) .and. bcheck(TMPLT.Node_is(j2),BoundaryNode)) then ! boundary segment
+                
+                    RC=TMPLT.rCircle(i)
+                    DC=sqrt((TMPLT.xCircle(i)-TMPLT.x(j1))**2+(TMPLT.yCircle(i)-TMPLT.y(j1))**2)
+                    D=TMPLT.SideLength(j,i)
+                    D1=sqrt(DC*DC-RC*RC)
+                    D2=D-D1
+                
+                    TMPLT.xSide(j,i)=TMPLT.x(j1)+(TMPLT.x(j2)-TMPLT.x(j1))*D1/D
+                    TMPLT.ySide(j,i)=TMPLT.y(j1)+(TMPLT.y(j2)-TMPLT.y(j1))*D1/D
+                end if
+                
+            end do
+        end do
+                
+                
+
+        
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
+        
+        ja_TMP(:,:)=0
+        ja_TMP2(:,:)=0
+        ConnectionLength_TMP(:,:)=0
+        PerpendicularArea_TMP(:,:)=0
+        
+        do i=1,domain.nNodes
+            ia_TMP(i)=1
+            ja_TMP(ia_TMP(i),i)=-i
+        end do
+
+        ! Loop in order around nodes in element and form cell connection lists
+        do i=1,domain.nElements
+            do j=1,domain.nNodesPerElement
+                jNode=domain.iNode(j,i)
+                if(j == domain.nNodesPerElement) then
+                    kNode=domain.iNode(1,i)
+                else
+                    kNode=domain.iNode(J+1,i)
+                end if
+                
+                ! jnode 
+                ia_TMP(jNode)=ia_TMP(jNode)+1
+                ja_TMP(ia_TMP(jNode),jNode)=kNode
+                ! Fraction (0 to 1) of distance from jNode to xSide, ySide
+                FractionSide=sqrt((TMPLT.x(jNode)-TMPLT.xSide(j,i))**2+(TMPLT.y(jNode)-TMPLT.ySide(j,i))**2)/TMPLT.SideLength(j,i)
+                !ConnectionLength_TMP(ia_TMP(jNode),jNode)=ConnectionLength_TMP(ia_TMP(jNode),jNode)+FractionSide*TMPLT.SideLength(j,i)
+                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT.SideLength(j,i)
+                PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT.rCircle(i)
+
+                ! knode 
+                ia_TMP(kNode)=ia_TMP(kNode)+1
+                ja_TMP(ia_TMP(kNode),kNode)=jNode
+                ! Fraction (0 to 1) of distance from jNode to xSide, ySide
+                !ConnectionLength_TMP(ia_TMP(kNode),kNode)=ConnectionLength_TMP(ia_TMP(kNode),kNode)+(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
+                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
+                PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT.rCircle(i)
+                
+            end do
+        end do
+        
+        ! Sort cell connection list, remove duplicates and determine ia
+        allocate(domain.ia(domain.nNodes),stat=ialloc)
+        call AllocChk(ialloc,trim(domain.name)//' node neighbour ia, ja_TMP arrays')
+        !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
+        !call Msg(trim(TMPStr))
+        do i=1,domain.nNodes
+            call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
+            !do j=1,MAXCONNECTIONS 
+            !    if(ja_TMP(isort(j),i) /= 0) then
+            !        write(TMPStr,'(i4,2(1pg20.5))') ja_TMP(isort(j),i),ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
+            !        call Msg(trim(TMPStr))
+            !    end if
+            !end do
+            domain.ia(i)=1
+            ja_TMP2(1,i)=i
+            do j=2,MAXCONNECTIONS
+                if(ja_TMP(isort(j),i) == 0) cycle
+                if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
+                domain.ia(i)=domain.ia(i)+1
+                ja_TMP2(domain.ia(i),i)=ja_TMP(isort(j),i)
+            end do
+!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,domain.ia(i))
+        end do
+        
+        ! Determine size of ja (njag) and copy ja_TMP to ja 
+        domain.njag=0
+        do i=1,domain.nNodes
+            domain.njag=domain.njag+domain.ia(i)
+        end do
+        allocate(domain.ja(domain.njag),domain.jaElement(domain.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(domain.name)//' node neighbour ja, jaElement array')
+        allocate(domain.ConnectionLength(domain.njag),domain.PerpendicularArea(domain.njag),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        domain.ConnectionLength(:)=0.0d0
+        domain.PerpendicularArea(:)=0.0d0
+
+        
+        iNJag=0
+        do i=1,domain.nNodes
+            do j=1,domain.ia(i)
+                iNjag=iNjag+1
+                domain.ja(iNJag)=ja_TMP2(j,i)
+                domain.jaElement(iNJag)=ja_TMP2_Element(j,i)
+                domain.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
+                domain.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+            end do
+        end do
+           
+        return
+    end subroutine NodeListToIaJaStructure
+    
+    !-------------------------------------------------------------
+    subroutine openBinaryMUSGFile(FileType,line,prefix,iUnit,FName)
+        implicit none
+        
+        character(*) :: FileType
+        character(*) :: line
+        character(*) :: prefix
+        integer :: iUnit
+        character(*) :: FName
+        
+        l1=index(line,trim(Prefix))-1
+
+        ! check for path string before prefix
+        if(line(l1:l1) .eq. '/' .or. line(l1:l1) .eq. '\') then
+            l1=l1-1
+            do
+                if(line(l1:l1) .eq. BLANK .or. line(l1:l1) .eq. TAB ) exit
+                !write(*,*) ichar(line(l1:l1)), line(l1:l1)
+                l1=l1-1
+            end do   
+        end if    
+        FName=line(l1+1:)
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call ErrMsg('No file found: '//FName)
+        end if
+        call Msg('Opened binary '//trim(FileType)//' file: '//FName)
+	    call getunit(iUnit)
+        open(iUnit,file=FName,status='old',form='binary',action='read')  
+        write(TmpSTR,'(i5)') iUnit
+        call Msg('Reading from unit: '//trim(TmpSTR))
+        
+    end subroutine openBinaryMUSGFile
+
+    !-------------------------------------------------------------
+    subroutine openMUSGFile(FileType,line,prefix,iUnit,FName)
+        implicit none
+        
+        character(*) :: FileType
+        character(*) :: line
+        character(*) :: prefix
+        integer :: iUnit
+        character(*) :: FName
+        
+        l1=index(line,trim(Prefix))-1
+
+        ! check for path string before prefix
+        if(line(l1:l1) .eq. '/' .or. line(l1:l1) .eq. '\') then
+            l1=l1-1
+            do
+                if(line(l1:l1) .eq. BLANK) exit
+                l1=l1-1
+            end do   
+        end if    
+        FName=line(l1:)
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call ErrMsg('No file found: '//FName)
+        end if
+	    call getunit(iUnit)
+        open(iUnit,file=FName,status='unknown',form='formatted')  
+        call Msg('Opened ascii '//trim(FileType)//' file: '//trim(FName))
+        write(TmpSTR,'(i5)') iUnit
+        call Msg('Reading from unit: '//trim(TmpSTR))
+        
+    end subroutine openMUSGFile
+    
+    !-------------------------------------------------------------
+    subroutine PostprocessExistingModflowModel(FNumMUT, Modflow,prefix) !--- Post-process existing Modflow model from instructions
+        implicit none
+
+        integer :: FNumMUT
+        character(*) :: prefix
+        type (ModflowProject) Modflow
+        
+        Modflow.MUTPrefix=prefix
+           
+        call ModflowOutputToModflowStructure(FNumMUT, Modflow)
+    
+    end subroutine PostprocessExistingModflowModel
+   
+    !-------------------------------------------------------------
+    subroutine ScanFile(FNum,Modflow)
+        implicit none
+
+        type (ModflowProject) Modflow
+        
+        integer :: Fnum
+        integer :: i
+     
+        character(MAX_STR) :: line
+        character(MAX_STR) :: PossibleKey
+        
+    
+        do 
+            read(FNum,'(a)',iostat=status) line
+            call lcase(line)
+            if(status /= 0) exit
+            
+            if(line(1:1).eq.'#') then
+                write(Modflow.iSCAN,'(a)',iostat=status) trim(line)
+                cycle
+            end if
+            
+            do i=1,len_trim(line)
+                !write(*,*) i,ichar(line(i:i))
+                if(ichar(line(i:i)) .ge. 42 .and. ichar(line(i:i)) .le. 57 .or. ichar(line(i:i)) .eq. 32) cycle
+                if(line(i:i) .eq. 'e' .or.  &
+                    line(i:i) .eq. 'd' .or.   &
+                    line(i:i) .eq. 'g') then
+                    if(line(i+1:i+1) .eq. '+' .or. line(i+1:i+1) .eq. '-') cycle
+                end if
+                if(i.eq.1) then
+                    PossibleKey=line(i:)
+                else
+                    PossibleKey=line(i-1:)
+                end if
+                call AddToScan(PossibleKey, Modflow)
+                exit
+            end do
+        end do
+        
+        rewind(FNum)    
+            
+    end subroutine ScanFile
+
+    !----------------------------------------------------------------------
+    subroutine SMSParamterSetNumber(FNumMUT) 
+        implicit none
+
+        integer :: FNumMUT
+        
+        read(FNumMUT,*) iSMSParameterSet
+        write(TmpSTR,'(i4)') iSMSParameterSet
+        call Msg(TAB//'Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
+
+    end subroutine SMSParamterSetNumber
+   
+    !----------------------------------------------------------------------
+    subroutine StressPeriod(FNumMUT,modflow)
+        implicit none
+        
+        integer :: FNumMUT
+        type (ModflowProject) Modflow
+        
+        integer, parameter :: MAXStressPeriods=100
+
+        Modflow.nPeriods=Modflow.nPeriods+1  
+        write(TmpSTR,'(a,i8)')TAB//'Stress period ',Modflow.nPeriods
+        call Msg(trim(TmpSTR))
+        
+        if(Modflow.nPeriods == 1) then
+            allocate(Modflow.StressPeriodLength(MAXStressPeriods), Modflow.nTsteps(MAXStressPeriods), &
+            Modflow.TstepMult(MAXStressPeriods), Modflow.StressPeriodType(MAXStressPeriods),stat=ialloc)
+            Modflow.StressPeriodLength(:)=1.0d0
+            Modflow.nTsteps(:)=1
+            Modflow.TstepMult(:)=1.1d0
+            Modflow.StressPeriodType(:)='TR'
+        end if
+
+
+        
+        read_StressPeriod_instructions: do
+            read(FNumMUT,'(a)',iostat=status) instruction
+            if(status /= 0) exit
+
+            call lcase(instruction)
+            
+            if(index(instruction,'end') /=0) then
+                call Msg(TAB//'end stress period instructions')
+                exit read_StressPeriod_instructions
+            else
+                call Msg(TAB//instruction)
+            end if
+
+            if(index(instruction,StressPeriodType_cmd) /=0) then
+                read(FNumMUT,'(a)') modflow.StressPeriodType(Modflow.nPeriods)
+                if(modflow.StressPeriodType(Modflow.nPeriods) /= 'SS' .and. modflow.StressPeriodType(Modflow.nPeriods) /= 'TR') then
+                    call ErrMsg('Stress Period type must begin with either SS or TR')
+                end if
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Modflow stress period type: ',modflow.StressPeriodType(Modflow.nPeriods)
+                call Msg(trim(TmpSTR))
+
+            else if(index(instruction,StressPeriodDuration_cmd) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodLength(Modflow.nPeriods)
+                write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodLength(Modflow.nPeriods)
+                call Msg(trim(TmpSTR))
+            else
+			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
+            end if
+
+        end do read_StressPeriod_instructions
+    end subroutine StressPeriod
+
+    !-------------------------------------------------------------
+    subroutine SWFToTecplot(Modflow,TECPLOT_SWF)
+        implicit none
+        type(ModflowProject) Modflow
+        type(TecplotDomain) TECPLOT_SWF
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        integer :: i, j
+
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.SWF.name)//'.tecplot.dat'
+        
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+
+        write(FNum,*) 'Title = "'//trim(TECPLOT_SWF.name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","'//trim(modflow.SWF.name)//' Zone","'//trim(modflow.SWF.name)//' zCell",'
+        nVar=5
+            
+        if(allocated(Modflow.SWF.Sgcl)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' SWF-GWF connection length",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.SWF.StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Initial Depth",'
+            nVar=nVar+1
+        end if
+        
+        if(allocated(Modflow.SWF.CellArea)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Cell area",'
+            nVar=nVar+1
+        end if
+                
+        write(FNum,'(a)') trim(VarSTR)
+          
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',TECPLOT_SWF.nNodes,', E=',TECPLOT_SWF.nElements,&
+        ', datapacking=block, zonetype='//trim(TECPLOT_SWF.elementtype)
+            
+        if(modflow.NodalControlVolume) then
+            write(FNum,'(a)') trim(ZoneSTR) 
+        else
+            CellCenteredSTR=', VARLOCATION=([4'
+            if(nVar.ge.5) then
+                do j=5,nVar
+                    if(.not. Modflow.NodalControlVolume) then  ! z Cell is not CELLCENTERED
+                        write(str2,'(i2)') j
+                        CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+                    end if
+                end do
+            end if
+            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+
+            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR) 
+        end if
+        
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5e20.12)') (TECPLOT_SWF.x(i),i=1,TECPLOT_SWF.nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5e20.12)') (TECPLOT_SWF.y(i),i=1,TECPLOT_SWF.nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5e20.12)') (TECPLOT_SWF.z(i),i=1,TECPLOT_SWF.nNodes)
+        
+        write(FNum,'(a)') '# zone'
+        write(FNum,'(5i8)') (Modflow.SWF.iZone(i),i=1,Modflow.SWF.nCells)
+            
+        write(FNum,'(a)') '# zCell i.e. cell bottom'
+        write(FNum,'(5e20.12)') (Modflow.SWF.zCell(i),i=1,Modflow.SWF.nCells)
+            
+        if(allocated(Modflow.SWF.Sgcl)) then
+            write(FNum,'(a)') '# SW-GW connection length'
+            write(FNum,'(5e20.12)') (Modflow.SWF.Sgcl(i),i=1,Modflow.SWF.nCells)
+        end if
+
+        if(allocated(Modflow.SWF.StartingHeads)) then
+            write(FNum,'(a)') '# Starting depth'
+            write(FNum,'(5e20.12)') (Modflow.SWF.StartingHeads(i)-Modflow.SWF.ZCell(i),i=1,Modflow.SWF.nCells)
+        end if
+
+        if(allocated(Modflow.SWF.CellArea)) then
+            write(FNum,'(a)') '# Cell Area'
+            write(FNum,'(5e20.12)') (Modflow.SWF.CellArea(i),i=1,Modflow.SWF.nCells)
+        end if
+        
+        do i=1,TECPLOT_SWF.nElements
+            if(TECPLOT_SWF.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3) !, TECPLOT_SWF.iNode(3,i) 
+            else if(TECPLOT_SWF.nNodesPerElement==4) then ! 4-node quadrilateral
+                if(TECPLOT_SWF.iNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,4) 
+                else
+                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3), TECPLOT_SWF.iNode(3,i) 
+                end if
+            else
+                write(TmpSTR,'(i2)') TECPLOT_SWF.nNodesPerElement
+                call ErrMsg(trim(TECPLOT_SWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine SWFToTecplot
+
+    !-------------------------------------------------------------
+    subroutine TecplotToIaJaStructure(domain)
+        implicit none
+        type(TecplotDomain) domain
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        character(MAX_STR) :: FNameTecplotDat
+        integer :: i, j, nFaceNeighborConnections, nNodes, nElements, iNja 
+        character(4000) :: output_line
+        character(4000) :: var_line
+        
+        integer :: iConn
+        
+        FNameTecplotDat='scratcho.'//trim(domain.name)//'.tecplot.dat'
+        
+        call ModflowDomainGridToTecplot(FNameTecplotDat,domain)
+
+
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
+            
+        call OpenAscii(FNum,FNameTecplotDat)
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status/=0) exit
+            
+            if(index(line,'variables=') > 0) then
+                l1=index(line,'variables=')+10
+                var_line=line(l1:)
+               
+            else if(index(line,'zonetype=') > 0) then
+                l1=index(line,'zonetype=')+9
+                read(line(l1:),*) output_line
+                domain.ElementType=trim(output_line)
+                exit
+            end if
+                
+        end do
+        call freeunit(FNum)
+        
+        FName=' scratcho.'//trim(domain.name)//'.mcr'
+        call OpenAscii(FNum,FName)
+        write(FNum,'(a)') '#!MC 1410'
+        write(FNum,'(a)') '$!ReadDataSet  "'//trim(FNameTecplotDat)//'"'
+        write(FNum,'(a)') '  ReadDataOption = New'
+        write(FNum,'(a)') '  ResetStyle = No'
+        write(FNum,'(a)') '  VarLoadMode = ByName'
+        write(FNum,'(a)') '  AssignStrandIDs = Yes'
+        write(FNum,'(a)') '  VarNameList =  '''//trim(var_line)//''''
+        write(FNum,'(a)') '$!WriteDataSet  "'//' scratcho.'//trim(domain.name)//'.neighbours.dat"'
+        write(FNum,'(a)') '  IncludeText = No'
+        write(FNum,'(a)') '  IncludeGeom = No'
+        write(FNum,'(a)') '  IncludeCustomLabels = No'
+        write(FNum,'(a)') '  IncludeDataShareLinkage = Yes'
+        write(FNum,'(a)') '  IncludeAutoGenFaceNeighbors = Yes'
+        ! Must write one variable so write X
+        write(FNum,'(a)') '  VarPositionList =  [1]'               
+        write(FNum,'(a)') '  Binary = No'
+        write(FNum,'(a)') '  UsePointFormat = Yes'
+        write(FNum,'(a)') '  Precision = 9'
+        write(FNum,'(a)') '  TecplotVersionToWrite = TecplotCurrent'
+        call FreeUnit(FNum)
+        
+        
+        FName=' scratcho.'//trim(domain.name)//'.bat'
+        call OpenAscii(FNum,FName)
+        !write(FNum,'(a)') 'echo'
+        write(FNum,'(a)') 'tec360 -b -p  scratcho.'//trim(domain.name)//'.mcr'
+        write(FNum,'(a)') ' '
+        call FreeUnit(FNum)
+        
+        CmdLine=' scratcho.'//trim(domain.name)//'.bat'
+        CALL execute_command_line(trim(CmdLine)) 
+        
+        ! get cell neighbours (ia, ja structure) from tecplot output file
+        FNameTecplotDat=' scratcho.'//trim(domain.name)//'.neighbours.dat'
+        call OpenAscii(FNum,FNameTecplotDat)
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status/=0) exit
+            
+            if(index(line,'FACENEIGHBORCONNECTIONS=') > 0) then
+                l1=index(line,'=')+1
+                read(line(l1:),*) nFaceNeighborConnections
+            else if(index(line,'Nodes=') > 0) then
+                l1=index(line,'Nodes=')+6
+                read(line(l1:),*) nNodes
+                l1=index(line,'Elements=')+9
+                read(line(l1:),*) nElements
+            else if(index(line,'DT=(SINGLE )') > 0) then
+                ! read x coordinate lines
+                do i=1,nNodes
+                    read(FNum,'(a)') line
+                end do 
+                ! read node list lines
+                do i=1,nElements
+                    read(FNum,'(a)') line
+                end do 
+                ! read and store cell connection information
+                allocate(domain.Element(nFaceNeighborConnections),&
+                        domain.Face(nFaceNeighborConnections),&
+                        domain.Neighbour(nFaceNeighborConnections),stat=ialloc)
+                call AllocChk(ialloc,'Element neighbour arrays')
+                do i=1,nFaceNeighborConnections
+                    read(FNum,*) domain.Element(i),domain.Face(i),domain.Neighbour(i)
+                end do
+                ! form ia, ja
+                
+                domain.njag=nFaceNeighborConnections+nElements
+                allocate(domain.ia(nElements),&
+                        domain.ja(domain.njag),stat=ialloc)
+                call AllocChk(ialloc,'Element neighbour ia ja arrays')
+                domain.ia(:)=1
+                do i=1,nFaceNeighborConnections
+                    domain.ia(domain.Element(i))=domain.ia(domain.Element(i))+1
+                end do
+
+                domain.ja(:)=0
+                iNja=0
+                iConn=0
+                do i=1,nElements
+                    iNja=iNja+1
+                    domain.ja(iNja)=i
+                    do j=2,domain.ia(i)
+                        iConn=iConn+1
+                        iNja=iNja+1
+                        domain.ja(iNja)=domain.neighbour(iConn)
+                    end do
+                end do
+                exit
+                
+            end if
+        end do
+        call freeunit(FNum)
+            
+        return
+    end subroutine TecplotToIaJaStructure
+
+    !-------------------------------------------------------------
+    subroutine TemplateToTecplot(Modflow,TMPLT)
+        implicit none
+        type(ModflowProject) Modflow
+        type(TecplotDomain) TMPLT
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        integer :: i, j
+
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'.tecplot.dat'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+
+        write(FNum,*) 'Title = "'//trim(TMPLT.name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","'//trim(TMPLT.name)//' Zone","'//trim(TMPLT.name)//' Element Area",'
+        nVar=5
+
+        if(allocated(TMPLT.rCircle)) then
+            VarSTR=trim(VarSTR)//'"'//trim(TMPLT.name)//'Inner circle radius",'
+            nVar=nVar+1
+        end if
+            
+        write(FNum,'(a)') trim(VarSTR)
+
+
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(TMPLT.name)//'"  ,N=',TMPLT.nNodes,', E=',TMPLT.nElements,&
+        ', datapacking=block, zonetype='//trim(TMPLT.elementtype)
+        
+        CellCenteredSTR=', VARLOCATION=([4,5'
+        if(nVar.ge.6) then
+            do j=6,nVar
+                write(str2,'(i2)') j
+                CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+            end do
+        end if
+        CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+        write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
+
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5e20.12)') (TMPLT.x(i),i=1,TMPLT.nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5e20.12)') (TMPLT.y(i),i=1,TMPLT.nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5e20.12)') (TMPLT.z(i),i=1,TMPLT.nNodes)
+        
+        write(FNum,'(a)') '# zone'
+        write(FNum,'(5i8)') (TMPLT.iZone(i),i=1,TMPLT.nElements)
+            
+        write(FNum,'(a)') '# element area'
+        write(FNum,'(5e20.12)') (TMPLT.ElementArea(i),i=1,TMPLT.nElements)
+            
+        if(allocated(TMPLT.rCircle)) then
+            write(FNum,'(a)') '# circle radius'
+            write(FNum,'(5e20.12)') (TMPLT.rCircle(i),i=1,TMPLT.nElements)
+        end if
+            
+        
+        do i=1,TMPLT.nElements
+            if(TMPLT.nNodesPerElement==3) then ! 3-node triangle
+                write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3)
+            else if(TMPLT.nNodesPerElement==4) then ! 4-node quadrilateral
+                if(TMPLT.iNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,4) 
+                else
+                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3), TMPLT.iNode(3,i) 
+                end if
+            else
+                write(TmpSTR,'(i2)')TMPLT.nNodesPerElement
+                call ErrMsg(trim(TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
+
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine TemplateToTecplot
+    
+    !-------------------------------------------------------------
+    subroutine WriteCHDFile(Modflow)
+        implicit none
+        
+        type (ModflowProject) Modflow
+        
+        integer :: i
+ 	
+        !------------------- CHD file
+        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! maximum number of CHD cells in any stress period 
+        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! number of CHD cells to read
+            
+        if(allocated(modflow.GWF.ConstantHead)) then
+            do i=1,modflow.GWF.nCells
+                if(bcheck(Modflow.GWF.Cell_Is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,g15.5)') i,modflow.GWF.ConstantHead(i)
+                end if
+            end do
+        end if
+            
+        if(allocated(modflow.CLN.ConstantHead)) then
+            do i=1,modflow.CLN.nCells
+                if(bcheck(Modflow.CLN.Cell_Is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,g15.5)') Modflow.GWF.nCells+i,modflow.CLN.ConstantHead(i)
+                end if
+            end do
+        end if
+        
+        if(allocated(modflow.SWF.ConstantHead)) then
+            do i=1,modflow.SWF.nCells
+                if(bcheck(Modflow.SWF.Cell_Is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,g15.5)') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.ConstantHead(i)
+                end if
+            end do
+        end if
+        
+    end subroutine WriteCHDFile
+
+    !-------------------------------------------------------------
+    subroutine WriteCLNFiles(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+        
+        integer :: i, j, i1, i2
+
+        write(Modflow.iCLN,'(a)') '#1. NCLN,ICLNNDS,ICLNCB,ICLNHD,ICLNDD,ICLNIB,NCLNGWC,NCONDUITYP'
+        write(Modflow.iCLN,'(8i9,a,i9)') 0, Modflow.CLN.nCells, Modflow.CLN.iCBB,Modflow.CLN.iHDS,Modflow.CLN.iDDN, Modflow.CLN.NCLNGWC, &
+            1, 'rectangular', 1  ! # of different conduit types, conduit type, 
+        write(Modflow.iCLN,'(i9)') Modflow.CLN.njag
+        write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
+        write(Modflow.iCLN,'(10i4)') (modflow.CLN.ia(i),i=1,modflow.CLN.nCells)
+        write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  JA()'
+        i1=1
+        do i=1,modflow.CLN.nCells
+            i2=i1+modflow.CLN.ia(i)-1
+            write(Modflow.iCLN,*) (modflow.CLN.ja(j),j=i1,i2)
+            i1=i2+1
+        end do
+        
+        write(Modflow.iCLN,'(a)') '# IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI'
+
+        write(Modflow.iSWF,'(a)') '# IFNO IFTYP   FAREA          FELEV      ISSWADI'
+        do i=1,modflow.CLN.nCells
+            write(Modflow.iSWF,'(2i5,2(1pG15.5),i5)') i, 1, modflow.SWF.CellArea(i), modflow.SWF.zCell(i),0
+        end do
+
+        write(Modflow.iSWF,'(a)') '# IFNO IFGWNO  IFCON     SGCL        SGCAREA      ISGWADI'
+        do i=1,modflow.SWF.nCells
+!            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
+            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
+        end do
+
+        write(Modflow.iSWF,'(a)') '# ISWFTYP      SMANN          SWFH1          SWFH2'
+        do i=1,modflow.SWF.nZones
+            write(Modflow.iSWF,'(i5,3x,3(1pG15.5))') i,  modflow.swf.manning(i),  modflow.swf.H1DepthForSmoothing(i),  modflow.swf.H2DepthForSmoothing(i)
+        end do
+    end subroutine WriteCLNFiles
+    
+    !-------------------------------------------------------------
+    subroutine WriteDRNFile(Modflow)
+        implicit none
+        
+        type (ModflowProject) Modflow
+        
+        integer :: i
+ 	
+        !------------------- DRN file
+        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! maximum number of DRN cells in any stress period 
+        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! number of DRN cells to read
+            
+        if(allocated(modflow.GWF.DrainConductance)) then
+            do i=1,modflow.GWF.nCells
+                if(bcheck(Modflow.GWF.Cell_Is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2g15.5)') i,modflow.GWF.DrainElevation(i),modflow.GWF.DrainConductance(i)
+                end if
+            end do
+        end if
+            
+        if(allocated(modflow.CLN.DrainConductance)) then
+            do i=1,modflow.CLN.nCells
+                if(bcheck(Modflow.CLN.Cell_Is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2g15.5)') Modflow.GWF.nCells+i,modflow.CLN.DrainElevation(i),modflow.CLN.DrainConductance(i)
+                end if
+            end do
+        end if
+        
+        if(allocated(modflow.SWF.DrainConductance)) then
+            do i=1,modflow.SWF.nCells
+                if(bcheck(Modflow.SWF.Cell_Is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2g15.5)') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.DrainElevation(i),modflow.SWF.DrainConductance(i)
+                end if
+            end do
+        end if
+        
+
+        
+    end subroutine WriteDRNFile
+
     !-------------------------------------------------------------
     subroutine WriteGWFFiles(Modflow,TECPLOT_GWF)
         implicit none
@@ -5190,84 +6391,6 @@
     end subroutine WriteGWFFiles
     
     !-------------------------------------------------------------
-    subroutine WriteCHDFile(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-        
-        integer :: i
- 	
-        !------------------- CHD file
-        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! maximum number of CHD cells in any stress period 
-        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! number of CHD cells to read
-            
-        if(allocated(modflow.GWF.ConstantHead)) then
-            do i=1,modflow.GWF.nCells
-                if(bcheck(Modflow.GWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,g15.5)') i,modflow.GWF.ConstantHead(i)
-                end if
-            end do
-        end if
-            
-        if(allocated(modflow.CLN.ConstantHead)) then
-            do i=1,modflow.CLN.nCells
-                if(bcheck(Modflow.CLN.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,g15.5)') Modflow.GWF.nCells+i,modflow.CLN.ConstantHead(i)
-                end if
-            end do
-        end if
-        
-        if(allocated(modflow.SWF.ConstantHead)) then
-            do i=1,modflow.SWF.nCells
-                if(bcheck(Modflow.SWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,g15.5)') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.ConstantHead(i)
-                end if
-            end do
-        end if
-        
-    end subroutine WriteCHDFile
-    !-------------------------------------------------------------
-    subroutine WriteDRNFile(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-        
-        integer :: i
- 	
-        !------------------- DRN file
-        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! maximum number of DRN cells in any stress period 
-        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! number of DRN cells to read
-            
-        if(allocated(modflow.GWF.DrainConductance)) then
-            do i=1,modflow.GWF.nCells
-                if(bcheck(Modflow.GWF.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2g15.5)') i,modflow.GWF.DrainElevation(i),modflow.GWF.DrainConductance(i)
-                end if
-            end do
-        end if
-            
-        if(allocated(modflow.CLN.DrainConductance)) then
-            do i=1,modflow.CLN.nCells
-                if(bcheck(Modflow.CLN.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2g15.5)') Modflow.GWF.nCells+i,modflow.CLN.DrainElevation(i),modflow.CLN.DrainConductance(i)
-                end if
-            end do
-        end if
-        
-        if(allocated(modflow.SWF.DrainConductance)) then
-            do i=1,modflow.SWF.nCells
-                if(bcheck(Modflow.SWF.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2g15.5)') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.DrainElevation(i),modflow.SWF.DrainConductance(i)
-                end if
-            end do
-        end if
-        
-
-        
-    end subroutine WriteDRNFile
-
-
-    !-------------------------------------------------------------
     subroutine WriteSWFFiles(Modflow,TECPLOT_SWF)
         implicit none
         type (ModflowProject) Modflow
@@ -5382,678 +6505,225 @@
 
         return
     end subroutine WriteSWFFiles
+    
     !-------------------------------------------------------------
-    subroutine WriteCLNFiles(Modflow)
+    subroutine WriteVolumeBudgetToTecplot(Modflow)
         implicit none
+
         type (ModflowProject) Modflow
-
-        call ErrMsg('Still need to create CLN modflow files')
-
-        return
-    end subroutine WriteCLNFiles
-    !-------------------------------------------------------------
-    subroutine TecplotToIaJaStructure(domain)
-        implicit none
-        type(TecplotDomain) domain
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        character(MAXSTRING) :: FNameTecplotDat
-        integer :: i, j, nFaceNeighborConnections, nNodes, nElements, iNja 
-        character(4000) :: output_line
-        character(4000) :: var_line
-        
-        integer :: iConn
-        
-        FNameTecplotDat='scratcho.'//trim(domain.name)//'.tecplot.dat'
-        
-        call ModflowDomainGridToTecplot(FNameTecplotDat,domain)
-
-
-        call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
-            
-        call OpenAscii(FNum,FNameTecplotDat)
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status/=0) exit
-            
-            if(index(line,'variables=') > 0) then
-                l1=index(line,'variables=')+10
-                var_line=line(l1:)
-               
-            else if(index(line,'zonetype=') > 0) then
-                l1=index(line,'zonetype=')+9
-                read(line(l1:),*) output_line
-                domain.ElementType=trim(output_line)
-                exit
-            end if
-                
-        end do
-        call freeunit(FNum)
-        
-        FName=' scratcho.'//trim(domain.name)//'.mcr'
-        call OpenAscii(FNum,FName)
-        write(FNum,'(a)') '#!MC 1410'
-        write(FNum,'(a)') '$!ReadDataSet  "'//trim(FNameTecplotDat)//'"'
-        write(FNum,'(a)') '  ReadDataOption = New'
-        write(FNum,'(a)') '  ResetStyle = No'
-        write(FNum,'(a)') '  VarLoadMode = ByName'
-        write(FNum,'(a)') '  AssignStrandIDs = Yes'
-        write(FNum,'(a)') '  VarNameList =  '''//trim(var_line)//''''
-        write(FNum,'(a)') '$!WriteDataSet  "'//' scratcho.'//trim(domain.name)//'.neighbours.dat"'
-        write(FNum,'(a)') '  IncludeText = No'
-        write(FNum,'(a)') '  IncludeGeom = No'
-        write(FNum,'(a)') '  IncludeCustomLabels = No'
-        write(FNum,'(a)') '  IncludeDataShareLinkage = Yes'
-        write(FNum,'(a)') '  IncludeAutoGenFaceNeighbors = Yes'
-        ! Must write one variable so write X
-        write(FNum,'(a)') '  VarPositionList =  [1]'               
-        write(FNum,'(a)') '  Binary = No'
-        write(FNum,'(a)') '  UsePointFormat = Yes'
-        write(FNum,'(a)') '  Precision = 9'
-        write(FNum,'(a)') '  TecplotVersionToWrite = TecplotCurrent'
-        call FreeUnit(FNum)
-        
-        
-        FName=' scratcho.'//trim(domain.name)//'.bat'
-        call OpenAscii(FNum,FName)
-        !write(FNum,'(a)') 'echo'
-        write(FNum,'(a)') 'tec360 -b -p  scratcho.'//trim(domain.name)//'.mcr'
-        write(FNum,'(a)') ' '
-        call FreeUnit(FNum)
-        
-        CmdLine=' scratcho.'//trim(domain.name)//'.bat'
-        CALL execute_command_line(trim(CmdLine)) 
-        
-        ! get cell neighbours (ia, ja structure) from tecplot output file
-        FNameTecplotDat=' scratcho.'//trim(domain.name)//'.neighbours.dat'
-        call OpenAscii(FNum,FNameTecplotDat)
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status/=0) exit
-            
-            if(index(line,'FACENEIGHBORCONNECTIONS=') > 0) then
-                l1=index(line,'=')+1
-                read(line(l1:),*) nFaceNeighborConnections
-            else if(index(line,'Nodes=') > 0) then
-                l1=index(line,'Nodes=')+6
-                read(line(l1:),*) nNodes
-                l1=index(line,'Elements=')+9
-                read(line(l1:),*) nElements
-            else if(index(line,'DT=(SINGLE )') > 0) then
-                ! read x coordinate lines
-                do i=1,nNodes
-                    read(FNum,'(a)') line
-                end do 
-                ! read node list lines
-                do i=1,nElements
-                    read(FNum,'(a)') line
-                end do 
-                ! read and store cell connection information
-                allocate(domain.Element(nFaceNeighborConnections),&
-                        domain.Face(nFaceNeighborConnections),&
-                        domain.Neighbour(nFaceNeighborConnections),stat=ialloc)
-                call AllocChk(ialloc,'Element neighbour arrays')
-                do i=1,nFaceNeighborConnections
-                    read(FNum,*) domain.Element(i),domain.Face(i),domain.Neighbour(i)
-                end do
-                ! form ia, ja
-                
-                domain.njag=nFaceNeighborConnections+nElements
-                allocate(domain.ia(nElements),&
-                        domain.ja(domain.njag),stat=ialloc)
-                call AllocChk(ialloc,'Element neighbour ia ja arrays')
-                domain.ia(:)=1
-                do i=1,nFaceNeighborConnections
-                    domain.ia(domain.Element(i))=domain.ia(domain.Element(i))+1
-                end do
-
-                domain.ja(:)=0
-                iNja=0
-                iConn=0
-                do i=1,nElements
-                    iNja=iNja+1
-                    domain.ja(iNja)=i
-                    do j=2,domain.ia(i)
-                        iConn=iConn+1
-                        iNja=iNja+1
-                        domain.ja(iNja)=domain.neighbour(iConn)
-                    end do
-                end do
-                exit
-                
-            end if
-        end do
-        call freeunit(FNum)
-            
-        return
-    end subroutine TecplotToIaJaStructure
-    
-    
-    !-------------------------------------------------------------
-    subroutine NodeListToIaJaStructure(domain,TMPLT)
-        implicit none
-        type(TecplotDomain) domain
-        type(TecplotDomain) TMPLT
-        
-        integer, parameter :: MAXCONNECTIONS=20
-
-        integer :: i, j, jNode, kNode
-        
-        real(dr) :: FractionSide
-        
-        integer :: ia_TMP(domain.nNodes)
-        integer :: ja_TMP(MAXCONNECTIONS,domain.nNodes)
-        integer :: ja_TMP2(MAXCONNECTIONS,domain.nNodes)
-        integer :: ja_TMP2_element(MAXCONNECTIONS,domain.nNodes)
-        real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,domain.nNodes)
-        real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,domain.nNodes)
-        
-        
-        integer :: iSort(MAXCONNECTIONS)
-
-        integer :: iNjag, iConn
-        
-        ! For xSide, ySide intercept calc
-	    real(dr) :: xc1, yc1, xc2, yc2
-	    real(dr) :: xs1, ys1, xs2, ys2
-	    !real(dr) :: x_tmp, y_tmp
-	    real(dr) :: del, del2
-	    real(dr) :: rseg, rcut
-        
-        ! For xSide, ySide circle tangent
-        integer :: j1, j2
-        real(dr) :: D, DC, D1, D2, RC
-
-
-        ! For modflow cell connection and area calculations we need xSide, ySide array coordinates
-        allocate(TMPLT.xSide(TMPLT.nNodesPerElement,TMPLT.nElements),&
-                    TMPLT.ySide(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'GB xSide, ySide')
-        
-        ! xSide, ySide at circle centre intersections for neighbouring elements
-        iNjag=0
-        iConn=0
-        do i=1,TMPLT.nElements
-            iNjag=iNjag+1
-            do j=2,TMPLT.ia(i)
-                iConn=iConn+1
-                iNjag=iNjag+1
-                !write(TmpSTR,*) i, TMPLT.element(iconn), TMPLT.face(iconn), TMPLT.neighbour(iconn)
-                !call Msg(Trim(TmpSTR))
-                
-                ! Coordinates of face endpoints
-                xc1=TMPLT.x(TMPLT.iNode(TMPLT.face(iConn),TMPLT.element(iconn)))
-			    yc1=TMPLT.y(TMPLT.iNode(TMPLT.face(iConn),TMPLT.element(iconn)))
-                if(TMPLT.face(iConn) < TMPLT.nNodesPerElement) then ! connect to next node
-                    xc2=TMPLT.x(TMPLT.iNode(TMPLT.face(iConn)+1,TMPLT.element(iconn)))
-			        yc2=TMPLT.y(TMPLT.iNode(TMPLT.face(iConn)+1,TMPLT.element(iconn)))
-                else ! connect to node 1
-                    xc2=TMPLT.x(TMPLT.iNode(1,TMPLT.element(iconn)))
-			        yc2=TMPLT.y(TMPLT.iNode(1,TMPLT.element(iconn)))
-                end if
-                
-                ! Coordinates of neighbour circle centres
-			    xs1=TMPLT.xCircle(TMPLT.element(iconn))
-			    ys1=TMPLT.yCircle(TMPLT.element(iconn))
-			    xs2=TMPLT.xCircle(TMPLT.neighbour(iconn))
-			    ys2=TMPLT.yCircle(TMPLT.neighbour(iconn))
-			    !
-			    !  The following 6 lines determine if the two segments intersect
-			    del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
-			    del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
-			    if (abs(del).gt.0.0 .and. abs(del2).gt.0.0) then
-				    rseg=1.-((yc2-yc1)*(xc2-xs2)-(xc2-xc1)*(yc2-ys2))/del
-				    rcut=1.-((ys2-ys1)*(xs2-xc2)-(xs2-xs1)*(ys2-yc2))/del2
-				    if (rseg.ge.0.0  .AND. rseg.le.1.0 .AND. rcut.ge.0.0 .AND. rcut.le.1.0)    then
-					    TMPLT.xSide(TMPLT.face(iConn),TMPLT.element(iconn))=xs1*(1.0-rseg)+xs2*rseg
-					    TMPLT.ySide(TMPLT.face(iConn),TMPLT.element(iconn))=ys1*(1.0-rseg)+ys2*rseg
-                    else
-                        call ErrMsg('Lines do not intersect')
-                    end if
-                end if
-
-            end do
-        end do
-        
-        ! xSide, ySide at circle tangent for boundary element sides
-        do i=1,TMPLT.nElements
-            do j=1,TMPLT.nNodesPerElement
-                j1=TMPLT.iNode(j,i)
-                if(j < TMPLT.nNodesPerElement) then
-                    j2=TMPLT.iNode(j+1,i)
-                else
-                    j2=TMPLT.iNode(1,i)
-                end if
-                if(bcheck(TMPLT.Node_is(j1),BoundaryNode) .and. bcheck(TMPLT.Node_is(j2),BoundaryNode)) then ! boundary segment
-                
-                    RC=TMPLT.rCircle(i)
-                    DC=sqrt((TMPLT.xCircle(i)-TMPLT.x(j1))**2+(TMPLT.yCircle(i)-TMPLT.y(j1))**2)
-                    D=TMPLT.SideLength(j,i)
-                    D1=sqrt(DC*DC-RC*RC)
-                    D2=D-D1
-                
-                    TMPLT.xSide(j,i)=TMPLT.x(j1)+(TMPLT.x(j2)-TMPLT.x(j1))*D1/D
-                    TMPLT.ySide(j,i)=TMPLT.y(j1)+(TMPLT.y(j2)-TMPLT.y(j1))*D1/D
-                end if
-                
-            end do
-        end do
-                
-                
-
-        
-        call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
-        
-        ja_TMP(:,:)=0
-        ja_TMP2(:,:)=0
-        ConnectionLength_TMP(:,:)=0
-        PerpendicularArea_TMP(:,:)=0
-        
-        do i=1,domain.nNodes
-            ia_TMP(i)=1
-            ja_TMP(ia_TMP(i),i)=-i
-        end do
-
-        ! Loop in order around nodes in element and form cell connection lists
-        do i=1,domain.nElements
-            do j=1,domain.nNodesPerElement
-                jNode=domain.iNode(j,i)
-                if(j == domain.nNodesPerElement) then
-                    kNode=domain.iNode(1,i)
-                else
-                    kNode=domain.iNode(J+1,i)
-                end if
-                
-                ! jnode 
-                ia_TMP(jNode)=ia_TMP(jNode)+1
-                ja_TMP(ia_TMP(jNode),jNode)=kNode
-                ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                FractionSide=sqrt((TMPLT.x(jNode)-TMPLT.xSide(j,i))**2+(TMPLT.y(jNode)-TMPLT.ySide(j,i))**2)/TMPLT.SideLength(j,i)
-                !ConnectionLength_TMP(ia_TMP(jNode),jNode)=ConnectionLength_TMP(ia_TMP(jNode),jNode)+FractionSide*TMPLT.SideLength(j,i)
-                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT.SideLength(j,i)
-                PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT.rCircle(i)
-
-                ! knode 
-                ia_TMP(kNode)=ia_TMP(kNode)+1
-                ja_TMP(ia_TMP(kNode),kNode)=jNode
-                ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                !ConnectionLength_TMP(ia_TMP(kNode),kNode)=ConnectionLength_TMP(ia_TMP(kNode),kNode)+(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
-                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
-                PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT.rCircle(i)
-                
-            end do
-        end do
-        
-        ! Sort cell connection list, remove duplicates and determine ia
-        allocate(domain.ia(domain.nNodes),stat=ialloc)
-        call AllocChk(ialloc,trim(domain.name)//' node neighbour ia, ja_TMP arrays')
-        !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
-        !call Msg(trim(TMPStr))
-        do i=1,domain.nNodes
-            call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
-            !do j=1,MAXCONNECTIONS 
-            !    if(ja_TMP(isort(j),i) /= 0) then
-            !        write(TMPStr,'(i4,2(1pg20.5))') ja_TMP(isort(j),i),ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
-            !        call Msg(trim(TMPStr))
-            !    end if
-            !end do
-            domain.ia(i)=1
-            ja_TMP2(1,i)=i
-            do j=2,MAXCONNECTIONS
-                if(ja_TMP(isort(j),i) == 0) cycle
-                if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
-                domain.ia(i)=domain.ia(i)+1
-                ja_TMP2(domain.ia(i),i)=ja_TMP(isort(j),i)
-            end do
-!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,domain.ia(i))
-        end do
-        
-        ! Determine size of ja (njag) and copy ja_TMP to ja 
-        domain.njag=0
-        do i=1,domain.nNodes
-            domain.njag=domain.njag+domain.ia(i)
-        end do
-        allocate(domain.ja(domain.njag),domain.jaElement(domain.njag),stat=ialloc)
-        call AllocChk(ialloc,trim(domain.name)//' node neighbour ja, jaElement array')
-        allocate(domain.ConnectionLength(domain.njag),domain.PerpendicularArea(domain.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        domain.ConnectionLength(:)=0.0d0
-        domain.PerpendicularArea(:)=0.0d0
-
-        
-        iNJag=0
-        do i=1,domain.nNodes
-            do j=1,domain.ia(i)
-                iNjag=iNjag+1
-                domain.ja(iNJag)=ja_TMP2(j,i)
-                domain.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                domain.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                domain.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
-            end do
-        end do
-           
-        return
-    end subroutine NodeListToIaJaStructure
-    !-------------------------------------------------------------
-    subroutine NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
-        implicit none
-        type(TecplotDomain) TECPLOT_SWF
-        type(TecplotDomain) TECPLOT_GWF
-        
-        integer, parameter :: MAXCONNECTIONS=20
-
-        integer :: i, j, k, iGWF_Cell, kCell
-        
-        
-        integer :: nCellsGWF
-        
-        integer , allocatable :: ia_TMP(:)
-        integer , allocatable :: ja_TMP(:,:)
-        integer , allocatable :: ja_TMP2(:,:)
-        real(dr) , allocatable :: ConnectionLength_TMP(:,:)
-        real(dr) , allocatable :: PerpendicularArea_TMP(:,:)
-        
-        
-        integer :: iSort(MAXCONNECTIONS)
-
-        integer :: iNjag
-        
-        nCellsGWF=TECPLOT_SWF.nNodes*(TECPLOT_GWF.nLayers+1)
-        
-        allocate(ia_TMP(nCellsGWF), ja_TMP(MAXCONNECTIONS,nCellsGWF), ja_TMP2(MAXCONNECTIONS,nCellsGWF), &
-            ConnectionLength_TMP(MAXCONNECTIONS,nCellsGWF),PerpendicularArea_TMP(MAXCONNECTIONS,nCellsGWF), stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' cell build arrays')
-        
-
-        
-        call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TECPLOT_GWF.name)//'...')
-        
-        ia_TMP(:)=0
-        ja_TMP(:,:)=0
-        ConnectionLength_TMP(:,:)=0
-        PerpendicularArea_TMP(:,:)=0
-        
-        ! Form GWF ia, ja from SWF ia, ja
-        do j=1,TECPLOT_GWF.nLayers+1
-            iNjag=0
-            do i=1,TECPLOT_SWF.nNodes
-                iGWF_Cell=(j-1)*TECPLOT_SWF.nNodes+i
-                ia_TMP(iGWF_Cell)=TECPLOT_SWF.ia(i)
-                do k=1,TECPLOT_SWF.ia(i)
-                    iNjag=iNjag+1
-                    kCell=(j-1)*TECPLOT_SWF.nNodes+TECPLOT_SWF.ja(iNJag)
-                    if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
-                    ja_TMP(k,iGWF_Cell)=kCell
-                    
-                    ! For now, assume we can inherit these from SWF domain.  Should really come from TMPLT.
-                    ConnectionLength_TMP(k,iGWF_Cell)=TECPLOT_SWF.ConnectionLength(iNjag)
-                    PerpendicularArea_TMP(k,iGWF_Cell)=TECPLOT_SWF.PerpendicularArea(iNjag)
-                end do
-                    
-                if(j < TECPLOT_GWF.nLayers+1) then ! downward connection
-                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell+TECPLOT_SWF.nNodes
-                end if
-                if(j > 1) then ! upward connection
-                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell-TECPLOT_SWF.nNodes
-                end if
-            end do
-        end do
-                        
-                        
-        ! Sort cell connection list, remove duplicates and determine ia
-        allocate(TECPLOT_GWF.ia(nCellsGWF),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' ia array')
-        !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
-        !call Msg(trim(TMPStr))
-        do i=1,nCellsGWF
-            call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
-            !do j=1,MAXCONNECTIONS 
-            !    if(ja_TMP(isort(j),i) /= 0) then
-            !        write(TMPStr,'(i4,2(1pg20.5))') ja_TMP(isort(j),i) ,ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
-            !        call Msg(trim(TMPStr))
-            !    end if
-            !end do
-            TECPLOT_GWF.ia(i)=0
-            !ja_TMP2(1,i)=i
-            do j=1,MAXCONNECTIONS
-                if(ja_TMP(isort(j),i) == 0) cycle
-                !if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
-                TECPLOT_GWF.ia(i)=TECPLOT_GWF.ia(i)+1
-                ja_TMP2(TECPLOT_GWF.ia(i),i)=ja_TMP(isort(j),i)
-            end do
-!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,TECPLOT_GWF.ia(i))
-        end do
-        
-        ! Determine size of ja (njag) and copy ja_TMP to ja 
-        TECPLOT_GWF.njag=0
-        do i=1,nCellsGWF
-            TECPLOT_GWF.njag=TECPLOT_GWF.njag+TECPLOT_GWF.ia(i)
-        end do
-        allocate(TECPLOT_GWF.ja(TECPLOT_GWF.njag),TECPLOT_GWF.jaElement(TECPLOT_GWF.njag),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' node neighbour ja, jaElement array')
-        allocate(TECPLOT_GWF.ConnectionLength(TECPLOT_GWF.njag),TECPLOT_GWF.PerpendicularArea(TECPLOT_GWF.njag),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        TECPLOT_GWF.ConnectionLength(:)=0.0d0
-        TECPLOT_GWF.PerpendicularArea(:)=0.0d0
-
-        
-        iNJag=0
-        do i=1,nCellsGWF
-            do j=1,TECPLOT_GWF.ia(i)
-                iNjag=iNjag+1
-                TECPLOT_GWF.ja(iNJag)=abs(ja_TMP2(j,i))  ! restore first entry to positive number
-                !TECPLOT_GWF.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                TECPLOT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                TECPLOT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
-            end do
-        end do
-           
-        return
-    end subroutine NodeCentredSWFIaJaStructureToGWF
-!    !-------------------------------------------------------------
-!    subroutine NodeListToIaJaStructure_1(domain,TMPLT)
-!        implicit none
-!        type(TecplotDomain) domain
-!        type(TecplotDomain) TMPLT
-!        
-!        integer, parameter :: MAXCONNECTIONS=20
-!
-!        integer :: i, j, jNode, kNode, iNjag
-!        
-!        integer :: ia_TMP(domain.nNodes)
-!        integer :: ja_TMP(MAXCONNECTIONS,domain.nNodes)
-!        integer :: ja_TMP_element(MAXCONNECTIONS,domain.nNodes)
-!        integer :: ja_TMP2(MAXCONNECTIONS,domain.nNodes)
-!        integer :: ja_TMP2_element(MAXCONNECTIONS,domain.nNodes)
-!        
-!        integer :: iSort(MAXCONNECTIONS)
-!        
-!        call Msg(' ')
-!        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
-!        
-!        ja_TMP(:,:)=0
-!        ja_TMP_element(:,:)=0
-!        ja_TMP2(:,:)=0
-!        ja_TMP2_element(:,:)=0
-!        
-!        do i=1,domain.nNodes
-!            ia_TMP(i)=1
-!            ja_TMP(ia_TMP(i),i)=-i
-!        end do
-!
-!        ! Loop in order around nodes in element and form cell connection lists
-!        do i=1,domain.nElements
-!            do j=1,domain.nNodesPerElement
-!                jNode=domain.iNode(j,i)
-!                if(j == domain.nNodesPerElement) then
-!                    kNode=domain.iNode(1,i)
-!                else
-!                    kNode=domain.iNode(J+1,i)
-!                end if
-!                ia_TMP(jNode)=ia_TMP(jNode)+1
-!                ja_TMP(ia_TMP(jNode),jNode)=kNode
-!                ! Add element inner circle radius to 
-!                ja_TMP_element(ia_TMP(jNode),jNode)=i
-!            end do
-!        end do
-!        
-!        ! Sort cell connection list, remove duplicates and determine ia
-!        allocate(domain.ia(domain.nNodes),stat=ialloc)
-!        call AllocChk(ialloc,trim(domain.name)//' node neighbour ia, ja_TMP arrays')
-!        do i=1,domain.nNodes
-!            call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
-!write(*,'(20i4)') (ja_TMP(isort(j),i),j=1,MAXCONNECTIONS)
-!            domain.ia(i)=1
-!            ja_TMP2(1,i)=i
-!            do j=2,MAXCONNECTIONS
-!                if(ja_TMP(isort(j),i) == 0) cycle
-!                if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
-!                domain.ia(i)=domain.ia(i)+1
-!                ja_TMP2(domain.ia(i),i)=ja_TMP(isort(j),i)
-!                ja_TMP2_element(domain.ia(i),i)=ja_TMP_element(isort(j),i)
-!            end do
-!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,domain.ia(i))
-!write(*,'(a,20i4)') 'final el', (ja_TMP2_element(j,i),j=1,domain.ia(i))
-!        end do
-!        
-!        ! Determine size of ja (njag) and copy ja_TMP to ja 
-!        do i=1,domain.nNodes
-!            domain.njag=domain.njag+domain.ia(i)
-!        end do
-!        allocate(domain.ja(domain.njag),domain.jaElement(domain.njag),stat=ialloc)
-!        call AllocChk(ialloc,trim(domain.name)//' node neighbour ja, jaElement array')
-!        iNJag=0
-!        do i=1,domain.nNodes
-!            do j=1,domain.ia(i)
-!                iNjag=iNjag+1
-!                domain.ja(iNJag)=ja_TMP2(j,i)
-!                domain.jaElement(iNJag)=ja_TMP2_Element(j,i)
-!            end do
-!        end do
-!           
-!        return
-!    end subroutine NodeListToIaJaStructure_1
-    
-    subroutine MUSG_GenOCFile(FNumMUT,Modflow)
-        implicit none
-        
-        integer :: FNumMUT
         
         integer :: i
-        
-        type (ModflowProject) Modflow
-        
-        
-        read(FNumMut, *) modflow.nOutputTimes
-        allocate(modflow.OutputTimes(modflow.nOutputTimes),stat=ialloc)
-        call AllocChk(ialloc,'Output time array')  
-        read(FNumMut,*) (modflow.OutputTimes(i),i=1,modflow.nOutputTimes)
-        
-        call Msg(TAB//'   #     Output time')
-        call Msg(TAB//'--------------------')
-        do i=1,modflow.nOutputTimes
-            write(TmpSTR,'(i4,2x,g15.5)') i, modflow.OutputTimes(i)
-            call Msg(TAB//trim(TmpSTR))
-        end do
-    
-        return
-        
-    end subroutine MUSG_GenOCFile
-    
-    !subroutine MUSG_StressPeriods(FNumMUT,Modflow)
-    !    implicit none
-    !    
-    !    integer :: FNumMUT
-    !    
-    !    integer :: i
-    !    
-    !    type (ModflowProject) Modflow
-    !    
-    !    
-    !    read(FNumMut, *) Modflow.nPeriods
-    !    allocate(Modflow.StressPeriodLength(Modflow.nPeriods), Modflow.nTsteps(Modflow.nPeriods), &
-    !        Modflow.TstepMult(Modflow.nPeriods), Modflow.StressPeriodType(Modflow.nPeriods),stat=ialloc)
-    !    call AllocChk(ialloc,'Stress period arrays')      
-    !
-    !    call Msg(TAB//'Stress                 Number of   Timestep  Timestep')
-    !    call Msg(TAB//'Period     Length      Timesteps  Multiplier   Type')
-    !    call Msg(TAB//'-----------------------------------------------------')
-    !    
-    !    do i=1,Modflow.nPeriods
-    !        read(FNumMut,*) modflow.StressPeriodLength(i), modflow.nTsteps(i), modflow.TstepMult(i), modflow.StressPeriodType(i)
-    !        write(TmpSTR,'(i4,2x,g15.5,2x,i5,2x,g15.5,2x,a)') i, modflow.StressPeriodLength(i), modflow.nTsteps(i), modflow.TstepMult(i), modflow.StressPeriodType(i)
-    !        call Msg(TAB//trim(TmpSTR))
-    !    end do
-    !    
-    !
-    !    return
-    !    
-    !end subroutine MUSG_StressPeriods
-    !----------------------------------------------------------------------
-    subroutine MUSG_StressPeriod(FNumMUT,modflow)
-        implicit none
-        
-        integer :: FNumMUT
-        type (ModflowProject) Modflow
-        
-        integer, parameter :: MAXStressPeriods=100
 
-        Modflow.nPeriods=Modflow.nPeriods+1  
-        write(TmpSTR,'(a,i8)')TAB//'Stress period ',Modflow.nPeriods
-        call Msg(trim(TmpSTR))
+        integer :: Fnum
+        integer :: FnumTecplot
+        character(MAX_STR) :: FNameTecplot
         
-        if(Modflow.nPeriods == 1) then
-            allocate(Modflow.StressPeriodLength(MAXStressPeriods), Modflow.nTsteps(MAXStressPeriods), &
-            Modflow.TstepMult(MAXStressPeriods), Modflow.StressPeriodType(MAXStressPeriods),stat=ialloc)
-            Modflow.StressPeriodLength(:)=1.0d0
-            Modflow.nTsteps(:)=1
-            Modflow.TstepMult(:)=1.1d0
-            Modflow.StressPeriodType(:)='TR'
-        end if
+        
+        character(20) :: Varname(100)
+        real(dr) :: VarNumRate(100)
+        Real(dr) :: VarNumCumulative(100)
+        logical :: DoVars
+        integer :: bline
+        logical :: InSection
+        real(dr) :: TotalTime
+        real(dr) :: dum1, dum2, dum3, dum4
+        
+        character(4000) :: var_line
+        character(4000) :: output_line
+        character(4000) :: line
+        
+        integer :: len
 
 
         
-        read_StressPeriod_instructions: do
-            read(FNumMUT,'(a)',iostat=status) MUSG_CMD
-            if(status /= 0) exit
 
-            call lcase(MUSG_CMD)
+        FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.VolumeBudget.tecplot.dat'
+        call OpenAscii(FNumTecplot,FNameTecplot)
+        call Msg( 'To File: '//trim(FNameTecplot))
+
+        write(FNumTecplot,*) 'Title = "Modflow Volume Budget"'
+
+        DoVars=.true.
+        
+        FNum=Modflow.iLIST
+        rewind(FNUM)
+
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status /= 0) return
             
-            if(index(MUSG_CMD,'end') /=0) then
-                call Msg(TAB//'end stress period instructions')
-                exit read_StressPeriod_instructions
-            else
-                call Msg(TAB//MUSG_CMD)
-            end if
+            if(index(line,'MODEL TIME UNIT IS').gt.0) then
+                l1=index(line,'MODEL TIME UNIT IS')
+                Modflow.Tunits=line(l1+19:)
+                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.Tunits))//')",'
 
-            if(index(MUSG_CMD,StressPeriodType_cmd) /=0) then
-                read(FNumMUT,'(a)') modflow.StressPeriodType(Modflow.nPeriods)
-                if(modflow.StressPeriodType(Modflow.nPeriods) /= 'SS' .and. modflow.StressPeriodType(Modflow.nPeriods) /= 'TR') then
-                    call ErrMsg('Stress Period type must begin with either SS or TR')
+                continue
+                
+            else if(index(line,'MODEL LENGTH UNIT IS').gt.0) then
+                l1=index(line,'MODEL LENGTH UNIT IS')
+                Modflow.Lunits=line(l1+21:)
+                
+
+                continue
+            else if(index(line,'VOLUMETRIC BUDGET FOR ENTIRE MODEL AT END OF TIME STEP').gt.0) then 
+                bline=0  
+                InSection=.true.
+                
+                do  ! find start of budget data                 
+                    read(FNum,'(a)',iostat=status) line
+                    if(status /= 0) return
+                
+                    if(index(line,'           ---                                      ---').gt.0) exit
+                end do
+                
+                do  ! read IN section
+                    read(FNum,'(a)',iostat=status) line
+                    if(status /= 0) return
+                    
+                    if(index(line,'OUT:') > 0) exit
+                                            
+                    if(index(line,'=') .gt. 0) then   ! read this line of budget data
+                        bline=bline+1
+                        if(DoVars) then
+                            l1=index(line,'=')
+                            VarName(Bline)='IN_'//trim(adjustl(line(:l1-2)))
+                            l1=len_trim(var_line)
+                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
+
+                        end if
+                                   
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumCumulative(Bline)
+                                    
+                        line=line(l1+1:)
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumRate(Bline)
+                           
+                                  
+                    end if
+
+                end do
+
+                do  ! read OUT section
+                    read(FNum,'(a)',iostat=status) line
+                    if(status /= 0) return
+                    
+                    if(index(line,'TOTAL OUT =') > 0) then
+                        backspace(FNum)
+                        exit
+                    end if
+                                            
+                    if(index(line,'=') .gt. 0) then   ! read this line of budget data
+                        bline=bline+1
+                        if(DoVars) then
+                            l1=index(line,'=')
+                            VarName(Bline)='OUT_'//trim(adjustl(line(:l1-2)))
+                            l1=len_trim(var_line)
+                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
+
+                        end if
+                                   
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumCumulative(Bline)
+                                    
+                        line=line(l1+1:)
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumRate(Bline)
+                           
+                                  
+                    end if
+
+                end do
+                
+                do  ! read to the end of the budget data
+                    read(FNum,'(a)',iostat=status) line
+                    if(status /= 0) return
+                    
+                    if(index(line,'TOTAL TIME').gt.0) then
+                        l1=index(line,'TOTAL TIME')
+                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
+                            read(line(l1+10:),*) TotalTime
+                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
+                            read(line(l1+10:),*) dum1, TotalTime
+                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, TotalTime
+                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
+                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
+                            read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
+                        end if
+                        exit
+                        
+                    else if(index(line,'=') .gt. 0) then   ! read this line of budget data
+                        bline=bline+1
+                        if(DoVars) then
+                            l1=index(line,'=')
+                            VarName(Bline)=trim(adjustl(line(:l1-2)))
+                            l1=len_trim(var_line)
+                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
+
+                        end if
+                                   
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumCumulative(Bline)
+                                    
+                        line=line(l1+1:)
+                        l1=index(line,'=')
+                        read(line(l1+1:),*) VarNumRate(Bline)
+                           
+                    
+                     end if
+                end do
+             
+                if(DoVars) then
+                    l1=len_trim(var_line)
+                    write(FNumTecplot,'(a)') var_line(:l1-1)
+                    
+                    l1 = GetCurrentDirectory( len(CurrentDir), CurrentDir )
+                    l2=len_trim(CurrentDir)-1
+                    
+                    l1=l2
+                    
+                    ! check for last path seperator
+                    do 
+                        if(CurrentDir(l1:l1) .ne. '/' .and. CurrentDir(l1:l1) .ne. '\') then
+                            l1=l1-1
+                        else
+                            l1=l1+1
+                            exit
+                        end if    
+                    end do
+
+                    write(output_line,'(a)')  'zone t="'//CurrentDir(l1:l2)//'"'
+ 
+                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'
+                    l1=len_trim(output_line)+1
+                    write(output_line(l1:),'(a)')	TMPStr                 
+
+                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    l1=len_trim(output_line)+1
+                    write(output_line(l1:),'(a)')	TMPStr                 
+                    
+                    write(FNumTecplot,'(a)') output_line 
+
+                    
+                    DoVars=.false.
                 end if
-                write(TmpSTR,'(a,1pg12.4)')TAB//'Modflow stress period type: ',modflow.StressPeriodType(Modflow.nPeriods)
-                call Msg(trim(TmpSTR))
+                
+                write(output_line,'(1pg20.7)') TotalTime
+                do i=1,bline
+                    l1=len_trim(output_line)+1
+                    write(output_line(l1:),'(1pg20.7)')	VarNumRate(i)
+                end do
 
-            else if(index(MUSG_CMD,StressPeriodDuration_cmd) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodLength(Modflow.nPeriods)
-                write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodLength(Modflow.nPeriods)
-                call Msg(trim(TmpSTR))
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
+                write(FNumTecplot,'(a)') output_line
+
             end if
+        end do 
+    end subroutine WriteVolumeBudgetToTecplot
+    
 
-        end do read_StressPeriod_instructions
-
-        
-
-    end subroutine MUSG_StressPeriod
-
+    
 
 
     SUBROUTINE SGWF2BAS8OPEN(INUNIT,IOUT,IUNIT,CUNIT,&
@@ -6373,73 +7043,8 @@
     END SUBROUTINE SGWF2BAS8OPEN
 
    
-    subroutine openMUSGFile(FileType,line,prefix,iUnit,FName)
-        implicit none
-        
-        character(*) :: FileType
-        character(*) :: line
-        character(*) :: prefix
-        integer :: iUnit
-        character(*) :: FName
-        
-        l1=index(line,trim(Prefix))-1
-
-        ! check for path string before prefix
-        if(line(l1:l1) .eq. '/' .or. line(l1:l1) .eq. '\') then
-            l1=l1-1
-            do
-                if(line(l1:l1) .eq. BLANK) exit
-                l1=l1-1
-            end do   
-        end if    
-        FName=line(l1:)
-        inquire(file=FName,exist=FileExists)
-        if(.not. FileExists) then
-            call ErrMsg('No file found: '//FName)
-        end if
-	    call getunit(iUnit)
-        open(iUnit,file=FName,status='unknown',form='formatted')  
-        call Msg('Opened ascii '//trim(FileType)//' file: '//trim(FName))
-        write(TmpSTR,'(i5)') iUnit
-        call Msg('Reading from unit: '//trim(TmpSTR))
-        
-    end subroutine openMUSGFile
     
-    subroutine openBinaryMUSGFile(FileType,line,prefix,iUnit,FName)
-        implicit none
-        
-        character(*) :: FileType
-        character(*) :: line
-        character(*) :: prefix
-        integer :: iUnit
-        character(*) :: FName
-        
-        l1=index(line,trim(Prefix))-1
-
-        ! check for path string before prefix
-        if(line(l1:l1) .eq. '/' .or. line(l1:l1) .eq. '\') then
-            l1=l1-1
-            do
-                if(line(l1:l1) .eq. BLANK .or. line(l1:l1) .eq. TAB ) exit
-                !write(*,*) ichar(line(l1:l1)), line(l1:l1)
-                l1=l1-1
-            end do   
-        end if    
-        FName=line(l1+1:)
-        inquire(file=FName,exist=FileExists)
-        if(.not. FileExists) then
-            call ErrMsg('No file found: '//FName)
-        end if
-        call Msg('Opened binary '//trim(FileType)//' file: '//FName)
-	    call getunit(iUnit)
-        open(iUnit,file=FName,status='old',form='binary',action='read')  
-        write(TmpSTR,'(i5)') iUnit
-        call Msg('Reading from unit: '//trim(TmpSTR))
-        
-    end subroutine openBinaryMUSGFile
-
-    
-    subroutine MUSG_ReadOC(Modflow)
+    subroutine ReadOC(Modflow)
         !SUBROUTINE SGWF2BAS7I(NLAY,INOC,IOUT,IFREFM,NIUNIT,ITRUNIT,ICUNIT)
         !     ******************************************************************
         !     SET UP OUTPUT CONTROL.
@@ -6750,7 +7355,7 @@
         !
         !5------RETURN.
         1000 RETURN
-    END subroutine MUSG_ReadOC
+    END subroutine ReadOC
     
     SUBROUTINE SGWF2BAS7J(INOC,IOUT,LINE,LLOC,ISTART,ISTOP)
         !     ******************************************************************
@@ -7050,7 +7655,7 @@
          1000 RETURN
     END SUBROUTINE PTIMES1RP
     
-    SUBROUTINE MUSG_ReadLPF(Modflow)
+    SUBROUTINE ReadLPF(Modflow)
         !     ******************************************************************
         !     ALLOCATE AND READ DATA FOR LAYER PROPERTY FLOW PACKAGE
         !     ******************************************************************
@@ -7628,9 +8233,9 @@
 !        !      end if
         !13-----RETURN
               RETURN
-    END SUBROUTINE MUSG_ReadLPF
+    END SUBROUTINE ReadLPF
  
-    SUBROUTINE MUSG_ReadCLN_IBOUND_IHEADS(Modflow)
+    SUBROUTINE ReadCLN_IBOUND_IHEADS(Modflow)
 !     ******************************************************************
 !     READ IBOUND AND STARTING HEADS AND PREPARE KADI, Sn AND PGF ARRAYS FOR CLN
 !     ******************************************************************
@@ -7720,9 +8325,9 @@
 !
 !6------RETURN
       RETURN
-    END SUBROUTINE MUSG_ReadCLN_IBOUND_IHEADS
+    END SUBROUTINE ReadCLN_IBOUND_IHEADS
 
-    SUBROUTINE MUSG_ReadSWF_IBOUND_IHEADS(Modflow)
+    SUBROUTINE ReadSWF_IBOUND_IHEADS(Modflow)
 !     ******************************************************************
 !     READ IBOUND AND STARTING HEADS AND PREPARE KADI, Sn AND PGF ARRAYS FOR SWF
 !     ******************************************************************
@@ -7825,10 +8430,10 @@
 !!
 !!6------RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadSWF_IBOUND_IHEADS 
+      END SUBROUTINE ReadSWF_IBOUND_IHEADS 
 
     
-      SUBROUTINE MUSG_ReadWEL(Modflow)
+      SUBROUTINE ReadWEL(Modflow)
 !     ******************************************************************
 !     ALLOCATE ARRAY STORAGE FOR WELL PACKAGE
 !     ******************************************************************
@@ -8010,7 +8615,7 @@
 !
 !6------RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadWEL
+      END SUBROUTINE ReadWEL
 
       SUBROUTINE SWF_THIK(HD,BBOT,THCK)
 !     ******************************************************************
@@ -8557,7 +9162,7 @@
       RETURN
     END SUBROUTINE ULSTLB
     
-    SUBROUTINE MUSG_ReadCHD(Modflow)
+    SUBROUTINE ReadCHD(Modflow)
 !     ******************************************************************
 !     ALLOCATE ARRAY STORAGE FOR TIME-VARIANT SPECIFIED-HEAD CELLS AND
 !     READ NAMED PARAMETER DEFINITIONS
@@ -8674,10 +9279,10 @@
 !
 !3------RETURN.
       RETURN
-    END SUBROUTINE MUSG_ReadCHD
+    END SUBROUTINE ReadCHD
     
     
-      SUBROUTINE MUSG_ReadRCH(modflow)
+      SUBROUTINE ReadRCH(modflow)
 !     ******************************************************************
 !     ALLOCATE ARRAY STORAGE FOR RECHARGE
 !     ******************************************************************
@@ -8877,10 +9482,10 @@
 !
 !9------RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadRCH
+      END SUBROUTINE ReadRCH
 
 !------------------------------------------------------------------
-      SUBROUTINE MUSG_ReadDRN(modflow)
+      SUBROUTINE ReadDRN(modflow)
 !     ******************************************************************
 !     ALLOCATE ARRAY STORAGE FOR DRAINS AND READ PARAMETER DEFINITIONS
 !     ******************************************************************
@@ -9005,11 +9610,11 @@
 !
 !6------RETURN
       RETURN
-      end SUBROUTINE MUSG_ReadDRN
+      end SUBROUTINE ReadDRN
 
       
 !------------------------------------------------------------------
-      SUBROUTINE MUSG_ReadSWBC(modflow)! based on SWF2BC1U1AR
+      SUBROUTINE ReadSWBC(modflow)! based on SWF2BC1U1AR
 !     ALLOCATE ARRAY STORAGE FOR SWFBC AND READ PARAMETER DEFINITIONS
       USE GLOBAL,      ONLY:IOUT,IFREFM
       USE GLOBAL,      ONLY:ITMUNI,LENUNI
@@ -9087,9 +9692,9 @@
 
 !------RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadSWBC
+      END SUBROUTINE ReadSWBC
 !------------------------------------------------------------------
-      SUBROUTINE MUSG_ReadSWBC2(modflow)! based on SWF2BC1U1RP
+      SUBROUTINE ReadSWBC2(modflow)! based on SWF2BC1U1RP
 !     READ LENGTH ASSOCIATED WITH THE SWBC
       USE GLOBAL,      ONLY:IOUT,IFREFM
       USE SWFBCMODULE
@@ -9169,10 +9774,10 @@
 !
 !8------RETURN.
       RETURN
-      END SUBROUTINE MUSG_ReadSWBC2
+      END SUBROUTINE ReadSWBC2
      
 !------------------------------------------------------------------
-      SUBROUTINE MUSG_ReadRCH_StressPeriods(Modflow)
+      SUBROUTINE ReadRCH_StressPeriods(Modflow)
 !     READ RECHARGE DATA FOR STRESS PERIOD
       USE GLOBAL,      ONLY:IOUT,NCOL,NROW,NLAY,IFREFM,&
        NODLAY,AREA,IUNSTR,NODES
@@ -9480,9 +10085,9 @@
       DEALLOCATE(ITEMP)
 !6------RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadRCH_StressPeriods
+      END SUBROUTINE ReadRCH_StressPeriods
 
-    SUBROUTINE MUSG_ReadDRN_StressPeriods(Modflow)
+    SUBROUTINE ReadDRN_StressPeriods(Modflow)
 !     ******************************************************************
 !     READ DRAIN HEAD, CONDUCTANCE AND BOTTOM ELEVATION
 !     ******************************************************************
@@ -9590,7 +10195,7 @@
 !
 !8------RETURN.
       RETURN
-      END SUBROUTINE MUSG_ReadDRN_StressPeriods
+      END SUBROUTINE ReadDRN_StressPeriods
       
 
 
@@ -11446,7 +12051,7 @@
 
 
         
-    subroutine MUSG_ReadBinary_HDS_File(Modflow, domain)
+    subroutine ReadBinary_HDS_File(Modflow, domain)
         implicit none
         
         integer :: i
@@ -11489,9 +12094,9 @@
             end do
         end if
 
-    end subroutine MUSG_ReadBinary_HDS_File
+    end subroutine ReadBinary_HDS_File
     
-    subroutine MUSG_ReadBinary_DDN_File(Modflow, domain)
+    subroutine ReadBinary_DDN_File(Modflow, domain)
         implicit none
         
         integer :: i
@@ -11534,9 +12139,9 @@
             end do
         end if
 
-    end subroutine MUSG_ReadBinary_DDN_File
+    end subroutine ReadBinary_DDN_File
 
-    subroutine MUSG_ReadBinary_CBB_File(Modflow, domain)
+    subroutine ReadBinary_CBB_File(Modflow, domain)
     ! borrowed from J. Doherty.
         implicit none
 
@@ -11695,7 +12300,7 @@
 9400    continue
 1000    continue
  
-    end subroutine MUSG_ReadBinary_CBB_File
+    end subroutine ReadBinary_CBB_File
 
     SUBROUTINE ULASAVRD(BUF,TEXT,KSTP,KPER,PERTIM,TOTIM,NCOL,&
                         NROW,ILAY,ICHN)
@@ -11757,7 +12362,7 @@
     
     
    
-    subroutine MUSG_ReadBAS6_Options(Modflow)
+    subroutine ReadBAS6_Options(Modflow)
         implicit none
 
         type (ModflowProject) Modflow
@@ -11897,9 +12502,9 @@
         62 FORMAT(1X,'CALCULATE FLOW BETWEEN ADJACENT CONSTANT-HEAD CELLS')
         IF(IUNSTR.NE.0) WRITE(IOUT,63)
         63 FORMAT(1X,'THE UNSTRUCTURED GRID OPTION HAS BEEN SELECTED')
-    end subroutine MUSG_ReadBAS6_Options
+    end subroutine ReadBAS6_Options
     
-    SUBROUTINE MUSG_ReadBAS6_IBOUND_IHEADS(Modflow)
+    SUBROUTINE ReadBAS6_IBOUND_IHEADS(Modflow)
         !     ******************************************************************
         !     Read IBOUND, HNOFLO and initial heads for unstructured grid input
         !     ******************************************************************
@@ -11990,9 +12595,9 @@
         !----------------------------------------------------------------------
         !4------RETURN.
         RETURN
-    END SUBROUTINE MUSG_ReadBAS6_IBOUND_IHEADS
+    END SUBROUTINE ReadBAS6_IBOUND_IHEADS
 
-    subroutine MUSG_ReadDISU_pt1(Modflow)
+    subroutine ReadDISU_pt1(Modflow)
        
         !      SUBROUTINE SDIS2GLO8AR (IUDIS,IOUT)
         !     *****************************************************************
@@ -12143,9 +12748,9 @@
         
         RETURN
 
-    end subroutine MUSG_ReadDISU_pt1
+    end subroutine ReadDISU_pt1
 
-    subroutine MUSG_ReadDISU_pt2(Modflow)
+    subroutine ReadDISU_pt2(Modflow)
         implicit none
 
         type (ModflowProject) Modflow
@@ -12254,10 +12859,10 @@
         !----------------------------------------------------------------------
         !15------RETURN.
         RETURN
-    end subroutine MUSG_ReadDISU_pt2
+    end subroutine ReadDISU_pt2
     
     
-    SUBROUTINE MUSG_ReadDISU_pt3(Modflow)
+    SUBROUTINE ReadDISU_pt3(Modflow)
 !        !     ******************************************************************
 !        !     READ CLN as CL1, AND FAHL ARRAYS FOR UNSTRUCTURED GRID INPUT.
 !        !     ******************************************************************
@@ -12291,9 +12896,9 @@
         CALL U1DREL(FAHL,ANAME(4),NJAG,K,INDIS,IOUT)
        
         RETURN
-    END SUBROUTINE MUSG_ReadDISU_pt3
+    END SUBROUTINE ReadDISU_pt3
 
-    subroutine MUSG_ReadDISU_StressPeriodData(Modflow)
+    subroutine ReadDISU_StressPeriodData(Modflow)
     
         implicit none
 
@@ -12402,10 +13007,10 @@
         !
         !15-----RETURN.
         RETURN
-    end subroutine MUSG_ReadDISU_StressPeriodData
+    end subroutine ReadDISU_StressPeriodData
 
 
-    subroutine MUSG_ReadCLN(Modflow)
+    subroutine ReadCLN(Modflow)
         implicit none
 
         type (ModflowProject) Modflow
@@ -12884,9 +13489,9 @@
             
         end do
         RETURN
-    end subroutine MUSG_ReadCLN
+    end subroutine ReadCLN
 
-          SUBROUTINE MUSG_ReadSWF(Modflow)
+          SUBROUTINE ReadSWF(Modflow)
 !     ******************************************************************
 !     ALLOCATE SPACE AND READ NODE AND CONNECTIVITY INFORMATION FOR SWF DOMAIN
 !     ******************************************************************
@@ -13353,10 +13958,10 @@
 !      end do
 !17-----RETURN
       RETURN
-      END SUBROUTINE MUSG_ReadSWF
+      END SUBROUTINE ReadSWF
 
     
-    subroutine MUSG_ReadCLN_pt2(Modflow)
+    subroutine ReadCLN_pt2(Modflow)
         implicit none
 
         type (ModflowProject) Modflow
@@ -13469,7 +14074,7 @@
         end do
                 
         continue
-    end subroutine MUSG_ReadCLN_pt2
+    end subroutine ReadCLN_pt2
     
     SUBROUTINE CLNA(IC,AREAF)
         !--------COMPUTE X-SECTIONAL FLOW AREA FOR NODE
@@ -13519,7 +14124,7 @@
         RETURN
     END SUBROUTINE CLNP
 
-      SUBROUTINE MUSG_ReadSMS(Modflow)      ! SMS7U1AR(IN,INTIB)
+      SUBROUTINE ReadSMS(Modflow)      ! SMS7U1AR(IN,INTIB)
 
       USE GLOBAL, ONLY: IOUT,&
                  NLAY,ILAYCON4,ISYMFLG,INGNCn
@@ -13901,7 +14506,7 @@
 ! ----------------------------------------------------------------------
 !6------Return
       RETURN 
-      END SUBROUTINE MUSG_ReadSMS
+      END SUBROUTINE ReadSMS
       
       SUBROUTINE SET_RELAX(IFDPARAM)
       USE SMSMODULE, ONLY: Akappa,Gamma,Amomentum,Breduc,Btol,Numtrack,&
@@ -13943,568 +14548,8 @@
       END
 
    
-    subroutine MUSG_WriteVolumeBudgetToTecplot(Modflow)
-        implicit none
-
-        type (ModflowProject) Modflow
-        
-        integer :: i
-
-        integer :: Fnum
-        integer :: FnumTecplot
-        character(MAXSTRING) :: FNameTecplot
-        
-        
-        character(20) :: Varname(100)
-        real(dr) :: VarNumRate(100)
-        Real(dr) :: VarNumCumulative(100)
-        logical :: DoVars
-        integer :: bline
-        logical :: InSection
-        real(dr) :: TotalTime
-        real(dr) :: dum1, dum2, dum3, dum4
-        
-        character(4000) :: var_line
-        character(4000) :: output_line
-        character(4000) :: line
-        
-        integer :: len
-
-
-        
-
-        FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.VolumeBudget.tecplot.dat'
-        call OpenAscii(FNumTecplot,FNameTecplot)
-        call Msg( 'To File: '//trim(FNameTecplot))
-
-        write(FNumTecplot,*) 'Title = "Modflow Volume Budget"'
-
-        DoVars=.true.
-        
-        FNum=Modflow.iLIST
-        rewind(FNUM)
-
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status /= 0) return
-            
-            if(index(line,'MODEL TIME UNIT IS').gt.0) then
-                l1=index(line,'MODEL TIME UNIT IS')
-                Modflow.Tunits=line(l1+19:)
-                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.Tunits))//')",'
-
-                continue
-                
-            else if(index(line,'MODEL LENGTH UNIT IS').gt.0) then
-                l1=index(line,'MODEL LENGTH UNIT IS')
-                Modflow.Lunits=line(l1+21:)
-                
-
-                continue
-            else if(index(line,'VOLUMETRIC BUDGET FOR ENTIRE MODEL AT END OF TIME STEP').gt.0) then 
-                bline=0  
-                InSection=.true.
-                
-                do  ! find start of budget data                 
-                    read(FNum,'(a)',iostat=status) line
-                    if(status /= 0) return
-                
-                    if(index(line,'           ---                                      ---').gt.0) exit
-                end do
-                
-                do  ! read IN section
-                    read(FNum,'(a)',iostat=status) line
-                    if(status /= 0) return
-                    
-                    if(index(line,'OUT:') > 0) exit
-                                            
-                    if(index(line,'=') .gt. 0) then   ! read this line of budget data
-                        bline=bline+1
-                        if(DoVars) then
-                            l1=index(line,'=')
-                            VarName(Bline)='IN_'//trim(adjustl(line(:l1-2)))
-                            l1=len_trim(var_line)
-                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
-
-                        end if
-                                   
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumCumulative(Bline)
-                                    
-                        line=line(l1+1:)
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumRate(Bline)
-                           
-                                  
-                    end if
-
-                end do
-
-                do  ! read OUT section
-                    read(FNum,'(a)',iostat=status) line
-                    if(status /= 0) return
-                    
-                    if(index(line,'TOTAL OUT =') > 0) then
-                        backspace(FNum)
-                        exit
-                    end if
-                                            
-                    if(index(line,'=') .gt. 0) then   ! read this line of budget data
-                        bline=bline+1
-                        if(DoVars) then
-                            l1=index(line,'=')
-                            VarName(Bline)='OUT_'//trim(adjustl(line(:l1-2)))
-                            l1=len_trim(var_line)
-                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
-
-                        end if
-                                   
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumCumulative(Bline)
-                                    
-                        line=line(l1+1:)
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumRate(Bline)
-                           
-                                  
-                    end if
-
-                end do
-                
-                do  ! read to the end of the budget data
-                    read(FNum,'(a)',iostat=status) line
-                    if(status /= 0) return
-                    
-                    if(index(line,'TOTAL TIME').gt.0) then
-                        l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
-                            read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
-                            read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
-                        end if
-                        exit
-                        
-                    else if(index(line,'=') .gt. 0) then   ! read this line of budget data
-                        bline=bline+1
-                        if(DoVars) then
-                            l1=index(line,'=')
-                            VarName(Bline)=trim(adjustl(line(:l1-2)))
-                            l1=len_trim(var_line)
-                            var_line=var_line(:l1)//'"'//trim(VarName(Bline))//'",'
-
-                        end if
-                                   
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumCumulative(Bline)
-                                    
-                        line=line(l1+1:)
-                        l1=index(line,'=')
-                        read(line(l1+1:),*) VarNumRate(Bline)
-                           
-                    
-                     end if
-                end do
-             
-                if(DoVars) then
-                    l1=len_trim(var_line)
-                    write(FNumTecplot,'(a)') var_line(:l1-1)
-                    
-                    l1 = GetCurrentDirectory( len(CurrentDir), CurrentDir )
-                    l2=len_trim(CurrentDir)-1
-                    
-                    l1=l2
-                    
-                    ! check for last path seperator
-                    do 
-                        if(CurrentDir(l1:l1) .ne. '/' .and. CurrentDir(l1:l1) .ne. '\') then
-                            l1=l1-1
-                        else
-                            l1=l1+1
-                            exit
-                        end if    
-                    end do
-
-                    write(output_line,'(a)')  'zone t="'//CurrentDir(l1:l2)//'"'
- 
-                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'
-                    l1=len_trim(output_line)+1
-                    write(output_line(l1:),'(a)')	TMPStr                 
-
-                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-                    l1=len_trim(output_line)+1
-                    write(output_line(l1:),'(a)')	TMPStr                 
-                    
-                    write(FNumTecplot,'(a)') output_line 
-
-                    
-                    DoVars=.false.
-                end if
-                
-                write(output_line,'(1pg20.7)') TotalTime
-                do i=1,bline
-                    l1=len_trim(output_line)+1
-                    write(output_line(l1:),'(1pg20.7)')	VarNumRate(i)
-                end do
-
-                write(FNumTecplot,'(a)') output_line
-
-            end if
-        end do 
-    end subroutine MUSG_WriteVolumeBudgetToTecplot
     
-    subroutine MUSG_CreateStepPeriodTimeFile(Modflow)
-        implicit none
-
-        type (ModflowProject) Modflow
-        
-        integer :: Fnum
-        integer :: FNumStepPeriodTime
-        character(MAXSTRING) :: FNameStepPeriodTime
-        
-        
-        integer :: iTStep
-        integer :: iPeriod
-        real(dr) :: TotalTime
-        real(dr) :: dum1, dum2, dum3, dum4
-        
-        character(4000) :: line
-
-        FNum=Modflow.iLIST
-        rewind(FNum)
-
-        FNameStepPeriodTime=trim(Modflow.MUTPrefix)//'o.StepPeriodTime'
-        call OpenAscii(FNumStepPeriodTime,FNameStepPeriodTime)
-        call Msg( 'Time step, stress period, time to file: '//trim(FNameStepPeriodTime))
-
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status /= 0) return
-            
-            if(index(line,'TIME SUMMARY AT END OF TIME STEP').gt.0) then
-                line=line(index(line,'STEP')+5:)
-                read(line,*) iTStep
-                line=line(index(line,'PERIOD')+7:)
-                read(line,*) iPeriod
-                
-                loop: do
-                    read(FNum,'(a)',iostat=status) line
-                    if(status /= 0) return
-                    if(index(line,'TOTAL TIME').gt.0) then
-                        l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
-                            read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
-                            read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
-                            read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
-                        end if
-                        exit loop
-                    end if
-                end do loop
-                
-                write(FNumStepPeriodTime,*) iTStep, iPeriod, TotalTime
-            end if
-        end do
-                
-    end subroutine MUSG_CreateStepPeriodTimeFile
-    
-    subroutine MUSG_ToTecplot(Modflow,domain)
-        implicit none
-        type (ModflowProject) Modflow
-        type (ModflowDomain) Domain
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        integer :: i, j, nvar, nVarShared
-
-        character(4000) :: VarSharedStr
-
-
-        ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'.tecplot.dat'
-        call OpenAscii(FNum,FName)
-        call Msg( 'To File: '//trim(FName))
-
-        write(FNum,*) 'Title = "Modflow Project: '//trim(Modflow.Prefix)//'"'
-
-        ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(domain.name)//' z Cell","'//trim(domain.name)//' Layer","'//trim(domain.name)//' Ibound","'//trim(domain.name)//' Initial head",'
-        nVar=7
-       
-        if(allocated(domain.head)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Head",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.Drawdown)) then
-            if(domain.name == 'GWF') then
-                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Saturation",'
-            else if(domain.name == 'SWF') then
-                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
-            endif
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_STORAGE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to STORAGE",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_CONSTANT_HEAD)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CONSTANT_HEAD",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_RECHARGE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to RECHARGE",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_DRAINS)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to DRAINS",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_CLN)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CLN",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_SWF)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWF",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_GWF)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to GWF",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_FLOW_FACE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to FLOW_FACES",'
-            nVar=nVar+1
-        end if
-        if(allocated(domain.cbb_SWBC)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWBC",'
-            nVar=nVar+1
-        end if
-        
-        
-        write(FNum,'(a)') trim(VarSTR)
-            
-        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1),',N=',domain.nNodes,', E=',domain.nElements,&
-            ', datapacking=block, zonetype='//trim(domain.elementtype)
-        
-        if(Modflow.NodalControlVolume) then
-            write(FNum,'(a)') trim(ZoneSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-        
-        else
-        
-            CellCenteredSTR=', VARLOCATION=([4'
-            if(nVar.ge.5) then
-                do j=5,nVar
-                    write(str2,'(i2)') j
-                    CellCenteredSTR=trim(CellCenteredSTR)//','//str2
-                end do
-            end if
-            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
-
-            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-        endif
-        
-
-        write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (domain.x(i),i=1,domain.nNodes)
-        write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (domain.y(i),i=1,domain.nNodes)
-        write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (domain.z(i),i=1,domain.nNodes)
-        write(FNum,'(a)') '# z cell'
-        write(FNum,'(5e20.12)') (domain.zCell(i),i=1,domain.nCells)
-        write(FNum,'(a)') '# layer'
-        write(FNum,'(5i8)') (domain.iLayer(i),i=1,domain.nCells)
-        write(FNum,'(a)') '# ibound'
-        write(FNum,'(5i8)') (domain.ibound(i),i=1,domain.nCells)
-        write(FNum,'(a)') '# hnew'
-        write(FNum,'(5e20.12)') (domain.hnew(i),i=1,domain.nCells)
-        nVarShared=7
-       
-        if(allocated(domain.head)) then
-            write(FNum,'(a)') '# head'
-            write(FNum,'(5e20.12)') (domain.head(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.Drawdown)) then
-            write(FNum,'(a)') '# saturation'
-            write(FNum,'(5e20.12)') (domain.Drawdown(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_STORAGE)) then
-            write(FNum,'(a)') '# cbb_STORAGE'
-            write(FNum,'(5e20.12)') (domain.cbb_STORAGE(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_CONSTANT_HEAD)) then
-            write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
-            write(FNum,'(5e20.12)') (domain.cbb_CONSTANT_HEAD(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_RECHARGE)) then
-            write(FNum,'(a)') '# cbb_RECHARGE'
-            write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_DRAINS)) then
-            write(FNum,'(a)') '# cbb_DRAINS'
-            write(FNum,'(5e20.12)') (domain.cbb_DRAINS(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_CLN)) then
-            write(FNum,'(a)') '# cbb_CLN'
-            write(FNum,'(5e20.12)') (domain.cbb_CLN(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_SWF)) then
-            write(FNum,'(a)') '# cbb_SWF'
-            write(FNum,'(5e20.12)') (domain.cbb_SWF(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_GWF)) then
-            write(FNum,'(a)') '# cbb_GWF'
-            write(FNum,'(5e20.12)') (domain.cbb_GWF(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_FLOW_FACE)) then
-            write(FNum,'(a)') '# cbb_FLOW_FACE'
-            write(FNum,'(5e20.12)') (domain.cbb_FLOW_FACE(i,1),i=1,domain.nCells)
-        end if
-        if(allocated(domain.cbb_SWBC)) then
-            write(FNum,'(a)') '# cbb_SWBC'
-            write(FNum,'(5e20.12)') (domain.cbb_SWBC(i,1),i=1,domain.nCells)
-        end if
-        
-        do i=1,domain.nElements
-            if(domain.nNodesPerCell==8) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,domain.nNodesPerCell)
-            else if(domain.nNodesPerCell==6) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i)     
-            else if(domain.nNodesPerCell==3) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3)    
-            else if(domain.nNodesPerCell==4) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,4)    
-            end if
-        end do
-        
-        VarSharedSTR=', VARSHARELIST=([1,2,3,4,5,6,7'
-        if(nVarShared > 7) then
-            do j=8,nVarShared
-                write(str2,'(i2)') j
-                VarSharedSTR=trim(VarSharedSTR)//','//str2
-            end do
-        end if
-        VarSharedSTR=trim(VarSharedSTR)//'])'
-        
-        do j=2,Modflow.ntime
-            
-            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNodes,', &
-                E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
-            
-            if(Modflow.NodalControlVolume) then
-                write(FNum,'(a)') trim(ZoneSTR)// & 
-                    trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-            else
-        
-                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)&
-                    //trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
-            end if
-        
-            if(allocated(domain.head)) then
-                write(FNum,'(a)') '# head'
-                write(FNum,'(5e20.12)') (domain.head(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.Drawdown)) then
-                write(FNum,'(a)') '# saturation'
-                write(FNum,'(5e20.12)') (domain.Drawdown(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_STORAGE)) then
-                write(FNum,'(a)') '# cbb_STORAGE'
-                write(FNum,'(5e20.12)') (domain.cbb_STORAGE(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_CONSTANT_HEAD)) then
-                write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
-                write(FNum,'(5e20.12)') (domain.cbb_CONSTANT_HEAD(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_RECHARGE)) then
-                write(FNum,'(a)') '# cbb_RECHARGE'
-                write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_DRAINS)) then
-                write(FNum,'(a)') '# cbb_DRAINS'
-                write(FNum,'(5e20.12)') (domain.cbb_DRAINS(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_CLN)) then
-                write(FNum,'(a)') '# cbb_CLN'
-                write(FNum,'(5e20.12)') (domain.cbb_CLN(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_SWF)) then
-                write(FNum,'(a)') '# cbb_SWF'
-                write(FNum,'(5e20.12)') (domain.cbb_SWF(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_GWF)) then
-                write(FNum,'(a)') '# cbb_GWF'
-                write(FNum,'(5e20.12)') (domain.cbb_GWF(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_FLOW_FACE)) then
-                write(FNum,'(a)') '# cbb_FLOW_FACE'
-                write(FNum,'(5e20.12)') (domain.cbb_FLOW_FACE(i,j),i=1,domain.nCells)
-            end if
-            if(allocated(domain.cbb_SWBC)) then
-                write(FNum,'(a)') '# cbb_SWBC'
-                write(FNum,'(5e20.12)') (domain.cbb_SWBC(i,j),i=1,domain.nCells)
-            end if
-            !write(FNum,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="GWF" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNodes,', E=',domain.nCells,', datapacking=block, &
-            !zonetype=febrick, VARLOCATION=([4,5,6]=CELLCENTERED), VARSHARELIST=([1,2,3,4,]), CONNECTIVITYSHAREZONE=1 '
-            !write(FNum,'(a)') '# head'
-            !write(FNum,'(5e20.12)') (domain.head(i,j),i=1,domain.nCells)
-            !write(FNum,'(a)') '# Drawdown'
-            !write(FNum,'(5e20.12)') (domain.Drawdown(i,j),i=1,domain.nCells)
-        end do
-        
-        call FreeUnit(FNum)
-
-    end subroutine MUSG_ToTecplot
-
-    subroutine MUSG_GWF_IBOUNDv2_ToTecplot(Modflow)
-        implicit none
-        type (ModflowProject) Modflow
-
-        integer :: Fnum
-        character(MAXSTRING) :: FName
-        integer :: i
-
-       
-        ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.IBOUNDv2.tecplot.dat'
-        call OpenAscii(FNum,FName)
-        call Msg( 'To File: '//trim(FName))
-
-        write(FNum,*) 'Title = "Modflow IBOUND file Outputs "'
-
-        write(FNum,'(a)') 'variables="X","Y","Z","IBOUND"'
-        
-        write(FNum,'(a)')'ZONE t="GWF IBOUND v2" '
-
-        write(FNum,'(a)') '# x, y, z, ibound'
-        do i=1, Modflow.GWF.nCells
-            write(FNum,'(5e20.12)') Modflow.GWF.xcell(i),Modflow.GWF.ycell(i),Modflow.GWF.zcell(i),IBOUND(i)
-        end do
-   
-        
-        call FreeUnit(FNum)
-
-    end subroutine MUSG_GWF_IBOUNDv2_ToTecplot
-
-    subroutine MUSG_Read_GWF_GSF(Modflow)
+    subroutine Read_GWF_GSF(Modflow)
         implicit none
         
         type (ModflowProject) Modflow
@@ -14594,9 +14639,9 @@
         call Msg('nCells: '//TmpSTR)
 
 	    return
-    end subroutine MUSG_Read_GWF_GSF
+    end subroutine Read_GWF_GSF
     
-    subroutine MUSG_Read_CLN_GSF(Modflow)
+    subroutine Read_CLN_GSF(Modflow)
         implicit none
         
         type (ModflowProject) Modflow
@@ -14652,9 +14697,9 @@
         call Msg('nCells: '//TmpSTR)
 
         return
-    end subroutine MUSG_Read_CLN_GSF
+    end subroutine Read_CLN_GSF
 
-    subroutine MUSG_Read_SWF_GSF(Modflow)
+    subroutine Read_SWF_GSF(Modflow)
         implicit none
         
         type (ModflowProject) Modflow
@@ -14741,112 +14786,9 @@
     
 
 	    return
-    end subroutine MUSG_Read_SWF_GSF
+    end subroutine Read_SWF_GSF
    
-    subroutine MUSG_ScanFile(FNum,Modflow)
-        implicit none
 
-        type (ModflowProject) Modflow
-        
-        integer :: Fnum
-        integer :: i
-     
-        character(MAXSTRING) :: line
-        character(MAXSTRING) :: PossibleKey
-        
-    
-        do 
-            read(FNum,'(a)',iostat=status) line
-            call lcase(line)
-            if(status /= 0) exit
-            
-            if(line(1:1).eq.'#') then
-                write(Modflow.iSCAN,'(a)',iostat=status) trim(line)
-                cycle
-            end if
-            
-            do i=1,len_trim(line)
-                !write(*,*) i,ichar(line(i:i))
-                if(ichar(line(i:i)) .ge. 42 .and. ichar(line(i:i)) .le. 57 .or. ichar(line(i:i)) .eq. 32) cycle
-                if(line(i:i) .eq. 'e' .or.  &
-                    line(i:i) .eq. 'd' .or.   &
-                    line(i:i) .eq. 'g') then
-                    if(line(i+1:i+1) .eq. '+' .or. line(i+1:i+1) .eq. '-') cycle
-                end if
-                if(i.eq.1) then
-                    PossibleKey=line(i:)
-                else
-                    PossibleKey=line(i-1:)
-                end if
-                call AddToScan(PossibleKey, Modflow)
-                exit
-            end do
-        end do
-        
-        rewind(FNum)    
-            
-    end subroutine MUSG_ScanFile
-
-    subroutine AddToScan(PKey, Modflow)
-        implicit none
-        
-        
-        type (ModflowProject) Modflow
-
-        character(*) :: PKey
-        
-        !if(Modflow.nKeyWord .gt. 0) then
-        !    if(Modflow.Keyword(Modflow.nKeyWord) .eq. PKey) then
-        !        !write(Modflow.iSCAN,'(a)',iostat=status) 'Repeat: '// trim(PKey)
-        !        return
-        !    end if
-        !end if
-        
-        Modflow.nKeyWord=Modflow.nKeyWord+1
-        if(Modflow.nKeyWord>Modflow.nDim) call GrowKeywordArray(Modflow,Modflow.nDim)
-        Modflow.Keyword(Modflow.nKeyWord)=PKey
-        write(Modflow.iSCAN,'(a)',iostat=status) Modflow.Keyword(Modflow.nKeyWord)
-
-        
-        
-    end subroutine AddToScan
-    
-     subroutine GrowKeyWordArray(Modflow,ndim) !--- during run if necessary 
-        type (ModflowProject) Modflow
-	    real, parameter :: nf_mult=2
-	    integer :: ndim_new
-	    integer :: ndim,i
-	    character(MAXSTRING), allocatable :: KeyWord_tmp(:) 
-
-	    ndim_new=nint(ndim*nf_mult)
-        write(*,*) 'ndim_new ', ndim_new
-
-	    allocate(Keyword_tmp(ndim_new), stat=ialloc)
-	    call AllocChk(ialloc,'allocate Keyword_tmp arrays')
-	    Keyword_tmp(:)=char(0)
-
-	    ! copy current data
-	    do i=1,ndim
-		    Keyword_tmp(i)	=	Modflow.Keyword(i)
-	    end do
-
-	    ! destroy arrays
-	    deallocate(Modflow.Keyword)
-	    ! reallocate
-	    allocate(Modflow.Keyword(ndim_new), stat=ialloc)
-	    call AllocChk(ialloc,'reallocate Modflow.Keyword arrays')
-	    Modflow.Keyword(:)=char(0)
-
-	    ! copy current data
-	    do i=1,ndim
-		    Modflow.Keyword(i)	=	Keyword_tmp(i)	
-	    end do
-
-	    ndim=ndim_new
-	    
-	    deallocate(Keyword_tmp)
-
-    end subroutine GrowKeyWordArray
     
     
     subroutine URWORD(line,icol,istart,istop,ncode,n,r,iout,in)

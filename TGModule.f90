@@ -7,12 +7,12 @@ module MUT  !### Modflow-USG Tools
     implicit none
 
     !integer, parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
-    character(60) :: MUT_CMD="none"
-    character(60) :: BuildModflowUSG_CMD="build modflow usg"
-    character(60) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
-    character(60) :: PostprocessExistingHGSModel_CMD="postprocess existing hgs model"
+    character(MAX_INST) :: MUT_CMD="none"
+    character(MAX_INST) :: BuildModflowUSG_CMD="build modflow usg"
+    character(MAX_INST) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
+    character(MAX_INST) :: PostprocessExistingHGSModel_CMD="postprocess existing hgs model"
     ! TecIO szplt
-    character(60) :: BuildTecplot_CMD="build tecplot"
+    character(MAX_INST) :: BuildTecplot_CMD="build tecplot"
         
 
     character(256) :: FileNameMUT
@@ -21,7 +21,7 @@ module MUT  !### Modflow-USG Tools
     character(40)       :: prefix = ''
     integer				:: l_prfx  = 0
 
-    character(MAXLBL) :: DirName ! directory name
+    character(MAX_LBL) :: DirName ! directory name
 
     contains
 
@@ -74,7 +74,7 @@ module MUT  !### Modflow-USG Tools
 
     subroutine ProcessMUT !--- Command processor for Modflow-USG Tools (.mut file extension)
 
-        type (ModflowProject) MyMUSG_Project
+        type (ModflowProject) MyProject
         type (HGSProject) MyHGS
         do
             read(FnumMUT,'(a)',iostat=status,end=10) MUT_CMD
@@ -103,10 +103,10 @@ module MUT  !### Modflow-USG Tools
 
 
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
-                call BuildModflowUSG(FnumMUT,MyMUSG_Project,prefix)
+                call BuildModflowUSG(FnumMUT,MyProject,prefix)
 
             else if(index(MUT_CMD, PostprocessExistingModflowModel_CMD) /= 0) then
-                call PostprocessExistingModflowModel(FnumMUT,MyMUSG_Project,prefix)
+                call PostprocessExistingModflowModel(FnumMUT,MyProject,prefix)
 
 
             else if(index(MUT_CMD, PostprocessExistingHGSModel_CMD) /= 0) then

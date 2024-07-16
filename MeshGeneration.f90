@@ -13,7 +13,7 @@ Module MeshGeneration
     integer, allocatable  :: ilyr(:)
     real(dr), allocatable  :: zi(:)
     real(dr), allocatable  :: base_elev(:)
-    character(60), allocatable  :: layer_name(:)
+    character(MAX_LBL), allocatable  :: layer_name(:)
     integer, allocatable  :: nsublayer(:)
         
     integer :: nsheet
@@ -29,7 +29,7 @@ Module MeshGeneration
     contains
 
     !----------------------------------------------------------------------
-    subroutine MUSG_2dMeshFromGb(FNumMUT,TMPLT)
+    subroutine MeshFromGb(FNumMUT,TMPLT)
         implicit none
     
         integer :: FNumMUT
@@ -137,16 +137,16 @@ Module MeshGeneration
         call Msg(TmpSTR)
 
         return
-    end subroutine MUSG_2dMeshFromGb
+    end subroutine MeshFromGb
     !----------------------------------------------------------------------
-    subroutine MUSG_2dQuadtreeMeshFromGWV(FNumMUT,TMPLT)
+    subroutine Quadtree2DMeshFromGWV(FNumMUT,TMPLT)
         implicit none
     
         integer :: FNumMUT
         type (TecplotDomain) TMPLT
         
-        character(MAXSTRING) :: line
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: line
+        character(MAX_STR) :: FName
         
         integer :: i,j, i1, i2
         real(dr) :: r1, r2, r3
@@ -257,7 +257,7 @@ Module MeshGeneration
         call Msg(TmpSTR)
 
         return
-    end subroutine MUSG_2dQuadtreeMeshFromGWV
+    end subroutine Quadtree2DMeshFromGWV
     !----------------------------------------------------------------------
     subroutine ascii_file_elevation(fname,nprop,maxnnp)
         implicit none
@@ -292,14 +292,18 @@ Module MeshGeneration
         integer :: FNum
         type(TecplotDomain) TECPLOT_CLN
         
-        character(60) :: Instruction
-        character(60) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(60) :: CLNFromAsciiFile_cmd			=   'cln from ascii file'
+        character(MAX_INST) :: Instruction
+        character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
+        character(MAX_INST) :: CLNFromAsciiFile_cmd			=   'cln from ascii file'
         
         real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
         integer :: nPoints  ! number of points in list
         
-	    ! Process CLN grid generation instructions
+	    ! Build a single tecplot file which can have multiple CLN's
+        TECPLOT_CLN.name='CLN'
+        TECPLOT_CLN.nZones=0
+        TECPLOT_CLN.nNodesPerElement=2
+        TECPLOT_CLN.ElementType='felineseg'
 
         read_Instructions: do
             read(FNum,'(a60)',iostat=status) Instruction
@@ -340,10 +344,10 @@ Module MeshGeneration
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TECPLOT_GWF
         
-        character(60) :: instruction
-        character(60) :: zone_by_template_cmd			=   'zone by template'
-        character(60) :: top_elevation_cmd			    =   'top elevation'
-        character(60) :: new_layer_cmd				    =   'new layer'
+        character(MAX_INST) :: instruction
+        character(MAX_INST) :: zone_by_template_cmd			=   'zone by template'
+        character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
+        character(MAX_INST) :: new_layer_cmd				    =   'new layer'
         
 
 	    ! Given a 2D mesh, define top elevation, layer bottoms and sublayering interactively.
@@ -511,8 +515,8 @@ Module MeshGeneration
     subroutine GenerateSWFDomain(FNumMUT,TMPLT,TECPLOT_SWF)
         implicit none
         
-        character(60) :: instruction
-        character(60) :: top_elevation_cmd			    =   'top elevation'
+        character(MAX_INST) :: instruction
+        character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
     
         integer :: FNumMUT
         type (TecplotDomain) TMPLT
@@ -776,7 +780,10 @@ Module MeshGeneration
 	    yp(:) = 0
 	    zp(:) = 0
         
+        
         nSizeInit=max(2,TECPLOT_CLN.nNodes)
+        TECPLOT_CLN.nZones=TECPLOT_CLN.nZones+1
+
         
         if(.not. allocated(TECPLOT_CLN.x)) then  
             allocate(TECPLOT_CLN.x(nSizeInit),TECPLOT_CLN.y(nSizeInit),TECPLOT_CLN.z(nSizeInit),stat=ialloc)
@@ -804,7 +811,7 @@ Module MeshGeneration
         call Msg(TAB//trim(TmpSTR))
         
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
-        write(TmpSTR,'(a, i8)') 'Total Length of new CLN: ',TotalLength 
+        write(TmpSTR,'(a, g15.5)') 'Total Length of new CLN: ',TotalLength 
         call Msg(TAB//trim(TmpSTR))
         if(TotalLength < 0.0001) then
             call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
@@ -859,6 +866,71 @@ Module MeshGeneration
         call move_alloc (yiTMP, TECPLOT_CLN.y)
         ziTMP (1:nSizeInit) = TECPLOT_CLN.z 
         call move_alloc (ziTMP, TECPLOT_CLN.z)
+        
+        if(.not. allocated(TECPLOT_CLN.iZone)) then  
+            TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
+            allocate(TECPLOT_CLN.iZone(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.iNode(TECPLOT_CLN.nNodesPerElement,TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.iLayer(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.xElement(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.yElement(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.zElement(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.ElementArea(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.SideLength(TECPLOT_CLN.nNodesPerElement,TECPLOT_CLN.nElements), &
+                stat=ialloc)
+            call AllocChk(ialloc,'CLN element arrays')
+            TECPLOT_CLN.iZone = -999 
+            TECPLOT_CLN.iNode = -999 
+            TECPLOT_CLN.iLayer = -999 
+            TECPLOT_CLN.xElement=-999.0d0
+            TECPLOT_CLN.yElement=-999.0d0
+            TECPLOT_CLN.zElement=-999.0d0
+            TECPLOT_CLN.ElementArea=-999.0d0
+        else
+            TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
+            allocate(xiTMP(TECPLOT_CLN.nElements),yiTMP(TECPLOT_CLN.nElements),ziTMP(TECPLOT_CLN.nElements),stat=ialloc)
+	        call AllocChk(ialloc,'xyzTMP points arrays')
+	        xiTMP(:) = -999.0d0
+	        yiTMP(:) = -999.0d0
+	        ziTMP(:) = -999.0d0
+            if(TECPLOT_CLN.nNodes > nSizeInit) then
+                xiTMP (1:nSizeInit) = TECPLOT_CLN.x 
+                call move_alloc (xiTMP, TECPLOT_CLN.x)
+                yiTMP (1:nSizeInit) = TECPLOT_CLN.y 
+                call move_alloc (yiTMP, TECPLOT_CLN.y)
+                ziTMP (1:nSizeInit) = TECPLOT_CLN.z 
+                call move_alloc (ziTMP, TECPLOT_CLN.z)
+                
+                nSizeInit=nSizeInit*2
+
+            endif
+
+        end if
+
+        ! generate line element incidences
+        do i=1,nCells
+                TMPLT.iNode(1,i)=i
+                TMPLT.iNode(2,i+1)=i+1
+            end do
+        end do
+
+        do i=1,TMPLT.nElements
+            TMPLT.xElement(i)=(TMPLT.x(TMPLT.iNode(2,i)) + TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
+            TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(3,i)) + TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
+            
+            TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
+
+
+        end do
+                    
+        TMPLT.IsDefined=.true.
+    
+        call Msg(' ')
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
+        call Msg(TmpSTR)
+
 
         continue 
     end subroutine CLNFromXYZPair
@@ -866,21 +938,21 @@ Module MeshGeneration
     subroutine new_layer(FNumMUT,TMPLT,zone_by_template)
         implicit none
 
-        character(60) :: instruction
-        character(60) :: layer_name_cmd				    =   'layer name'
-        character(60) :: minimum_layer_thickness_cmd    =   'minimum layer thickness'
-        character(60) :: offset_base_cmd			    =   'offset base'
-        character(60) :: uniform_sublayers_cmd		    =   'uniform sublayering'
-        character(60) :: proportional_sublayers_cmd	    =   'proportional sublayering'
-        character(60) :: constant_elevation_cmd		    =   'elevation constant'
-        character(60) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(60) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
-        character(60) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
-        !character(60) :: gms_file_elevation_cmd		    =   'elevation from gms file'
-        !character(60) :: raster_file_elevation_cmd		=   'elevation from raster file'
-        !character(60) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
-        !character(60) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
-        !character(60) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
+        character(MAX_INST) :: instruction
+        character(MAX_INST) :: layer_name_cmd				    =   'layer name'
+        character(MAX_INST) :: minimum_layer_thickness_cmd    =   'minimum layer thickness'
+        character(MAX_INST) :: offset_base_cmd			    =   'offset base'
+        character(MAX_INST) :: uniform_sublayers_cmd		    =   'uniform sublayering'
+        character(MAX_INST) :: proportional_sublayers_cmd	    =   'proportional sublayering'
+        character(MAX_INST) :: constant_elevation_cmd		    =   'elevation constant'
+        character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
+        character(MAX_INST) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
+        character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
+        !character(MAX_INST) :: gms_file_elevation_cmd		    =   'elevation from gms file'
+        !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
+        !character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
+        !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
+        !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
         integer :: FNumMUT
         type (TecplotDomain)  TMPLT
@@ -1154,18 +1226,18 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine top_elevation(FNumMUT,TMPLT)
         implicit none
-        character(60) :: instruction
+        character(MAX_INST) :: instruction
 
-        character(60) :: offset_top_cmd				    =   'offset top'
-        character(60) :: constant_elevation_cmd		    =   'elevation constant'
-        character(60) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(60) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
-        character(60) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
-        !character(60) :: gms_file_elevation_cmd		=   'elevation from gms file'
-        !character(60) :: raster_file_elevation_cmd		=   'elevation from raster file'
-        !character(60) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
-        !character(60) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
-        !character(60) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
+        character(MAX_INST) :: offset_top_cmd				    =   'offset top'
+        character(MAX_INST) :: constant_elevation_cmd		    =   'elevation constant'
+        character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
+        character(MAX_INST) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
+        character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
+        !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
+        !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
+        !character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
+        !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
+        !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
         integer :: FNumMUT
         type (TecplotDomain) TMPLT

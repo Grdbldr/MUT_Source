@@ -156,72 +156,72 @@ module HGS !
     implicit none
     
     character(256) :: HGS_CMD  
-    character(60) :: HGS_GetMeshComponents_CMD='read components'
-    !character(60) :: HGS_WriteComponents_CMD='write components'
-    !character(60) :: HGS_ReadNodalOutput_CMD='read nodal output file'
-    !character(60) :: HGS_WriteNodalOutput_CMD='write nodal output file'
-    !character(60) :: HGS_ReadNodalOutput4_CMD='read nodal output file, single precision'
-    !character(60) :: HGS_ReadNodalAscii_CMD='read nodal ascii file'
-    !character(60) :: HGS_ReadNodelist_CMD='read node list'
-    !character(60) :: HGS_ReadElementlist_CMD='read element list'
-    !character(60) :: HGS_ReadElemK_CMD='read elemental k file'
-    !character(60) :: HGS_ReadElemPor_CMD='read elemental porosity file'
-    !character(60) :: HGS_ReadElemStor_CMD='read elemental specific storage file'
-    !character(60) :: HGS_ReadElemRech_CMD='read elemental recharge file'
-    !character(60) :: HGS_ReadWatBalFile_CMD='read water balance file'
-    !character(60) :: HGS_WriteNodeSheetsToSurfer_CMD='write node sheets as 2d surfer files'
-    !character(60) :: HGS_WriteNodeListsByTopSheet_CMD='write node lists by top sheet'
-    !character(60) :: HGS_WriteNodeSheetsGeometryToSurfer_CMD='write node sheets geometry as 2d surfer files'
-    !character(60) :: HGS_WriteElementCentroids_CMD='write element centroids'
-    !character(60) :: HGS_ExtractDataFromLstFile_CMD='extract data from lst file'
-    !character(60) :: HGS_ExtractMnthlyFlowWatBalFile_CMD='extract monthly flows from water balance file'
-    !character(60) :: HGS_IntegrateFlowWatBalFile_CMD='integrate flows from water balance file'
-    !character(60) :: HGS_WaterYearAccumulation_CMD='water year accumulation'
+    character(MAX_INST) :: HGS_GetMeshComponents_CMD='read components'
+    !character(MAX_INST) :: HGS_WriteComponents_CMD='write components'
+    !character(MAX_INST) :: HGS_ReadNodalOutput_CMD='read nodal output file'
+    !character(MAX_INST) :: HGS_WriteNodalOutput_CMD='write nodal output file'
+    !character(MAX_INST) :: HGS_ReadNodalOutput4_CMD='read nodal output file, single precision'
+    !character(MAX_INST) :: HGS_ReadNodalAscii_CMD='read nodal ascii file'
+    !character(MAX_INST) :: HGS_ReadNodelist_CMD='read node list'
+    !character(MAX_INST) :: HGS_ReadElementlist_CMD='read element list'
+    !character(MAX_INST) :: HGS_ReadElemK_CMD='read elemental k file'
+    !character(MAX_INST) :: HGS_ReadElemPor_CMD='read elemental porosity file'
+    !character(MAX_INST) :: HGS_ReadElemStor_CMD='read elemental specific storage file'
+    !character(MAX_INST) :: HGS_ReadElemRech_CMD='read elemental recharge file'
+    !character(MAX_INST) :: HGS_ReadWatBalFile_CMD='read water balance file'
+    !character(MAX_INST) :: HGS_WriteNodeSheetsToSurfer_CMD='write node sheets as 2d surfer files'
+    !character(MAX_INST) :: HGS_WriteNodeListsByTopSheet_CMD='write node lists by top sheet'
+    !character(MAX_INST) :: HGS_WriteNodeSheetsGeometryToSurfer_CMD='write node sheets geometry as 2d surfer files'
+    !character(MAX_INST) :: HGS_WriteElementCentroids_CMD='write element centroids'
+    !character(MAX_INST) :: HGS_ExtractDataFromLstFile_CMD='extract data from lst file'
+    !character(MAX_INST) :: HGS_ExtractMnthlyFlowWatBalFile_CMD='extract monthly flows from water balance file'
+    !character(MAX_INST) :: HGS_IntegrateFlowWatBalFile_CMD='integrate flows from water balance file'
+    !character(MAX_INST) :: HGS_WaterYearAccumulation_CMD='water year accumulation'
     !
-    !character(60) :: HGS_TeckRatesWatBalFile_CMD='teck: eta rates from water balance file'
-    !character(60) :: HGS_ConvertObsWellToPoint_CMD='convert obs well to point'
-    !character(60) :: HGS_InterpolateHydrographs_CMD='interpolate hydrographs to common timestep'
-    !character(60) :: HGS_ConcatenateTimeSeries_CMD='concatenate time series'
-    character(60) :: HGS_ToTecplot_CMD='hgs to tecplot'
-    !character(60) :: HGS_ZoneBudget_CMD='zone budget'
-    !character(60) :: HGS_AdjustTopGbNprop_CMD='adjust top elevation from gb nprop file'
-    !character(60) :: HGS_ViscosityVsTemp_CMD='viscosity vs temperature'
-    !character(60) :: HGS_FluidProps_CMD='fluid properties'
-    !character(60) :: HGS_AdjustZFromChosenNodesAndSheetNumber_CMD='adjust z from chosen nodes and sheet number'
-    !character(60) :: HGS_AdjustSurfaceFromGBNprop_CMD='adjust surface from gb nprop'
-    !character(60) :: HGS_ReadGBNprop_CMD='read gb nprop to hgs structure'
-    !character(60) :: HGS_ReadGBNchos_CMD='read gb nchos to hgs structure'
-    !character(60) :: HGS_CompareKFields_CMD='compare k fields'
-    !character(60) :: HGS_ComparePorFields_CMD='compare porosity fields'
-    !character(60) :: HGS_CompareStorFields_CMD='compare specific storage fields'
-    !character(60) :: HGS_CompareRechFields_CMD='compare recharge fields'
-    !character(60) :: HGS_WriteNodalOutputToFeflowDacFormat_CMD='write nodal output to feflow dac file format'
-    !character(60) :: HGS_KvsDepthCrossSection_CMD='k vs depth cross section'
-    !character(60) :: HGS_KvsDepthCrossSectionV2_CMD='k vs depth cross section v2'
-    !character(60) :: HGS_RechargeCrossSection_CMD='recharge cross section'
-    !character(60) :: HGS_BC_unsat_functions_gen_tables_CMD='generate brooks-cory soil retention tables from parameters'
-    !character(60) :: HGS_VG_unsat_functions_gen_tables_CMD='generate van genuchten soil retention tables from parameters'
-    !character(60) :: HGS_ReplaceDTW_With_FeflowSliceNumber_CMD='replace depthtogwt with feflow slice number'
-    !character(60) :: HGS_BuildCustomZoneNames_CMD='build custom zone names'
-    !character(60) :: HGS_ElementalKZoneTable_CMD='elemental k zone table'
-    !character(60) :: HGS_PostGrokAnalysis_CMD='post grok analysis'
-    !character(60) :: HGS_GatherObsWellFlowFiles_CMD='gather observation well flow files'
-    !character(60) :: HGS_NodalSumByNodeList_CMD='nodal sum by node list'
-    !character(60) :: HGS_FracFromNodeList_CMD = 'build hgs fractures from node list'
+    !character(MAX_INST) :: HGS_TeckRatesWatBalFile_CMD='teck: eta rates from water balance file'
+    !character(MAX_INST) :: HGS_ConvertObsWellToPoint_CMD='convert obs well to point'
+    !character(MAX_INST) :: HGS_InterpolateHydrographs_CMD='interpolate hydrographs to common timestep'
+    !character(MAX_INST) :: HGS_ConcatenateTimeSeries_CMD='concatenate time series'
+    character(MAX_INST) :: HGS_ToTecplot_CMD='hgs to tecplot'
+    !character(MAX_INST) :: HGS_ZoneBudget_CMD='zone budget'
+    !character(MAX_INST) :: HGS_AdjustTopGbNprop_CMD='adjust top elevation from gb nprop file'
+    !character(MAX_INST) :: HGS_ViscosityVsTemp_CMD='viscosity vs temperature'
+    !character(MAX_INST) :: HGS_FluidProps_CMD='fluid properties'
+    !character(MAX_INST) :: HGS_AdjustZFromChosenNodesAndSheetNumber_CMD='adjust z from chosen nodes and sheet number'
+    !character(MAX_INST) :: HGS_AdjustSurfaceFromGBNprop_CMD='adjust surface from gb nprop'
+    !character(MAX_INST) :: HGS_ReadGBNprop_CMD='read gb nprop to hgs structure'
+    !character(MAX_INST) :: HGS_ReadGBNchos_CMD='read gb nchos to hgs structure'
+    !character(MAX_INST) :: HGS_CompareKFields_CMD='compare k fields'
+    !character(MAX_INST) :: HGS_ComparePorFields_CMD='compare porosity fields'
+    !character(MAX_INST) :: HGS_CompareStorFields_CMD='compare specific storage fields'
+    !character(MAX_INST) :: HGS_CompareRechFields_CMD='compare recharge fields'
+    !character(MAX_INST) :: HGS_WriteNodalOutputToFeflowDacFormat_CMD='write nodal output to feflow dac file format'
+    !character(MAX_INST) :: HGS_KvsDepthCrossSection_CMD='k vs depth cross section'
+    !character(MAX_INST) :: HGS_KvsDepthCrossSectionV2_CMD='k vs depth cross section v2'
+    !character(MAX_INST) :: HGS_RechargeCrossSection_CMD='recharge cross section'
+    !character(MAX_INST) :: HGS_BC_unsat_functions_gen_tables_CMD='generate brooks-cory soil retention tables from parameters'
+    !character(MAX_INST) :: HGS_VG_unsat_functions_gen_tables_CMD='generate van genuchten soil retention tables from parameters'
+    !character(MAX_INST) :: HGS_ReplaceDTW_With_FeflowSliceNumber_CMD='replace depthtogwt with feflow slice number'
+    !character(MAX_INST) :: HGS_BuildCustomZoneNames_CMD='build custom zone names'
+    !character(MAX_INST) :: HGS_ElementalKZoneTable_CMD='elemental k zone table'
+    !character(MAX_INST) :: HGS_PostGrokAnalysis_CMD='post grok analysis'
+    !character(MAX_INST) :: HGS_GatherObsWellFlowFiles_CMD='gather observation well flow files'
+    !character(MAX_INST) :: HGS_NodalSumByNodeList_CMD='nodal sum by node list'
+    !character(MAX_INST) :: HGS_FracFromNodeList_CMD = 'build hgs fractures from node list'
     !
     !! Workflows
-    !character(60) :: HGS_CSVTableToMprops_CMD='convert csv table to mprops file'
-    !character(60) :: HGS_CSVTableToObsPts_CMD='convert csv table to observation points files'
-    !character(60) :: HGS_CSVFileToTransCalibPlots_CMD="csv file to transient calibration plots"
-    !character(60) :: HGS_CalibrationSnapshot_CMD='calibration snapshot'
+    !character(MAX_INST) :: HGS_CSVTableToMprops_CMD='convert csv table to mprops file'
+    !character(MAX_INST) :: HGS_CSVTableToObsPts_CMD='convert csv table to observation points files'
+    !character(MAX_INST) :: HGS_CSVFileToTransCalibPlots_CMD="csv file to transient calibration plots"
+    !character(MAX_INST) :: HGS_CalibrationSnapshot_CMD='calibration snapshot'
     !
     !! Superceded but kept for backwards compatibility
-    !character(60) :: HGS_AddFeflowSliceNumber_CMD='add feflow slice number'  ! now handled by Tecplot_hsplot2012_CMD="hsplot 2012"
+    !character(MAX_INST) :: HGS_AddFeflowSliceNumber_CMD='add feflow slice number'  ! now handled by Tecplot_hsplot2012_CMD="hsplot 2012"
     !
-    !! character(60) :: HGS_TecIOTest_CMD='tecio test'    
-    !!!!character(60) :: HGS_HGSDirToTecplot_CMD='hgs directory to tecplot'    
+    !! character(MAX_INST) :: HGS_TecIOTest_CMD='tecio test'    
+    !!!!character(MAX_INST) :: HGS_HGSDirToTecplot_CMD='hgs directory to tecplot'    
     
-    character(60) :: HGS_End_CMD=	'end hgs'
+    character(MAX_INST) :: HGS_End_CMD=	'end hgs'
     
     type HGSProject
         
@@ -354,12 +354,12 @@ module HGS !
         real(dr) :: tab_s_k_slp_max
         real(dr) :: tab_smooth
         
-        character(MAXLBL) :: PMZoneName(100)
-        character(MAXLBL) :: ZoneName(100)
+        character(MAX_LBL) :: PMZoneName(100)
+        character(MAX_LBL) :: ZoneName(100)
         
-        character(MAXSTRING) :: TitleLine
-        character(MAXSTRING) :: VarLine
-        character(MAXSTRING) :: ZoneLine
+        character(MAX_STR) :: TitleLine
+        character(MAX_STR) :: VarLine
+        character(MAX_STR) :: ZoneLine
         integer :: nVars
         integer :: nLines
         character(100), allocatable :: VarName(:)        ! nvars
@@ -378,16 +378,16 @@ module HGS !
     logical :: gal_mode
     logical :: do_write_face_seg 
     
-    character(MAXLBL) :: GrokPfx
+    character(MAX_LBL) :: GrokPfx
     integer :: LGrokPfx   
     
     logical :: DoSurfaceFlowGrok
     logical :: DoWellGrok
 
-    character(MAXLBL) :: HGSPfx
+    character(MAX_LBL) :: HGSPfx
     integer :: LHGSPfx   
 
-    character(MAXLBL) :: GbPfx
+    character(MAX_LBL) :: GbPfx
     integer :: LGbPfx   
 
 
@@ -396,9 +396,9 @@ module HGS !
     integer :: FNumCoor
     integer :: FNumElem
     integer :: FNumActive
-    character(MAXSTRING) :: FNameActive
+    character(MAX_STR) :: FNameActive
     integer :: FNumContrib
-    character(MAXSTRING) :: FNameContrib
+    character(MAX_STR) :: FNameContrib
     integer :: FnumIhead
     integer :: FnumElemSet        
     integer :: FnumNodeSet        
@@ -684,13 +684,13 @@ module HGS !
         
         integer :: i, j
         logical :: FileExists
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
 
-     !   character(60) :: HGS_PorousMedia_CMD="porous media"
-     !   character(60) :: HGS_Surface_CMD="surface"
-     !   character(60) :: HGS_Fracture_CMD="fracture"
-	    !character(60) :: HGS_face_segment_info_CMD=	'face/segment data'
-     !   character(60) :: HGS_EndComponent_CMD=	'end components'
+     !   character(MAX_INST) :: HGS_PorousMedia_CMD="porous media"
+     !   character(MAX_INST) :: HGS_Surface_CMD="surface"
+     !   character(MAX_INST) :: HGS_Fracture_CMD="fracture"
+	    !character(MAX_INST) :: HGS_face_segment_info_CMD=	'face/segment data'
+     !   character(MAX_INST) :: HGS_EndComponent_CMD=	'end components'
 
 	    hgs.segments_calculated=.false.
 	    hgs.faces_calculated=.false.
@@ -971,7 +971,7 @@ module HGS !
         
         integer :: FnumTG
         integer :: Fnum
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
         
         integer :: i, j
 
@@ -1071,7 +1071,7 @@ module HGS !
 !        type (HGSProject) hgs
 !        
 !        integer :: i
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !    
 !    
 !	    call getunit(itmp)
@@ -1100,7 +1100,7 @@ module HGS !
 !        type (HGSProject) hgs
 !        
 !        integer :: i, j
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        call getunit(itmp)
 !        open(itmp,file=fname,status='unknown',form='unformatted')
@@ -1124,7 +1124,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1145,7 +1145,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1168,7 +1168,7 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !
@@ -1193,7 +1193,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1225,7 +1225,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1249,7 +1249,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        character(80) :: message
 !
 !        type (HGSProject) hgs
@@ -1273,7 +1273,7 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !       
@@ -1296,7 +1296,7 @@ module HGS !
 !        integer :: i, j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !        
@@ -1366,7 +1366,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1454,7 +1454,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1542,7 +1542,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1630,7 +1630,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -1715,7 +1715,7 @@ module HGS !
 !        integer :: j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        type (HGSProject) hgs
 !
@@ -1744,9 +1744,9 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !
 !        type (HGSProject) hgs
 !       
@@ -1787,9 +1787,9 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !
 !        type (HGSProject) hgs
 !       
@@ -1831,11 +1831,11 @@ module HGS !
 !
 !        integer :: FnumTG
 !        integer :: Fnum, FnumFluidProps
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        
 !        character(61), parameter :: kg_m_s_str			=   'units: kilogram-metre-second'
-!        character(60), parameter :: kg_m_min_str		=   'units: kilogram-metre-minute'
+!        character(MAX_INST), parameter :: kg_m_min_str		=   'units: kilogram-metre-minute'
 !        character(61), parameter :: kg_m_h_str			=   'units: kilogram-metre-hour'
 !        character(61), parameter :: kg_m_d_str			=   'units: kilogram-metre-day'
 !        character(61), parameter :: kg_m_y_str			=   'units: kilogram-metre-year'
@@ -1844,10 +1844,10 @@ module HGS !
 !        character(61), parameter :: kg_cm_h_str			=   'units: kilogram-centimetre-hour'
 !        character(61), parameter :: kg_cm_d_str			=   'units: kilogram-centimetre-day'
 !        character(61), parameter :: kg_cm_y_str			=   'units: kilogram-centimetre-year'
-!        character(60), parameter :: chng_rho            =   'reference fluid density'
-!        character(60), parameter :: chng_visc           =   'reference fluid viscosity'
-!        character(60), parameter :: chng_grav           =   'gravitational acceleration'
-!        character(60) :: HGS_EndFluidProps_CMD=	'end fluid props'
+!        character(MAX_INST), parameter :: chng_rho            =   'reference fluid density'
+!        character(MAX_INST), parameter :: chng_visc           =   'reference fluid viscosity'
+!        character(MAX_INST), parameter :: chng_grav           =   'gravitational acceleration'
+!        character(MAX_INST) :: HGS_EndFluidProps_CMD=	'end fluid props'
 !
 !       
 !        read(FnumTG,'(a)') FName
@@ -1931,10 +1931,10 @@ module HGS !
 !        integer :: i, j
 !        character*80 fname
 !
-!        character(60) :: HGS_PorousMedia_CMD="porous media"
-!        character(60) :: HGS_Fracture_CMD="fracture"
-!	    !character(60) :: HGS_face_segment_info_CMD=	'face/segment data'
-!        character(60) :: HGS_EndComponent_CMD=	'end components'
+!        character(MAX_INST) :: HGS_PorousMedia_CMD="porous media"
+!        character(MAX_INST) :: HGS_Fracture_CMD="fracture"
+!	    !character(MAX_INST) :: HGS_face_segment_info_CMD=	'face/segment data'
+!        character(MAX_INST) :: HGS_EndComponent_CMD=	'end components'
 !
 !	    hgs.segments_calculated=.false.
 !	    hgs.faces_calculated=.false.
@@ -2079,7 +2079,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !                
 !        integer :: i, j
 !        integer :: node3d
@@ -2170,7 +2170,7 @@ module HGS !
 !                
 !        integer :: i
 !        integer :: FnumGbNchos
-!        character(MAXSTRING) :: FNameGbNchos
+!        character(MAX_STR) :: FNameGbNchos
 !
 !        character(80)       :: dummy 
 !        
@@ -2250,7 +2250,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !                
 !        integer :: i
 !	    real(dr) :: xe, ye, ze
@@ -2277,11 +2277,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumDt
-!        character(MAXSTRING) :: FNameDt
+!        character(MAX_STR) :: FNameDt
 !        integer :: FnumNewtNodes
-!        character(MAXSTRING) :: FNameNewtNodes
+!        character(MAX_STR) :: FNameNewtNodes
 !                
 !        integer :: i
 !        
@@ -2358,11 +2358,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FNumMnthlyFlow
-!        character(MAXSTRING) :: FNameMnthlyFlow
+!        character(MAX_STR) :: FNameMnthlyFlow
 !        integer :: FNumMnthlyFlow2
-!        character(MAXSTRING) :: FNameMnthlyFlow2
+!        character(MAX_STR) :: FNameMnthlyFlow2
 !                
 !        integer :: i, nvar
 !        
@@ -2479,9 +2479,9 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: FNumCumulCSV
-!        character(MAXSTRING) :: FNameCumulCSV
+!        character(MAX_STR) :: FNameCumulCSV
 !        integer :: FNumCumulDAT
-!        character(MAXSTRING) :: FNameCumulDAT
+!        character(MAX_STR) :: FNameCumulDAT
 !                
 !        integer :: i, j, k
 !        
@@ -2604,11 +2604,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FNumNrmlDrainDown
-!        character(MAXSTRING) :: FNameNrmlDrainDown
+!        character(MAX_STR) :: FNameNrmlDrainDown
 !        integer :: FNumNrmlDrainDownCSV
-!        character(MAXSTRING) :: FNameNrmlDrainDownCSV
+!        character(MAX_STR) :: FNameNrmlDrainDownCSV
 !                
 !        integer :: i, nvar
 !        
@@ -2752,11 +2752,11 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FNumFlow
-!        character(MAXSTRING) :: FNameFlow
+!        character(MAX_STR) :: FNameFlow
 !        integer :: FNumFlow2
-!        character(MAXSTRING) :: FNameFlow2
+!        character(MAX_STR) :: FNameFlow2
 !                
 !        integer :: i, nvar
 !        
@@ -2840,12 +2840,12 @@ module HGS !
 !         
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumPt
-!        character(MAXSTRING) :: FNamePt
+!        character(MAX_STR) :: FNamePt
 !
-!        character(MAXLBL) :: line
-!        character(MAXLBL) :: linePt
+!        character(MAX_LBL) :: line
+!        character(MAX_LBL) :: linePt
 !                
 !       
 !        real(dr) :: ptTime
@@ -2904,11 +2904,11 @@ module HGS !
 !         
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumPt
-!        character(MAXSTRING) :: FNamePt
+!        character(MAX_STR) :: FNamePt
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !                
 !       
 !        real(dr) :: TargTime, Timeinterval
@@ -2984,11 +2984,11 @@ module HGS !
 !        integer :: i
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumPt
-!        character(MAXSTRING) :: FNamePt
+!        character(MAX_STR) :: FNamePt
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !                
 !       
 !        real(dr) :: TCurr
@@ -3058,9 +3058,9 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: ZoneNum, MaxZoneNum
 !        integer :: FNumZoneBudget
-!        character(MAXSTRING) :: FNameZoneBudget
+!        character(MAX_STR) :: FNameZoneBudget
 !        integer :: FNumTecplotZoneBudget
-!        character(MAXSTRING) :: FNameTecplotZoneBudget
+!        character(MAX_STR) :: FNameTecplotZoneBudget
 !        logical :: ZonesLinked
 !        integer :: npcon, npact
 !        logical :: TecplotOutput
@@ -3207,7 +3207,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumGbNprop
-!        character(MAXSTRING) :: FNameGbNprop
+!        character(MAX_STR) :: FNameGbNprop
 !
 !        integer :: FnumTG
 !        
@@ -3253,7 +3253,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumGbNprop
-!        character(MAXSTRING) :: FNameGbNprop
+!        character(MAX_STR) :: FNameGbNprop
 !
 !        integer :: FnumTG
 !        
@@ -3290,7 +3290,7 @@ module HGS !
 !        type (HGSProject) hgs
 !
 !        integer :: FnumHGSHeads
-!        character(MAXSTRING) :: FNameHGSHeads
+!        character(MAX_STR) :: FNameHGSHeads
 !
 !        integer :: FnumTG
 !        
@@ -3333,7 +3333,7 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !                
 !        integer :: i
 !        real(dr) :: stime
@@ -3362,7 +3362,7 @@ module HGS !
 !        integer :: i,j,k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !        real(dr) :: bxr(4), byr(4)
 !
@@ -3647,7 +3647,7 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !
 !        type (HGSProject) hgs
@@ -3748,7 +3748,7 @@ module HGS !
 !        integer :: i, j, k
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !	    real(dr) :: xe, ye, ze  ! centroid
 !
 !        type (HGSProject) hgs
@@ -4018,15 +4018,15 @@ module HGS !
 !        integer :: i,j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumFS
-!        character(MAXSTRING) :: FNameFS
+!        character(MAX_STR) :: FNameFS
 !
 !        type (HGSProject) hgs
 !        
 !        real(dr), allocatable :: FeflowSlce(:)
 !        integer :: i1
-!        character(MAXSTRING) :: line
+!        character(MAX_STR) :: line
 !        
 !        
 !        allocate(FeflowSlce(hgs.mesh.nn))
@@ -4083,15 +4083,15 @@ module HGS !
 !        integer :: i,j
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FnumFS
-!        character(MAXSTRING) :: FNameFS
+!        character(MAX_STR) :: FNameFS
 !
 !        type (HGSProject) hgs
 !        
 !        real(dr), allocatable :: FeflowSlce(:)
 !        integer :: i1
-!        character(MAXSTRING) :: line
+!        character(MAX_STR) :: line
 !        
 !        integer :: NVar
 !        
@@ -4179,26 +4179,26 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXSTRING) :: FNameCSV
+!        character(MAX_STR) :: FNameCSV
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !        
 !        
 !        integer :: nvar
 !        integer :: nGWFMaterials
-!        character(MAXLBL), allocatable :: ColumnName(:)
-!        character(MAXLBL), allocatable ::   Description(:)
+!        character(MAX_LBL), allocatable :: ColumnName(:)
+!        character(MAX_LBL), allocatable ::   Description(:)
 !        real(dr), allocatable ::            Kxx(:)
 !        real(dr), allocatable ::            Kyy(:)
 !        real(dr), allocatable ::            Kzz(:)
 !        real(dr), allocatable ::            Porosity(:)
 !        real(dr), allocatable ::            SpecificStorage(:)
-!        character(MAXLBL), allocatable ::   SoilRetnFileName(:)
+!        character(MAX_LBL), allocatable ::   SoilRetnFileName(:)
 !        
-!        character(MAXSTRING) :: PathPrefix
+!        character(MAX_STR) :: PathPrefix
 !        
 !        real(dr) :: KMult
 !
@@ -4340,31 +4340,31 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXSTRING) :: FNameCSV
+!        character(MAX_STR) :: FNameCSV
 !
 !        integer :: FNumXYZ
-!        character(MAXSTRING) :: FNameXYZ 
+!        character(MAX_STR) :: FNameXYZ 
 !        
 !        integer :: FNumLables
-!        character(MAXSTRING) :: FNameLables 
+!        character(MAX_STR) :: FNameLables 
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !        
 !        
 !        integer :: nvar
 !        integer :: nObs
-!        character(MAXLBL), allocatable :: ColumnName(:)
-!        character(MAXLBL), allocatable ::   Description(:)
+!        character(MAX_LBL), allocatable :: ColumnName(:)
+!        character(MAX_LBL), allocatable ::   Description(:)
 !        real(dr), allocatable ::            Easting(:)
 !        real(dr), allocatable ::            Northing(:)
 !        real(dr), allocatable ::            ScreenTop(:)
 !        real(dr), allocatable ::            ScreenBot(:)
 !        integer, allocatable  ::            IncludeFlag(:)
 !
-!        character(MAXLBL) ::   Dummy ! backwards compatibility for reading path
+!        character(MAX_LBL) ::   Dummy ! backwards compatibility for reading path
 !     
 !        !  csv table file 
 !        read(FnumTG,'(a)') FNameCSV
@@ -4523,22 +4523,22 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXSTRING) :: FNameCSV
+!        character(MAX_STR) :: FNameCSV
 !
 !       
 !        integer :: FNumLables
-!        character(MAXSTRING) :: FNameLables 
+!        character(MAX_STR) :: FNameLables 
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !        
 !        
 !        integer :: nvar
 !        integer :: nObs
-!        character(MAXLBL), allocatable :: ColumnName(:)
-!        character(MAXLBL), allocatable ::   nameObs(:)
+!        character(MAX_LBL), allocatable :: ColumnName(:)
+!        character(MAX_LBL), allocatable ::   nameObs(:)
 !        real(dr), allocatable ::            xObs(:)
 !        real(dr), allocatable ::            yObs(:)
 !        real(dr), allocatable ::            zObs(:)
@@ -4567,7 +4567,7 @@ module HGS !
 !        Real(dr) :: NRMSD
 !        
 !        integer :: FNumScatter
-!        character(MAXSTRING) :: FNameScatter 
+!        character(MAX_STR) :: FNameScatter 
 !       
 !        integer :: TextHeight
 !        !-------------------------------------------------------------
@@ -4900,23 +4900,23 @@ module HGS !
 !        
 !        integer :: FnumTG
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !
 !        integer :: FnumCSV
-!        character(MAXSTRING) :: FNameCSV
-!        character(MAXSTRING) :: PathSim
-!        character(MAXSTRING) :: PathField
+!        character(MAX_STR) :: FNameCSV
+!        character(MAX_STR) :: PathSim
+!        character(MAX_STR) :: PathField
 !
 !        
 !
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !        
 !        
 !        integer :: nvar
 !        integer :: nObs
-!        character(MAXLBL), allocatable :: ColumnName(:)
-!        character(MAXLBL), allocatable ::   SimFile(:)
-!        character(MAXLBL), allocatable ::   FieldFile(:)
+!        character(MAX_LBL), allocatable :: ColumnName(:)
+!        character(MAX_LBL), allocatable ::   SimFile(:)
+!        character(MAX_LBL), allocatable ::   FieldFile(:)
 !        integer, allocatable  ::            IncludeFlag(:)
 !        
 !       
@@ -4926,13 +4926,13 @@ module HGS !
 !        logical :: ViewFit, XFit, YFit
 !        real(dr) :: XPadRange, YPadRange
 !
-!        character(MAXSTRING) :: ObsName
+!        character(MAX_STR) :: ObsName
 !
-!        character(MAXSTRING) :: FnamePS
-!        character(MAXSTRING) :: FnamePDF(1000)
+!        character(MAX_STR) :: FnamePS
+!        character(MAX_STR) :: FnamePDF(1000)
 !        
 !        character(5000) :: TMPStr2
-!        character(MAXSTRING) :: CMDString
+!        character(MAX_STR) :: CMDString
 !
 !        
 !        !  csv table file 
@@ -5131,17 +5131,17 @@ module HGS !
 !        integer :: FnumTG
 !        
 !        integer :: FnumEco
-!        character(MAXSTRING) :: FNameEco
+!        character(MAX_STR) :: FNameEco
 !
 !        integer :: FNumCustomLabels
-!        character(MAXSTRING) :: FNameCustomLabels
+!        character(MAX_STR) :: FNameCustomLabels
 !
 !        type (HGSProject) hgs
 !        
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: line
 !        integer :: i1
 !        integer :: iZone
-!        character(MAXLBL) :: LocalPrefix
+!        character(MAX_LBL) :: LocalPrefix
 !        
 !        integer :: newIchar
 !        
@@ -5386,7 +5386,7 @@ module HGS !
 !        integer :: ZoneECount(1000)
 !
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        
 !        real(dr),allocatable :: minKx(:)
 !        real(dr),allocatable :: maxKx(:)
@@ -5395,8 +5395,8 @@ module HGS !
 !        real(dr),allocatable :: minKz(:)
 !        real(dr),allocatable :: maxKz(:)
 !
-!        character(MAXLBL) :: frmt
-!        character(MAXLBL) :: LocalPrefix
+!        character(MAX_LBL) :: frmt
+!        character(MAX_LBL) :: LocalPrefix
 !
 !        read(FNumTG,'(a)') LocalPrefix
 !
@@ -5618,16 +5618,16 @@ module HGS !
 !
 !
 !        integer :: Fnum
-!        character(MAXSTRING) :: FName
+!        character(MAX_STR) :: FName
 !        integer :: FNumTecplot
-!        character(MAXSTRING) :: FNameTecplot
+!        character(MAX_STR) :: FNameTecplot
 !        integer :: FNumTecplotBuild
-!        character(MAXSTRING) :: FNameTecplotBuild
+!        character(MAX_STR) :: FNameTecplotBuild
 !        
-!        character(MAXLBL) :: ObsWellName
-!        character(MAXLBL) :: LocalPrefix
-!        character(MAXLBL) :: Path
-!        character(MAXLBL) :: line
+!        character(MAX_LBL) :: ObsWellName
+!        character(MAX_LBL) :: LocalPrefix
+!        character(MAX_LBL) :: Path
+!        character(MAX_LBL) :: line
 !        
 !        logical :: DoneHeader
 !        integer :: i1
@@ -6263,7 +6263,7 @@ end subroutine sort_faces
 !        integer :: FnumTG
 !    
 !        integer :: FNumNList
-!        character(MAXSTRING) :: FNameNodeList   
+!        character(MAX_STR) :: FNameNodeList   
 !        
 !        integer :: iNd
 !       

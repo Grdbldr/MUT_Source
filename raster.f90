@@ -3,13 +3,13 @@ module Raster
 	implicit none
 
     character(256) :: Raster_CMD  
-    character(60) :: Raster_Read_CMD='read raster'
-    character(60) :: Raster_Write_CMD='write raster'
-    character(60) :: Raster_ltequals_CMD='less than equals'
-    character(60) :: Raster_replaceValue_CMD='replace value'
-    character(60) :: Raster_multiplier_CMD='multiplier'
-    character(60) :: Raster_XYZto_CMD='XYZ to raster'
-    character(60) :: Raster_End_CMD=	'end raster'
+    character(MAX_INST) :: Raster_Read_CMD='read raster'
+    character(MAX_INST) :: Raster_Write_CMD='write raster'
+    character(MAX_INST) :: Raster_ltequals_CMD='less than equals'
+    character(MAX_INST) :: Raster_replaceValue_CMD='replace value'
+    character(MAX_INST) :: Raster_multiplier_CMD='multiplier'
+    character(MAX_INST) :: Raster_XYZto_CMD='XYZ to raster'
+    character(MAX_INST) :: Raster_End_CMD=	'end raster'
 
     
     character(80) :: rasterfile 
@@ -117,7 +117,7 @@ module Raster
 
         character(80) :: line
         integer :: Fnum
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
         real :: min_elev, max_elev 
 
         ! Fracman mafic file 
@@ -223,7 +223,7 @@ module Raster
 
         integer :: j, k
         integer :: Fnum
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
 
         ! Fracman mafic file 
         read(FnumTG,'(a)') FName
@@ -376,12 +376,12 @@ module Raster
 
         integer :: i, j, k
         integer :: Fnum
-        character(MAXSTRING) :: FName
+        character(MAX_STR) :: FName
 
         integer :: FnumXYZ
-        character(MAXSTRING) :: FNameXYZ
+        character(MAX_STR) :: FNameXYZ
 
-        character(MAXLBL) :: line
+        character(MAX_LBL) :: line
        
         
         integer :: nPts

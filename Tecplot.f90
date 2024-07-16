@@ -10,14 +10,14 @@ module Tecplot !
     integer, parameter :: MAXVAR=50
     
     character(256) :: Tecplot_CMD  
-    character(60) :: Tecplot_ReadWrite_szplt_CMD="read write szplt"
-    character(60) :: Tecplot_hsplot2012_CMD="hsplot 2012"
-    character(60) :: TecplotTimeOffset_CMD="tecplot time offset"
-    character(60) :: Tecplot_ASCIIMode_CMD="ascii mode"
-    character(60) :: Tecplot_BinaryPLTMode_CMD="binary plt mode"
-    character(60) :: Tecplot_End_CMD=	'end tecplot'
+    character(MAX_INST) :: Tecplot_ReadWrite_szplt_CMD="read write szplt"
+    character(MAX_INST) :: Tecplot_hsplot2012_CMD="hsplot 2012"
+    character(MAX_INST) :: TecplotTimeOffset_CMD="tecplot time offset"
+    character(MAX_INST) :: Tecplot_ASCIIMode_CMD="ascii mode"
+    character(MAX_INST) :: Tecplot_BinaryPLTMode_CMD="binary plt mode"
+    character(MAX_INST) :: Tecplot_End_CMD=	'end tecplot'
     
-    character(MAXLBL) :: TPrefix
+    character(MAX_LBL) :: TPrefix
     
     logical :: BINARYMode=.true.
    
@@ -88,9 +88,9 @@ module Tecplot !
     type(c_ptr) :: stringCPtr = C_NULL_PTR
     type(c_ptr) :: nameCPtr = C_NULL_PTR, valueCPtr = C_NULL_PTR
 
-    character(MAXSTRING) :: VarSTR
-    character(MAXSTRING) :: ZoneSTR
-    character(MAXSTRING) :: CellCenteredSTR    
+    character(MAX_STR) :: VarSTR
+    character(MAX_STR) :: ZoneSTR
+    character(MAX_STR) :: CellCenteredSTR    
     
     ! rgm added for hgs comatibility
     integer :: nln_padded
@@ -193,11 +193,11 @@ module Tecplot !
 	    integer	:: CplScheme
         integer :: IDNum
 
-        character(60) :: Plot_str 
+        character(MAX_LBL) :: Plot_str 
 	    logical :: Plot=.true.
 
 	    integer :: Nvar
-	    character(512) :: VarList
+	    character(MAX_STR) :: VarList
 
 	    ! nodes
 	    integer :: NN
@@ -215,7 +215,7 @@ module Tecplot !
 	    integer :: ZNvar
 	    
 
-        character(60) :: HeadOutput_str 
+        character(MAX_LBL) :: HeadOutput_str 
 	    logical :: HeadOutput=.true.
 	    real(dr), allocatable :: Head(:)    
 	    real(dr), allocatable :: P(:)    
@@ -228,21 +228,21 @@ module Tecplot !
 	    integer :: DepthNvar
 	    integer :: LogDepthNvar
 
-        character(60) :: SatOutput_str
+        character(MAX_LBL) :: SatOutput_str
 	    logical :: SatOutput=.true.
 	    real, allocatable :: Sat(:)					
         integer :: SatNvar
 	    logical :: SatFile
 	    logical :: SatFileN
     	
-        character(60) :: IceSatOutput_str
+        character(MAX_LBL) :: IceSatOutput_str
 	    logical :: IceSatOutput=.true.
 	    real, allocatable :: IceSat(:)					
         integer :: IceSatNvar
 	    logical :: IceSatFile
 	    logical :: IceSatFileN
     	
-        character(60) :: VelOutput_str 
+        character(MAX_LBL) :: VelOutput_str 
 	    logical :: VelOutput=.true.
 	    real, allocatable :: Vx(:)                   
         integer :: VxNvar
@@ -253,21 +253,21 @@ module Tecplot !
 	    logical :: VelFile
 	    logical :: VelFileN
 
-        character(60) :: ConcOutput_str 
+        character(MAX_LBL) :: ConcOutput_str 
 	    logical :: ConcOutput=.true.
 	    real(dr), allocatable :: Conc(:,:)           
 	    integer, allocatable :: ConcNvar(:)   
 	    logical :: ConcFile
 	    logical :: ConcFileN
 
-        character(60) :: IConcOutput_str 
+        character(MAX_LBL) :: IConcOutput_str 
 	    logical :: IConcOutput=.true.
 	    real(dr), allocatable :: IConc(:,:)           
 	    integer, allocatable :: IConcNvar(:)   
 	    logical :: IConcFile
 	    logical :: IConcFileN
 
-        character(60) :: PecletOutput_str 
+        character(MAX_LBL) :: PecletOutput_str 
 	    logical :: PecletOutput=.true.
 	    real, allocatable :: Pecletx(:)                   
         integer :: PecletxNvar
@@ -279,7 +279,7 @@ module Tecplot !
 	    logical :: PecletFileN
 
  
-        character(60) :: DiffPecletOutput_str 
+        character(MAX_LBL) :: DiffPecletOutput_str 
 	    logical :: DiffPecletOutput=.true.
 	    real, allocatable :: DiffPecletx(:)                   
         integer :: DiffPecletxNvar
@@ -293,7 +293,7 @@ module Tecplot !
  
 
 
-        character(60) :: ElemKOutput_str 
+        character(MAX_LBL) :: ElemKOutput_str 
 	    logical :: ElemKOutput=.true.
 	    real(dr), allocatable :: ElemKx(:)                   
         integer :: ElemKxNvar
@@ -305,7 +305,7 @@ module Tecplot !
 	    logical :: ElemKFileN
         
         ! Time-varying K fields
-        character(60) :: TVKOutput_str 
+        character(MAX_LBL) :: TVKOutput_str 
 	    logical :: TVKOutput=.true.
 	    real, allocatable :: TVKx(:)                   
         integer :: TVKxNvar
@@ -317,35 +317,35 @@ module Tecplot !
 	    logical :: TVKFileN
 
 
-        character(60) :: ElemPorOutput_str 
+        character(MAX_LBL) :: ElemPorOutput_str 
 	    logical :: ElemPorOutput=.true.
 	    real, allocatable :: ElemPor(:)					
         integer :: ElemPorNvar
 	    logical :: ElemPorFile
 	    logical :: ElemPorFileN
 
-        character(60) :: ElemStorOutput_str 
+        character(MAX_LBL) :: ElemStorOutput_str 
 	    logical :: ElemStorOutput=.true.
 	    real(dr), allocatable :: ElemStor(:)					
         integer :: ElemStorNvar
 	    logical :: ElemStorFile
 	    logical :: ElemStorFileN
 
-        character(60) :: ElemTortOutput_str 
+        character(MAX_LBL) :: ElemTortOutput_str 
 	    logical :: ElemTortOutput=.true.
 	    real(dr), allocatable :: ElemTort(:)					
         integer :: ElemTortNvar
 	    logical :: ElemTortFile
 	    logical :: ElemTortFileN
 
-        character(60) :: ElemIbedFractionOutput_str 
+        character(MAX_LBL) :: ElemIbedFractionOutput_str 
 	    logical :: ElemIbedFractionOutput=.true.
 	    real(dr), allocatable :: ElemIbedFraction(:)					
         integer :: ElemIbedFractionNvar
 	    logical :: ElemIbedFractionFile
 	    logical :: ElemIbedFractionFileN
 
-        character(60) :: ApertureOutput_str 
+        character(MAX_LBL) :: ApertureOutput_str 
 	    logical :: ApertureOutput=.true.
 	    real(dr), allocatable :: Ap(:)					
         integer, allocatable :: ifrac_3d_elem_map(:,:)  ! temporary because of way apertures are read
@@ -353,7 +353,7 @@ module Tecplot !
 	    logical :: ApFile
 	    logical :: ApFileN
 
-        character(60) :: PermafrostOutput_str 
+        character(MAX_LBL) :: PermafrostOutput_str 
 	    logical :: PermafrostOutput=.true.
 	    real, allocatable :: Permafrost(:)					
         integer :: PermafrostNvar
@@ -361,26 +361,26 @@ module Tecplot !
 	    logical :: PermafrostFileN
 
 
-        character(60) :: SoilfrostOutput_str 
+        character(MAX_LBL) :: SoilfrostOutput_str 
 	    logical :: SoilfrostOutput=.true.
 
-        character(60) :: CompactOutput_str 
+        character(MAX_LBL) :: CompactOutput_str 
 	    logical :: CompactOutput=.true.
 
-        character(60) :: DeltaZOutput_str 
+        character(MAX_LBL) :: DeltaZOutput_str 
 	    logical :: DeltaZOutput=.true.
 	    integer :: DeltaZNvar
 	    logical :: DeltaZFile
 	    logical :: DeltaZFileN
 
-        character(60) :: ExchFluxOutput_str 
+        character(MAX_LBL) :: ExchFluxOutput_str 
 	    logical :: ExchFluxOutput=.true.
 	    real, allocatable :: ExchFlux(:)             
 	    integer :: ExchFluxNvar
 	    logical :: ExchFluxFile
 	    logical :: ExchFluxFileN
 
-        character(60) :: ExchSolOutput_str 
+        character(MAX_LBL) :: ExchSolOutput_str 
 	    logical :: ExchSolOutput=.true.
 	    real, allocatable :: ExchSolAdv(:,:)
 	    integer, allocatable :: ExchSolAdvNvar(:)
@@ -391,7 +391,7 @@ module Tecplot !
 	    logical :: ExchSolDispFile
 	    logical :: ExchSolDispFileN
 
-        character(60) :: ETOutput_str
+        character(MAX_LBL) :: ETOutput_str
  	    logical :: ETOutput=.true.
 	    real(dr), allocatable :: Evap(:)                  ! et surface evaporation
 	    integer :: EvapNvar
@@ -404,7 +404,7 @@ module Tecplot !
 	    real(dr), allocatable :: ETTotal(:)                
 	    integer :: ETTotalNvar
 
-        character(60) :: Depth2GWTOutput_str 
+        character(MAX_LBL) :: Depth2GWTOutput_str 
 	    logical :: Depth2GWTOutput=.true.
 	    real, allocatable :: Depth2GWT(:)					
         integer :: Depth2GWTNvar
@@ -415,7 +415,7 @@ module Tecplot !
         integer :: FsliceNvar
 
         
-        character(60) :: DomainTruncate_str 
+        character(MAX_LBL) :: DomainTruncate_str 
 	    logical :: DomainTruncate=.false.
         real*8	:: XminTrunc=-1.e20,XmaxTrunc=1.e20
         real*8	:: YminTrunc=-1.e20,YmaxTrunc=1.e20
@@ -444,33 +444,33 @@ module Tecplot !
     integer :: GlobalStartIndex=0
     logical :: OutputExists
 
-    character(60) :: plot_instruction
+    character(MAX_INST) :: plot_instruction
 
 	! I/O file unit numbers
 	integer :: itmp2 = 0    ! temporary file unit number
 	integer :: ieco = 0
 	integer :: idbg = 0
-	character(100) :: filename
+	character(MAX_STR) :: filename
 
-	character(60), allocatable :: title(:)
+	character(MAX_LBL), allocatable :: title(:)
 	integer :: ntit
-	character(80) :: message
-	character(20) :: label,string
+	character(MAX_LBL) :: message
+	character(MAX_LBL) :: label,string
 
-	character(60) :: timestamp
+	character(MAX_LBL) :: timestamp
     real(dr) :: TecplotTimeOffset=0.0d0
 	
 	!character(512) :: line,dlist,temp_line  ! rgm2020 
-	character(512) :: dlist,temp_line
+	character(MAX_STR) :: dlist,temp_line
 	
-    character(512) :: zone_line
+    character(MAX_STR) :: zone_line
     
 	character(4) :: nfs     ! string to hold output time extension e.g. 0001
     character(6) :: NFSFormat='(i4.4)'      ! format for writing integer to time extension string
 
 
     !character(40) :: cfprfx,prefix ! rgm2020
-	character(MAXLBL) :: cfprfx,LocalPrefix
+	character(MAX_LBL) :: cfprfx,LocalPrefix
 	integer :: len_prfx
 
     integer :: nln_f
@@ -528,25 +528,25 @@ module Tecplot !
 
 
 
-    character(60), parameter	:: tecplot_mode_str = 'tecplot mode'
+    character(MAX_INST), parameter	:: tecplot_mode_str = 'tecplot mode'
 	logical :: tecplot_mode=.true.
 
-    character(60), parameter	:: gms_mode_str = 'gms mode'
+    character(MAX_INST), parameter	:: gms_mode_str = 'gms mode'
 	logical :: gms_mode=.false.
 
-    character(60), parameter	:: double_xy_str = 'double xy'
+    character(MAX_INST), parameter	:: double_xy_str = 'double xy'
 	logical :: double_xy=.false.
 
-   character(60), parameter	:: truncate_3d_domain_str = 'truncate 3d domain'
+   character(MAX_INST), parameter	:: truncate_3d_domain_str = 'truncate 3d domain'
 	logical :: truncate_3d_domain=.false.
 
-    character(60), parameter	:: isolate_node_str = 'isolate node'
+    character(MAX_INST), parameter	:: isolate_node_str = 'isolate node'
 	logical :: isolate_node=.false.
 
-    character(60), parameter	:: truncate_time_domain_str = 'truncate time domain'
+    character(MAX_INST), parameter	:: truncate_time_domain_str = 'truncate time domain'
 	logical :: truncate_time_domain=.false.
     
-    character(60), parameter	:: compare_heads_3d_domain_str = 'compare heads 3d domain'
+    character(MAX_INST), parameter	:: compare_heads_3d_domain_str = 'compare heads 3d domain'
 	logical :: compare_heads_3d_domain=.false.
 
 
@@ -562,7 +562,7 @@ module Tecplot !
 	real, allocatable :: vztet(:)            
 
  
-!    character(60), parameter	:: truncate_time_domain_str = 'truncate time domain'
+!    character(MAX_INST), parameter	:: truncate_time_domain_str = 'truncate time domain'
 !	logical :: truncate_time_domain=.false.
 
 	integer :: iso_node, n_extend
@@ -4556,8 +4556,8 @@ module Tecplot !
         integer :: i
         
         integer :: Fnum
-        character(MAXSTRING) :: FName
-        character(MAXSTRING) :: line
+        character(MAX_STR) :: FName
+        character(MAX_STR) :: line
 
         inquire(file = trim(LocalPrefix)//'o.species', exist=SpeciesFileExists)
         if(.not. SpeciesFileExists) then
@@ -5209,16 +5209,16 @@ end subroutine enter_prefix
         integer :: i
         
         integer :: FnumEco
-        character(MAXSTRING) :: FNameEco
+        character(MAX_STR) :: FNameEco
 
         type(HGSTecplotdomain) medium
         type(HGSTecplotdomain) global
         
-        character(MAXLBL) :: line
+        character(MAX_LBL) :: line
         integer :: i1
         integer :: iZone
-        character(MAXLBL) :: ZoneName
-        character(MAXLBL) :: DomainStr
+        character(MAX_LBL) :: ZoneName
+        character(MAX_LBL) :: DomainStr
         
         integer :: newIchar
         
