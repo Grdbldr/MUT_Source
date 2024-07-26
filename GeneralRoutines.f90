@@ -61,6 +61,9 @@ module GeneralRoutines    !### bit setting routines
     integer :: CriticalDepth=4
     integer :: BoundaryNode=5
     integer :: Inactive=6
+    
+    
+
 
     !---------------------------------------------- Raster declarations
     integer :: nRaster ! number of rasters currently
@@ -4214,6 +4217,7 @@ module GeneralRoutines    !### bit setting routines
 
     end subroutine ElapsedTime
 
+    !---------------------------------------------- Array allocation routines
     subroutine AllocChk(ialloc,string) !--- Array allocation error message to file and display. Stop
         !   Purpose:
         character*(*) string
@@ -4228,6 +4232,60 @@ module GeneralRoutines    !### bit setting routines
         end if
 
     end subroutine AllocChk
+    
+    !---------------------------------------------- Increase array sizes at run-time 
+    subroutine GrowIntegerArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        integer, allocatable :: iArray(:)
+        integer, allocatable :: iTMP(:)
+        integer :: nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowIntegerArray
+    
+    subroutine GrowInteger2dArray(iArray,nSize1,nSizeIn,nSizeout)
+        implicit none
+        integer, allocatable :: iArray(:,:)
+        integer, allocatable :: iTMP(:,:)
+        integer :: nSize1, nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSize1,nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'iTMP array')
+        iTMP (:,1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowInteger2dArray
+    
+    subroutine GrowRealArray(rArray,nSizeIn,nSizeout)
+        implicit none
+        real(dr), allocatable :: rArray(:)
+        real(dr), allocatable :: rTMP(:)
+        integer :: nSizeIn, nSizeOut
+        
+        allocate(rTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'rTMP array')
+        rTMP (1:nSizeIn) = rArray
+        call move_alloc (rTMP, rArray)
+        
+    end subroutine GrowRealArray
+
+    subroutine GrowReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
+        implicit none
+        real(dr), allocatable :: rArray(:,:)
+        real(dr), allocatable :: rTMP(:,:)
+        integer :: nSize1, nSizeIn, nSizeOut
+        
+        allocate(rTMP(nSize1,nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'rTMP array')
+        rTMP (:,1:nSizeIn) = rArray
+        call move_alloc (rTMP, rArray)
+        
+    end subroutine GrowReal2dArray
+
 
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.

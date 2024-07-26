@@ -1,0 +1,5 @@
+"CLN Material ID","CLN Name","CLN Type","CLN Geometry","CLN Direction","CLN Diameter/Width","CLN Conduit K"
+1,"Well","Well","Circular","Vertical",0.10,1.00
+2,"Channel","Channel","Rectangular","Horizontal",10.00,1.00
+3,"CLN_for_SWF","Channel","Rectangular","Horizontal",200.00,0.05
+4,"Well","Well","Circular","Vertical",0.10,1.00

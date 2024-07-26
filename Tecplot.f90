@@ -152,9 +152,11 @@ module Tecplot !
         real(dr), allocatable :: xSide(:,:)         ! projected x coordinate of inner circle radius tangent to side
         real(dr), allocatable :: ySide(:,:)         ! projected y coordinate of inner circle radius tangent to side
         
-        real(dr), allocatable :: ConnectionLength(:)    ! CLN in modflow
+        real(dr), allocatable :: ConnectionLength(:)    ! varialbe CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dr), allocatable :: PerpendicularArea(:)   ! FAHL in modflow
         
+        real(dr), allocatable :: Length(:) ! length of CLN cell
+        real(dr), allocatable :: FELEV(:) ! lowest point of CLN cell
         
         !
         ! face neighbours

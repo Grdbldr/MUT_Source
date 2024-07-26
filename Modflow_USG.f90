@@ -26,6 +26,7 @@
     !---------------------------------------------------Database
     character(MAX_INST) :: SMS_Database_CMD	        =   'sms database'
     character(MAX_INST) :: GWFMaterialsDatabase_CMD	=   'gwf materials database'
+    character(MAX_INST) :: CLNMaterialsDatabase_CMD	=   'cln materials database'
     character(MAX_INST) :: SWFMaterialsDatabase_CMD	=   'swf materials database'
     character(MAX_INST) :: ET_Database_CMD	        =   'et database'
 
@@ -95,6 +96,10 @@
     character(MAX_INST) :: AssignSrtoGWF_CMD		        =   'gwf sr'
     character(MAX_INST) :: AssignBrookstoGWF_CMD		    =   'gwf brooks'
         
+    !---------------------------------------------------CLN Properties
+    character(MAX_INST) :: AssignMaterialtoCLN_CMD		    =   'chosen zones use cln material number'
+    character(MAX_INST) :: AssignSizetoCLN_CMD		        =   'cln radius or width'
+
     !---------------------------------------------------SWF Properties
     character(MAX_INST) :: AssignMaterialtoSWF_CMD		    =   'chosen zones use swf material number'
     character(MAX_INST) :: AssignSgcltoSWF_CMD		        =   'swf to gwf connection length'
@@ -180,7 +185,10 @@
         real(dr), allocatable :: ConnectionLength(:)    ! CLN in modflow
         real(dr), allocatable :: PerpendicularArea(:)   ! FAHL in modflow
         
-        integer :: NCLNGWC       ! # of CLN to GWF connections
+        integer :: NCLNGWC      ! # of CLN to GWF connections
+        integer :: NCONDUITYP   ! number of circular CLN's
+        integer :: NRECTYP      ! number of rectangular CLN's
+        
         
         
 
@@ -272,7 +280,15 @@
         real, allocatable :: Beta(:)
         real, allocatable :: Sr(:)
         real, allocatable :: Brooks(:)
-        
+
+        ! CLN properties (zoned)
+        real, allocatable :: Length(:)        ! length of CLN
+        real, allocatable :: FELEV(:)         ! lowest point of CLN
+        integer, allocatable    :: Geometry(:)           ! circular or rectangular
+        integer, allocatable    :: Direction(:)          ! vertical, horizontal or angled
+        real, allocatable       :: DiameterOrWidth(:)    ! dimension of CLN
+        real, allocatable       :: ConduitK(:)    ! dimension of CLN
+
         ! SWF properties (zoned)
         real, allocatable :: Sgcl(:)   ! SWF-GWF connection length
         real, allocatable :: Manning(:)   ! Manning's coefficient of friction
@@ -584,9 +600,37 @@
     integer, Parameter :: MAXCLN=10000  ! assuming never more than 10000 CLN's
     integer, Parameter :: MAXSTRESS=10000  ! assuming never more than 10000 Stress Periods
 
+    real :: MinSeparationDistance=0.0001
     
     contains
 
+    !-------------------------------------------------------------
+    subroutine AddCLNFiles(Modflow)
+        implicit none
+        
+        type (ModflowProject) Modflow
+        
+        ! Initialize CLN file and write data to NAM
+        Modflow.FNameCLN=trim(Modflow.Prefix)//'.CLN'
+        call OpenAscii(Modflow.iCLN,Modflow.FNameCLN)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN))
+        write(Modflow.iNAM,'(a,i4,a)') 'CLN ',Modflow.iCLN,' '//trim(Modflow.FNameCLN)
+        write(Modflow.iCLN,'(a,1pg10.1)') '# MODFLOW-USG CLN file written by Modflow-User-Tools version ',MUTVersion
+
+        Modflow.CLN.FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
+        call getunit(Modflow.CLN.iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iCBB,' '//trim(Modflow.CLN.FNameCBB)
+        
+        Modflow.CLN.FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
+        call getunit(Modflow.CLN.iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iHDS,' '//trim(Modflow.CLN.FNameHDS)
+        
+        Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
+        call getunit(Modflow.CLN.iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
+    end subroutine AddCLNFiles
+    
     !-------------------------------------------------------------
     subroutine AddSWFFiles(Modflow)
         implicit none
@@ -640,33 +684,6 @@
         
         
     end subroutine AddToScan
-    
-    !-------------------------------------------------------------
-    subroutine AddCLNFiles(Modflow)
-        implicit none
-        
-        type (ModflowProject) Modflow
-        
-        ! Initialize CLN file and write data to NAM
-        Modflow.FNameCLN=trim(Modflow.Prefix)//'.CLN'
-        call OpenAscii(Modflow.iCLN,Modflow.FNameCLN)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN))
-        write(Modflow.iNAM,'(a,i4,a)') 'CLN ',Modflow.iCLN,' '//trim(Modflow.FNameCLN)
-        write(Modflow.iCLN,'(a,1pg10.1)') '# MODFLOW-USG CLN file written by Modflow-User-Tools version ',MUTVersion
-
-        Modflow.CLN.FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
-        call getunit(Modflow.CLN.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iCBB,' '//trim(Modflow.CLN.FNameCBB)
-        
-        Modflow.CLN.FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
-        call getunit(Modflow.CLN.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iHDS,' '//trim(Modflow.CLN.FNameHDS)
-        
-        Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
-        call getunit(Modflow.CLN.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
-    end subroutine AddCLNFiles
     
     !----------------------------------------------------------------------
     subroutine AssignAlphatoDomain(FNumMUT,domain) 
@@ -1080,6 +1097,53 @@
     end subroutine AssignMaterialtoGWF
     
     !----------------------------------------------------------------------
+    subroutine AssignMaterialtoCLN(FnumMUT,CLN)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) CLN
+        
+        integer :: i
+        real(dr) :: iMaterial
+        
+        read(FNumMUT,*) iMaterial
+        write(TmpSTR,'(g15.5)') iMaterial
+        
+		call Msg(TAB//'Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLNName(iMaterial)))
+
+       
+        do i=1,CLN.nZones
+            if(bcheck(CLN.Zone_is(i),chosen)) then
+                select case(CLNGeometry(iMaterial))
+                case ('Circular')
+                    CLN.Geometry(i)=1
+                    CLN.NCONDUITYP=CLN.NCONDUITYP+1
+                case ('Rectangular')
+                    CLN.Geometry(i)=2
+                    CLN.NRECTYP=CLN.NRECTYP+1
+                case default
+                    call ErrMsg('Geometry type '//trim(CLNGeometry(iMaterial))//' not supported')
+                end select
+
+                select case(CLNDirection(iMaterial))
+                case ('Vertical')
+                    CLN.Direction(i)=1
+                case ('Horizontal')
+                    CLN.Direction(i)=2
+                case ('Angled')
+                    CLN.Direction(i)=3
+                case default
+                    call ErrMsg('Direction type '//trim(CLNDirection(iMaterial))//' not supported')
+                end select
+                
+                CLN.DiameterOrWidth(i)=CLNDiameterOrWidth(iMaterial)
+                CLN.ConduitK(i)=CLNConduitK(iMaterial)
+            end if
+        end do
+    
+    end subroutine AssignMaterialtoCLN
+    
+    !----------------------------------------------------------------------
     subroutine AssignMaterialtoSWF(FnumMUT,domain)
         implicit none
 
@@ -1184,6 +1248,28 @@
         end if
     end subroutine AssignRCHtoDomain
     
+    !----------------------------------------------------------------------
+    subroutine CLN_AssignSize(FnumMUT,CLN)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) CLN
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//trim(CLN.name)//' Pipe radius or channel width : '//trim(TmpSTR))
+
+
+        do i=1,CLN.nZones
+            if(bcheck(CLN.Zone_is(i),chosen)) then
+                CLN.DiameterOrWidth(i)=value
+            end if
+        end do
+    
+    end subroutine CLN_AssignSize
     !----------------------------------------------------------------------
     subroutine AssignSgcltoDomain(FNumMUT,domain) 
         implicit none
@@ -1426,6 +1512,11 @@
                 call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
                 call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
 
+            else if(index(instruction, CLNMaterialsDatabase_CMD)  /= 0) then
+                read(FnumMUT,'(a)') FName
+                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DB_ReadCLNMaterials(trim(USERBIN)//'\'//trim(FName)) 
+            
             else if(index(instruction, SWFMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
                 call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
@@ -1440,20 +1531,20 @@
                 ! Build the 2D template mesh from a grdbldr 2D mesh
                 call MeshFromGb(FnumMUT,TMPLT)
                 call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
+                call IaJa_FromTecplot(TMPLT)
 
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
                 ! Build the 2D template mesh from a simple 2D rectangular mesh
                 call GenerateUniformRectangles(FnumMUT,TMPLT)
                 call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
+                call IaJa_FromTecplot(TMPLT)
                 JustBuilt=.true.
             
             else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
                 ! Build the 2D template mesh from a grdbldr 2D mesh
                 call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
                 call TemplateToTecplot(Modflow,TMPLT)
-                call TecplotToIaJaStructure(TMPLT)
+                call IaJa_FromTecplot(TMPLT)
             
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
                 call GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
@@ -1462,8 +1553,8 @@
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
                 call GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
-                !call TecplotToIaJaStructure(TECPLOT_CLN)
-                !call BuildModflowCLNDomain(FNumMUT,Modflow,TMPLT,TECPLOT_CLN)
+                !call CLN_IaJaStructure(TECPLOT_CLN)
+                call BuildModflowCLNDomain(Modflow,TMPLT,TECPLOT_CLN)
                 !JustBuilt=.true.
 
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
@@ -1472,7 +1563,7 @@
                     call Msg('Build node-centred control volume ia,ja from SWF domain')
                     call NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
                 else
-                    call TecplotToIaJaStructure(TECPLOT_GWF)
+                    call IaJa_FromTecplot(TECPLOT_GWF)
                 end if
                 call BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
                 JustBuilt=.true.
@@ -1480,7 +1571,7 @@
             else if(index(instruction, HGSToModflowStructure_CMD)  /= 0) then
                 ! Add components to Modflow data structure from an existing HGS model
                 call HGSToModflowStructure(FnumMUT,Modflow,TECPLOT_GWF,TECPLOT_SWF)
-                call TecplotToIaJaStructure(TECPLOT_GWF)
+                call IaJa_FromTecplot(TECPLOT_GWF)
                 JustBuilt=.true.
 
 
@@ -1724,6 +1815,9 @@
             else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
                 call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
 
+            ! SWF properties assignment
+            else if(index(instruction, AssignMaterialtoCLN_CMD)  /= 0) then
+                call AssignMaterialtoCLN(FnumMUT,modflow.CLN)
                 
             ! SWF properties assignment
             else if(index(instruction, AssignMaterialtoSWF_CMD)  /= 0) then
@@ -1770,6 +1864,123 @@
         10 continue
 
     end subroutine BuildModflowUSG
+
+    !----------------------------------------------------------------------
+    subroutine BuildModflowCLNDomain(Modflow,TMPLT,TECPLOT_CLN)
+        implicit none
+    
+        type (ModflowProject) Modflow
+        type (TecplotDomain) TMPLT
+        type (TecplotDomain) TECPLOT_CLN
+
+        integer :: i, j
+
+        Modflow.CLN.name='CLN'
+                
+        if(Modflow.NodalControlVolume) then
+            Modflow.CLN.nCells=TECPLOT_CLN.nNodes
+        else
+            Modflow.CLN.nCells=TECPLOT_CLN.nElements
+        end if            
+        
+        Modflow.CLN.nNodesPerCell=TECPLOT_CLN.nNodesPerElement
+        Modflow.CLN.nNodes=TECPLOT_CLN.nNodes  ! Used when choosing gb nodes
+        Modflow.CLN.nElements=TECPLOT_CLN.nElements  ! Used when choosing gb nodes
+
+        ! Modflow CLN cell coordinate 
+        allocate(Modflow.CLN.xCell(Modflow.CLN.nCells),Modflow.CLN.yCell(Modflow.CLN.nCells),Modflow.CLN.zCell(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell coordinate arrays')
+        if(Modflow.NodalControlVolume) then
+            do i=1,Modflow.CLN.nCells
+                Modflow.CLN.xCell(i)=TECPLOT_CLN.x(i)
+                Modflow.CLN.yCell(i)=TECPLOT_CLN.y(i)
+                Modflow.CLN.zCell(i)=TECPLOT_CLN.z(i)
+            end do
+        else
+            do i=1,Modflow.CLN.nCells
+                Modflow.CLN.xCell(i)=TMPLT.xElement(i)
+                Modflow.CLN.yCell(i)=TMPLT.yElement(i)
+ 
+                ! zc from centroid of the iNode array coordinates
+                zc=0.0
+                do j=1,Modflow.CLN.nNodesPerCell
+                    zc=zc+TECPLOT_CLN.z(TECPLOT_CLN.iNode(j,i))
+                end do
+                Modflow.CLN.zCell(i)=zc/Modflow.CLN.nNodesPerCell
+            end do
+        end if
+        
+        ! Element node list
+        allocate(Modflow.CLN.iNode(Modflow.CLN.nNodesPerCell,Modflow.CLN.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell node list array')
+        Modflow.CLN.iNode(:,:) = TECPLOT_CLN.iNode(:,:)
+       
+        ! Element side lengths
+        allocate(Modflow.CLN.Length(Modflow.CLN.nElements), &
+            Modflow.CLN.FELEV(Modflow.CLN.nElements), &
+            stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' CLN Cell Length array')
+        Modflow.CLN.Length(:) = TECPLOT_CLN.Length(:)
+        Modflow.CLN.FELEV(:) = TECPLOT_CLN.FELEV(:)
+               
+        ! Modflow CLN cell layer number
+        Modflow.CLN.nLayers=TECPLOT_CLN.nLayers
+        allocate(Modflow.CLN.iLayer(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Element layer number array')
+        do i=1,Modflow.CLN.nCells
+            Modflow.CLN.iLayer(i) = 1
+        end do
+
+
+        ! Cell zone number
+        Modflow.CLN.nZones=TECPLOT_CLN.nZones
+        allocate(Modflow.CLN.iZone(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' iZone array')
+        !If(Modflow.NodalControlVolume) then
+        !    ! Must account for element-based zone numbers in TECPLOT_CLN
+        !    do i=1,Tecplot_CLN.nElements
+        !        do j=1,Tecplot_CLN.nNodesPerElement
+        !            Modflow.CLN.iZone(TECPLOT_CLN.iNode(j,i))=TECPLOT_CLN.iZone(i)
+        !        end do
+        !    end do
+        !else
+            do i=1,Modflow.CLN.nCells
+                Modflow.CLN.iZone(i)=TECPLOT_CLN.iZone(i)
+            end do
+        !end if
+        
+        ! Cell Geometry: ia, ja arrays
+        !if(Modflow.NodalControlVolume) then
+        !    call NodeCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)
+        !else
+            call MeshCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)  ! Only mesh centred for now
+        !end if
+        
+        ! Modflow CLN material properties (cell-based)
+        allocate(modflow.CLN.Sgcl(modflow.CLN.nCells),modflow.CLN.CriticalDepthLength(modflow.CLN.nCells),Modflow.CLN.StartingHeads(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,'CLN cell material property arrays')    
+        modflow.CLN.Sgcl(:)=0.001
+        modflow.CLN.CriticalDepthLength(:)=0.d0
+        Modflow.CLN.StartingHeads(:)=-999.d0
+        
+        ! Modflow CLN material properties (zone-based)
+       allocate(Modflow.CLN.Geometry(Modflow.CLN.nZones), &                    
+                Modflow.CLN.Direction(Modflow.CLN.nZones), &    
+                Modflow.CLN.DiameterOrWidth(Modflow.CLN.nZones), &  
+                Modflow.CLN.ConduitK(Modflow.CLN.nZones), &  
+            stat=ialloc)
+        call AllocChk(ialloc,'CLN zoned material property arrays') 
+        Modflow.CLN.Geometry(:)=-999.d0
+        Modflow.CLN.Direction(:)=-999.d0
+        Modflow.CLN.DiameterOrWidth(:)=-999.d0
+        Modflow.CLN.ConduitK(:)=-999.d0
+
+        
+        allocate(Modflow.CLN.Cell_Is(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell_Is array')            
+        Modflow.CLN.Cell_Is(:)=0
+   
+    end subroutine BuildModflowCLNDomain
 
     !----------------------------------------------------------------------
     subroutine BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
@@ -2112,6 +2323,7 @@
         Modflow.GWF.Cell_Is(:)=0
     
     end subroutine BuildModflowGWFDomain
+    
     !----------------------------------------------------------------------
     subroutine BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
         implicit none
@@ -2988,6 +3200,129 @@
     end subroutine ClearAllZones
 
     !-------------------------------------------------------------
+    subroutine CLN_IaJaStructure(Tecplot_CLN)
+        implicit none
+        type(TecplotDomain) Tecplot_CLN
+        
+        integer, parameter :: MAXCONNECTIONS=20
+
+        integer :: i, j, k, l
+        integer :: iEl, jEl
+        integer :: iNd, jNd
+        
+        real(dr) :: SeparationDistance
+        
+        integer :: ia_TMP(Tecplot_CLN.nElements)
+        integer :: ja_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
+        !integer :: ja_TMP2(MAXCONNECTIONS,Tecplot_CLN.nElements)
+        !integer :: ja_TMP2_element(MAXCONNECTIONS,Tecplot_CLN.nElements)
+        !real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
+        !real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
+
+        ! read and store cell connection information
+        integer :: nFaceNeighborConnections
+        integer :: nSizeInit
+        
+        !integer,allocatable :: TECPLOT_CLN.Element(:)
+        !integer,allocatable :: TECPLOT_CLN.Face(:)
+        !integer,allocatable :: TECPLOT_CLN.Neighbour(:)
+
+        integer :: iNjag, iConn
+        
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for Tecplot_CLN '//trim(Tecplot_CLN.name)//'...')
+        
+        ja_TMP(:,:)=0
+        !ja_TMP2(:,:)=0
+        !ConnectionLength_TMP(:,:)=0
+        !PerpendicularArea_TMP(:,:)=0
+        
+        do i=1,TECPLOT_CLN.nElements   ! First element connection is to itself
+            ia_TMP(i)=1
+            ja_TMP(ia_TMP(i),i)=-i     ! Negative entry shows start of element i list in ja 
+        end do
+
+        nSizeInit=2
+        allocate(TECPLOT_CLN.Element(nSizeInit),&
+                TECPLOT_CLN.Face(nSizeInit),&
+                TECPLOT_CLN.Neighbour(nSizeInit),stat=ialloc)
+        call AllocChk(ialloc,'CLN element neighbour arrays')
+
+        ! Brute force search for CLN neighbours
+        nFaceNeighborConnections=0
+        do iEl=1,Tecplot_CLN.nElements ! Loop over elements
+            do k=1,Tecplot_CLN.nNodesPerElement ! Loop over nodes in element
+                iNd=Tecplot_CLN.iNode(k,iEl)
+                
+                do jEl=iEl+1,Tecplot_CLN.nElements ! Loop over rest of elements
+                    do l=1,Tecplot_CLN.nNodesPerElement ! Loop over nodes in next element
+                        jNd=Tecplot_CLN.iNode(l,jEl)
+                        SeparationDistance=sqrt((Tecplot_CLN.x(iNd) - Tecplot_CLN.x(jNd))**2 + &
+                            (Tecplot_CLN.y(iNd) - Tecplot_CLN.y(jNd))**2 + &
+                            (Tecplot_CLN.z(iNd) - Tecplot_CLN.z(jNd))**2 )
+                        if(SeparationDistance < MinSeparationDistance) then
+                            ! iEl is neighbour of jEl
+                            ia_TMP(iEl)=ia_TMP(iEl)+1
+                            ja_TMP(ia_TMP(iEl),iEl)=jEl
+                            nFaceNeighborConnections=nFaceNeighborConnections+1
+                            if(nFaceNeighborConnections > nSizeInit) then
+                                call growIntegerArray(TECPLOT_CLN.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TECPLOT_CLN.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TECPLOT_CLN.Neighbour,nSizeInit,nSizeInit*2)
+                                nSizeInit=nSizeInit*2
+                            end if
+                            TECPLOT_CLN.Element(nFaceNeighborConnections)=iEl
+                            TECPLOT_CLN.Face(nFaceNeighborConnections)=k
+                            TECPLOT_CLN.Neighbour(nFaceNeighborConnections)=jEl
+                            
+                            ! jEl is neighbour of iEl
+                            ia_TMP(jEl)=ia_TMP(jEl)+1
+                            ja_TMP(ia_TMP(jEl),jEl)=iEl
+                            nFaceNeighborConnections=nFaceNeighborConnections+1
+                            if(nFaceNeighborConnections > nSizeInit) then
+                                call growIntegerArray(TECPLOT_CLN.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TECPLOT_CLN.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TECPLOT_CLN.Neighbour,nSizeInit,nSizeInit*2)
+                                nSizeInit=nSizeInit*2
+                            end if
+                            TECPLOT_CLN.Element(nFaceNeighborConnections)=jEl
+                            TECPLOT_CLN.Face(nFaceNeighborConnections)=l
+                            TECPLOT_CLN.Neighbour(nFaceNeighborConnections)=iEl
+                        endif
+                    end do
+                end do
+            end do
+        end do
+
+        ! Determine size of ja (njag) and copy ja_TMP to ja 
+        Tecplot_CLN.njag=0
+        do i=1,Tecplot_CLN.nElements
+            Tecplot_CLN.njag=Tecplot_CLN.njag+ia_TMP(i)
+        end do
+        allocate(Tecplot_CLN.ia(Tecplot_CLN.nElements),Tecplot_CLN.ja(Tecplot_CLN.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(Tecplot_CLN.name)//'CLN ia, ja array')
+        !allocate(Tecplot_CLN.ConnectionLength(Tecplot_CLN.njag),Tecplot_CLN.PerpendicularArea(Tecplot_CLN.njag),stat=ialloc)
+        !call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        !Tecplot_CLN.ConnectionLength(:)=0.0d0
+        !Tecplot_CLN.PerpendicularArea(:)=0.0d0
+        Tecplot_CLN.ia=ia_TMP
+        
+        
+        iNJag=0
+        do i=1,Tecplot_CLN.nElements
+            do j=1,Tecplot_CLN.ia(i)
+                iNjag=iNjag+1
+                Tecplot_CLN.ja(iNJag)=ja_TMP(j,i)
+                !Tecplot_CLN.jaElement(iNJag)=ja_TMP2_Element(j,i)
+                !Tecplot_CLN.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
+                !Tecplot_CLN.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+            end do
+        end do
+           
+        return
+    end subroutine CLN_IaJaStructure
+    
+    !-------------------------------------------------------------
     subroutine CreateStepPeriodTimeFile(Modflow)
         implicit none
 
@@ -3557,7 +3892,7 @@
             call DisplayDomainAttributes(TECPLOT_SWF)
             !call FindNeighbours(Modflow,modflow.SWF)
             call SWFToTecplot(Modflow,TECPLOT_SWF)
-            call TecplotToIaJaStructure(TECPLOT_SWF)
+            call IaJa_FromTecplot(TECPLOT_SWF)
             !call WriteSWFFiles(Modflow)
         end if
         
@@ -3571,7 +3906,7 @@
         call DisplayDomainAttributes(TECPLOT_GWF)
         
         call GWFToTecplot(Modflow,Tecplot_GWF)
-        call TecplotToIaJaStructure(Tecplot_GWF)
+        call IaJa_FromTecplot(Tecplot_GWF)
         !call WriteGWFFiles(Modflow)
         
         ! Fracture element data
@@ -3819,6 +4154,145 @@
   !      
   !  end subroutine HgsOlfToMeshCenteredModflow
  
+    !-------------------------------------------------------------
+    subroutine IaJa_FromTecplot(domain)
+        implicit none
+        type(TecplotDomain) domain
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        character(MAX_STR) :: FNameTecplotDat
+        integer :: i, j, nFaceNeighborConnections, nNodes, nElements, iNja 
+        character(4000) :: output_line
+        character(4000) :: var_line
+        
+        integer :: iConn
+        
+        FNameTecplotDat='scratcho.'//trim(domain.name)//'.tecplot.dat'
+        
+        call ModflowDomainGridToTecplot(FNameTecplotDat,domain)
+
+
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
+            
+        call OpenAscii(FNum,FNameTecplotDat)
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status/=0) exit
+            
+            if(index(line,'variables=') > 0) then
+                l1=index(line,'variables=')+10
+                var_line=line(l1:)
+               
+            else if(index(line,'zonetype=') > 0) then
+                l1=index(line,'zonetype=')+9
+                read(line(l1:),*) output_line
+                domain.ElementType=trim(output_line)
+                exit
+            end if
+                
+        end do
+        call freeunit(FNum)
+        
+        FName=' scratcho.'//trim(domain.name)//'.mcr'
+        call OpenAscii(FNum,FName)
+        write(FNum,'(a)') '#!MC 1410'
+        write(FNum,'(a)') '$!ReadDataSet  "'//trim(FNameTecplotDat)//'"'
+        write(FNum,'(a)') '  ReadDataOption = New'
+        write(FNum,'(a)') '  ResetStyle = No'
+        write(FNum,'(a)') '  VarLoadMode = ByName'
+        write(FNum,'(a)') '  AssignStrandIDs = Yes'
+        write(FNum,'(a)') '  VarNameList =  '''//trim(var_line)//''''
+        write(FNum,'(a)') '$!WriteDataSet  "'//' scratcho.'//trim(domain.name)//'.neighbours.dat"'
+        write(FNum,'(a)') '  IncludeText = No'
+        write(FNum,'(a)') '  IncludeGeom = No'
+        write(FNum,'(a)') '  IncludeCustomLabels = No'
+        write(FNum,'(a)') '  IncludeDataShareLinkage = Yes'
+        write(FNum,'(a)') '  IncludeAutoGenFaceNeighbors = Yes'
+        ! Must write one variable so write X
+        write(FNum,'(a)') '  VarPositionList =  [1]'               
+        write(FNum,'(a)') '  Binary = No'
+        write(FNum,'(a)') '  UsePointFormat = Yes'
+        write(FNum,'(a)') '  Precision = 9'
+        write(FNum,'(a)') '  TecplotVersionToWrite = TecplotCurrent'
+        call FreeUnit(FNum)
+        
+        
+        FName=' scratcho.'//trim(domain.name)//'.bat'
+        call OpenAscii(FNum,FName)
+        !write(FNum,'(a)') 'echo'
+        write(FNum,'(a)') 'tec360 -b -p  scratcho.'//trim(domain.name)//'.mcr'
+        write(FNum,'(a)') ' '
+        call FreeUnit(FNum)
+        
+        CmdLine=' scratcho.'//trim(domain.name)//'.bat'
+        CALL execute_command_line(trim(CmdLine)) 
+        
+        ! get cell neighbours (ia, ja structure) from tecplot output file
+        FNameTecplotDat=' scratcho.'//trim(domain.name)//'.neighbours.dat'
+        call OpenAscii(FNum,FNameTecplotDat)
+        do 
+            read(FNum,'(a)',iostat=status) line
+            if(status/=0) exit
+            
+            if(index(line,'FACENEIGHBORCONNECTIONS=') > 0) then
+                l1=index(line,'=')+1
+                read(line(l1:),*) nFaceNeighborConnections
+            else if(index(line,'Nodes=') > 0) then
+                l1=index(line,'Nodes=')+6
+                read(line(l1:),*) nNodes
+                l1=index(line,'Elements=')+9
+                read(line(l1:),*) nElements
+            else if(index(line,'DT=(SINGLE )') > 0) then
+                ! read x coordinate lines
+                do i=1,nNodes
+                    read(FNum,'(a)') line
+                end do 
+                ! read node list lines
+                do i=1,nElements
+                    read(FNum,'(a)') line
+                end do 
+                ! read and store cell connection information
+                allocate(domain.Element(nFaceNeighborConnections),&
+                        domain.Face(nFaceNeighborConnections),&
+                        domain.Neighbour(nFaceNeighborConnections),stat=ialloc)
+                call AllocChk(ialloc,'Element neighbour arrays')
+                do i=1,nFaceNeighborConnections
+                    read(FNum,*) domain.Element(i),domain.Face(i),domain.Neighbour(i)
+                end do
+                ! form ia, ja
+                
+                domain.njag=nFaceNeighborConnections+nElements
+                allocate(domain.ia(nElements),&
+                        domain.ja(domain.njag),stat=ialloc)
+                call AllocChk(ialloc,'Element neighbour ia ja arrays')
+                domain.ia(:)=1
+                do i=1,nFaceNeighborConnections
+                    domain.ia(domain.Element(i))=domain.ia(domain.Element(i))+1
+                end do
+
+                domain.ja(:)=0
+                iNja=0
+                iConn=0
+                do i=1,nElements
+                    iNja=iNja+1
+                    domain.ja(iNja)=i
+                    do j=2,domain.ia(i)
+                        iConn=iConn+1
+                        iNja=iNja+1
+                        domain.ja(iNja)=domain.neighbour(iConn)
+                    end do
+                end do
+                exit
+                
+            end if
+        end do
+        call freeunit(FNum)
+            
+        return
+    end subroutine IaJa_FromTecplot
+
     !----------------------------------------------------------------------
     subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain) 
         implicit none
@@ -3944,6 +4418,61 @@
     end subroutine InitializeModflowFiles
 
     !----------------------------------------------------------------------
+    subroutine MeshCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)
+        implicit none
+    
+        type (ModflowProject) Modflow
+        type (TecplotDomain) TMPLT
+        type (TecplotDomain) TECPLOT_CLN
+        integer :: i, j
+
+        ! For modflow cell connection and area calculations
+        
+        integer :: iConn, iNbor
+
+
+        ! Generate ia/ja from face neighbour data calculated by Tecplot
+        call CLN_IaJaStructure(TECPLOT_CLN)
+        !call IaJa_FromTecplot(TECPLOT_CLN)
+
+        allocate(Modflow.CLN.ConnectionLength(TECPLOT_CLN.njag),Modflow.CLN.PerpendicularArea(TECPLOT_CLN.njag),stat=ialloc)
+        call AllocChk(ialloc,'CLN Cell connection length, perpendicular area array')
+        Modflow.CLN.ConnectionLength(:)=0.0d0
+        Modflow.CLN.PerpendicularArea(:)=0.0d0
+
+        Modflow.CLN.njag=TECPLOT_CLN.njag
+        
+        allocate(Modflow.CLN.ia(TECPLOT_CLN.nElements),Modflow.CLN.ja(TECPLOT_CLN.njag),stat=ialloc)
+        call AllocChk(ialloc,'CLN ia, ja arrays')
+        Modflow.CLN.ia(:)=TECPLOT_CLN.ia
+        Modflow.CLN.ja(:)=TECPLOT_CLN.ja
+
+        ! Cell horizontal areas
+        ! use existing TMPLT.CellArea (e.g. area of triangle)  
+        allocate(Modflow.CLN.CellArea(Modflow.CLN.nCells),stat=ialloc)
+        call AllocChk(ialloc,'CLN cell horizontal area arrays')
+        do i=1,Modflow.CLN.nCells
+            Modflow.CLN.CellArea(i)=TMPLT.ElementArea(i)
+        end do
+
+        !! Cell connection length and perpendicular area arrays
+        !! cRM  Are these used, or just FLENG and ??
+        !iConn=0
+        !iNbor=0
+        !do i=1,modflow.CLN.nCells
+        !    iConn=iConn+1
+        !            
+        !    do j=2,modflow.CLN.ia(i)
+        !        iConn=iConn+1
+        !        inBor=iNbor+1
+        !        modflow.CLN.ConnectionLength(iConn)=TECPLOT_CLN.Length(i)/2.0d0 
+        !        modflow.CLN.PerpendicularArea(iConn)=TECPLOT_CLN.DiameterOrWidth(i)   
+        !    end do
+        !end do
+    
+    end subroutine MeshCentredCLNCellGeometry
+
+    !----------------------------------------------------------------------
     subroutine MeshCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
         implicit none
     
@@ -3958,7 +4487,7 @@
 
 
         ! Generate ia/ja from face neighbour data calculated by Tecplot
-        call TecplotToIaJaStructure(TECPLOT_SWF)
+        call IaJa_FromTecplot(TECPLOT_SWF)
 
         allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
@@ -4071,6 +4600,13 @@
                     else
                         write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i) 
                     end if
+                else
+                    write(TmpSTR,'(i2)') domain.nNodesPerElement
+                    call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                end if
+            else if(domain.name == 'TECPLOT_CLN' .or. domain.name == 'TMPLT') then
+                if(domain.nNodesPerElement==2) then ! 2-node line
+                    write(FNum,'(8i8)') (domain.iNode(j,i),j=1,2) 
                 else
                     write(TmpSTR,'(i2)') domain.nNodesPerElement
                     call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
@@ -5717,144 +6253,6 @@
         
     end subroutine SWFToTecplot
 
-    !-------------------------------------------------------------
-    subroutine TecplotToIaJaStructure(domain)
-        implicit none
-        type(TecplotDomain) domain
-
-        integer :: Fnum
-        character(MAX_STR) :: FName
-        character(MAX_STR) :: FNameTecplotDat
-        integer :: i, j, nFaceNeighborConnections, nNodes, nElements, iNja 
-        character(4000) :: output_line
-        character(4000) :: var_line
-        
-        integer :: iConn
-        
-        FNameTecplotDat='scratcho.'//trim(domain.name)//'.tecplot.dat'
-        
-        call ModflowDomainGridToTecplot(FNameTecplotDat,domain)
-
-
-        call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
-            
-        call OpenAscii(FNum,FNameTecplotDat)
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status/=0) exit
-            
-            if(index(line,'variables=') > 0) then
-                l1=index(line,'variables=')+10
-                var_line=line(l1:)
-               
-            else if(index(line,'zonetype=') > 0) then
-                l1=index(line,'zonetype=')+9
-                read(line(l1:),*) output_line
-                domain.ElementType=trim(output_line)
-                exit
-            end if
-                
-        end do
-        call freeunit(FNum)
-        
-        FName=' scratcho.'//trim(domain.name)//'.mcr'
-        call OpenAscii(FNum,FName)
-        write(FNum,'(a)') '#!MC 1410'
-        write(FNum,'(a)') '$!ReadDataSet  "'//trim(FNameTecplotDat)//'"'
-        write(FNum,'(a)') '  ReadDataOption = New'
-        write(FNum,'(a)') '  ResetStyle = No'
-        write(FNum,'(a)') '  VarLoadMode = ByName'
-        write(FNum,'(a)') '  AssignStrandIDs = Yes'
-        write(FNum,'(a)') '  VarNameList =  '''//trim(var_line)//''''
-        write(FNum,'(a)') '$!WriteDataSet  "'//' scratcho.'//trim(domain.name)//'.neighbours.dat"'
-        write(FNum,'(a)') '  IncludeText = No'
-        write(FNum,'(a)') '  IncludeGeom = No'
-        write(FNum,'(a)') '  IncludeCustomLabels = No'
-        write(FNum,'(a)') '  IncludeDataShareLinkage = Yes'
-        write(FNum,'(a)') '  IncludeAutoGenFaceNeighbors = Yes'
-        ! Must write one variable so write X
-        write(FNum,'(a)') '  VarPositionList =  [1]'               
-        write(FNum,'(a)') '  Binary = No'
-        write(FNum,'(a)') '  UsePointFormat = Yes'
-        write(FNum,'(a)') '  Precision = 9'
-        write(FNum,'(a)') '  TecplotVersionToWrite = TecplotCurrent'
-        call FreeUnit(FNum)
-        
-        
-        FName=' scratcho.'//trim(domain.name)//'.bat'
-        call OpenAscii(FNum,FName)
-        !write(FNum,'(a)') 'echo'
-        write(FNum,'(a)') 'tec360 -b -p  scratcho.'//trim(domain.name)//'.mcr'
-        write(FNum,'(a)') ' '
-        call FreeUnit(FNum)
-        
-        CmdLine=' scratcho.'//trim(domain.name)//'.bat'
-        CALL execute_command_line(trim(CmdLine)) 
-        
-        ! get cell neighbours (ia, ja structure) from tecplot output file
-        FNameTecplotDat=' scratcho.'//trim(domain.name)//'.neighbours.dat'
-        call OpenAscii(FNum,FNameTecplotDat)
-        do 
-            read(FNum,'(a)',iostat=status) line
-            if(status/=0) exit
-            
-            if(index(line,'FACENEIGHBORCONNECTIONS=') > 0) then
-                l1=index(line,'=')+1
-                read(line(l1:),*) nFaceNeighborConnections
-            else if(index(line,'Nodes=') > 0) then
-                l1=index(line,'Nodes=')+6
-                read(line(l1:),*) nNodes
-                l1=index(line,'Elements=')+9
-                read(line(l1:),*) nElements
-            else if(index(line,'DT=(SINGLE )') > 0) then
-                ! read x coordinate lines
-                do i=1,nNodes
-                    read(FNum,'(a)') line
-                end do 
-                ! read node list lines
-                do i=1,nElements
-                    read(FNum,'(a)') line
-                end do 
-                ! read and store cell connection information
-                allocate(domain.Element(nFaceNeighborConnections),&
-                        domain.Face(nFaceNeighborConnections),&
-                        domain.Neighbour(nFaceNeighborConnections),stat=ialloc)
-                call AllocChk(ialloc,'Element neighbour arrays')
-                do i=1,nFaceNeighborConnections
-                    read(FNum,*) domain.Element(i),domain.Face(i),domain.Neighbour(i)
-                end do
-                ! form ia, ja
-                
-                domain.njag=nFaceNeighborConnections+nElements
-                allocate(domain.ia(nElements),&
-                        domain.ja(domain.njag),stat=ialloc)
-                call AllocChk(ialloc,'Element neighbour ia ja arrays')
-                domain.ia(:)=1
-                do i=1,nFaceNeighborConnections
-                    domain.ia(domain.Element(i))=domain.ia(domain.Element(i))+1
-                end do
-
-                domain.ja(:)=0
-                iNja=0
-                iConn=0
-                do i=1,nElements
-                    iNja=iNja+1
-                    domain.ja(iNja)=i
-                    do j=2,domain.ia(i)
-                        iConn=iConn+1
-                        iNja=iNja+1
-                        domain.ja(iNja)=domain.neighbour(iConn)
-                    end do
-                end do
-                exit
-                
-            end if
-        end do
-        call freeunit(FNum)
-            
-        return
-    end subroutine TecplotToIaJaStructure
 
     !-------------------------------------------------------------
     subroutine TemplateToTecplot(Modflow,TMPLT)
@@ -5983,10 +6381,24 @@
         type (ModflowProject) Modflow
         
         integer :: i, j, i1, i2
+        character(MAX_STR) :: OutputLine 
 
-        write(Modflow.iCLN,'(a)') '#1. NCLN,ICLNNDS,ICLNCB,ICLNHD,ICLNDD,ICLNIB,NCLNGWC,NCONDUITYP'
-        write(Modflow.iCLN,'(8i9,a,i9)') 0, Modflow.CLN.nCells, Modflow.CLN.iCBB,Modflow.CLN.iHDS,Modflow.CLN.iDDN, Modflow.CLN.NCLNGWC, &
-            1, 'rectangular', 1  ! # of different conduit types, conduit type, 
+        write(Modflow.iCLN,'(a)') '#1.    NCLN, ICLNNDS, ICLNCB,  ICLNHD,  ICLNDD,   ICLNIB,  NCLNGWC,  NCONDUITYP'
+        write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
+                                        Modflow.CLN.nCells, &   !ICLNNDS
+                                        Modflow.CLN.iCBB, &     !ICLNCB
+                                        Modflow.CLN.iHDS,&      !ICLNHD
+                                        Modflow.CLN.iDDN,&      !ICLNDD
+                                        0,&                     !ICLNIB, if 0 CLN IBOUND array not written 
+                                        Modflow.CLN.NCLNGWC,&   !NCLNGWC
+                                        Modflow.CLN.NCONDUITYP  !NCONDUITYP
+        if(Modflow.CLN.NRECTYP > 0) then
+            write(tmpSTR,'(a,i9)') ',        rectangular', &   !IFNO
+                                        Modflow.CLN.NRECTYP  !NRECTYP 
+            OutputLine=trim(OutputLine)//trim(tmpSTR)
+        endif
+        write(Modflow.iCLN,'(a)') trim(OutputLine)
+        
         write(Modflow.iCLN,'(i9)') Modflow.CLN.njag
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
         write(Modflow.iCLN,'(10i4)') (modflow.CLN.ia(i),i=1,modflow.CLN.nCells)
@@ -5994,27 +6406,32 @@
         i1=1
         do i=1,modflow.CLN.nCells
             i2=i1+modflow.CLN.ia(i)-1
-            write(Modflow.iCLN,*) (modflow.CLN.ja(j),j=i1,i2)
+            write(Modflow.iCLN,*) (abs(modflow.CLN.ja(j)),j=i1,i2)
             i1=i2+1
         end do
         
-        write(Modflow.iCLN,'(a)') '# IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI'
-
-        write(Modflow.iSWF,'(a)') '# IFNO IFTYP   FAREA          FELEV      ISSWADI'
+        write(Modflow.iCLN,'(a)') '# IFNO,          IFTYP,        IFDIR,   FLENG,         FELEV,         FANGLE,     IFLIN, ICCWADI'
         do i=1,modflow.CLN.nCells
-            write(Modflow.iSWF,'(2i5,2(1pG15.5),i5)') i, 1, modflow.SWF.CellArea(i), modflow.SWF.zCell(i),0
+            write(Modflow.iCLN,'(i5,5(1pG15.5),2i5)') i, & !IFNO
+            modflow.CLN.Geometry(modflow.CLN.IZone(i)), & !IFTYP
+            modflow.CLN.Direction(modflow.CLN.IZone(i)), & !IFDIR
+            modflow.CLN.Length(i), & !FLENG
+            modflow.CLN.FELEV(i), & !FELEV
+            0.0d0, & !FANGLE
+            -4, & !IFLIN
+            0   ! ICCWADI 
         end do
 
-        write(Modflow.iSWF,'(a)') '# IFNO IFGWNO  IFCON     SGCL        SGCAREA      ISGWADI'
-        do i=1,modflow.SWF.nCells
+!        write(Modflow.iSWF,'(a)') '# IFNO IFGWNO  IFCON     SGCL        SGCAREA      ISGWADI'
+!        do i=1,modflow.SWF.nCells
+!!            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
 !            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
-            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
-        end do
-
-        write(Modflow.iSWF,'(a)') '# ISWFTYP      SMANN          SWFH1          SWFH2'
-        do i=1,modflow.SWF.nZones
-            write(Modflow.iSWF,'(i5,3x,3(1pG15.5))') i,  modflow.swf.manning(i),  modflow.swf.H1DepthForSmoothing(i),  modflow.swf.H2DepthForSmoothing(i)
-        end do
+!        end do
+!
+!        write(Modflow.iSWF,'(a)') '# ISWFTYP      SMANN          SWFH1          SWFH2'
+!        do i=1,modflow.SWF.nZones
+!            write(Modflow.iSWF,'(i5,3x,3(1pG15.5))') i,  modflow.swf.manning(i),  modflow.swf.H1DepthForSmoothing(i),  modflow.swf.H2DepthForSmoothing(i)
+!        end do
     end subroutine WriteCLNFiles
     
     !-------------------------------------------------------------
@@ -6089,7 +6506,7 @@
             nStrt=nEnd+1
         end do
         
-        write(Modflow.iBAS6,'(10G12.5)') 9.990000e+02  ! hnoflo, head value to be printed for no-flow cells
+        write(Modflow.iBAS6,'(10G12.5)') modflow.GWF.StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
 
         if(.not. allocated(modflow.GWF.StartingHeads)) then ! Assume 2.78 m for abdul for now'
             allocate(modflow.GWF.StartingHeads(modflow.GWF.nCells),stat=ialloc)

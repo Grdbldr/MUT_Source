@@ -300,7 +300,7 @@ Module MeshGeneration
         integer :: nPoints  ! number of points in list
         
 	    ! Build a single tecplot file which can have multiple CLN's
-        TECPLOT_CLN.name='CLN'
+        TECPLOT_CLN.name='TECPLOT_CLN'
         TECPLOT_CLN.nZones=0
         TECPLOT_CLN.nNodesPerElement=2
         TECPLOT_CLN.ElementType='felineseg'
@@ -332,6 +332,11 @@ Module MeshGeneration
 
         end do read_Instructions
         
+        TECPLOT_CLN.IsDefined=.true.
+        
+        allocate(TECPLOT_CLN.Element_Is(TECPLOT_CLN.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TECPLOT_CLN.name)//' Element_Is array')            
+        TECPLOT_CLN.Element_Is(:)=0
         
         continue
         
@@ -765,7 +770,7 @@ Module MeshGeneration
         type(TecplotDomain) TECPLOT_CLN
 
         integer :: i
-        integer :: nSizeInit
+        integer :: nSizeInit, nNodesInit, nElementsInit
         real(dr), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
         integer :: nCells
                 
@@ -781,9 +786,16 @@ Module MeshGeneration
 	    zp(:) = 0
         
         
-        nSizeInit=max(2,TECPLOT_CLN.nNodes)
+        nNodesInit=TECPLOT_CLN.nNodes
+        nElementsInit=TECPLOT_CLN.nElements
         TECPLOT_CLN.nZones=TECPLOT_CLN.nZones+1
 
+        nSizeInit=max(2,TECPLOT_CLN.nNodes)
+	    allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'xyzTMP arrays')
+	    xiTMP(:) = -999.0d0
+	    yiTMP(:) = -999.0d0
+	    ziTMP(:) = -999.0d0
         
         if(.not. allocated(TECPLOT_CLN.x)) then  
             allocate(TECPLOT_CLN.x(nSizeInit),TECPLOT_CLN.y(nSizeInit),TECPLOT_CLN.z(nSizeInit),stat=ialloc)
@@ -791,11 +803,6 @@ Module MeshGeneration
 	        TECPLOT_CLN.x(:) = -999.0d0
 	        TECPLOT_CLN.y(:) = -999.0d0
 	        TECPLOT_CLN.z(:) = -999.0d0
-	        allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
-	        call AllocChk(ialloc,'xyzTMP arrays')
-	        xiTMP(:) = -999.0d0
-	        yiTMP(:) = -999.0d0
-	        ziTMP(:) = -999.0d0
         endif
 
         call Msg(TAB//'                X                Y                Z')
@@ -876,7 +883,8 @@ Module MeshGeneration
                 TECPLOT_CLN.yElement(TECPLOT_CLN.nElements), &
                 TECPLOT_CLN.zElement(TECPLOT_CLN.nElements), &
                 TECPLOT_CLN.ElementArea(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.SideLength(TECPLOT_CLN.nNodesPerElement,TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.Length(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.FELEV(TECPLOT_CLN.nElements), &
                 stat=ialloc)
             call AllocChk(ialloc,'CLN element arrays')
             TECPLOT_CLN.iZone = -999 
@@ -886,54 +894,49 @@ Module MeshGeneration
             TECPLOT_CLN.yElement=-999.0d0
             TECPLOT_CLN.zElement=-999.0d0
             TECPLOT_CLN.ElementArea=-999.0d0
+            TECPLOT_CLN.Length=-999.0d0
         else
+            nSizeInit=TECPLOT_CLN.nElements
             TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
-            allocate(xiTMP(TECPLOT_CLN.nElements),yiTMP(TECPLOT_CLN.nElements),ziTMP(TECPLOT_CLN.nElements),stat=ialloc)
-	        call AllocChk(ialloc,'xyzTMP points arrays')
-	        xiTMP(:) = -999.0d0
-	        yiTMP(:) = -999.0d0
-	        ziTMP(:) = -999.0d0
-            if(TECPLOT_CLN.nNodes > nSizeInit) then
-                xiTMP (1:nSizeInit) = TECPLOT_CLN.x 
-                call move_alloc (xiTMP, TECPLOT_CLN.x)
-                yiTMP (1:nSizeInit) = TECPLOT_CLN.y 
-                call move_alloc (yiTMP, TECPLOT_CLN.y)
-                ziTMP (1:nSizeInit) = TECPLOT_CLN.z 
-                call move_alloc (ziTMP, TECPLOT_CLN.z)
-                
-                nSizeInit=nSizeInit*2
-
-            endif
-
+            call growInteger2dArray(TECPLOT_CLN.iNode,2,nSizeInit,TECPLOT_CLN.nElements)
+            call growIntegerArray(TECPLOT_CLN.iZone,nSizeInit,TECPLOT_CLN.nElements)
+            call growIntegerArray(TECPLOT_CLN.iLayer,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.xElement,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.yElement,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.zElement,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.ElementArea,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.Length,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.FELEV,nSizeInit,TECPLOT_CLN.nElements)
         end if
 
         ! generate line element incidences
-        do i=1,nCells
-                TMPLT.iNode(1,i)=i
-                TMPLT.iNode(2,i+1)=i+1
-            end do
-        end do
-
-        do i=1,TMPLT.nElements
-            TMPLT.xElement(i)=(TMPLT.x(TMPLT.iNode(2,i)) + TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
-            TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(3,i)) + TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
-            
-            TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
-
-
+        do i=nElementsInit+1,TECPLOT_CLN.nElements
+            TECPLOT_CLN.iZone(i)=TECPLOT_CLN.nZones
+            TECPLOT_CLN.iNode(1,i)=i
+            TECPLOT_CLN.iNode(2,i)=i+1
+            TECPLOT_CLN.xElement(i)=(TECPLOT_CLN.x(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.x(TECPLOT_CLN.iNode(1,i)))/2.0d0
+            TECPLOT_CLN.yElement(i)=(TECPLOT_CLN.y(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.y(TECPLOT_CLN.iNode(1,i)))/2.0d0
+            TECPLOT_CLN.zElement(i)=(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))/2.0d0
+            TECPLOT_CLN.Length(i)=sqrt( (TECPLOT_CLN.x(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.x(TECPLOT_CLN.iNode(1,i)))**2 + & 
+                                        (TECPLOT_CLN.y(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.y(TECPLOT_CLN.iNode(1,i)))**2 + & 
+                                        (TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))**2) 
+            TECPLOT_CLN.FELEV(i)=min(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)),TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))
         end do
                     
-        TMPLT.IsDefined=.true.
+        TECPLOT_CLN.IsDefined=.true.
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TECPLOT_CLN.nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TECPLOT_CLN.nElements
         call Msg(TmpSTR)
 
 
         continue 
     end subroutine CLNFromXYZPair
+    
+
+
     !----------------------------------------------------------------------
     subroutine new_layer(FNumMUT,TMPLT,zone_by_template)
         implicit none

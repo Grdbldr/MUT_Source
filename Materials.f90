@@ -19,6 +19,15 @@ Module Materials
         character*256, allocatable :: PSTable(:)
         character*256, allocatable :: SKrTable(:)
         
+        integer :: nCLNMaterials
+        integer,allocatable         :: CLNMaterialID(:)
+        character*256, allocatable  :: CLNName(:)
+        character*256, allocatable  :: CLNType(:)
+        character*256, allocatable  :: CLNGeometry(:)
+        character*256, allocatable  :: CLNDirection(:)
+        real, allocatable           :: CLNDiameterOrWidth(:)
+        real, allocatable           :: CLNConduitK(:)
+        
         integer :: nSWFMaterials
         integer,allocatable :: SWFMaterialID(:)
         character*256, allocatable :: SWFMaterialName(:)
@@ -143,6 +152,56 @@ Module Materials
         call freeunit(itmp)
 
     end subroutine DB_ReadGWFMaterials
+    
+    !----------------------------------------------------------------------
+    subroutine DB_ReadCLNMaterials(FName)
+        implicit none
+
+        
+        integer :: i
+
+	    character(*) :: FName
+	    character(256) :: line
+
+		call Msg(TAB//'Materials file '//trim(FName))
+        call OpenAscii(itmp,FName)
+	    
+        ! Count materials
+        read(itmp,'(a)') line
+        i=0
+        do
+	        read(itmp,*,iostat=status) line
+            if(status/=0) exit
+            i=i+1        
+        end do
+        
+        nCLNMaterials=i
+        
+        allocate(CLNMaterialID(nCLNMaterials), & 
+                 CLNName(nCLNMaterials), & 
+                 CLNType(nCLNMaterials), & 
+                 CLNGeometry(nCLNMaterials), &
+                 CLNDirection(nCLNMaterials), &
+                 CLNDiameterOrWidth(nCLNMaterials), &
+                 CLNConduitK(nCLNMaterials), &
+                 stat=ialloc)
+        call AllocChk(ialloc,'CLN material database arrays')
+
+        rewind(itmp)
+        read(itmp,'(a)') line
+        do i=1,nCLNMaterials
+	        read(itmp,*,iostat=status)  CLNMaterialID(i), & 
+                                        CLNName(i), & 
+                                        CLNType(i), & 
+                                        CLNGeometry(i), &
+                                        CLNDirection(i), &
+                                        CLNDiameterOrWidth(i), &
+                                        CLNConduitK(i)
+        end do
+        
+        call freeunit(itmp)
+
+    end subroutine DB_ReadCLNMaterials
     
     !----------------------------------------------------------------------
     subroutine DB_ReadSWFMaterials(FName)
