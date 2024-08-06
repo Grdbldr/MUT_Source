@@ -20,13 +20,16 @@ Module Materials
         character*256, allocatable :: SKrTable(:)
         
         integer :: nCLNMaterials
-        integer,allocatable         :: CLNMaterialID(:)
-        character*256, allocatable  :: CLNName(:)
-        character*256, allocatable  :: CLNType(:)
-        character*256, allocatable  :: CLNGeometry(:)
-        character*256, allocatable  :: CLNDirection(:)
-        real, allocatable           :: CLNDiameterOrWidth(:)
-        real, allocatable           :: CLNConduitK(:)
+        integer,allocatable         :: CLN_ID(:)
+        character*256, allocatable  :: CLN_Name(:)
+        character*256, allocatable  :: CLN_Type(:)
+        character*256, allocatable  :: Geometry(:)
+        character*256, allocatable  :: Direction(:)
+        real, allocatable           :: CircularRadius(:)
+        real, allocatable           :: RectangularWidth(:)
+        real, allocatable           :: RectangularHeight(:)
+        real, allocatable           :: LongitudinalK(:)
+        character*256, allocatable  :: FlowTreatment(:)
         
         integer :: nSWFMaterials
         integer,allocatable :: SWFMaterialID(:)
@@ -177,26 +180,33 @@ Module Materials
         
         nCLNMaterials=i
         
-        allocate(CLNMaterialID(nCLNMaterials), & 
-                 CLNName(nCLNMaterials), & 
-                 CLNType(nCLNMaterials), & 
-                 CLNGeometry(nCLNMaterials), &
-                 CLNDirection(nCLNMaterials), &
-                 CLNDiameterOrWidth(nCLNMaterials), &
-                 CLNConduitK(nCLNMaterials), &
-                 stat=ialloc)
+        allocate(CLN_ID(nCLNMaterials), & 
+                 CLN_Name(nCLNMaterials), & 
+                 CLN_Type(nCLNMaterials), & 
+                 Geometry(nCLNMaterials), & 
+                 Direction(nCLNMaterials), & 
+                 CircularRadius(nCLNMaterials), & 
+                 RectangularWidth(nCLNMaterials), & 
+                 RectangularHeight(nCLNMaterials), & 
+                 LongitudinalK(nCLNMaterials), & 
+                 FlowTreatment(nCLNMaterials), & 
+        stat=ialloc)
         call AllocChk(ialloc,'CLN material database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nCLNMaterials
-	        read(itmp,*,iostat=status)  CLNMaterialID(i), & 
-                                        CLNName(i), & 
-                                        CLNType(i), & 
-                                        CLNGeometry(i), &
-                                        CLNDirection(i), &
-                                        CLNDiameterOrWidth(i), &
-                                        CLNConduitK(i)
+	        read(itmp,*,iostat=status)  CLN_ID(i), & 
+                                        CLN_Name(i), & 
+                                        CLN_Type(i), & 
+                                        Geometry(i), &
+                                        Direction(i), &
+                                        CircularRadius(i), &
+                                        RectangularWidth(i), & 
+                                        RectangularHeight(i), & 
+                                        LongitudinalK(i), &
+                                        FlowTreatment(i)
+            continue
         end do
         
         call freeunit(itmp)

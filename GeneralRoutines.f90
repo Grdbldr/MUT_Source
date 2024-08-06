@@ -109,7 +109,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.21'
+    character(5) :: MUTVersion=' 1.22'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1
@@ -4320,14 +4320,15 @@ module GeneralRoutines    !### bit setting routines
     subroutine OpenAscii(iunit,fname) !--- Return unit # of file or stop
         integer :: iunit
         character(*) :: fname
-
+        
 	    call GetUnit(iunit)
         open(iunit,file=fname,form='formatted',iostat=status)
 	    if(status /= 0) then
 	        call FreeUnit(iunit)
 		    call ErrMsg('Error opening file: '//fname)
         else
-            !call Msg(FileOpenSTR//' file: '//trim(fname))
+            !write(TmpSTR,'(i5)') iunit
+            !call Msg(' unit, ASCII file: '//trim(TmpSTR)//', '//trim(fname))
         end if
     end subroutine OpenAscii
 
@@ -4344,6 +4345,9 @@ module GeneralRoutines    !### bit setting routines
                 call ErrMsg(' File not found: '//fname)
             end if
 		    call ErrMsg('Error opening file: '//fname)
+        else
+            write(TmpSTR,'(i5)') iunit
+            call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
 	    end if
     end subroutine OpenBinary
 

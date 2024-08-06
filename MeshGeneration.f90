@@ -301,6 +301,7 @@ Module MeshGeneration
         
 	    ! Build a single tecplot file which can have multiple CLN's
         TECPLOT_CLN.name='TECPLOT_CLN'
+        TECPLOT_CLN.meshtype='UNSTRUCTURED'
         TECPLOT_CLN.nZones=0
         TECPLOT_CLN.nNodesPerElement=2
         TECPLOT_CLN.ElementType='felineseg'
@@ -884,7 +885,8 @@ Module MeshGeneration
                 TECPLOT_CLN.zElement(TECPLOT_CLN.nElements), &
                 TECPLOT_CLN.ElementArea(TECPLOT_CLN.nElements), &
                 TECPLOT_CLN.Length(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.FELEV(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.LowestElevation(TECPLOT_CLN.nElements), &
+                TECPLOT_CLN.SlopeAngle(TECPLOT_CLN.nElements), &
                 stat=ialloc)
             call AllocChk(ialloc,'CLN element arrays')
             TECPLOT_CLN.iZone = -999 
@@ -895,6 +897,8 @@ Module MeshGeneration
             TECPLOT_CLN.zElement=-999.0d0
             TECPLOT_CLN.ElementArea=-999.0d0
             TECPLOT_CLN.Length=-999.0d0
+            TECPLOT_CLN.LowestElevation=-999.0d0
+            TECPLOT_CLN.SlopeAngle=-999.0d0
         else
             nSizeInit=TECPLOT_CLN.nElements
             TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
@@ -906,7 +910,8 @@ Module MeshGeneration
             call growRealArray(TECPLOT_CLN.zElement,nSizeInit,TECPLOT_CLN.nElements)
             call growRealArray(TECPLOT_CLN.ElementArea,nSizeInit,TECPLOT_CLN.nElements)
             call growRealArray(TECPLOT_CLN.Length,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.FELEV,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.LowestElevation,nSizeInit,TECPLOT_CLN.nElements)
+            call growRealArray(TECPLOT_CLN.SlopeAngle,nSizeInit,TECPLOT_CLN.nElements)
         end if
 
         ! generate line element incidences
@@ -920,7 +925,8 @@ Module MeshGeneration
             TECPLOT_CLN.Length(i)=sqrt( (TECPLOT_CLN.x(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.x(TECPLOT_CLN.iNode(1,i)))**2 + & 
                                         (TECPLOT_CLN.y(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.y(TECPLOT_CLN.iNode(1,i)))**2 + & 
                                         (TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))**2) 
-            TECPLOT_CLN.FELEV(i)=min(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)),TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))
+            TECPLOT_CLN.LowestElevation(i)=min(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)),TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))
+            TECPLOT_CLN.SlopeAngle(i)=asin(abs(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i))-TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i))))* 180.0d0 * pi
         end do
                     
         TECPLOT_CLN.IsDefined=.true.

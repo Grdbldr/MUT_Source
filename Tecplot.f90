@@ -156,7 +156,8 @@ module Tecplot !
         real(dr), allocatable :: PerpendicularArea(:)   ! FAHL in modflow
         
         real(dr), allocatable :: Length(:) ! length of CLN cell
-        real(dr), allocatable :: FELEV(:) ! lowest point of CLN cell
+        real(dr), allocatable :: LowestElevation(:) ! lowest point of CLN cell
+        real(dr), allocatable :: SlopeAngle(:) ! angel of CLN cell with horizontal
         
         !
         ! face neighbours

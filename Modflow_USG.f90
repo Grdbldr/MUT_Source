@@ -75,6 +75,7 @@
     character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	=   'gwf initial head'
     character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD    =   'gwf initial head function of z' 
     character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	=   'swf initial depth'
+    character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	=   'cln initial depth'
     
     !---------------------------------------------------Boundary conditions
     character(MAX_INST) :: AssignCHDtoGWF_CMD		    =   'gwf constant head'
@@ -115,9 +116,10 @@
     character(MAX_INST) :: GenOCFile_CMD='generate output control file'
 
     character(MAX_INST) :: StressPeriod_CMD='stress period'
-        ! StressPeriod_CMD subcommands
-        character(MAX_INST) :: StressPeriodType_CMD	    =   'type'
-        character(MAX_INST) :: StressPeriodDuration_CMD	=   'duration'
+    ! StressPeriod_CMD subcommands
+    character(MAX_INST) :: StressPeriodType_CMD	                =   'type'
+    character(MAX_INST) :: StressPeriodDuration_CMD	            =   'duration'
+    character(MAX_INST) :: StressPeriodNumberOfTimesteps_CMD	=   'number of timesteps'
 
     character(MAX_INST) :: HGSToModflowStructure_CMD='hgs to modflow structure'
 
@@ -282,12 +284,16 @@
         real, allocatable :: Brooks(:)
 
         ! CLN properties (zoned)
-        real, allocatable :: Length(:)        ! length of CLN
-        real, allocatable :: FELEV(:)         ! lowest point of CLN
+        real, allocatable :: Length(:)             ! length of CLN
+        real, allocatable :: LowestElevation(:)    ! lowest elevation of CLN
+        real, allocatable :: SlopeAngle(:)         ! angle above horizontal of angled CLN
         integer, allocatable    :: Geometry(:)           ! circular or rectangular
         integer, allocatable    :: Direction(:)          ! vertical, horizontal or angled
-        real, allocatable       :: DiameterOrWidth(:)    ! dimension of CLN
-        real, allocatable       :: ConduitK(:)    ! dimension of CLN
+        real, allocatable       :: CircularRadius(:)    ! dimension of CLN
+        real, allocatable       :: RectangularWidth(:)    ! dimension of CLN
+        real, allocatable       :: RectangularHeight(:)    ! dimension of CLN
+        real, allocatable       :: LongitudinalK(:)    ! dimension of CLN
+        integer, allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
 
         ! SWF properties (zoned)
         real, allocatable :: Sgcl(:)   ! SWF-GWF connection length
@@ -1104,17 +1110,17 @@
         type (ModflowDomain) CLN
         
         integer :: i
-        real(dr) :: iMaterial
+        integer :: iMaterial
         
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(g15.5)') iMaterial
         
-		call Msg(TAB//'Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLNName(iMaterial)))
+		call Msg(TAB//'Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial)))
 
        
         do i=1,CLN.nZones
             if(bcheck(CLN.Zone_is(i),chosen)) then
-                select case(CLNGeometry(iMaterial))
+                select case(Geometry(iMaterial))
                 case ('Circular')
                     CLN.Geometry(i)=1
                     CLN.NCONDUITYP=CLN.NCONDUITYP+1
@@ -1122,22 +1128,45 @@
                     CLN.Geometry(i)=2
                     CLN.NRECTYP=CLN.NRECTYP+1
                 case default
-                    call ErrMsg('Geometry type '//trim(CLNGeometry(iMaterial))//' not supported')
+                    call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
                 end select
 
-                select case(CLNDirection(iMaterial))
+                select case(Direction(iMaterial))
                 case ('Vertical')
-                    CLN.Direction(i)=1
+                    CLN.Direction(i)=0
                 case ('Horizontal')
-                    CLN.Direction(i)=2
+                    CLN.Direction(i)=1
                 case ('Angled')
-                    CLN.Direction(i)=3
+                    CLN.Direction(i)=2
                 case default
-                    call ErrMsg('Direction type '//trim(CLNDirection(iMaterial))//' not supported')
+                    call ErrMsg('Direction type '//trim(Direction(iMaterial))//' not supported')
                 end select
                 
-                CLN.DiameterOrWidth(i)=CLNDiameterOrWidth(iMaterial)
-                CLN.ConduitK(i)=CLNConduitK(iMaterial)
+                select case(FlowTreatment(iMaterial))
+                case ('Confined\Laminar')
+                    CLN.FlowTreatment(i)=1
+                case ('Confined\Darcy-Weisbach')
+                    CLN.FlowTreatment(i)=2
+                case ('Confined\Heizen-Williams')
+                    CLN.FlowTreatment(i)=3
+                case ('Confined/Mannings')
+                    CLN.FlowTreatment(i)=4
+                case ('Unconfined\Laminar')
+                    CLN.FlowTreatment(i)=-1
+                case ('Unconfined\Darcy-Weisbach')
+                    CLN.FlowTreatment(i)=-2
+                case ('Unconfined\Heizen-Williams')
+                    CLN.FlowTreatment(i)=-3
+                case ('Unconfined/Mannings')
+                    CLN.FlowTreatment(i)=-4
+                case default
+                    call ErrMsg('Flow treatment type '//trim(FlowTreatment(iMaterial))//' not supported')
+                end select
+                
+                CLN.CircularRadius(i)=CircularRadius(iMaterial)
+                CLN.RectangularWidth(i)=RectangularWidth(iMaterial)
+                CLN.RectangularHeight(i)=RectangularHeight(iMaterial)
+                CLN.LongitudinalK(i)=LongitudinalK(iMaterial)
             end if
         end do
     
@@ -1249,7 +1278,7 @@
     end subroutine AssignRCHtoDomain
     
     !----------------------------------------------------------------------
-    subroutine CLN_AssignSize(FnumMUT,CLN)
+    subroutine CLN_AssignCircularRadius(FnumMUT,CLN)
         implicit none
 
         integer :: FNumMUT
@@ -1260,16 +1289,39 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'(g15.5)') value
-		call Msg(TAB//trim(CLN.name)//' Pipe radius or channel width : '//trim(TmpSTR))
+		call Msg(TAB//trim(CLN.name)//' CLN circular radius: '//trim(TmpSTR))
 
 
         do i=1,CLN.nZones
             if(bcheck(CLN.Zone_is(i),chosen)) then
-                CLN.DiameterOrWidth(i)=value
+                CLN.CircularRadius(i)=value
             end if
         end do
     
-    end subroutine CLN_AssignSize
+    end subroutine CLN_AssignCircularRadius
+    !----------------------------------------------------------------------
+    subroutine CLN_AssignRectangularWidthHeight(FnumMUT,CLN)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) CLN
+        
+        integer :: i
+        real(dr) :: width, height
+        
+        read(FNumMUT,*) width, height
+        write(TmpSTR,'(2g15.5)')  width, height
+		call Msg(TAB//trim(CLN.name)//' CLN rectangular width and height: '//trim(TmpSTR))
+
+
+        do i=1,CLN.nZones
+            if(bcheck(CLN.Zone_is(i),chosen)) then
+                CLN.RectangularWidth(i)=width
+                CLN.RectangularHeight(i)=height
+            end if
+        end do
+    
+    end subroutine CLN_AssignRectangularWidthHeight
     !----------------------------------------------------------------------
     subroutine AssignSgcltoDomain(FNumMUT,domain) 
         implicit none
@@ -1454,7 +1506,7 @@
                 
                     if(modflow.CLN.nCells >0) then
                         call AddCLNFiles(Modflow)
-                        call WriteCLNFiles(Modflow)
+                        call WriteCLNFiles(Modflow,TECPLOT_CLN)
                         !call ModflowDomainToTecplot(Modflow,TECPLOT_CLN)
                         !call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
                     end if
@@ -1815,9 +1867,11 @@
             else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
                 call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
 
-            ! SWF properties assignment
+            ! CLN properties assignment
             else if(index(instruction, AssignMaterialtoCLN_CMD)  /= 0) then
                 call AssignMaterialtoCLN(FnumMUT,modflow.CLN)
+            else if(index(instruction, AssignStartingDepthtoCLN_CMD)  /= 0) then
+                call AssignStartingDepthtoDomain(FnumMUT,modflow.CLN)
                 
             ! SWF properties assignment
             else if(index(instruction, AssignMaterialtoSWF_CMD)  /= 0) then
@@ -1910,18 +1964,20 @@
             end do
         end if
         
-        ! Element node list
+        ! Cell node list
         allocate(Modflow.CLN.iNode(Modflow.CLN.nNodesPerCell,Modflow.CLN.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell node list array')
         Modflow.CLN.iNode(:,:) = TECPLOT_CLN.iNode(:,:)
        
-        ! Element side lengths
+        ! Cell properties lengths
         allocate(Modflow.CLN.Length(Modflow.CLN.nElements), &
-            Modflow.CLN.FELEV(Modflow.CLN.nElements), &
+            Modflow.CLN.LowestElevation(Modflow.CLN.nElements), &
+            Modflow.CLN.SlopeAngle(Modflow.CLN.nElements), &
             stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' CLN Cell Length array')
         Modflow.CLN.Length(:) = TECPLOT_CLN.Length(:)
-        Modflow.CLN.FELEV(:) = TECPLOT_CLN.FELEV(:)
+        Modflow.CLN.LowestElevation(:) = TECPLOT_CLN.LowestElevation(:)
+        Modflow.CLN.SlopeAngle(:) = TECPLOT_CLN.SlopeAngle(:)
                
         ! Modflow CLN cell layer number
         Modflow.CLN.nLayers=TECPLOT_CLN.nLayers
@@ -1966,14 +2022,20 @@
         ! Modflow CLN material properties (zone-based)
        allocate(Modflow.CLN.Geometry(Modflow.CLN.nZones), &                    
                 Modflow.CLN.Direction(Modflow.CLN.nZones), &    
-                Modflow.CLN.DiameterOrWidth(Modflow.CLN.nZones), &  
-                Modflow.CLN.ConduitK(Modflow.CLN.nZones), &  
+                Modflow.CLN.CircularRadius(Modflow.CLN.nZones), &  
+                Modflow.CLN.RectangularWidth(Modflow.CLN.nZones), &  
+                Modflow.CLN.RectangularHeight(Modflow.CLN.nZones), &  
+                Modflow.CLN.LongitudinalK(Modflow.CLN.nZones), &  
+                Modflow.CLN.FlowTreatment(Modflow.CLN.nZones), &  
             stat=ialloc)
         call AllocChk(ialloc,'CLN zoned material property arrays') 
-        Modflow.CLN.Geometry(:)=-999.d0
-        Modflow.CLN.Direction(:)=-999.d0
-        Modflow.CLN.DiameterOrWidth(:)=-999.d0
-        Modflow.CLN.ConduitK(:)=-999.d0
+        Modflow.CLN.Geometry(:)=-999
+        Modflow.CLN.Direction(:)=-999
+        Modflow.CLN.CircularRadius(:)=-999.d0
+        Modflow.CLN.RectangularWidth(:)=-999.d0
+        Modflow.CLN.RectangularHeight(:)=-999.d0
+        Modflow.CLN.LongitudinalK(:)=-999.d0
+        Modflow.CLN.FlowTreatment(:)=-999
 
         
         allocate(Modflow.CLN.Cell_Is(Modflow.CLN.nCells),stat=ialloc)
@@ -3227,7 +3289,7 @@
         !integer,allocatable :: TECPLOT_CLN.Face(:)
         !integer,allocatable :: TECPLOT_CLN.Neighbour(:)
 
-        integer :: iNjag, iConn
+        integer :: iNjag
         
         call Msg(' ')
         call Msg('  Generating IA/JA and cell connection arrays for Tecplot_CLN '//trim(Tecplot_CLN.name)//'...')
@@ -3322,6 +3384,654 @@
         return
     end subroutine CLN_IaJaStructure
     
+    !-------------------------------------------------------------
+    subroutine CLN_Read(Modflow)
+        implicit none
+
+        type (ModflowProject) Modflow
+        character(400) :: line
+        
+        integer :: ICLNNDS
+        CHARACTER*24 ANAME(3)
+        DATA ANAME(1) /'   NODES PER CLN SEGMENT'/
+        DATA ANAME(2) /'                      IA'/
+        DATA ANAME(3) /'                      JA'/
+
+        integer :: i1
+        integer :: IJA
+        integer :: II
+        real :: FLENG
+        integer :: IFTYP
+        integer :: ICCWADI
+        real :: FELEV
+        integer :: IFDIR
+        integer :: IFNO
+        real :: FANGLE
+        integer :: IFLIN
+        integer :: LLOC
+        integer :: ISTART
+        integer :: ISTOP
+        real :: R
+        real :: FSKIN        
+        real :: FANISO        
+        integer :: IFCON
+        integer :: IFNOD
+        integer :: ICGWADI
+        integer :: IFROW
+        integer :: IFLAY
+        integer :: IFCOL, i, j, k
+     
+        
+        
+        IOUT=FNumEco
+        INCLN=Modflow.iCLN
+        
+        WRITE(IOUT,1)
+1       FORMAT(1X,/1X,'CLN -- CONNECTED LINE NETWORK DISCRETIZATION PROCESS, VERSION 1, 3/3/2012 ')
+        
+        do 
+            do 
+                read(Modflow.iCLN,'(a)') line
+                if(line(1:1).eq.'#') then
+                    write(*,'(a)') line
+                    cycle
+                end if
+                backspace(Modflow.iCLN)
+                exit
+            end do
+            
+            read(Modflow.iCLN,'(a)',iostat=status) line
+            call lcase(line)
+            if(status /= 0) then
+                call ErrMsg('While reading CLN')
+            endif
+            
+            IF(index(line,'options') .ne. 0) THEN
+                IF(index(line,'transient') .ne. 0) THEN
+                    ICLNTIB=1
+                    WRITE(IOUT,71)
+71                  FORMAT(1X,'TRANSIENT IBOUND OPTION: READ TRANSIENT IBOUND RECORDS FOR EACH STRESS PERIOD.')
+                    
+                end if    
+            
+                IF(index(line,'printiaja') .ne. 0) THEN
+                    IPRCONN=1
+                    WRITE(IOUT,72)
+72                  FORMAT(1X,'PRINT CLN IA AND JA OPTION: THE CLN IA AND JA ARRAYS WILL BE PRINTED TO LIST FILE.')
+                    
+                end if
+            
+                IF(index(line,'processccf') .ne. 0) THEN
+                    read(Modflow.iCLN,*) ICLNGWCB
+
+                    ICLNPCB=1                                                     !aq CLN CCF
+                    WRITE(IOUT,73)                                                !aq CLN CCF
+73                  FORMAT(1X,'PROCESS CELL-TO-CELL FLOW BUDGET OPTION: FLOW BUDGET WILL USE A SEPARATE FILE FOR CLN-GWF FLOW.')     !aq CLN CCF
+                    
+                    IF(ICLNGWCB.LT.0) WRITE(IOUT,18)                              !aq CLN CCF
+18                  FORMAT(1X,'CELL-BY-CELL GWP FLOWS WILL BE PRINTED WHEN ICBCFL IS NOT 0 (FLAG ICLNGWCB IS LESS THAN ZERO)')                  !aq CLN CCF
+                    
+                    IF(ICLNGWCB.GT.0) WRITE(IOUT,19)                      !aq CLN CCF
+19                  FORMAT(1X,'CELL-BY-CELL GWP FLOWS WILL BE SAVED(FLAG ICLNGWCB IS GREATER THAN ZERO)')                         !aq CLN CCF
+                    
+                end if
+                
+            else
+                if(line(1:1)=='#')then 
+                    read(Modflow.iCLN,'(a)',iostat=status) line
+                endif
+                read(line,*) NCLN,ICLNNDS,ICLNCB,ICLNHD,ICLNDD,ICLNIB,NCLNGWC,NCONDUITYP
+                WRITE(IOUT,3) NCLN,ICLNNDS,NCLNGWC                                             
+3               FORMAT(1X,'FLAG (0) OR MAXIMUM NUMBER OF LINEAR NODES (NCLN) =',I7&     
+                    /1X,'FLAG (-VE) OR NUMBER OF LINEAR NODES (+VE)',&     
+                    1X,'(ICLNNDS) =',I7&     
+                    /1X,'NUMBER OF LINEAR NODE TO MATRIX GRID CONNECTIONS',&     
+                    ' (NCLNGWC) =',I7/) 
+                
+                IF(ICLNCB.LT.0) WRITE(IOUT,7)
+7               FORMAT(1X,'CELL-BY-CELL FLOWS WILL BE PRINTED WHEN ICBCFL',       &
+                    ' IS NOT 0 (FLAG ICLNCB IS LESS THAN ZERO)')
+
+                IF(ICLNCB.GT.0) WRITE(IOUT,8) ICLNCB
+8               FORMAT(1X,'CELL-BY-CELL FLOWS WILL BE SAVED ON UNIT ',I5,         &
+                    '(FLAG ICLNCB IS GREATER THAN ZERO)')
+
+                IF(ICLNCB.EQ.0) WRITE(IOUT,6)
+6               FORMAT(1X,'CELL-BY-CELL FLOWS WILL NOT BE SAVED OR PRINTED',       &
+                    1X,'(FLAG ICLNCB IS EQUAL TO ZERO)')
+
+                IF(ICLNHD.LT.0) WRITE(IOUT,9)
+9               FORMAT(1X,'CLN HEAD OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,      &
+                    'NUMBER (IHEDUN) AS USED FOR HEAD OUTPUT FOR POROUS MATRIX',   &!kkz - added trailing comma per JCH
+                    1X,'(FLAG ICLNHD IS LESS THAN ZERO)')
+
+                IF(ICLNHD.GT.0) WRITE(IOUT,10) ICLNHD
+10              FORMAT(1X,'CLN HEAD OUTPUT WILL BE SAVED ON UNIT ',I4,             &
+                    '(FLAG ICLNHD IS GREATER THAN ZERO)')
+
+                IF(ICLNHD.EQ.0) WRITE(IOUT,31)
+31              FORMAT(1X,'CLN HEAD OUTPUT WILL NOT BE SAVED OR PRINTED',           &
+                    1X,'(FLAG ICLNHD IS EQUAL TO ZERO)')
+
+                IF(ICLNDD.LT.0) WRITE(IOUT,12)
+12              FORMAT(1X,'CLN DDN OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,      &
+                    'NUMBER (IDDNUN) AS USED FOR DDN OUTPUT FOR POROUS MATRIX',   & !kkz - added trailing comma per JCH
+                    1X,'(FLAG ICLNDD IS LESS THAN ZERO)')
+
+                IF(ICLNDD.GT.0) WRITE(IOUT,13) ICLNDD
+                13  FORMAT(1X,'CLN DDN OUTPUT WILL BE SAVED ON UNIT ',I4,              &
+                    '(FLAG ICLNDD IS GREATER THAN ZERO)')
+
+                IF(ICLNDD.EQ.0) WRITE(IOUT,14)
+14              FORMAT(1X,'CLN DDN OUTPUT WILL NOT BE SAVED OR PRINTED',            &
+                    1X,'(FLAG ICLNDD IS EQUAL TO ZERO)')
+
+                IF(ICLNIB.LT.0) WRITE(IOUT,32)
+32              FORMAT(1X,'CLN IBOUND OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,    &
+                    'NUMBER (IBOUUN) AS USED FOR DDN OUTPUT FOR POROUS MATRIX',   & !kkz - added trailing comma per JCH
+                    1X,'(FLAG ICLNIB IS LESS THAN ZERO)')
+                
+
+                IF(ICLNIB.GT.0) WRITE(IOUT,33) ICLNIB
+33              FORMAT(1X,'CLN IBOUND OUTPUT WILL BE SAVED ON UNIT ',I4,           &
+                    '(FLAG ICLNIB IS GREATER THAN ZERO)')
+                
+
+                IF(ICLNIB.EQ.0) WRITE(IOUT,17)
+17              FORMAT(1X,'CLN IBOUND OUTPUT WILL NOT BE SAVED OR PRINTED',         &
+                    1X,'(FLAG ICLNIB IS EQUAL TO ZERO)')
+                
+                !C--------------------------------------------------------------------------------
+                !C3B----READ GRAVITY AND KINEMATIC VISCOSITY IN CASE IT IS REQUIRED FOR TURBULENT FLOW
+                !ALLOCATE(GRAV,VISK)
+                !ALLOCATE(IBHETYP)
+                GRAV = 0.0
+                VISK = 0.0
+                IBHETYP = 0
+                
+                IF(index(line,'gravity') .ne. 0) THEN
+                    i1=index(line,'gravity')+7
+                    line=line(i1:)
+                    read(line,*) GRAV
+                    WRITE(IOUT,34) GRAV
+34                  FORMAT(1X,'GRAVITATIONAL ACCELERATION [L/T^2] = ', G15.6)
+                end if 
+                
+                IF(index(line,'viscosity') .ne. 0) THEN
+                    i1=index(line,'viscosity')+9
+                    line=line(i1:)
+                    read(line,*) VISK
+                    WRITE(IOUT,35) VISK
+35                  FORMAT(1X,'KINEMATIC VISCOSITY [L^2/T] = ', G15.6)
+                END IF
+
+                !C3B----READ OPTION FOR NON-CIRCULAR CROSS-SECTIONS
+                IF(index(line,'rectangular') .ne. 0) THEN
+                    i1=index(line,'rectangular')+11
+                    line=line(i1:)
+                    read(line,*) NRECTYP
+                    WRITE(IOUT,36) NRECTYP
+36                  FORMAT(1X,'NUMBER OF RECTANGULAR SECTION GEOMETRIES = ', I10)
+                END IF
+
+                !C3C----READ OPTION FOR BHE DETAILS
+                IF(index(line,'bhedetail') .ne. 0) THEN
+                    IBHETYP = 1
+                    IF(ITRNSP.EQ.0) IBHETYP = 0 ! NO BHE (OR INPUT) IF TRANSPORT IS NOT RUN
+                    WRITE(IOUT,37)
+37                  FORMAT(1X,'BHE DETAILS WILL BE INPUT FOR EACH CLN TYPE')
+                end if
+
+                !C3D----READ OPTION FOR SAVING CLN OUTPUT AND UNIT NUMBER
+                IF(index(line,'saveclncon') .ne. 0) THEN
+                    i1=index(line,'saveclncon')+10
+                    line=line(i1:)
+                    read(line,*) ICLNCN
+                    
+                    !IF(INBCT.EQ.0) ICLNCN = 0 ! SHUT OFF IF NO TRANSPORT SIMULATION
+                    ICLNCN = 0 ! SHUT OFF for now rgm
+                    
+                    IF(ICLNCN.LT.0) WRITE(IOUT,42)
+42                  FORMAT(1X,'CLN CONC OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,    &
+                    'NUMBER (ISPCUN) AS USED FOR CONC OUTPUT FOR POROUS MATRIX',     & !kkz - added trailing comma per JCH
+                    1X,'(FLAG ICLNCN IS LESS THAN ZERO)')
+                    
+                    IF(ICLNCN.GT.0) WRITE(IOUT,43) ICLNCN
+43                  FORMAT(1X,'CLN CONC OUTPUT WILL BE SAVED ON UNIT ',I4,      &
+                   '(FLAG ICLNCN IS GREATER THAN ZERO)')
+                    
+                    IF(ICLNCN.EQ.0) WRITE(IOUT,44)
+44                  FORMAT(1X,'CLN CONC OUTPUT WILL NOT BE SAVED OR PRINTED',       &
+                     1X,'(FLAG ICLNCN IS EQUAL TO ZERO)')
+                    
+                end if
+!
+                IF(index(line,'saveclnmas') .ne. 0) THEN
+                    i1=index(line,'saveclnmas')+10
+                    line=line(i1:)
+                    read(line,*) ICLNMB
+                    !IF(INBCT.EQ.0) ICLNMB = 0 ! SHUT OFF IF NO TRANSPORT SIMULATION
+                    ICLNMB = 0 ! SHUT OFF for now rgm
+                end if
+
+                IF(ICLNMB.LT.0) WRITE(IOUT,45)
+45              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL BE SAVED TO THE SAME',1X, &
+                'UNIT NUMBER (IBCTCB) AS USED FOR CONC OUTPUT FOR POROUS',   & !kkz - added trailing comma per JCH
+                1X,'MATRIX (FLAG ICLNMB IS LESS THAN ZERO)')
+                
+                IF(ICLNMB.GT.0) WRITE(IOUT,46) ICLNMB
+46              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL BE SAVED ON UNIT ',I4,         &
+                '(FLAG ICLNMB IS GREATER THAN ZERO)')
+        
+                IF(ICLNMB.EQ.0) WRITE(IOUT,47)
+47              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL NOT BE SAVED OR PRINTED',          &
+                1X,'(FLAG ICLNMB IS EQUAL TO ZERO)')
+            END IF
+
+            !C--------------------------------------------------------------------------------
+            !C4------FOR INPUT OF MULTI-NODE WELLS OR CLN SEGMENTS
+            !C4------DIMENSION AND READ ARRAY THAT CONTAINS NUMBER OF NODES PER CLN SEGMENT
+            IF(NCLN.GT.0)THEN
+        !        ALLOCATE(NNDCLN(0:NCLN))
+        !        K = 0
+        !        CALL U1DINT(NNDCLN(1),ANAME(1),NCLN,K,IOUT,IOUT)
+        !        NNDCLN(0) = 0
+        !C
+        !C5--------MAKE NNDCLN ARRAY CUMULATIVE
+        !        DO I = 1,NCLN
+        !          NNDCLN(I) = NNDCLN(I) + NNDCLN(I-1)
+        !        end do
+        !        NCLNCONS = NNDCLN(NCLN)
+        !C------------------------------------------------------------------------------
+        !C6--------FILL CLNCON WITH CONNECTIVITY OF ADJACENT CLN NODES
+        !        IF(ICLNNDS.LT.0)THEN
+        !C6A---------FILL CLN CONNECTIONS SEQUENTIALLY WITH GLOBAL NODE NUMBERS
+        !          NCLNNDS = NNDCLN(NCLN)
+        !          ALLOCATE(CLNCON(NCLNNDS))
+        !          DO I=1,NCLNNDS
+        !            CLNCON(I) = I ! +NODES  ! (KEEP LOCAL NODE NUMBER)
+        !          end do
+        !        ELSE
+        !C6B-------SET NUMBER OF CLN NODES AND READ CONNECTION ARRAY FOR EACH CLN SEGMENT
+        !          NCLNNDS = ICLNNDS
+        !          ALLOCATE(CLNCON(NCLNCONS))
+        !          DO I=1,NCLN
+        !            IF(IFREFM.EQ.0) THEN
+        !              read(Modflow.iCLN,'(200I10)')
+        !     1        (CLNCON(J),J=NNDCLN(I-1)+1,NNDCLN(I))
+        !            ELSE
+        !              read(Modflow.iCLN,*) (CLNCON(J),J=NNDCLN(I-1)+1,NNDCLN(I))
+        !            end if
+        !          end do
+        !cspC6C---------CONVERT CLN-NODE NUMBER TO GLOBAL NODE NUMBER
+        !csp          DO I=1,NCLNCONS
+        !csp            CLNCON(I) = NODES + CLNCON(I)
+        !csp          end do
+        !        end if
+        !C6D--------CONVERT TO IA_CLN AND JA_CLN
+        !        ALLOCATE(IA_CLN(NCLNNDS+1))
+        !        CALL FILLIAJA_CLN
+        !C6E---------DEALLOCATE UNWANTED ARRAYS
+        !        DEALLOCATE (NNDCLN) ! NNDCLN NEEDED FOR WRITING BUDGET TO ASCII FILE?
+        !        DEALLOCATE (CLNCON)
+            ELSE
+                !C----------------------------------------------------------------------
+                !C7------FOR INPUT OF IA AND JAC OF CLN DOMAIN (NCLN = 0), READ DIRECTLY
+                NCLNNDS = ICLNNDS
+                ALLOCATE(IA_CLN(NCLNNDS+1))
+                !C7A-------READ NJA_CLN
+                IF(IFREFM.EQ.0) THEN
+                  read(Modflow.iCLN,'(I10)') NJA_CLN
+                ELSE
+                  read(Modflow.iCLN,*) NJA_CLN
+                end if
+                !C7B-------READ CONNECTIONS PER NODE AND CONNECTIVITY AND FILL IA_CLN AND JA_CLN ARRAYS
+                K = 0
+                CALL U1DINT(IA_CLN,ANAME(2),NCLNNDS,K,INCLN,IOUT)
+                ALLOCATE(JA_CLN(NJA_CLN))
+                CALL U1DINT(JA_CLN,ANAME(3),NJA_CLN,K,INCLN,IOUT)
+                !C7C--------ENSURE POSITIVE TERM FOR DIAGONAL OF JA_CLN
+                DO IJA = 1,NJA_CLN
+                  IF(JA_CLN(IJA).LT.0) JA_CLN(IJA) = -JA_CLN(IJA)
+                end do
+                !C7D--------MAKE IA_CLN CUMULATIVE FROM CONNECTION-PER-NODE
+                DO II=2,NCLNNDS+1
+                  IA_CLN(II) = IA_CLN(II) + IA_CLN(II-1)
+                end do
+                !C---------IA_CLN(N+1) IS CUMULATIVE_IA_CLN(N) + 1
+                DO II=NCLNNDS+1,2,-1
+                  IA_CLN(II) = IA_CLN(II-1) + 1
+                end do
+                IA_CLN(1) = 1
+            end if
+            !C----------------------------------------------------------------------
+            !C8------ALLOCATE SPACE FOR CLN PROPERTY ARRAYS
+            ALLOCATE(ACLNNDS(NCLNNDS,6))
+            ALLOCATE(IFLINCLN(NCLNNDS))
+            ALLOCATE(ICCWADICLN(NCLNNDS))
+            ALLOCATE(ICGWADICLN(NCLNGWC))
+            !C
+            !C9------PREPARE TO REFLECT INPUT PROPERTIES INTO LISTING FILE
+             WRITE(IOUT,21)
+21           FORMAT(/20X,' CONNECTED LINE NETWORK INFORMATION'/&
+                20X,40('-')/5X,'CLN-NODE NO.',1X,'CLNTYP',1X,'ORIENTATION',2X,& 
+               'CLN LENGTH',4X,'BOT ELEVATION',9X,'FANGLE',9X,'IFLIN',11X,&
+               'ICCWADI'/5X,11('-'),2X,6('-'),1X,11('-'),1X,11('-'),4X,13('-'),&
+                4X,11('-'),8X,6('-'),4X,7('-'))
+            !C
+            !C10-------READ BASIC PROPERTIES FOR ALL CLN NODES AND FILL ARRAYS
+            DO I = 1,NCLNNDS
+                CALL URDCOM(INCLN,IOUT,LINE)
+                IF(IFREFM.EQ.0) THEN
+                    READ(LINE,'(3I10,3F10.3,2I10)') IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
+                    !READ(LINE,*) IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
+                    LLOC=71
+                ELSE
+                    LLOC=1
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFTYP,R,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFDIR,R,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANGLE,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLIN,R,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICCWADI,R,IOUT,IOUT)
+                END IF
+                IF(IFLIN.EQ.0) IFLIN = -1
+                !C11A-------FOR ANGLED PIPE, IF DEPTH OF FLOW IS LESS THAN DIAMETER MAKE HORIZONTAL
+                !c        IF(IFDIR.EQ.2)THEN
+                !c          FDPTH = FLENG * SIN(FANGLE)
+                !c          IC=IFTYP
+                !c          CALL CLNR(IC,FRAD)
+                !c          IF(FDPTH.LT.2.0*FRAD) IFDIR = 1
+                !c        end if
+                WRITE(IOUT,22)IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
+22              FORMAT(5X,I10,1X,I6,1X,I10,3(1X,E15.6),1X,I10,1X,I10)
+
+                !C11B------FILL PROPERTY ARRAYS WITH READ AND PREPARE INFORMATION
+                ACLNNDS(I,1) = IFNO + NODES ! GLOBAL NODE NUMBER FOR CLN-CELL
+                ACLNNDS(I,2) = IFTYP
+                ACLNNDS(I,3) = IFDIR
+                ACLNNDS(I,4) = FLENG
+                ACLNNDS(I,5) = FELEV
+                ACLNNDS(I,6) = FANGLE
+                IFLINCLN(I) = IFLIN
+                ICCWADICLN(I) = ICCWADI
+            END DO
+            !----------------------------------------------------------------------------------------
+            !12------ALLOCATE SPACE FOR CLN TO GW PROPERTY ARRAYS
+            ALLOCATE(ACLNGWC(NCLNGWC,6))
+            !----------------------------------------------------------------------------------------
+            !13------READ CONNECTING SUBSURFACE NODE AND ASSOCIATED PARAMETERS
+            IF(IUNSTR.EQ.0)THEN
+                !
+                !14A-----FOR STRUCTURED GRID READ SUBSURFACE NODE IN IJK FORMATS
+                !14A-----AND OTHER CLN SEGMENT PROPERTY INFORMATION
+
+                !1------PREPARE TO REFLECT INPUT INTO LISTING FILE
+               WRITE(IOUT,41)
+41             FORMAT(/20X,' CLN TO 3-D GRID CONNECTION INFORMATION'/&
+                    20X,40('-')/5X,'F-NODE NO.',6X,'LAYER',8X,'ROW',5X,'COLUMN',&
+                    2X,'EQTN. TYPE',5X,'      FSKIN',11X,'FLENG',10X,&
+                    'FANISO',3X,'ICGWADI'/5X,10('-'),6X,5('-'),8X,3('-'),5X,&
+                    6('-'),2X,11('-'),3X,12('-'),2X,14('-'),4X,12('-'),3X,7('-'))
+                
+                !2-------READ PROPERTIES AND SUBSURFACE CONNECTION INFORMATION FOR ALL CLN NODES
+                DO I = 1,NCLNGWC
+                    CALL URDCOM(INCLN,IOUT,LINE)
+                    IF(IFREFM.EQ.0) THEN
+                        READ(LINE,*) IFNO,IFLAY,IFROW,IFCOL,IFCON,&
+                        FSKIN,FLENG,FANISO,ICGWADI
+                        LLOC=91
+                    ELSE
+                        LLOC=1
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLAY,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFROW,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCOL,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCON,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSKIN,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANISO,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICGWADI,R,IOUT,INCLN)
+                    END IF
+                    !3--------SET SKIN PARAMETER AND REFLECT INPUT IN LST FILE
+                    IF(IFCON.EQ.0)FSKIN = 0.0
+                    WRITE(IOUT,52)IFNO,IFLAY,IFROW,IFCOL,IFCON,FSKIN,FLENG,FANISO,&
+                            ICGWADI
+52                          FORMAT(5X,I10,3(1X,I10),2X,I10,3(1X,E15.6),1X,I9)
+                            
+                        
+                    !4--------FILL CLN AND GW NODE NUMBERS AND CONNECTION PROPERTY MATRIX
+                    ACLNGWC(I,1) = IFNO
+                    IFNOD = (IFLAY-1)*NROW*NCOL + (IFROW-1)*NCOL + IFCOL
+                    ACLNGWC(I,2) = IFNOD
+                    ACLNGWC(I,3) = IFCON
+                    ACLNGWC(I,4) = FSKIN
+                    ACLNGWC(I,5) = FANISO
+                    ACLNGWC(I,6) = FLENG
+                    ICGWADICLN(I) = ICGWADI
+                end do
+            ELSE
+                !
+                !14B-----FOR UNSTRUCTURED GRID READ SUBSURFACE NODE NUMBER OF
+                !14B-----CONNECTION AND OTHER CLN SEGMENT PROPERTY INFORMATION
+
+                !1------PREPARE TO REFLECT INPUT INTO LISTING FILE
+                WRITE(IOUT,23)
+23              FORMAT(/20X,' CLN TO 3-D GRID CONNECTION INFORMATION'/&
+                    20X,40('-')/5X,'F-NODE NO.',1X,'GW-NODE NO',2X,&
+                    'EQTN. TYPE',2X,'      FSKIN',11X,&
+                    'FLENG',9X,'FANISO'3X,'ICGWADI'/5X,10('-'),1X,10('-'),&
+                    1X,11('-'),5X,11('-'),1X,17('-'),1X,15('-'),3X,10('-'))
+                
+                !2-------READ PROPERTIES AND SUBSURFACE CONNECTION INFORMATION FOR ALL CLN NODES
+                DO I = 1,NCLNGWC
+                    CALL URDCOM(INCLN,IOUT,LINE)
+                    IF(IFREFM.EQ.0) THEN
+                        READ(LINE,'(3I10,3F10.3,I10)') IFNO,IFNOD,IFCON,FSKIN,FLENG,&
+                            FANISO,ICGWADI
+                        LLOC=71
+                    ELSE
+                        LLOC=1
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNOD,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCON,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSKIN,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANISO,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICGWADI,R,IOUT,INCLN)
+                    END IF
+                    !3--------SET SKIN PARAMETER AND REFLECT INPUT IN LST FILE
+                    IF(IFCON.EQ.0)FSKIN = 0.0
+                    WRITE(IOUT,24)IFNO,IFNOD,IFCON,FSKIN,FLENG,FANISO,ICGWADI
+24                  FORMAT(5X,I10,1X,I10,2X,I10,3(1X,E15.6),1X,I9)
+                    
+                    !4--------FILL CLN AND GW NODE NUMBERS AND CONNECTION PROPERTY MATRIX
+                    ACLNGWC(I,1) = IFNO
+                    ACLNGWC(I,2) = IFNOD
+                    ACLNGWC(I,3) = IFCON
+                    ACLNGWC(I,4) = FSKIN
+                    ACLNGWC(I,5) = FANISO
+                    ACLNGWC(I,6) = FLENG
+                    ICGWADICLN(I) = ICGWADI
+                end do
+                
+            end if
+            !!----------------------------------------------------------------------------------------
+            !!15B------ALLOCATE SPACE AND FILL PROPERTIES FOR ALL CONDUIT TYPE CLNs
+            !      IF(NRECTYP.GT.0)THEN
+            !        CALL SCLN2REC1RP
+            !      end if
+            !!----------------------------------------------------------------------------------------
+            !!16------ALLOCATE SPACE AND FILL PROPERTIES FOR OTHER CLN TYPES HERE
+            !!ADD------ADD OTHER CLN TYPE READ AND PREPARE INFORMATION HERE
+            !!----------------------------------------------------------------------------------------
+               
+            WRITE(IOUT,'(/,A)')' IA_CLN IS BELOW, 40I10'
+            WRITE(IOUT,55)(IA_CLN(I),I=1,NCLNNDS+1)
+            WRITE(IOUT,*)'NJA_CLN = ',NJA_CLN
+            WRITE(IOUT,*)'JA_CLN IS BELOW, 40I10'
+            WRITE(IOUT,55)(JA_CLN(J),J=1,NJA_CLN)
+55          FORMAT(40I10)
+            
+            exit
+            
+        end do
+        RETURN
+    end subroutine CLN_Read
+!----------------------------------------------------------------------------------------
+    SUBROUTINE CLN_ReadCircularProperties(Modflow)
+!     ******************************************************************
+!      ALLOCATE SPACE AND READ PROPERTIES FOR CONDUIT TYPE CLNs
+!     ******************************************************************
+!
+!        SPECIFICATIONS:
+!     ------------------------------------------------------------------
+      USE CLN1MODULE
+      USE GLOBAL, ONLY: IUNIT,IOUT,NEQS,NODES,NROW,NCOL,IFREFM,IUNSTR,&
+                       INCLN
+        implicit none
+      DOUBLE PRECISION PERIF,AREAF
+      CHARACTER*400 LINE
+
+        type (ModflowProject) Modflow
+        
+        integer :: i, ifno, lloc
+        real :: conduitk, frad, tcond, tcoef, tcfuid, R
+        integer :: istop, istart
+        real :: tthk, tcfluid, fsrad
+        
+      
+!----------------------------------------------------------------------------------------
+!12------ALLOCATE SPACE FOR CONDUIT TYPE CLNs AND PREPARE TO REFLECT INPUT TO LISTING FILE
+      ALLOCATE (ACLNCOND(NCONDUITYP,5))
+      ALLOCATE (BHEPROP(NCONDUITYP,4))
+      BHEPROP = 0.0
+      IF(IBHETYP.EQ.0) THEN
+        WRITE(IOUT,23)
+23      FORMAT(/20X,' CONDUIT NODE INFORMATION'/&
+       20X,40('-')/5X,'CONDUIT NODE',8X,'RADIUS',3X,'CONDUIT SAT K',&
+       /5X,12('-'),8X,6('-'),3X,13('-'))
+      ELSE
+        WRITE(IOUT,24)
+24      FORMAT(/20X,' CONDUIT NODE INFORMATION'/&
+       20X,40('-')/5X,'CONDUIT NODE',8X,'RADIUS',3X,'CONDUIT SAT K',&
+       5X,'COND. PIPE', 6X,'THICK PIPE',5X,'COND. FLUID',&
+       5X,'CONV. COEFF',&
+       /5X,12('-'),4X,10('-'),3X,13('-'))
+      ENDIF
+!13------READ CONDUIT PROPERTIES FOR EACH CONDUIT TYPE
+      DO I=1,NCONDUITYP
+        CALL URDCOM(INCLN,IOUT,LINE)
+        IF(IFREFM.EQ.0) THEN
+          IF(IBHETYP.EQ.0)THEN
+            READ(LINE,'(I10,2F10.3)') IFNO,FRAD,CONDUITK
+            LLOC=71
+          ELSE
+            READ(LINE,'(I10,6F10.3)')IFNO,FRAD,CONDUITK,TCOND,TTHK, &
+              TCFLUID,TCOEF
+            LLOC=111
+          ENDIF
+        ELSE
+          LLOC=1
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSRAD,IOUT,INCLN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,CONDUITK,IOUT,INCLN)
+          FRAD = FSRAD
+          IF(IBHETYP.EQ.1)THEN
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,TCOND,IOUT,INCLN)
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,TTHK,IOUT,INCLN)
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,TCFLUID,IOUT,INCLN)
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,TCOEF,IOUT,INCLN)
+          ENDIF
+        END IF
+!
+!14--------FILL PROPERTY ARRAYS WITH READ AND PREPARE INFORMATION
+        ACLNCOND(I,1) = IFNO
+        ACLNCOND(I,2) = FRAD
+        ACLNCOND(I,3) = CONDUITK
+        CALL CLNA(IFNO,AREAF)
+        ACLNCOND(I,4) = AREAF
+        CALL CLNP(I,PERIF)
+        ACLNCOND(I,5) = PERIF
+        IF(IBHETYP.EQ.1)THEN
+          BHEPROP(I,1) = TCOND
+          BHEPROP(I,2) = TTHK
+          BHEPROP(I,3) = TCFLUID
+          BHEPROP(I,4) = TCOEF
+          WRITE(IOUT,26) IFNO,FRAD,CONDUITK,TCOND,TTHK,TCFLUID,TCOEF
+26        FORMAT(5X,I10,6(1X,E15.6))
+        ELSE
+        WRITE(IOUT,25)IFNO,FRAD,CONDUITK
+25      FORMAT(5X,I10,2(1X,E15.6))
+        ENDIF
+      ENDDO
+!--------RETURN
+      RETURN
+      END subroutine CLN_ReadCircularProperties
+
+!----------------------------------------------------------------------------
+      SUBROUTINE CLN_ReadRectangularProperties(Modflow)
+!     ******************************************************************
+!      ALLOCATE SPACE AND READ PROPERTIES FOR RECTAQNGULAR TYPE CLNs
+!     ******************************************************************
+!
+!        SPECIFICATIONS:
+!     ------------------------------------------------------------------
+      USE CLN1MODULE
+      USE GLOBAL, ONLY: IUNIT,IOUT,NEQS,NODES,NROW,NCOL,IFREFM,IUNSTR,&
+                       INCLN
+        implicit none
+      DOUBLE PRECISION PERIF,AREAF
+      CHARACTER*400 LINE
+
+        type (ModflowProject) Modflow
+        
+        integer :: i, ifno, lloc, istart, istop, iftotno
+        real :: fheight, flength, conduitk, r, fsw, fsh, fwidth
+        
+        
+!----------------------------------------------------------------------------------------
+!12------ALLOCATE SPACE FOR CONDUIT TYPE CLNs AND PREPARE TO REFLECT INPUT TO LISTING FILE
+      ALLOCATE (ACLNREC(NRECTYP,6))
+      WRITE(IOUT,23)
+23    FORMAT(/20X,' RECTANGULAR CLN SECTION INFORMATION'/&
+       20X,40('-')/5X,'RECTANGULAR NODE',8X,'LENGTH',8X,'HEIGHT',3X,&
+      'CONDUIT SAT K' /5X,12('-'),8X,6('-'),8X,6('-'),3X,13('-'))
+!13------READ RECTANGULAR GEOMETRY PROPERTIES FOR EACH RECTANGULAR TYPE
+      DO I=1,NRECTYP
+        CALL URDCOM(INCLN,IOUT,LINE)
+        IF(IFREFM.EQ.0) THEN
+          READ(LINE,'(I10,3F10.3)') IFNO,FLENGTH,FHEIGHT,CONDUITK
+          LLOC=71
+        ELSE
+          LLOC=1
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSW,IOUT,INCLN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSH,IOUT,INCLN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,CONDUITK,IOUT,INCLN)
+          FWIDTH = FSW
+          FHEIGHT = FSH
+        END IF
+!
+!14--------FILL PROPERTY ARRAYS WITH READ AND PREPARE INFORMATION
+        IFTOTNO = IFNO + NCONDUITYP
+        ACLNREC(I,1) = IFTOTNO
+        ACLNREC(I,2) = FWIDTH
+        ACLNREC(I,3) = FHEIGHT
+        ACLNREC(I,4) = CONDUITK
+        CALL CLNA(IFTOTNO,AREAF)
+        ACLNREC(I,5) = AREAF
+        CALL CLNP(IFTOTNO,PERIF)
+        ACLNREC(I,6) = PERIF
+        WRITE(IOUT,24)IFNO,FWIDTH,FHEIGHT,CONDUITK
+24      FORMAT(5X,I10,3(1X,E15.6))
+      ENDDO
+!--------RETURN
+      RETURN
+      END subroutine CLN_ReadRectangularProperties
+      
     !-------------------------------------------------------------
     subroutine CreateStepPeriodTimeFile(Modflow)
         implicit none
@@ -4394,7 +5104,14 @@
         call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF_GSF))
         write(Modflow.iSWF_GSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (SWF_GSF) Package written by Modflow-User-Tools version ',MUTVersion
 
-                ! Initialize DIS file and write data to NAM
+        ! Initialize CLN_GSF file and write data to NAM
+        Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.cln.gsf'
+        call OpenAscii(Modflow.iCLN_GSF,Modflow.FNameCLN_GSF)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN_GSF))
+        write(Modflow.iCLN_GSF,'(a,1pg10.1)') '# MODFLOW-USG Grid Specification File (CLN_GSF) Package written by Modflow-User-Tools version ',MUTVersion
+        
+        ! Initialize DIS file and write data to NAM
         Modflow.FNameDISU=trim(Modflow.Prefix)//'.dis'
         call OpenAscii(Modflow.iDISU,Modflow.FNameDISU)
         call Msg('  ')
@@ -4424,16 +5141,12 @@
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TECPLOT_CLN
-        integer :: i, j
+        integer :: i
 
         ! For modflow cell connection and area calculations
         
-        integer :: iConn, iNbor
-
-
-        ! Generate ia/ja from face neighbour data calculated by Tecplot
+        ! Generate ia/ja from scratch
         call CLN_IaJaStructure(TECPLOT_CLN)
-        !call IaJa_FromTecplot(TECPLOT_CLN)
 
         allocate(Modflow.CLN.ConnectionLength(TECPLOT_CLN.njag),Modflow.CLN.PerpendicularArea(TECPLOT_CLN.njag),stat=ialloc)
         call AllocChk(ialloc,'CLN Cell connection length, perpendicular area array')
@@ -4914,7 +5627,7 @@
         Modflow.iTVM =iunit(64)  
         Modflow.iSWF =iunit(65)   
         Modflow.iSWBC =iunit(66)   
-        do i=1,65
+        do i=1,66
             if(iunit(i) > 0) then
                 file_open_flag(iunit(i)) = .true.
             end if
@@ -4990,8 +5703,19 @@
         IF(Modflow.iCLN/=0) THEN
             call Msg(' ')
             call Msg('-------Read data from CLN pt1:')
-            call ReadCLN(Modflow)  ! based on modflow routine SDIS2CLN1AR
+            call CLN_Read(Modflow)  ! based on modflow routine SDIS2CLN1AR
             NEQS = NEQS + NCLNNDS
+            
+            !C15A------ALLOCATE SPACE AND FILL PROPERTIES FOR ALL CONDUIT TYPE CLNs
+            IF(NCONDUITYP.GT.0)THEN
+                CALL  CLN_ReadCircularProperties(Modflow)! based on modflow routine SCLN2COND1RP
+            ENDIF
+
+            !C15B------ALLOCATE SPACE AND FILL PROPERTIES FOR ALL CONDUIT TYPE CLNs
+            IF(NRECTYP.GT.0)THEN
+                CALL  CLN_ReadRectangularProperties(Modflow) ! based on modflow routineSCLN2REC1RP
+            ENDIF
+
 
             call ReadCLN_pt2(Modflow)  ! based on modflow routine SDIS2CLN1AR
         end if
@@ -5276,6 +6000,8 @@
                 VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Saturation",'
             else if(domain.name == 'SWF') then
                 VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
+            else if(domain.name == 'CLN') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
             endif
             nVar=nVar+1
         end if
@@ -5319,8 +6045,8 @@
         
         write(FNum,'(a)') trim(VarSTR)
             
-        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1),',N=',domain.nNodes,', E=',domain.nElements,&
-            ', datapacking=block, zonetype='//trim(domain.elementtype)
+        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
+            ',N=',domain.nNodes,', E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
         
         if(Modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR)//&
@@ -5414,6 +6140,8 @@
                 write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3)    
             else if(domain.nNodesPerCell==4) then
                 write(FNum,'(8i8)') (domain.iNode(j,i),j=1,4)    
+            else if(domain.nNodesPerCell==2) then
+                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,2)    
             end if
         end do
         
@@ -6138,6 +6866,13 @@
                 read(FNumMUT,*) modflow.StressPeriodLength(Modflow.nPeriods)
                 write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodLength(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
+                
+            else if(index(instruction,StressPeriodNumberOfTimesteps_CMD) /=0) then
+                read(FNumMUT,*) modflow.nTSteps(Modflow.nPeriods)
+                write(TmpSTR,'(a,i5)')TAB,modflow.nTSteps(Modflow.nPeriods)
+                call Msg(trim(TmpSTR))
+                
+                
             else
 			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
             end if
@@ -6376,12 +7111,16 @@
     end subroutine WriteCHDFile
 
     !-------------------------------------------------------------
-    subroutine WriteCLNFiles(Modflow)
+    subroutine WriteCLNFiles(Modflow,TECPLOT_CLN)
         implicit none
         type (ModflowProject) Modflow
+        type (TecplotDomain) TECPLOT_CLN
         
-        integer :: i, j, i1, i2
-        character(MAX_STR) :: OutputLine 
+        
+        integer :: i, j, k, i1, i2
+        character(MAX_STR) :: OutputLine
+        
+        Modflow.CLN.NCLNGWC=Modflow.CLN.nCells  ! assume for now that all cln cells are connected to underlying gwf cells
 
         write(Modflow.iCLN,'(a)') '#1.    NCLN, ICLNNDS, ICLNCB,  ICLNHD,  ICLNDD,   ICLNIB,  NCLNGWC,  NCONDUITYP'
         write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
@@ -6390,7 +7129,7 @@
                                         Modflow.CLN.iHDS,&      !ICLNHD
                                         Modflow.CLN.iDDN,&      !ICLNDD
                                         0,&                     !ICLNIB, if 0 CLN IBOUND array not written 
-                                        Modflow.CLN.NCLNGWC,&   !NCLNGWC
+                                        Modflow.CLN.NCLNGWC,&   !NCLNGWC 
                                         Modflow.CLN.NCONDUITYP  !NCONDUITYP
         if(Modflow.CLN.NRECTYP > 0) then
             write(tmpSTR,'(a,i9)') ',        rectangular', &   !IFNO
@@ -6413,25 +7152,74 @@
         write(Modflow.iCLN,'(a)') '# IFNO,          IFTYP,        IFDIR,   FLENG,         FELEV,         FANGLE,     IFLIN, ICCWADI'
         do i=1,modflow.CLN.nCells
             write(Modflow.iCLN,'(i5,5(1pG15.5),2i5)') i, & !IFNO
-            modflow.CLN.Geometry(modflow.CLN.IZone(i)), & !IFTYP
+            modflow.CLN.IZone(i), & !IFTYP
             modflow.CLN.Direction(modflow.CLN.IZone(i)), & !IFDIR
             modflow.CLN.Length(i), & !FLENG
-            modflow.CLN.FELEV(i), & !FELEV
-            0.0d0, & !FANGLE
-            -4, & !IFLIN
+            modflow.CLN.LowestElevation(i), & !FELEV
+            modflow.CLN.SlopeAngle(i), & !FANGLE
+            Modflow.CLN.FlowTreatment(modflow.CLN.IZone(i)), & !IFLIN
             0   ! ICCWADI 
         end do
 
-!        write(Modflow.iSWF,'(a)') '# IFNO IFGWNO  IFCON     SGCL        SGCAREA      ISGWADI'
-!        do i=1,modflow.SWF.nCells
-!!            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
-!            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
-!        end do
-!
-!        write(Modflow.iSWF,'(a)') '# ISWFTYP      SMANN          SWFH1          SWFH2'
-!        do i=1,modflow.SWF.nZones
-!            write(Modflow.iSWF,'(i5,3x,3(1pG15.5))') i,  modflow.swf.manning(i),  modflow.swf.H1DepthForSmoothing(i),  modflow.swf.H2DepthForSmoothing(i)
-!        end do
+        write(Modflow.iCLN,'(a)') '# IFNOD IGWNOD IFCON    FSKIN      FLENGW      FANISO  ICGWADI'
+        do i=1,modflow.CLN.nCells
+            write(Modflow.iCLN,'(3i5,3(1pG15.5),i5)') i, & !IFNO
+            i, & !IGWNOD
+            3, & !IFCON
+            1.e-20, & !FSKIN
+            modflow.CLN.Length(i), & !FLENGW
+            1.00, & !FANISO
+            0   ! ICGWADI 
+        end do
+
+
+        if(Modflow.CLN.NCONDUITYP>0) then
+            write(Modflow.iCLN,'(a)') '# ICONDUITYP   FRAD         CONDUITK'
+            do i=1,modflow.CLN.NZones
+                if(modflow.CLN.Geometry(i) == 1) then 
+                    write(Modflow.iCLN,'(i5,3x,2(1pG15.5))') i, modflow.CLN.CircularRadius(i), modflow.CLN.LongitudinalK(i)
+                endif
+            end do
+        endif
+        
+        if(Modflow.CLN.NRECTYP>0) then
+            write(Modflow.iCLN,'(a)') '# IRECTYP    FLENGTH        FHEIGHT       CONDUITK'
+            do i=1,modflow.CLN.NZones
+                if(modflow.CLN.Geometry(i) == 2) then 
+                    write(Modflow.iCLN,'(i5,3x,3(1pG15.5))') i, modflow.CLN.RectangularWidth(i),modflow.CLN.RectangularHeight(i), modflow.CLN.LongitudinalK(i)
+                endif
+            end do
+        endif
+        
+        ! fix here YJP
+        if(.not. allocated(modflow.CLN.ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
+            allocate(modflow.CLN.ibound(modflow.CLN.nCells),stat=ialloc)
+            call AllocChk(ialloc,'CLN Cell ibound array')            
+            modflow.CLN.ibound(:)=1
+        end if
+        do i=1,Modflow.CLN.nCells
+            if(bcheck(modflow.CLN.Cell_is(i),inactive)) modflow.CLN.ibound(i)=0
+        enddo
+        write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
+        write(Modflow.iCLN,'(10i3)') (modflow.CLN.ibound(k),k=1,Modflow.CLN.nCells)
+        
+        if(.not. allocated(modflow.CLN.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
+            allocate(modflow.CLN.StartingHeads(modflow.CLN.nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell starting heads array')            
+            modflow.CLN.StartingHeads(:)=modflow.CLN.zcell(:)+1.0e-4
+        end if
+        write(Modflow.iCLN,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
+        write(Modflow.iCLN,'(5(1pg15.5))') (modflow.CLN.StartingHeads(i),i=1,modflow.CLN.nCells)
+        
+        !------------------- write CLN_GSF file
+        write(Modflow.iCLN_GSF,'(a)') trim(TECPLOT_CLN.meshtype)
+        write(Modflow.iCLN_GSF,*) Modflow.CLN.nCells, Modflow.CLN.nLayers, Modflow.CLN.iz, Modflow.CLN.ic
+        write(Modflow.iCLN_GSF,*) Modflow.CLN.nNodes
+        write(Modflow.iCLN_GSF,*) (TECPLOT_CLN.x(i),TECPLOT_CLN.y(i),TECPLOT_CLN.z(i),i=1,Modflow.CLN.nNodes)
+        do i=1,Modflow.CLN.nCells
+            write(Modflow.iCLN_GSF,'(i10,2x,3(1pg15.5),2x,2i10,10i10)') i,Modflow.CLN.xCell(i),Modflow.CLN.yCell(i),Modflow.CLN.zCell(i),Modflow.CLN.iLayer(i),Modflow.CLN.nNodesPerCell,(Modflow.CLN.iNode(j,i),j=1,Modflow.CLN.nNodesPerCell)
+        end do
+ 
     end subroutine WriteCLNFiles
     
     !-------------------------------------------------------------
@@ -6483,8 +7271,10 @@
         integer :: i, j, k, i1, i2, nStrt,nEnd
         
         !------------------- BAS6 file
+        ! Hardwired for unstructured, free format and solving Richard's equation when built from scratch
         write(Modflow.iBAS6,'(a)') 'UNSTRUCTURED FREE RICHARDS'
         modflow.unstructured=.true.
+        IVSD=-1  ! indicates a vertically stacked grid.  Read horizonatl cell area for top layer only.    
         modflow.free=.true.
         modflow.richards=.true.
 
@@ -6562,14 +7352,24 @@
         end do
             
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
-            write(TmpSTR,'(i5)') i
-            write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.GWF.nodelay-1
-            write(Modflow.iDISU,'(10G16.5)') (modflow.GWF.CellArea(k),k=nStrt,nEnd)
-            nStrt=nEnd+1
-        end do
-            
+        if(ivsd == -1) then
+            do i=1,1
+                write(TmpSTR,'(i5)') i
+                write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
+                nEnd = nStrt + modflow.GWF.nodelay-1
+                write(Modflow.iDISU,'(10G16.5)') (modflow.GWF.CellArea(k),k=nStrt,nEnd)
+                nStrt=nEnd+1
+            end do
+        else
+            do i=1,Modflow.GWF.nLayers
+                write(TmpSTR,'(i5)') i
+                write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
+                nEnd = nStrt + modflow.GWF.nodelay-1
+                write(Modflow.iDISU,'(10G16.5)') (modflow.GWF.CellArea(k),k=nStrt,nEnd)
+                nStrt=nEnd+1
+            end do
+        end if
+        
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
         write(Modflow.iDISU,'(10i4)') (modflow.GWF.ia(i),i=1,modflow.GWF.nCells)
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  JA()'
@@ -6816,8 +7616,14 @@
         integer :: i, j, i1, i2,k
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
-        write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, Modflow.SWF.njag, Modflow.SWF.nCells,modflow.SWF.nZones, &
-            Modflow.SWF.iCBB,Modflow.SWF.iHDS,Modflow.SWF.iDDN,0
+        write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, & ! NSWFNDS 
+            Modflow.SWF.njag, & ! NJA_SWF
+            Modflow.SWF.nCells, & ! NSWFGWC, assume for now all swf cells are connected to underlying gwf
+            modflow.SWF.nZones, & ! NSWFTYP
+            Modflow.SWF.iCBB, & ! ISWFCB
+            Modflow.SWF.iHDS, & ! ISWFHD
+            Modflow.SWF.iDDN, & ! ISWFDD
+            0 ! ISWFIB
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
         write(Modflow.iSWF,'(10i4)') (modflow.SWF.ia(i),i=1,modflow.SWF.nCells)
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  JA()'
@@ -9626,7 +10432,7 @@
       END IF
       WRITE(IOUT,3) MXACTC
     3 FORMAT(1X,'MAXIMUM OF ',I6,&
-       ' TIME-VARIANT SPECIFIED-HEAD CELLS AT ONE TIME')
+       ' ___TIME-VARIANT SPECIFIED-HEAD CELLS AT ONE TIME')
 !
 !3------READ AUXILIARY VARIABLES AND PRINT OPTION
       ALLOCATE (CHDAUX(100))
@@ -12506,7 +13312,11 @@
                 IDUM = 1
                 CALL ULASAVRD(domain.head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
                     TOTIMREAD,domain.ncells,IDUM,IDUM,domain.iHDS)
-                WRITE(TmpSTR,'(2(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.head(1,i),TEXT
+          
+!                CALL ULASAV(BUFF(1),TEXT,KSTP,KPER,PERTIM,TOTIM,NCLNNDS,
+!1         1,1,ICLNHD)
+
+          WRITE(TmpSTR,'(2(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.head(1,i),TEXT
                 call msg(TmpSTR)
             end do
         end if
@@ -13427,488 +14237,8 @@
     end subroutine ReadDISU_StressPeriodData
 
 
-    subroutine ReadCLN(Modflow)
-        implicit none
 
-        type (ModflowProject) Modflow
-        character(400) :: line
-        
-        integer :: ICLNNDS
-        CHARACTER*24 ANAME(3)
-        DATA ANAME(1) /'   NODES PER CLN SEGMENT'/
-        DATA ANAME(2) /'                      IA'/
-        DATA ANAME(3) /'                      JA'/
-
-        integer :: i1
-        integer :: IJA
-        integer :: II
-        real :: FLENG
-        integer :: IFTYP
-        integer :: ICCWADI
-        real :: FELEV
-        integer :: IFDIR
-        integer :: IFNO
-        real :: FANGLE
-        integer :: IFLIN
-        integer :: LLOC
-        integer :: ISTART
-        integer :: ISTOP
-        real :: R
-        real :: FSKIN        
-        real :: FANISO        
-        integer :: IFCON
-        integer :: IFNOD
-        integer :: ICGWADI
-        integer :: IFROW
-        integer :: IFLAY
-        integer :: IFCOL, i, j, k
-     
-        
-        
-        IOUT=FNumEco
-        INCLN=Modflow.iCLN
-        
-        WRITE(IOUT,1)
-1       FORMAT(1X,/1X,'CLN -- CONNECTED LINE NETWORK DISCRETIZATION PROCESS, VERSION 1, 3/3/2012 ')
-        
-        do 
-            read(Modflow.iCLN,'(a)',iostat=status) line
-            call lcase(line)
-            if(status /= 0) return
-            
-            IF(index(line,'options') .ne. 0) THEN
-                IF(index(line,'transient') .ne. 0) THEN
-                    ICLNTIB=1
-                    WRITE(IOUT,71)
-71                  FORMAT(1X,'TRANSIENT IBOUND OPTION: READ TRANSIENT IBOUND RECORDS FOR EACH STRESS PERIOD.')
-                    
-                end if    
-            
-                IF(index(line,'printiaja') .ne. 0) THEN
-                    IPRCONN=1
-                    WRITE(IOUT,72)
-72                  FORMAT(1X,'PRINT CLN IA AND JA OPTION: THE CLN IA AND JA ARRAYS WILL BE PRINTED TO LIST FILE.')
-                    
-                end if
-            
-                IF(index(line,'processccf') .ne. 0) THEN
-                    read(Modflow.iCLN,*) ICLNGWCB
-
-                    ICLNPCB=1                                                     !aq CLN CCF
-                    WRITE(IOUT,73)                                                !aq CLN CCF
-73                  FORMAT(1X,'PROCESS CELL-TO-CELL FLOW BUDGET OPTION: FLOW BUDGET WILL USE A SEPARATE FILE FOR CLN-GWF FLOW.')     !aq CLN CCF
-                    
-                    IF(ICLNGWCB.LT.0) WRITE(IOUT,18)                              !aq CLN CCF
-18                  FORMAT(1X,'CELL-BY-CELL GWP FLOWS WILL BE PRINTED WHEN ICBCFL IS NOT 0 (FLAG ICLNGWCB IS LESS THAN ZERO)')                  !aq CLN CCF
-                    
-                    IF(ICLNGWCB.GT.0) WRITE(IOUT,19)                      !aq CLN CCF
-19                  FORMAT(1X,'CELL-BY-CELL GWP FLOWS WILL BE SAVED(FLAG ICLNGWCB IS GREATER THAN ZERO)')                         !aq CLN CCF
-                    
-                end if
-                
-            else 
-                read(line,*) NCLN,ICLNNDS,ICLNCB,ICLNHD,ICLNDD,ICLNIB,NCLNGWC,NCONDUITYP
-                WRITE(IOUT,3) NCLN,ICLNNDS,NCLNGWC                                             
-3               FORMAT(1X,'FLAG (0) OR MAXIMUM NUMBER OF LINEAR NODES (NCLN) =',I7&     
-                    /1X,'FLAG (-VE) OR NUMBER OF LINEAR NODES (+VE)',&     
-                    1X,'(ICLNNDS) =',I7&     
-                    /1X,'NUMBER OF LINEAR NODE TO MATRIX GRID CONNECTIONS',&     
-                    ' (NCLNGWC) =',I7/) 
-                
-                IF(ICLNCB.LT.0) WRITE(IOUT,7)
-7               FORMAT(1X,'CELL-BY-CELL FLOWS WILL BE PRINTED WHEN ICBCFL',       &
-                    ' IS NOT 0 (FLAG ICLNCB IS LESS THAN ZERO)')
-
-                IF(ICLNCB.GT.0) WRITE(IOUT,8) ICLNCB
-8               FORMAT(1X,'CELL-BY-CELL FLOWS WILL BE SAVED ON UNIT ',I5,         &
-                    '(FLAG ICLNCB IS GREATER THAN ZERO)')
-
-                IF(ICLNCB.EQ.0) WRITE(IOUT,6)
-6               FORMAT(1X,'CELL-BY-CELL FLOWS WILL NOT BE SAVED OR PRINTED',       &
-                    1X,'(FLAG ICLNCB IS EQUAL TO ZERO)')
-
-                IF(ICLNHD.LT.0) WRITE(IOUT,9)
-9               FORMAT(1X,'CLN HEAD OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,      &
-                    'NUMBER (IHEDUN) AS USED FOR HEAD OUTPUT FOR POROUS MATRIX',   &!kkz - added trailing comma per JCH
-                    1X,'(FLAG ICLNHD IS LESS THAN ZERO)')
-
-                IF(ICLNHD.GT.0) WRITE(IOUT,10) ICLNHD
-10              FORMAT(1X,'CLN HEAD OUTPUT WILL BE SAVED ON UNIT ',I4,             &
-                    '(FLAG ICLNHD IS GREATER THAN ZERO)')
-
-                IF(ICLNHD.EQ.0) WRITE(IOUT,31)
-31              FORMAT(1X,'CLN HEAD OUTPUT WILL NOT BE SAVED OR PRINTED',           &
-                    1X,'(FLAG ICLNHD IS EQUAL TO ZERO)')
-
-                IF(ICLNDD.LT.0) WRITE(IOUT,12)
-12              FORMAT(1X,'CLN DDN OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,      &
-                    'NUMBER (IDDNUN) AS USED FOR DDN OUTPUT FOR POROUS MATRIX',   & !kkz - added trailing comma per JCH
-                    1X,'(FLAG ICLNDD IS LESS THAN ZERO)')
-
-                IF(ICLNDD.GT.0) WRITE(IOUT,13) ICLNDD
-                13  FORMAT(1X,'CLN DDN OUTPUT WILL BE SAVED ON UNIT ',I4,              &
-                    '(FLAG ICLNDD IS GREATER THAN ZERO)')
-
-                IF(ICLNDD.EQ.0) WRITE(IOUT,14)
-14              FORMAT(1X,'CLN DDN OUTPUT WILL NOT BE SAVED OR PRINTED',            &
-                    1X,'(FLAG ICLNDD IS EQUAL TO ZERO)')
-
-                IF(ICLNIB.LT.0) WRITE(IOUT,32)
-32              FORMAT(1X,'CLN IBOUND OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,    &
-                    'NUMBER (IBOUUN) AS USED FOR DDN OUTPUT FOR POROUS MATRIX',   & !kkz - added trailing comma per JCH
-                    1X,'(FLAG ICLNIB IS LESS THAN ZERO)')
-                
-
-                IF(ICLNIB.GT.0) WRITE(IOUT,33) ICLNIB
-33              FORMAT(1X,'CLN IBOUND OUTPUT WILL BE SAVED ON UNIT ',I4,           &
-                    '(FLAG ICLNIB IS GREATER THAN ZERO)')
-                
-
-                IF(ICLNIB.EQ.0) WRITE(IOUT,17)
-17              FORMAT(1X,'CLN IBOUND OUTPUT WILL NOT BE SAVED OR PRINTED',         &
-                    1X,'(FLAG ICLNIB IS EQUAL TO ZERO)')
-                
-                !C--------------------------------------------------------------------------------
-                !C3B----READ GRAVITY AND KINEMATIC VISCOSITY IN CASE IT IS REQUIRED FOR TURBULENT FLOW
-                !ALLOCATE(GRAV,VISK)
-                !ALLOCATE(IBHETYP)
-                GRAV = 0.0
-                VISK = 0.0
-                IBHETYP = 0
-                
-                IF(index(line,'gravity') .ne. 0) THEN
-                    i1=index(line,'gravity')+7
-                    line=line(i1:)
-                    read(line,*) GRAV
-                    WRITE(IOUT,34) GRAV
-34                  FORMAT(1X,'GRAVITATIONAL ACCELERATION [L/T^2] = ', G15.6)
-                end if 
-                
-                IF(index(line,'viscosity') .ne. 0) THEN
-                    i1=index(line,'viscosity')+9
-                    line=line(i1:)
-                    read(line,*) VISK
-                    WRITE(IOUT,35) VISK
-35                  FORMAT(1X,'KINEMATIC VISCOSITY [L^2/T] = ', G15.6)
-                END IF
-
-                !C3B----READ OPTION FOR NON-CIRCULAR CROSS-SECTIONS
-                IF(index(line,'rectangular') .ne. 0) THEN
-                    i1=index(line,'rectangular')+11
-                    line=line(i1:)
-                    read(line,*) NRECTYP
-                    WRITE(IOUT,36) NRECTYP
-36                  FORMAT(1X,'NUMBER OF RECTANGULAR SECTION GEOMETRIES = ', I10)
-                END IF
-
-                !C3C----READ OPTION FOR BHE DETAILS
-                IF(index(line,'bhedetail') .ne. 0) THEN
-                    IBHETYP = 1
-                    IF(ITRNSP.EQ.0) IBHETYP = 0 ! NO BHE (OR INPUT) IF TRANSPORT IS NOT RUN
-                    WRITE(IOUT,37)
-37                  FORMAT(1X,'BHE DETAILS WILL BE INPUT FOR EACH CLN TYPE')
-                end if
-
-                !C3D----READ OPTION FOR SAVING CLN OUTPUT AND UNIT NUMBER
-                IF(index(line,'saveclncon') .ne. 0) THEN
-                    i1=index(line,'saveclncon')+10
-                    line=line(i1:)
-                    read(line,*) ICLNCN
-                    
-                    !IF(INBCT.EQ.0) ICLNCN = 0 ! SHUT OFF IF NO TRANSPORT SIMULATION
-                    ICLNCN = 0 ! SHUT OFF for now rgm
-                    
-                    IF(ICLNCN.LT.0) WRITE(IOUT,42)
-42                  FORMAT(1X,'CLN CONC OUTPUT WILL BE SAVED TO THE SAME UNIT',1X,    &
-                    'NUMBER (ISPCUN) AS USED FOR CONC OUTPUT FOR POROUS MATRIX',     & !kkz - added trailing comma per JCH
-                    1X,'(FLAG ICLNCN IS LESS THAN ZERO)')
-                    
-                    IF(ICLNCN.GT.0) WRITE(IOUT,43) ICLNCN
-43                  FORMAT(1X,'CLN CONC OUTPUT WILL BE SAVED ON UNIT ',I4,      &
-                   '(FLAG ICLNCN IS GREATER THAN ZERO)')
-                    
-                    IF(ICLNCN.EQ.0) WRITE(IOUT,44)
-44                  FORMAT(1X,'CLN CONC OUTPUT WILL NOT BE SAVED OR PRINTED',       &
-                     1X,'(FLAG ICLNCN IS EQUAL TO ZERO)')
-                    
-                end if
-!
-                IF(index(line,'saveclnmas') .ne. 0) THEN
-                    i1=index(line,'saveclnmas')+10
-                    line=line(i1:)
-                    read(line,*) ICLNMB
-                    !IF(INBCT.EQ.0) ICLNMB = 0 ! SHUT OFF IF NO TRANSPORT SIMULATION
-                    ICLNMB = 0 ! SHUT OFF for now rgm
-                end if
-
-                IF(ICLNMB.LT.0) WRITE(IOUT,45)
-45              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL BE SAVED TO THE SAME',1X, &
-                'UNIT NUMBER (IBCTCB) AS USED FOR CONC OUTPUT FOR POROUS',   & !kkz - added trailing comma per JCH
-                1X,'MATRIX (FLAG ICLNMB IS LESS THAN ZERO)')
-                
-                IF(ICLNMB.GT.0) WRITE(IOUT,46) ICLNMB
-46              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL BE SAVED ON UNIT ',I4,         &
-                '(FLAG ICLNMB IS GREATER THAN ZERO)')
-        
-                IF(ICLNMB.EQ.0) WRITE(IOUT,47)
-47              FORMAT(1X,'CLN MASS FLUX OUTPUT WILL NOT BE SAVED OR PRINTED',          &
-                1X,'(FLAG ICLNMB IS EQUAL TO ZERO)')
-            END IF
-
-            !C--------------------------------------------------------------------------------
-            !C4------FOR INPUT OF MULTI-NODE WELLS OR CLN SEGMENTS
-            !C4------DIMENSION AND READ ARRAY THAT CONTAINS NUMBER OF NODES PER CLN SEGMENT
-            IF(NCLN.GT.0)THEN
-        !        ALLOCATE(NNDCLN(0:NCLN))
-        !        K = 0
-        !        CALL U1DINT(NNDCLN(1),ANAME(1),NCLN,K,IOUT,IOUT)
-        !        NNDCLN(0) = 0
-        !C
-        !C5--------MAKE NNDCLN ARRAY CUMULATIVE
-        !        DO I = 1,NCLN
-        !          NNDCLN(I) = NNDCLN(I) + NNDCLN(I-1)
-        !        end do
-        !        NCLNCONS = NNDCLN(NCLN)
-        !C------------------------------------------------------------------------------
-        !C6--------FILL CLNCON WITH CONNECTIVITY OF ADJACENT CLN NODES
-        !        IF(ICLNNDS.LT.0)THEN
-        !C6A---------FILL CLN CONNECTIONS SEQUENTIALLY WITH GLOBAL NODE NUMBERS
-        !          NCLNNDS = NNDCLN(NCLN)
-        !          ALLOCATE(CLNCON(NCLNNDS))
-        !          DO I=1,NCLNNDS
-        !            CLNCON(I) = I ! +NODES  ! (KEEP LOCAL NODE NUMBER)
-        !          end do
-        !        ELSE
-        !C6B-------SET NUMBER OF CLN NODES AND READ CONNECTION ARRAY FOR EACH CLN SEGMENT
-        !          NCLNNDS = ICLNNDS
-        !          ALLOCATE(CLNCON(NCLNCONS))
-        !          DO I=1,NCLN
-        !            IF(IFREFM.EQ.0) THEN
-        !              read(Modflow.iCLN,'(200I10)')
-        !     1        (CLNCON(J),J=NNDCLN(I-1)+1,NNDCLN(I))
-        !            ELSE
-        !              read(Modflow.iCLN,*) (CLNCON(J),J=NNDCLN(I-1)+1,NNDCLN(I))
-        !            end if
-        !          end do
-        !cspC6C---------CONVERT CLN-NODE NUMBER TO GLOBAL NODE NUMBER
-        !csp          DO I=1,NCLNCONS
-        !csp            CLNCON(I) = NODES + CLNCON(I)
-        !csp          end do
-        !        end if
-        !C6D--------CONVERT TO IA_CLN AND JA_CLN
-        !        ALLOCATE(IA_CLN(NCLNNDS+1))
-        !        CALL FILLIAJA_CLN
-        !C6E---------DEALLOCATE UNWANTED ARRAYS
-        !        DEALLOCATE (NNDCLN) ! NNDCLN NEEDED FOR WRITING BUDGET TO ASCII FILE?
-        !        DEALLOCATE (CLNCON)
-            ELSE
-                !C----------------------------------------------------------------------
-                !C7------FOR INPUT OF IA AND JAC OF CLN DOMAIN (NCLN = 0), READ DIRECTLY
-                NCLNNDS = ICLNNDS
-                ALLOCATE(IA_CLN(NCLNNDS+1))
-                !C7A-------READ NJA_CLN
-                IF(IFREFM.EQ.0) THEN
-                  read(Modflow.iCLN,'(I10)') NJA_CLN
-                ELSE
-                  read(Modflow.iCLN,*) NJA_CLN
-                end if
-                !C7B-------READ CONNECTIONS PER NODE AND CONNECTIVITY AND FILL IA_CLN AND JA_CLN ARRAYS
-                K = 0
-                CALL U1DINT(IA_CLN,ANAME(2),NCLNNDS,K,INCLN,IOUT)
-                ALLOCATE(JA_CLN(NJA_CLN))
-                CALL U1DINT(JA_CLN,ANAME(3),NJA_CLN,K,INCLN,IOUT)
-                !C7C--------ENSURE POSITIVE TERM FOR DIAGONAL OF JA_CLN
-                DO IJA = 1,NJA_CLN
-                  IF(JA_CLN(IJA).LT.0) JA_CLN(IJA) = -JA_CLN(IJA)
-                end do
-                !C7D--------MAKE IA_CLN CUMULATIVE FROM CONNECTION-PER-NODE
-                DO II=2,NCLNNDS+1
-                  IA_CLN(II) = IA_CLN(II) + IA_CLN(II-1)
-                end do
-                !C---------IA_CLN(N+1) IS CUMULATIVE_IA_CLN(N) + 1
-                DO II=NCLNNDS+1,2,-1
-                  IA_CLN(II) = IA_CLN(II-1) + 1
-                end do
-                IA_CLN(1) = 1
-            end if
-            !C----------------------------------------------------------------------
-            !C8------ALLOCATE SPACE FOR CLN PROPERTY ARRAYS
-            ALLOCATE(ACLNNDS(NCLNNDS,6))
-            ALLOCATE(IFLINCLN(NCLNNDS))
-            ALLOCATE(ICCWADICLN(NCLNNDS))
-            ALLOCATE(ICGWADICLN(NCLNGWC))
-            !C
-            !C9------PREPARE TO REFLECT INPUT PROPERTIES INTO LISTING FILE
-             WRITE(IOUT,21)
-21           FORMAT(/20X,' CONNECTED LINE NETWORK INFORMATION'/&
-                20X,40('-')/5X,'CLN-NODE NO.',1X,'CLNTYP',1X,'ORIENTATION',2X,& 
-               'CLN LENGTH',4X,'BOT ELEVATION',9X,'FANGLE',9X,'IFLIN',11X,&
-               'ICCWADI'/5X,11('-'),2X,6('-'),1X,11('-'),1X,11('-'),4X,13('-'),&
-                4X,11('-'),8X,6('-'),4X,7('-'))
-            !C
-            !C10-------READ BASIC PROPERTIES FOR ALL CLN NODES AND FILL ARRAYS
-            DO I = 1,NCLNNDS
-                CALL URDCOM(INCLN,IOUT,LINE)
-                IF(IFREFM.EQ.0) THEN
-                    READ(LINE,'(3I10,3F10.3,2I10)') IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
-                    !READ(LINE,*) IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
-                    LLOC=71
-                ELSE
-                    LLOC=1
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFTYP,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFDIR,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANGLE,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLIN,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICCWADI,R,IOUT,IOUT)
-                END IF
-                IF(IFLIN.EQ.0) IFLIN = -1
-                !C11A-------FOR ANGLED PIPE, IF DEPTH OF FLOW IS LESS THAN DIAMETER MAKE HORIZONTAL
-                !c        IF(IFDIR.EQ.2)THEN
-                !c          FDPTH = FLENG * SIN(FANGLE)
-                !c          IC=IFTYP
-                !c          CALL CLNR(IC,FRAD)
-                !c          IF(FDPTH.LT.2.0*FRAD) IFDIR = 1
-                !c        end if
-                WRITE(IOUT,22)IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
-22              FORMAT(5X,I10,1X,I6,1X,I10,3(1X,E15.6),1X,I10,1X,I10)
-
-                !C11B------FILL PROPERTY ARRAYS WITH READ AND PREPARE INFORMATION
-                ACLNNDS(I,1) = IFNO + NODES ! GLOBAL NODE NUMBER FOR CLN-CELL
-                ACLNNDS(I,2) = IFTYP
-                ACLNNDS(I,3) = IFDIR
-                ACLNNDS(I,4) = FLENG
-                ACLNNDS(I,5) = FELEV
-                ACLNNDS(I,6) = FANGLE
-                IFLINCLN(I) = IFLIN
-                ICCWADICLN(I) = ICCWADI
-            END DO
-            !----------------------------------------------------------------------------------------
-            !12------ALLOCATE SPACE FOR CLN TO GW PROPERTY ARRAYS
-            ALLOCATE(ACLNGWC(NCLNGWC,6))
-            !----------------------------------------------------------------------------------------
-            !13------READ CONNECTING SUBSURFACE NODE AND ASSOCIATED PARAMETERS
-            IF(IUNSTR.EQ.0)THEN
-                !
-                !14A-----FOR STRUCTURED GRID READ SUBSURFACE NODE IN IJK FORMATS
-                !14A-----AND OTHER CLN SEGMENT PROPERTY INFORMATION
-
-                !1------PREPARE TO REFLECT INPUT INTO LISTING FILE
-               WRITE(IOUT,41)
-41             FORMAT(/20X,' CLN TO 3-D GRID CONNECTION INFORMATION'/&
-                    20X,40('-')/5X,'F-NODE NO.',6X,'LAYER',8X,'ROW',5X,'COLUMN',&
-                    2X,'EQTN. TYPE',5X,'      FSKIN',11X,'FLENG',10X,&
-                    'FANISO',3X,'ICGWADI'/5X,10('-'),6X,5('-'),8X,3('-'),5X,&
-                    6('-'),2X,11('-'),3X,12('-'),2X,14('-'),4X,12('-'),3X,7('-'))
-                
-                !2-------READ PROPERTIES AND SUBSURFACE CONNECTION INFORMATION FOR ALL CLN NODES
-                DO I = 1,NCLNGWC
-                    CALL URDCOM(INCLN,IOUT,LINE)
-                    IF(IFREFM.EQ.0) THEN
-                        READ(LINE,*) IFNO,IFLAY,IFROW,IFCOL,IFCON,&
-                        FSKIN,FLENG,FANISO,ICGWADI
-                        LLOC=91
-                    ELSE
-                        LLOC=1
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLAY,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFROW,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCOL,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCON,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSKIN,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANISO,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICGWADI,R,IOUT,INCLN)
-                    END IF
-                    !3--------SET SKIN PARAMETER AND REFLECT INPUT IN LST FILE
-                    IF(IFCON.EQ.0)FSKIN = 0.0
-                    WRITE(IOUT,52)IFNO,IFLAY,IFROW,IFCOL,IFCON,FSKIN,FLENG,FANISO,&
-                            ICGWADI
-52                          FORMAT(5X,I10,3(1X,I10),2X,I10,3(1X,E15.6),1X,I9)
-                            
-                        
-                    !4--------FILL CLN AND GW NODE NUMBERS AND CONNECTION PROPERTY MATRIX
-                    ACLNGWC(I,1) = IFNO
-                    IFNOD = (IFLAY-1)*NROW*NCOL + (IFROW-1)*NCOL + IFCOL
-                    ACLNGWC(I,2) = IFNOD
-                    ACLNGWC(I,3) = IFCON
-                    ACLNGWC(I,4) = FSKIN
-                    ACLNGWC(I,5) = FANISO
-                    ACLNGWC(I,6) = FLENG
-                    ICGWADICLN(I) = ICGWADI
-                end do
-            ELSE
-                !
-                !14B-----FOR UNSTRUCTURED GRID READ SUBSURFACE NODE NUMBER OF
-                !14B-----CONNECTION AND OTHER CLN SEGMENT PROPERTY INFORMATION
-
-                !1------PREPARE TO REFLECT INPUT INTO LISTING FILE
-                WRITE(IOUT,23)
-23              FORMAT(/20X,' CLN TO 3-D GRID CONNECTION INFORMATION'/&
-                    20X,40('-')/5X,'F-NODE NO.',1X,'GW-NODE NO',2X,&
-                    'EQTN. TYPE',2X,'      FSKIN',11X,&
-                    'FLENG',9X,'FANISO'3X,'ICGWADI'/5X,10('-'),1X,10('-'),&
-                    1X,11('-'),5X,11('-'),1X,17('-'),1X,15('-'),3X,10('-'))
-                
-                !2-------READ PROPERTIES AND SUBSURFACE CONNECTION INFORMATION FOR ALL CLN NODES
-                DO I = 1,NCLNGWC
-                    CALL URDCOM(INCLN,IOUT,LINE)
-                    IF(IFREFM.EQ.0) THEN
-                        READ(LINE,'(3I10,3F10.3,I10)') IFNO,IFNOD,IFCON,FSKIN,FLENG,&
-                            FANISO,ICGWADI
-                        LLOC=71
-                    ELSE
-                        LLOC=1
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNOD,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFCON,R,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FSKIN,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANISO,IOUT,INCLN)
-                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICGWADI,R,IOUT,INCLN)
-                    END IF
-                    !3--------SET SKIN PARAMETER AND REFLECT INPUT IN LST FILE
-                    IF(IFCON.EQ.0)FSKIN = 0.0
-                    WRITE(IOUT,24)IFNO,IFNOD,IFCON,FSKIN,FLENG,FANISO,ICGWADI
-24                  FORMAT(5X,I10,1X,I10,2X,I10,3(1X,E15.6),1X,I9)
-                    
-                    !4--------FILL CLN AND GW NODE NUMBERS AND CONNECTION PROPERTY MATRIX
-                    ACLNGWC(I,1) = IFNO
-                    ACLNGWC(I,2) = IFNOD
-                    ACLNGWC(I,3) = IFCON
-                    ACLNGWC(I,4) = FSKIN
-                    ACLNGWC(I,5) = FANISO
-                    ACLNGWC(I,6) = FLENG
-                    ICGWADICLN(I) = ICGWADI
-                end do
-                
-            end if
-            !!----------------------------------------------------------------------------------------
-            !!15B------ALLOCATE SPACE AND FILL PROPERTIES FOR ALL CONDUIT TYPE CLNs
-            !      IF(NRECTYP.GT.0)THEN
-            !        CALL SCLN2REC1RP
-            !      end if
-            !!----------------------------------------------------------------------------------------
-            !!16------ALLOCATE SPACE AND FILL PROPERTIES FOR OTHER CLN TYPES HERE
-            !!ADD------ADD OTHER CLN TYPE READ AND PREPARE INFORMATION HERE
-            !!----------------------------------------------------------------------------------------
-               
-            WRITE(IOUT,'(/,A)')' IA_CLN IS BELOW, 40I10'
-            WRITE(IOUT,55)(IA_CLN(I),I=1,NCLNNDS+1)
-            WRITE(IOUT,*)'NJA_CLN = ',NJA_CLN
-            WRITE(IOUT,*)'JA_CLN IS BELOW, 40I10'
-            WRITE(IOUT,55)(JA_CLN(J),J=1,NJA_CLN)
-55          FORMAT(40I10)
-            
-            exit
-            
-        end do
-        RETURN
-    end subroutine ReadCLN
-
-          SUBROUTINE ReadSWF(Modflow)
+    SUBROUTINE ReadSWF(Modflow)
 !     ******************************************************************
 !     ALLOCATE SPACE AND READ NODE AND CONNECTIVITY INFORMATION FOR SWF DOMAIN
 !     ******************************************************************
@@ -15081,6 +15411,8 @@
         read(Modflow.iCLN_GSF,*) Modflow.CLN.meshtype
         read(Modflow.iCLN_GSF,*) Modflow.CLN.nCells, Modflow.CLN.nLayers, Modflow.CLN.iz, Modflow.CLN.ic
         read(Modflow.iCLN_GSF,*) Modflow.CLN.nNodes
+        Modflow.CLN.nElements=Modflow.CLN.nCells
+
         allocate(Modflow.CLN.x(Modflow.CLN.nNodes),Modflow.CLN.y(Modflow.CLN.nNodes),Modflow.CLN.z(Modflow.CLN.nNodes), stat=ialloc)
         call AllocChk(ialloc,'CLN node coordinate arrays')
         Modflow.CLN.x = 0 ! automatic initialization
