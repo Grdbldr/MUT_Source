@@ -45,10 +45,12 @@
 \begin{document}
 
 \begin{titlepage}
+    \vspace{1in}
     \centering
     \vfill
     {\bfseries\Huge
-        Modflow User Tools (MUT): User's Guide\\
+        Modflow User Tools (MUT) Version 1.22\\
+         User's Guide\\
     }
     \vspace{1in}
 
@@ -56,9 +58,9 @@
 
     \vspace{1in}
     {\bfseries\Large
-        May 2024\\
+        August 2024\\
         \vskip2cm
-        Rob McLaren\\
+        Rob McLaren, Young-jin Park, Sorab Panday\\
     }
 
     \vfill
@@ -71,19 +73,37 @@
 
 \chapter{Introduction} \input{Introduction}
     \section{Installation and Setup}\input{Installation}
+
 \chapter{Model Characteristics}\input{ModelCharacteristicsINTRO}
+
 \chapter{Physical Properties}
     \section{Groundwater Flow(GWF) Domain}
         \subsection{Mesh}
-        \subsection{Connected Linear Networks CLN}
-        \subsection{Surfacewater Flow SWF}
+    \section{Connected Linear Networks(CLN) Domain}
+    \section{Surface Water Flow(SWF) Domain}
+
 \chapter{Boundary Conditions}
     \section{Constrained Head}
-        \subsection{Constant Head}\input{ConstantHead}
-        \subsection{Drains}\input{Drains}
+        \subsection{Constant Head(CHD)}\input{ConstantHead}
+        \subsection{Drains(DRN)}\input{Drains}
     \section{Constrained Flow}
-        \subsection{Recharge}
+        \subsection{Recharge(RCH)}
         \subsection{Pumping}
+        \subsection{Critical Depth}
+        \subsection{Zero-Gradient Depth}
+
+\chapter{Examples}
+    \section{1D Column}
+        \subsection{Model Build}
+        \subsection{Modflow-USG Execution}
+        \subsection{Model Post-processing}
+    \section{2D Hillslope}
+        \subsection{Groundwater Flow with Drains}
+        \subsection{Surface water - Groundwater Flow with Critical Depth Boundary }
+    \section{3D Abdul's Experiment}
+        \subsection{Triangles}
+        \subsection{Rectangles}
+        \subsection{Node-centred Approach for Modflow Cell Definition}
 
 \printindex
 \newpage

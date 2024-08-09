@@ -116,10 +116,6 @@
     character(MAX_INST) :: GenOCFile_CMD='generate output control file'
 
     character(MAX_INST) :: StressPeriod_CMD='stress period'
-    ! StressPeriod_CMD subcommands
-    character(MAX_INST) :: StressPeriodType_CMD	                =   'type'
-    character(MAX_INST) :: StressPeriodDuration_CMD	            =   'duration'
-    character(MAX_INST) :: StressPeriodNumberOfTimesteps_CMD	=   'number of timesteps'
 
     character(MAX_INST) :: HGSToModflowStructure_CMD='hgs to modflow structure'
 
@@ -398,11 +394,16 @@
         
         !Stress Periods
         integer :: nPeriods = 0
-        real(dr), allocatable :: StressPeriodLength(:)
-        integer, allocatable :: nTsteps(:)
-        real(dr), allocatable :: TstepMult(:)
+        real, allocatable :: StressPeriodDuration(:)
+        integer, allocatable :: StressPeriodnTsteps(:)
+        real, allocatable :: StressPeriodnTstepMult(:)
         character(2), allocatable :: StressPeriodType(:)
-        
+        ! Stress period defaults
+        real :: StressPeriodDeltat=1.000000e-03
+        real :: StressPeriodTminat=1.000000e-05
+        real :: StressPeriodTmaxat=60.0d0
+        real :: StressPeriodTadjat=1.100000e+00
+        real :: StressPeriodTcutat=2.000000e+00        
         
         ! LPF file
         character(128) :: FNameLPF
@@ -607,6 +608,7 @@
     integer, Parameter :: MAXSTRESS=10000  ! assuming never more than 10000 Stress Periods
 
     real :: MinSeparationDistance=0.0001
+    
     
     contains
 
@@ -1083,6 +1085,33 @@
         
 		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWFMaterialName(iMaterial)))
         
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Alpha:             ',Alpha(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Beta:              ',Beta(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Sr:                ',Sr(iMaterial)
+        call Msg(TmpSTR)
+        select case(UnsaturatedFunctionType(iMaterial))
+        case ('Van Genuchten')
+            write(TmpSTR,'(a)')    TAB//'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
+            call Msg(TmpSTR)
+        case ('Brooks-Corey')
+            write(TmpSTR,'(a)')        TAB//'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5)')TAB//'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
+            call Msg(TmpSTR)
+        case default
+            call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
+        end select
+        
         do i=1,domain.nCells
             if(bcheck(domain.Cell_is(i),chosen)) then
                 if(domain.name == 'GWF') then
@@ -1090,10 +1119,19 @@
                     domain.Kv(i)=Kv_Kz(iMaterial)
                     domain.Ss(i)=Specificstorage(iMaterial)
                     domain.Sy(i)=SpecificYield(iMaterial)
-                    domain.Brooks(i)=Brooks_Corey(iMaterial)
                     domain.Alpha(i)=Alpha(iMaterial)
                     domain.Beta(i)=Beta(iMaterial)
                     domain.Sr(i)=Sr(iMaterial)
+                    
+                    select case(UnsaturatedFunctionType(iMaterial))
+                    case ('Van Genuchten')
+                        domain.Brooks(i)= -BrooksCoreyExponent(iMaterial)
+                    case ('Brooks-Corey')
+                        domain.Brooks(i)=BrooksCoreyExponent(iMaterial)
+                    case default
+                        call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
+                    end select
+
                 endif
             end if
         end do
@@ -1116,8 +1154,32 @@
         write(TmpSTR,'(g15.5)') iMaterial
         
 		call Msg(TAB//'Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial)))
+        select case(Geometry(iMaterial))
+        case ('Circular')
+            write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5)')TAB//'Circular Radius:    ',CircularRadius(iMaterial)
+            call Msg(TmpSTR)
+        case ('Rectangular')
+            write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5)')TAB//'Rectangular Width:  ',RectangularWidth(iMaterial)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5)')TAB//'Rectangular Height: ',RectangularHeight(iMaterial)
+            call Msg(TmpSTR)
+        case default
+            call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
+        end select
 
-       
+        write(TmpSTR,'(a)')            TAB//'Direction:          '//Direction(iMaterial)
+        call Msg(TmpSTR)
+        
+        write(TmpSTR,'(a)')            TAB//'Flow Treatment:     '//FlowTreatment(iMaterial) 
+        call Msg(TmpSTR)
+
+        write(TmpSTR,'(a,1pg15.5)')    TAB//'Longitudinal K:     ',LongitudinalK(iMaterial)
+        call Msg(TmpSTR)
+      
         do i=1,CLN.nZones
             if(bcheck(CLN.Zone_is(i),chosen)) then
                 select case(Geometry(iMaterial))
@@ -1186,7 +1248,16 @@
         write(TmpSTR,'(g15.5)') iMaterial
         
 		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWFMaterialName(iMaterial)))
-
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,1pg15.5)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)
+        call Msg(TmpSTR)
        
         do i=1,domain.nZones
             if(bcheck(domain.Zone_is(i),chosen)) then
@@ -1672,15 +1743,13 @@
              else if(index(instruction, ChooseNodeAtXYZ_CMD)  /= 0) then
                 select case(ActiveDomain)
                 case (iTMPLT)
-                    call ChooseNodeAtXYZ(FnumMUT,TMPLT)
-                
-                ! these domains don't have nodes, they have cells
-                !case (iGWF)
-                !    call ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
-                !case (iSWF)
-                !    call ChooseNodeAtXYZ(FnumMUT,modflow.SWF)
-                !case (iCLN)
-                !    call ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
+                    call ChooseNodeAtXYZTemplate(FnumMUT,TMPLT)
+                case (iGWF)
+                    call ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseNodeAtXYZ(FnumMUT,Modflow.SWF)
+                case (iCLN)
+                    call ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
                 end select
 
              else if(index(instruction, ChooseAllCells_CMD)  /= 0) then
@@ -2431,7 +2500,16 @@
             end do
         end if
         
-        ! Element node list
+        ! Modflow SWF node coordinates 
+        allocate(Modflow.SWF.x(Modflow.SWF.nNodes),Modflow.SWF.y(Modflow.SWF.nNodes),Modflow.SWF.z(Modflow.SWF.nNodes),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Node coordinate arrays')
+        do i=1,Modflow.SWF.nNodes
+            Modflow.SWF.x(i)=TECPLOT_SWF.x(i)
+            Modflow.SWF.y(i)=TECPLOT_SWF.y(i)
+            Modflow.SWF.z(i)=TECPLOT_SWF.z(i)
+        end do
+
+            ! Element node list
         allocate(Modflow.SWF.iNode(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell node list array')
         Modflow.SWF.iNode(:,:) = TECPLOT_SWF.iNode(:,:)
@@ -2770,11 +2848,41 @@
 
     end subroutine ChooseAllCells
     !----------------------------------------------------------------------
-    subroutine ChooseNodeAtXYZ(FNumMut,Domain)
+    subroutine ChooseNodeAtXYZTemplate(FNumMut,Domain)
         implicit none
         
         integer :: FNumMUT
         type(TecplotDomain) Domain
+
+	    integer :: i,iNode
+	    real(dr) :: x1,y1,z1,dist_min,f1
+
+        read(FNumMut,*) x1,y1,z1
+        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
+        call Msg(TMPStr)
+
+        dist_min=1.0e20
+	    do i=1,domain.nnodes
+		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
+		    if(f1.lt.dist_min) then
+			    inode=i
+			    dist_min=f1
+		    endif
+	    end do
+        call set(domain.Node_Is(iNode),chosen)
+        
+        write(tmpSTR,'(a14,3f17.5)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode)
+        call Msg(tmpSTR)
+		write(tmpSTR,'(a14,3f17.5)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1
+        call Msg(tmpSTR)
+
+    end subroutine ChooseNodeAtXYZTemplate
+    !----------------------------------------------------------------------
+    subroutine ChooseNodeAtXYZ(FNumMut,Domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type(ModflowDomain) Domain
 
 	    integer :: i,iNode
 	    real(dr) :: x1,y1,z1,dist_min,f1
@@ -6825,21 +6933,26 @@
         type (ModflowProject) Modflow
         
         integer, parameter :: MAXStressPeriods=100
-
+        character(MAX_INST) :: Type_CMD	                =   'type'
+        character(MAX_INST) :: Duration_CMD	            =   'duration'
+        character(MAX_INST) :: NumberOfTimesteps_CMD	=   'number of timesteps'
+        character(MAX_INST) :: Deltat_CMD	=   'deltat'
+        character(MAX_INST) :: Tminat_CMD	=   'tminat'
+        character(MAX_INST) :: Tmaxat_CMD	=   'tmaxat'
+        character(MAX_INST) :: Tadjat_CMD	=   'tadjat'
+        character(MAX_INST) :: Tcutat_CMD	=   'tcutat'
         Modflow.nPeriods=Modflow.nPeriods+1  
         write(TmpSTR,'(a,i8)')TAB//'Stress period ',Modflow.nPeriods
         call Msg(trim(TmpSTR))
         
         if(Modflow.nPeriods == 1) then
-            allocate(Modflow.StressPeriodLength(MAXStressPeriods), Modflow.nTsteps(MAXStressPeriods), &
-            Modflow.TstepMult(MAXStressPeriods), Modflow.StressPeriodType(MAXStressPeriods),stat=ialloc)
-            Modflow.StressPeriodLength(:)=1.0d0
-            Modflow.nTsteps(:)=1
-            Modflow.TstepMult(:)=1.1d0
+            allocate(Modflow.StressPeriodDuration(MAXStressPeriods), Modflow.StressPeriodnTsteps(MAXStressPeriods), &
+            Modflow.StressPeriodnTstepMult(MAXStressPeriods), Modflow.StressPeriodType(MAXStressPeriods),stat=ialloc)
+            Modflow.StressPeriodDuration(:)=1.0d0
+            Modflow.StressPeriodnTsteps(:)=1
+            Modflow.StressPeriodnTstepMult(:)=1.1d0
             Modflow.StressPeriodType(:)='TR'
         end if
-
-
         
         read_StressPeriod_instructions: do
             read(FNumMUT,'(a)',iostat=status) instruction
@@ -6854,7 +6967,7 @@
                 call Msg(TAB//instruction)
             end if
 
-            if(index(instruction,StressPeriodType_cmd) /=0) then
+            if(index(instruction,Type_cmd) /=0) then
                 read(FNumMUT,'(a)') modflow.StressPeriodType(Modflow.nPeriods)
                 if(modflow.StressPeriodType(Modflow.nPeriods) /= 'SS' .and. modflow.StressPeriodType(Modflow.nPeriods) /= 'TR') then
                     call ErrMsg('Stress Period type must begin with either SS or TR')
@@ -6862,17 +6975,41 @@
                 write(TmpSTR,'(a,1pg12.4)')TAB//'Modflow stress period type: ',modflow.StressPeriodType(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
 
-            else if(index(instruction,StressPeriodDuration_cmd) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodLength(Modflow.nPeriods)
-                write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodLength(Modflow.nPeriods)
+            else if(index(instruction,Duration_cmd) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodDuration(Modflow.nPeriods)
+                write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodDuration(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
                 
-            else if(index(instruction,StressPeriodNumberOfTimesteps_CMD) /=0) then
-                read(FNumMUT,*) modflow.nTSteps(Modflow.nPeriods)
-                write(TmpSTR,'(a,i5)')TAB,modflow.nTSteps(Modflow.nPeriods)
+            else if(index(instruction,NumberOfTimesteps_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodnTsteps(Modflow.nPeriods)
+                write(TmpSTR,'(a,i5)')TAB,modflow.StressPeriodnTsteps(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
-                
-                
+
+            else if(index(instruction,Deltat_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodDeltat
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Deltat: ',modflow.StressPeriodDeltat
+                call Msg(trim(TmpSTR))
+
+            else if(index(instruction,Tminat_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodTminat
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Tminat: ',modflow.StressPeriodTminat
+                call Msg(trim(TmpSTR))
+
+            else if(index(instruction,Tmaxat_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodTmaxat
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Tmaxat: ',modflow.StressPeriodTmaxat
+                call Msg(trim(TmpSTR))
+
+            else if(index(instruction,Tadjat_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodtadjat
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Tadjat: ',modflow.StressPeriodtadjat
+                call Msg(trim(TmpSTR))
+
+            else if(index(instruction,Tcutat_CMD) /=0) then
+                read(FNumMUT,*) modflow.StressPeriodTcutat
+                write(TmpSTR,'(a,1pg12.4)')TAB//'Tcutat: ',modflow.StressPeriodTcutat
+                call Msg(trim(TmpSTR))
+
             else
 			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
             end if
@@ -7397,7 +7534,7 @@
         end do
         
         do i=1,Modflow.nPeriods
-            write(Modflow.iDISU,*) modflow.StressPeriodLength(i), modflow.nTsteps(i), modflow.TstepMult(i), modflow.StressPeriodType(i)
+            write(Modflow.iDISU,*) modflow.StressPeriodDuration(i), modflow.StressPeriodnTsteps(i), modflow.StressPeriodnTstepMult(i), modflow.StressPeriodType(i)
         end do
 
 
@@ -7566,11 +7703,11 @@
         write(Modflow.iOC,'(a,i5)') 'DRAWDOWN PRINT FORMAT 0'
         do i=1,modflow.nPeriods
             write(Modflow.iOC,'(a,i5)') 'PERIOD ',i
-            write(Modflow.iOC,'(a)') '    DELTAT 1.000000e-03'
-            write(Modflow.iOC,'(a)') '    TMINAT 1.000000e-05'
-            write(Modflow.iOC,'(a)') '    TMAXAT 60.0d0'
-            write(Modflow.iOC,'(a)') '    TADJAT 1.100000e+00'
-            write(Modflow.iOC,'(a)') '    TCUTAT 2.000000e+00'
+            write(Modflow.iOC,'(a,1pg12.4)') '    DELTAT ', modflow.StressPeriodDeltat
+            write(Modflow.iOC,'(a,1pg12.4)') '    TMINAT ', modflow.StressPeriodTminat
+            write(Modflow.iOC,'(a,1pg12.4)') '    TMAXAT ', modflow.StressPeriodTmaxat
+            write(Modflow.iOC,'(a,1pg12.4)') '    TADJAT ', modflow.StressPeriodTadjat
+            write(Modflow.iOC,'(a,1pg12.4)') '    TCUTAT ', modflow.StressPeriodTcutat
             write(Modflow.iOC,'(a)') '        SAVE HEAD'
             write(Modflow.iOC,'(a)') '        PRINT HEAD'
             write(Modflow.iOC,'(a)') '        SAVE DRAWDOWN'
@@ -11327,7 +11464,7 @@
       
       integer :: in, np, naux, ioutu, mxactd, nread, n, l, ir, ic, il
 
-      in=modflow.iRCH
+      in=modflow.iDRN
       iout=FNumEco
       
 !     ------------------------------------------------------------------

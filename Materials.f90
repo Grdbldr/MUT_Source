@@ -11,10 +11,11 @@ Module Materials
         real, allocatable :: Ky(:)
         real, allocatable :: Specificstorage(:)
         real, allocatable :: SpecificYield(:)
-        integer, allocatable :: Brooks_Corey(:)
+        character*256, allocatable :: UnsaturatedFunctionType(:)
         real, allocatable :: Alpha(:)
         real, allocatable :: Beta(:)
         real, allocatable :: Sr(:)
+        real, allocatable :: BrooksCoreyExponent(:)   
         integer, allocatable :: Tabular_Input(:)
         character*256, allocatable :: PSTable(:)
         character*256, allocatable :: SKrTable(:)
@@ -122,10 +123,11 @@ Module Materials
             Ky(nGWFMaterials), & 
             Specificstorage(nGWFMaterials), & 
             SpecificYield(nGWFMaterials), & 
-            Brooks_Corey(nGWFMaterials), & 
+            UnsaturatedFunctionType(nGWFMaterials), & 
             Alpha(nGWFMaterials), & 
             Beta(nGWFMaterials), & 
             Sr(nGWFMaterials), & 
+            BrooksCoreyExponent(nGWFMaterials), & 
             Tabular_Input(nGWFMaterials), & 
             PSTable(nGWFMaterials), & 
             SKrTable(nGWFMaterials), & 
@@ -143,10 +145,11 @@ Module Materials
                 Ky(i), & 
                 Specificstorage(i), & 
                 SpecificYield(i), & 
-                Brooks_Corey(i), & 
+                UnsaturatedFunctionType(i), & 
                 Alpha(i), & 
                 Beta(i), & 
                 Sr(i), & 
+                BrooksCoreyExponent(i), & 
                 Tabular_Input(i), & 
                 PSTable(i), & 
                 SKrTable(i)
