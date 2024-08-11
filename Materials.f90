@@ -100,20 +100,19 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+        integer :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
-        ! Count materials
+        ! Find largest material number
         read(itmp,'(a)') line
-        i=0
+        nGWFMaterials=0
         do
-	        read(itmp,*,iostat=status) line
+	        read(itmp,*,iostat=status) id
             if(status/=0) exit
-            i=i+1        
+            if(id>nGWFMaterials) nGWFMaterials=id        
         end do
-        
-        nGWFMaterials=i
         
         allocate(GWFMaterialID(nGWFMaterials), & 
             GWFMaterialName(nGWFMaterials), & 
@@ -168,20 +167,19 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+        integer :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
         read(itmp,'(a)') line
-        i=0
+        nCLNMaterials=0
         do
-	        read(itmp,*,iostat=status) line
+	        read(itmp,*,iostat=status) id
             if(status/=0) exit
-            i=i+1        
+            if(id>nCLNMaterials) nCLNMaterials=id        
         end do
-        
-        nCLNMaterials=i
         
         allocate(CLN_ID(nCLNMaterials), & 
                  CLN_Name(nCLNMaterials), & 
@@ -225,20 +223,19 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+        integer :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
         read(itmp,'(a)') line
-        i=0
+        nSWFMaterials=0
         do
-	        read(itmp,*,iostat=status) line
+	        read(itmp,*,iostat=status) id
             if(status/=0) exit
-            i=i+1        
+            if(id>nSWFMaterials) nSWFMaterials=id        
         end do
-        
-        nSWFMaterials=i
         
         allocate(SWFMaterialID(nSWFMaterials), & 
             SWFMaterialName(nSWFMaterials), & 

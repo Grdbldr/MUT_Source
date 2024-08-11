@@ -13439,7 +13439,7 @@
                     NDSLAY = NNDLAY - NODLAY(K-1)          
                     CALL ULASAVURD(domain.head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
                         TOTIMREAD,NSTRT,NNDLAY,ILAY,domain.iHDS,NODES)
-                    WRITE(TmpSTR,'(3(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.head(1,i),TEXT
+                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.head(1,i),TEXT
                     call msg(TmpSTR)
                 END DO
             end do
@@ -13453,7 +13453,7 @@
 !                CALL ULASAV(BUFF(1),TEXT,KSTP,KPER,PERTIM,TOTIM,NCLNNDS,
 !1         1,1,ICLNHD)
 
-          WRITE(TmpSTR,'(2(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.head(1,i),TEXT
+          WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.head(1,i),TEXT
                 call msg(TmpSTR)
             end do
         end if
@@ -13488,7 +13488,7 @@
                     NDSLAY = NNDLAY - NODLAY(K-1)          
                     CALL ULASAVURD(domain.Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
                         TOTIMREAD,NSTRT,NNDLAY,ILAY,domain.iDDN,NODES)
-                    WRITE(TmpSTR,'(3(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.Drawdown(1,i),TEXT
+                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.Drawdown(1,i),TEXT
                     call msg(TmpSTR)
                 END DO
             end do
@@ -13498,7 +13498,7 @@
                 IDUM = 1
                 CALL ULASAVRD(domain.Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
                     TOTIMREAD,domain.ncells,IDUM,IDUM,domain.iDDN)
-                WRITE(TmpSTR,'(2(i10), 2(f10.3), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.Drawdown(1,i),TEXT
+                WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.Drawdown(1,i),TEXT
                 call msg(TmpSTR)
             end do
         end if
