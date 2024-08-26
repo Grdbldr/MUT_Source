@@ -1,0 +1,11 @@
+\label{texfile:SWF}
+In \mut\, a 2D template mesh is first defined and then a surface water flow (SWF) domain is generated from it using the
+instruction \textsf{generate swf domain}, as shown in this example:
+\begin{verbatim}
+    generate swf domain
+        top elevation
+            elevation from gb file
+            ./gb/grid.nprop.Surface elevation
+        end
+    end
+\end{verbatim}

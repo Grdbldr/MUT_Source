@@ -1,0 +1,24 @@
+\label{texfile:GWF}
+In \mut, a 2D template mesh is first defined and then a 3D groundwater flow (GWF) domain is generated from it using the
+instruction \textsf{generate layered gwf domain}, as shown in this example:
+\begin{verbatim}
+    generate layered gwf domain
+
+        top elevation
+            elevation from gb file
+            ./gb/grid.nprop.Surface elevation
+        end
+
+        new layer
+            layer name
+            Top layer
+
+            uniform sublayering
+            5
+
+            elevation from gb file
+            ./gb/grid.nprop.Surface elevation - 0.5 m
+        end
+...
+\end{verbatim}
+

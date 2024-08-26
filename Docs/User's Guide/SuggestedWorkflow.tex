@@ -1,0 +1,11 @@
+\label{Appendix:SuggestedWorkflow}A well-designed workflow should minimize the introduction of human error into the modelling process and facilitate later review by senior modellers.   Below we describe one possible approach that can be used as a starting point for implementing your own personal workflow.  We will use the verification example \verb+6_Abdul_Prism_Cell+ to demonstrate our suggested workflow. The steps in the workflow are:
+\begin{enumerate}
+    \item Copy an existing \mut\ project folder to a new working folder. \label{step:copy}
+    \item Modify the \verb+_build.mut+ file (and other input files if necessary) to reflect the new Modflow project.\label{step:modify}
+    \item Run \mut\ to build the new Modflow project, which produces \tecplot\ output files for the various Modflow domains (i.e. GWF, SWF and/or CLN) created during the build process. \label{step:mut1}
+    \item Run \tecplot\ and examine the build output files.   Repeat steps~\ref{step:modify}-\ref{step:mut1} until the new project is defined correctly.\label{step:Tecplot1}
+    \item Run Modflow to create the new project output files (e.g.\ time-varying hydraulic head, drawdown etc).\label{step:modflow}
+    \item Run \verb+_post.mut+ to post-process the Modflow project, which produces \tecplot\ output files for the various Modflow domains (i.e.\ GWF, SWF and/or CLN) created during the Modflow simulation.\label{step:mut2}
+    \item Run \tecplot\ and examine the Modflow output files.   \label{step:Tecplot2}
+\end{enumerate}
+

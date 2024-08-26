@@ -1,7 +1,17 @@
-This document describes a Modflow interface called Modflow User Tools (MUT), which uses a
-text-based approach to build a modflow project.  It currently relies on Tecplot\copyright, a third-party visualization software package,
-to provide a 3D graphical interface for viewing the project mesh and properties during construction and then later for visualizing model results. In future, other visualization packages, including the open source program Paraview, could be supported and used instead.
+\label{texfile:Introduction} This document describes a new \mfu\footnote{\url{https://www.gsienv.com/software/modflow-usg/modflow-usg/}}  development environment which has the following features:
+\begin{itemize}
+    \item We refer to it as Modflow User Tools, or \mut\ for short.
+    \item \mut\ is designed to work with a modified version of \mfu,  where a new surface water flow package, called \swf, has been added. Like the Connected Linear Network (\cln) package, the \swf\ package represents a new domain type that is fully-coupled to the 3D groundwater flow (\gwf) domain. There cab also be cell-to-cell flows between the \swf\ and \cln\ domains.  The \swf\ domain uses the diffusion-wave approach so simulate 2D surface-water flow.
+    \item We currently develop and run it on a \windows\ 10-based computing platform, writing software using the \ifort\footnote{\url{https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit.html}} compiler running inside the \vstudio\footnote{\url{https://visualstudio.microsoft.com/vs/community/}} interactive development environment, which includes software version control tools through \github.
+    \item A text-based approach is used for the \mut\ interface, in which we first develop an input file of instructions that define our \mfus\ project,  then run \mut\ to read it and write a complete \mfus\ data set. \mut\ also writes output files for \tecplot\footnote{\url{https://tecplot.com/products/tecplot-360/}}, a third-party visualization software package, which provides a 3D graphical visualization tool to review the model numerical mesh and material properties in the data set. In future, \mut\ could be extended to support other third-party visualization packages, for example the open source program Paraview.
+    \item \mut\ can post-process a \mfus\ simulation to provide a \tecplot\ visualization of temporal model results, including hydraulic heads, saturations, water depths and flow budget data.  \textit{If applied to output files which were produced by an earlier version of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superceded.}
+\end{itemize}
 
-The targeted version of Modflow is Modflow-USG (UnStructured Grid), which includes a new package that adds fully-coupled 2D surface water flow in a manner similar to the Connected Linear Network (CLN) package.
-
-MUT can also post-process a Modflow-USG simulation to provide a Tecplot visualization.  If applied to older projects, which were constructed using earlier versions of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superceded by more modern ones. 
+This document is subivided into the following sections:
+\begin{description}
+    \item[Chapter~\ref{texfile:Installation}]\textbf{Installation and Setup:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
+     \item[Chapter~\ref{texfile:ModelBuild}]\textbf{Model Build:} How to build a \mut\ input file, run \mut\ to produce a \mfus-compatible data set and \tecplot-compatible output files, and run \tecplot\ to review the results of the model build.
+    \item[Chapter~\ref{texfile:ModelExecution}]\textbf{Model Execution and Post-Processing} How to run \mfus\, run \mut\ to convert the output to \tecplot-compatible output files, and run and run \tecplot\ to visualize the results of the model run.
+    \item[Chapter~\ref{texfile:Examples}]\textbf{Examples} Examples of \mfus\ models built using \mut\ for both the verification and illustration of \mut\ and \mfus\ useage.
+    \item[Chapter~\ref{texfile:Tutorial}]\textbf{Tutorial} In the tutorial, we build a 3D fully-coupled GWF-SWF model, check the build using \tecplot, run \mfus\ to generate output, then examine the results using \tecplot.
+\end{description} 

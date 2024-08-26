@@ -36,9 +36,40 @@
     urlcolor=magenta        % color of external links
 }
 
-\graphicspath{{SourceMaterial/}} %Setting the graphicspath
+%\usepackage{wrapfig}
+
+
+\graphicspath{{Imagery/}} %Setting the graphicspath
 
 %\includeonly{Poultry}
+
+% Software names small caps
+\newcommand{\windows}{\textsc{Microsoft Windows}}
+\newcommand{\vstudio}{\textsc{Microsoft Visual Studio}}
+\newcommand{\dbase}{\textsc{Microsoft Access}}
+\newcommand{\mut}{\textsc{Mut}}
+\newcommand{\mf}{\textsc{Modflow}}
+\newcommand{\mfu}{\textsc{Modflow-Usg}}
+\newcommand{\mfus}{\textsc{Modflow-Usg-Swf}}
+\newcommand{\tecplot}{\textsc{Tecplot}}
+\newcommand{\github}{\textsc{GitHub}}
+\newcommand{\ifort}{\textsc{Intel Fortran}}
+
+% Code, variable names san serif
+\newcommand{\gwf}{\textsf{GWF}}
+\newcommand{\cln}{\textsf{CLN}}
+\newcommand{\swf}{\textsf{SWF}}
+
+% Filenames, system commands typewriter texttt
+\newcommand{\bin}{\texttt{USERBIN}}
+
+
+\newcommand{\ins}[1]{\rule{\textwidth}{0.02in}
+                      {\Large \sf #1 } \\
+                      %{#2  \rule{0.1in}{0.in}}  \\
+                      \raisebox{.01in}{ \hspace*{.4\textwidth} $\bullet \bullet \bullet$}
+                      \index{Input instructions ! #1} }
+
 
 \makeindex
 
@@ -52,11 +83,11 @@
         Modflow User Tools (MUT) Version 1.22\\
          User's Guide\\
     }
-    \vspace{1in}
+    \vspace{.3in}
 
-    %\includegraphics[width=0.9\textwidth]{Title}
+    \includegraphics[width=0.8\textwidth]{mutts}
 
-    \vspace{1in}
+    \vspace{.3in}
     {\bfseries\Large
         August 2024\\
         \vskip2cm
@@ -69,41 +100,35 @@
 
 \pagestyle{empty} \tableofcontents
 
+\chapter{Introduction}\input{Introduction}
 
+\chapter{Software Installation and Useage}\input{Installation}
 
-\chapter{Introduction} \input{Introduction}
-    \section{Installation and Setup}\input{Installation}
-
-\chapter{Model Characteristics}\input{ModelCharacteristicsINTRO}
-
-\chapter{Physical Properties}
-    \section{Groundwater Flow(GWF) Domain}
-        \subsection{Mesh}
-    \section{Connected Linear Networks(CLN) Domain}
-    \section{Surface Water Flow(SWF) Domain}
-
-\chapter{Boundary Conditions}
-    \section{Constrained Head}
+\chapter{Model Build}\input{ModelBuild}
+    \section{Suggested Workflow}\input{SuggestedWorkflow}
+    \section{\mut\ Input File Structure}\input{InputFile}
+    \section{\tecplot\ Useage}\input{Tecplot}
+    \section{Groundwater Flow(GWF) Domain}\input{GWF}
         \subsection{Constant Head(CHD)}\input{ConstantHead}
         \subsection{Drains(DRN)}\input{Drains}
-    \section{Constrained Flow}
         \subsection{Recharge(RCH)}
         \subsection{Pumping}
+    \section{Connected Linear Networks(CLN) Domain}
+    \section{Surface Water Flow(SWF) Domain}
         \subsection{Critical Depth}
         \subsection{Zero-Gradient Depth}
 
-\chapter{Examples}
-    \section{1D Column}
-        \subsection{Model Build}
-        \subsection{Modflow-USG Execution}
-        \subsection{Model Post-processing}
-    \section{2D Hillslope}
-        \subsection{Groundwater Flow with Drains}
-        \subsection{Surface water - Groundwater Flow with Critical Depth Boundary }
-    \section{3D Abdul's Experiment}
-        \subsection{Triangles}
-        \subsection{Rectangles}
-        \subsection{Node-centred Approach for Modflow Cell Definition}
+\chapter{Model Execution and Post-Processing}\input{ModelExecution}
+
+\chapter{Examples}\input{Examples}
+    \section{Verification}
+        \subsection{Unsaturated flow in a 1D Column} \input{1D_Build}
+        \subsection{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}
+        \subsection{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }
+    \section{Illustration}
+
+\chapter{Tutorial}\input{Tutorial}
+
 
 \printindex
 \newpage
