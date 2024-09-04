@@ -305,9 +305,9 @@
     type ModflowProject
  
         type(TecplotDomain) TMPLT
-        type(TecplotDomain) Tecplot_GWF
-        type(TecplotDomain) Tecplot_CLN
-        type(TecplotDomain) Tecplot_SWF
+        type(TecplotDomain) TMPLT_GWF
+        type(TecplotDomain) TMPLT_CLN
+        type(TecplotDomain) TMPLT_SWF
         type(ModflowDomain) GWF
         type(ModflowDomain) CLN
         type(ModflowDomain) SWF
@@ -1535,9 +1535,9 @@
         character(*) :: prefix
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_GWF
-        type (TecplotDomain) TECPLOT_SWF
-        type (TecplotDomain) TECPLOT_CLN
+        type (TecplotDomain) TMPLT_GWF
+        type (TecplotDomain) TMPLT_SWF
+        type (TecplotDomain) TMPLT_CLN
         
         integer :: i
         
@@ -1562,23 +1562,23 @@
                     call ModflowTMPLTScatterToTecplot(Modflow,TMPLT)                
 
                     if(modflow.GWF.nCells >0) then
-                        call WriteGWFFiles(Modflow,TECPLOT_GWF)
-                        call GWFToTecplot(Modflow,TECPLOT_GWF)
+                        call WriteGWFFiles(Modflow,TMPLT_GWF)
+                        call GWFToTecplot(Modflow,TMPLT_GWF)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.GWF)  
                     end if
                     
                    
                     if(modflow.SWF.nCells >0) then
                         call AddSWFFiles(Modflow)
-                        call WriteSWFFiles(Modflow,TECPLOT_SWF)
-                        call SWFToTecplot(Modflow,TECPLOT_SWF)
+                        call WriteSWFFiles(Modflow,TMPLT_SWF)
+                        call SWFToTecplot(Modflow,TMPLT_SWF)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.SWF)                
                     end if
                 
                     if(modflow.CLN.nCells >0) then
                         call AddCLNFiles(Modflow)
-                        call WriteCLNFiles(Modflow,TECPLOT_CLN)
-                        !call ModflowDomainToTecplot(Modflow,TECPLOT_CLN)
+                        call WriteCLNFiles(Modflow,TMPLT_CLN)
+                        !call ModflowDomainToTecplot(Modflow,TMPLT_CLN)
                         !call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
                     end if
                     
@@ -1670,31 +1670,31 @@
                 call IaJa_FromTecplot(TMPLT)
             
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
-                call GenerateSWFDomain(FnumMUT,TMPLT,TECPLOT_SWF)
-                call BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
+                call GenerateSWFDomain(FnumMUT,TMPLT,TMPLT_SWF)
+                call BuildModflowSWFDomain(Modflow,TMPLT,TMPLT_SWF)
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
-                call GenerateCLNDomain(FnumMUT,TECPLOT_CLN)
-                !call CLN_IaJaStructure(TECPLOT_CLN)
-                call BuildModflowCLNDomain(Modflow,TMPLT,TECPLOT_CLN)
+                call GenerateCLNDomain(FnumMUT,TMPLT_CLN)
+                !call CLN_IaJaStructure(TMPLT_CLN)
+                call BuildModflowCLNDomain(Modflow,TMPLT,TMPLT_CLN)
                 !JustBuilt=.true.
 
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,TECPLOT_GWF)
+                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,TMPLT_GWF)
                 if(Modflow.NodalControlVolume) then
                     call Msg('Build node-centred control volume ia,ja from SWF domain')
-                    call NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
+                    call NodeCentredSWFIaJaStructureToGWF(TMPLT_SWF,TMPLT_GWF)
                 else
-                    call IaJa_FromTecplot(TECPLOT_GWF)
+                    call IaJa_FromTecplot(TMPLT_GWF)
                 end if
-                call BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
+                call BuildModflowGWFDomain(Modflow,TMPLT,TMPLT_GWF)
                 JustBuilt=.true.
            
             else if(index(instruction, HGSToModflowStructure_CMD)  /= 0) then
                 ! Add components to Modflow data structure from an existing HGS model
-                call HGSToModflowStructure(FnumMUT,Modflow,TECPLOT_GWF,TECPLOT_SWF)
-                call IaJa_FromTecplot(TECPLOT_GWF)
+                call HGSToModflowStructure(FnumMUT,Modflow,TMPLT_GWF,TMPLT_SWF)
+                call IaJa_FromTecplot(TMPLT_GWF)
                 JustBuilt=.true.
 
 
@@ -1989,35 +1989,35 @@
     end subroutine BuildModflowUSG
 
     !----------------------------------------------------------------------
-    subroutine BuildModflowCLNDomain(Modflow,TMPLT,TECPLOT_CLN)
+    subroutine BuildModflowCLNDomain(Modflow,TMPLT,TMPLT_CLN)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_CLN
+        type (TecplotDomain) TMPLT_CLN
 
         integer :: i, j
 
         Modflow.CLN.name='CLN'
                 
         if(Modflow.NodalControlVolume) then
-            Modflow.CLN.nCells=TECPLOT_CLN.nNodes
+            Modflow.CLN.nCells=TMPLT_CLN.nNodes
         else
-            Modflow.CLN.nCells=TECPLOT_CLN.nElements
+            Modflow.CLN.nCells=TMPLT_CLN.nElements
         end if            
         
-        Modflow.CLN.nNodesPerCell=TECPLOT_CLN.nNodesPerElement
-        Modflow.CLN.nNodes=TECPLOT_CLN.nNodes  ! Used when choosing gb nodes
-        Modflow.CLN.nElements=TECPLOT_CLN.nElements  ! Used when choosing gb nodes
+        Modflow.CLN.nNodesPerCell=TMPLT_CLN.nNodesPerElement
+        Modflow.CLN.nNodes=TMPLT_CLN.nNodes  ! Used when choosing gb nodes
+        Modflow.CLN.nElements=TMPLT_CLN.nElements  ! Used when choosing gb nodes
 
         ! Modflow CLN cell coordinate 
         allocate(Modflow.CLN.xCell(Modflow.CLN.nCells),Modflow.CLN.yCell(Modflow.CLN.nCells),Modflow.CLN.zCell(Modflow.CLN.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell coordinate arrays')
         if(Modflow.NodalControlVolume) then
             do i=1,Modflow.CLN.nCells
-                Modflow.CLN.xCell(i)=TECPLOT_CLN.x(i)
-                Modflow.CLN.yCell(i)=TECPLOT_CLN.y(i)
-                Modflow.CLN.zCell(i)=TECPLOT_CLN.z(i)
+                Modflow.CLN.xCell(i)=TMPLT_CLN.x(i)
+                Modflow.CLN.yCell(i)=TMPLT_CLN.y(i)
+                Modflow.CLN.zCell(i)=TMPLT_CLN.z(i)
             end do
         else
             do i=1,Modflow.CLN.nCells
@@ -2027,7 +2027,7 @@
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0
                 do j=1,Modflow.CLN.nNodesPerCell
-                    zc=zc+TECPLOT_CLN.z(TECPLOT_CLN.iNode(j,i))
+                    zc=zc+TMPLT_CLN.z(TMPLT_CLN.iNode(j,i))
                 end do
                 Modflow.CLN.zCell(i)=zc/Modflow.CLN.nNodesPerCell
             end do
@@ -2036,7 +2036,7 @@
         ! Cell node list
         allocate(Modflow.CLN.iNode(Modflow.CLN.nNodesPerCell,Modflow.CLN.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell node list array')
-        Modflow.CLN.iNode(:,:) = TECPLOT_CLN.iNode(:,:)
+        Modflow.CLN.iNode(:,:) = TMPLT_CLN.iNode(:,:)
        
         ! Cell properties lengths
         allocate(Modflow.CLN.Length(Modflow.CLN.nElements), &
@@ -2044,12 +2044,12 @@
             Modflow.CLN.SlopeAngle(Modflow.CLN.nElements), &
             stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' CLN Cell Length array')
-        Modflow.CLN.Length(:) = TECPLOT_CLN.Length(:)
-        Modflow.CLN.LowestElevation(:) = TECPLOT_CLN.LowestElevation(:)
-        Modflow.CLN.SlopeAngle(:) = TECPLOT_CLN.SlopeAngle(:)
+        Modflow.CLN.Length(:) = TMPLT_CLN.Length(:)
+        Modflow.CLN.LowestElevation(:) = TMPLT_CLN.LowestElevation(:)
+        Modflow.CLN.SlopeAngle(:) = TMPLT_CLN.SlopeAngle(:)
                
         ! Modflow CLN cell layer number
-        Modflow.CLN.nLayers=TECPLOT_CLN.nLayers
+        Modflow.CLN.nLayers=TMPLT_CLN.nLayers
         allocate(Modflow.CLN.iLayer(Modflow.CLN.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' Element layer number array')
         do i=1,Modflow.CLN.nCells
@@ -2058,27 +2058,27 @@
 
 
         ! Cell zone number
-        Modflow.CLN.nZones=TECPLOT_CLN.nZones
+        Modflow.CLN.nZones=TMPLT_CLN.nZones
         allocate(Modflow.CLN.iZone(Modflow.CLN.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.CLN.name)//' iZone array')
         !If(Modflow.NodalControlVolume) then
-        !    ! Must account for element-based zone numbers in TECPLOT_CLN
-        !    do i=1,Tecplot_CLN.nElements
-        !        do j=1,Tecplot_CLN.nNodesPerElement
-        !            Modflow.CLN.iZone(TECPLOT_CLN.iNode(j,i))=TECPLOT_CLN.iZone(i)
+        !    ! Must account for element-based zone numbers in TMPLT_CLN
+        !    do i=1,TMPLT_CLN.nElements
+        !        do j=1,TMPLT_CLN.nNodesPerElement
+        !            Modflow.CLN.iZone(TMPLT_CLN.iNode(j,i))=TMPLT_CLN.iZone(i)
         !        end do
         !    end do
         !else
             do i=1,Modflow.CLN.nCells
-                Modflow.CLN.iZone(i)=TECPLOT_CLN.iZone(i)
+                Modflow.CLN.iZone(i)=TMPLT_CLN.iZone(i)
             end do
         !end if
         
         ! Cell Geometry: ia, ja arrays
         !if(Modflow.NodalControlVolume) then
-        !    call NodeCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)
+        !    call NodeCentredCLNCellGeometry(Modflow, TMPLT_CLN,TMPLT)
         !else
-            call MeshCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)  ! Only mesh centred for now
+            call MeshCentredCLNCellGeometry(Modflow, TMPLT_CLN,TMPLT)  ! Only mesh centred for now
         !end if
         
         ! Modflow CLN material properties (cell-based)
@@ -2114,12 +2114,12 @@
     end subroutine BuildModflowCLNDomain
 
     !----------------------------------------------------------------------
-    subroutine BuildModflowGWFDomain(Modflow,TMPLT,TECPLOT_GWF)
+    subroutine BuildModflowGWFDomain(Modflow,TMPLT,TMPLT_GWF)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_GWF
+        type (TecplotDomain) TMPLT_GWF
 
         integer :: i, j, k
 
@@ -2134,17 +2134,17 @@
         Modflow.GWF.name='GWF'
 
         if(Modflow.NodalControlVolume) then
-            Modflow.GWF.nCells=TMPLT.nNodes*(TECPLOT_GWF.nLayers+1)
-            Modflow.GWF.nLayers=TECPLOT_GWF.nLayers+1
+            Modflow.GWF.nCells=TMPLT.nNodes*(TMPLT_GWF.nLayers+1)
+            Modflow.GWF.nLayers=TMPLT_GWF.nLayers+1
 
         else
-            Modflow.GWF.nCells=TECPLOT_GWF.nElements
-            Modflow.GWF.nLayers=TECPLOT_GWF.nLayers
+            Modflow.GWF.nCells=TMPLT_GWF.nElements
+            Modflow.GWF.nLayers=TMPLT_GWF.nLayers
         end if            
         
-        Modflow.GWF.nNodes=TECPLOT_GWF.nNodes  ! Used when choosing gb nodes
-        Modflow.GWF.nElements=TECPLOT_GWF.nElements
-        Modflow.GWF.nNodesPerCell=TECPLOT_GWF.nNodesPerElement
+        Modflow.GWF.nNodes=TMPLT_GWF.nNodes  ! Used when choosing gb nodes
+        Modflow.GWF.nElements=TMPLT_GWF.nElements
+        Modflow.GWF.nNodesPerCell=TMPLT_GWF.nNodesPerElement
 
         ! Modflow GWF cell coordinate 
         allocate(Modflow.GWF.xCell(Modflow.GWF.nCells),Modflow.GWF.yCell(Modflow.GWF.nCells),Modflow.GWF.zCell(Modflow.GWF.nCells),stat=ialloc)
@@ -2156,23 +2156,23 @@
             Modflow.GWF.Bottom(:)=0.0d0
 
             icell=0
-            do j=1,TECPLOT_GWF.nLayers+1
+            do j=1,TMPLT_GWF.nLayers+1
                 do i=1,TMPLT.nNodes
                     icell=icell+1
                     iNode=i+(j-1)*TMPLT.nNodes
-                    Modflow.GWF.xCell(iCell)=TECPLOT_GWF.x(iNode) 
-                    Modflow.GWF.yCell(iCell)=TECPLOT_GWF.y(iNode) 
-                    Modflow.GWF.zCell(icell)=TECPLOT_GWF.z(iNode)
+                    Modflow.GWF.xCell(iCell)=TMPLT_GWF.x(iNode) 
+                    Modflow.GWF.yCell(iCell)=TMPLT_GWF.y(iNode) 
+                    Modflow.GWF.zCell(icell)=TMPLT_GWF.z(iNode)
                     
                     if(j==1) then
-                        Modflow.GWF.Top(icell)=TECPLOT_GWF.z(iNode) 
-                        Modflow.GWF.Bottom(icell)=(TECPLOT_GWF.z(iNode)+TECPLOT_GWF.z(iNode+TMPLT.nNodes))/2.0d0
-                    else if(j==TECPLOT_GWF.nLayers+1) then
-                        Modflow.GWF.Top(icell)=(TECPLOT_GWF.z(iNode)+TECPLOT_GWF.z(iNode-TMPLT.nNodes))/2.0d0
-                        Modflow.GWF.Bottom(icell)=TECPLOT_GWF.z(iNode) 
+                        Modflow.GWF.Top(icell)=TMPLT_GWF.z(iNode) 
+                        Modflow.GWF.Bottom(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode+TMPLT.nNodes))/2.0d0
+                    else if(j==TMPLT_GWF.nLayers+1) then
+                        Modflow.GWF.Top(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode-TMPLT.nNodes))/2.0d0
+                        Modflow.GWF.Bottom(icell)=TMPLT_GWF.z(iNode) 
                     else
-                        Modflow.GWF.Top(icell)=(TECPLOT_GWF.z(iNode)+TECPLOT_GWF.z(iNode-TMPLT.nNodes))/2.0d0
-                        Modflow.GWF.Bottom(icell)=(TECPLOT_GWF.z(iNode)+TECPLOT_GWF.z(iNode+TMPLT.nNodes))/2.0d0
+                        Modflow.GWF.Top(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode-TMPLT.nNodes))/2.0d0
+                        Modflow.GWF.Bottom(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode+TMPLT.nNodes))/2.0d0
                     end if
                 end do
             end do
@@ -2184,16 +2184,16 @@
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0
                 do j=1,Modflow.GWF.nNodesPerCell
-                    zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+                    zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
                 end do
-                Modflow.GWF.zCell(i)=zc/TECPLOT_GWF.nNodesPerElement
+                Modflow.GWF.zCell(i)=zc/TMPLT_GWF.nNodesPerElement
             end do
         end if
 
         ! Element node list
         allocate(Modflow.GWF.iNode(Modflow.GWF.nNodesPerCell,Modflow.GWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.GWF.name)//' Cell node list array')
-        Modflow.GWF.iNode(:,:) = TECPLOT_GWF.iNode(:,:)
+        Modflow.GWF.iNode(:,:) = TMPLT_GWF.iNode(:,:)
 
         ! Element top and bottom
         if(.not. Modflow.NodalControlVolume) then
@@ -2201,34 +2201,34 @@
             call AllocChk(ialloc,trim(Modflow.GWF.name)//' top, bottom arrays')
             Modflow.GWF.Top(:)=0.0d0
             Modflow.GWF.Bottom(:)=0.0d0
-            do i=1,TECPLOT_GWF.nElements
-                if(TECPLOT_GWF.nNodesPerElement == 6) then
+            do i=1,TMPLT_GWF.nElements
+                if(TMPLT_GWF.nNodesPerElement == 6) then
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=4,6
-                        zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
                     end do
                     Modflow.GWF.Top(i)=zc/3
         
                     ! zc from centroid of the iNode array z-coordinates for bottom face
                     zc=0.0
                     do j=1,3
-                        zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
                     end do
                     Modflow.GWF.Bottom(i)=zc/3
             
-                else if(TECPLOT_GWF.nNodesPerElement == 8) then
+                else if(TMPLT_GWF.nNodesPerElement == 8) then
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=5,8
-                        zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
                     end do
                     Modflow.GWF.Top(i)=zc/4
         
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=1,4
-                        zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
                     end do
                     Modflow.GWF.Bottom(i)=zc/4
                 end if
@@ -2252,7 +2252,7 @@
         else
             call AllocChk(ialloc,trim(Modflow.GWF.name)//' cell layer number array')
             do i=1,Modflow.GWF.nCells
-                Modflow.GWF.iLayer(i) = TECPLOT_GWF.iLayer(i) 
+                Modflow.GWF.iLayer(i) = TMPLT_GWF.iLayer(i) 
             end do
         end if
         
@@ -2262,15 +2262,15 @@
         Modflow.GWF.Laybcd(:)=0
         
         ! Cell zone number
-        Modflow.GWF.nZones=TECPLOT_GWF.nZones
+        Modflow.GWF.nZones=TMPLT_GWF.nZones
         allocate(Modflow.GWF.iZone(Modflow.GWF.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.GWF.name)//' iZone arrays')
         If(Modflow.NodalControlVolume) then
             CellLoop: do k=1,Modflow.GWF.nCells
-                do i=1,TECPLOT_GWF.nElements
-                    do j=1,TECPLOT_GWF.nNodesPerElement
-                        if(TECPLOT_GWF.iNode(j,i) == k) then
-                            Modflow.GWF.iZone(k)=TECPLOT_GWF.iZone(i)
+                do i=1,TMPLT_GWF.nElements
+                    do j=1,TMPLT_GWF.nNodesPerElement
+                        if(TMPLT_GWF.iNode(j,i) == k) then
+                            Modflow.GWF.iZone(k)=TMPLT_GWF.iZone(i)
                             cycle CellLoop
                         end if
                     end do
@@ -2278,7 +2278,7 @@
             end do CellLoop
         else
             do i=1,Modflow.GWF.nCells
-                Modflow.GWF.iZone(i)=TECPLOT_GWF.iZone(i)
+                Modflow.GWF.iZone(i)=TMPLT_GWF.iZone(i)
             end do
         end if
 
@@ -2337,17 +2337,17 @@
         
         ! Cell connection length and perpendicular area and ia/ja arrays
         If(Modflow.NodalControlVolume) then
-            allocate(Modflow.GWF.ConnectionLength(TECPLOT_GWF.njag),Modflow.GWF.PerpendicularArea(TECPLOT_GWF.njag),stat=ialloc)
+            allocate(Modflow.GWF.ConnectionLength(TMPLT_GWF.njag),Modflow.GWF.PerpendicularArea(TMPLT_GWF.njag),stat=ialloc)
             call AllocChk(ialloc,'GWF Cell connection length, perpendicular area array')
             Modflow.GWF.ConnectionLength(:)=0.0d0
             Modflow.GWF.PerpendicularArea(:)=0.0d0
             
-            Modflow.GWF.njag=TECPLOT_GWF.njag
+            Modflow.GWF.njag=TMPLT_GWF.njag
             
-            allocate(Modflow.GWF.ia(Modflow.GWF.nCells),Modflow.GWF.ja(TECPLOT_GWF.njag),stat=ialloc)
+            allocate(Modflow.GWF.ia(Modflow.GWF.nCells),Modflow.GWF.ja(TMPLT_GWF.njag),stat=ialloc)
             call AllocChk(ialloc,'GWF ia, ja arrays')
-            Modflow.GWF.ia(:)=TECPLOT_GWF.ia
-            Modflow.GWF.ja(:)=TECPLOT_GWF.ja
+            Modflow.GWF.ia(:)=TMPLT_GWF.ia
+            Modflow.GWF.ja(:)=TMPLT_GWF.ja
             
             Modflow.GWF.nodelay=TMPLT.nNodes
             iConn=0
@@ -2363,8 +2363,8 @@
                         modflow.GWF.ConnectionLength(iConn)=(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))/2.0d0
                         modflow.GWF.PerpendicularArea(iConn)=Modflow.GWF.CellArea(iCell)
                     else  ! SWF or GWF neighbour in adjacent column
-                        modflow.GWF.ConnectionLength(iConn)=TECPLOT_GWF.ConnectionLength(iCoNN)
-                        modflow.GWF.PerpendicularArea(iConn)=TECPLOT_GWF.PerpendicularArea(iConn)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                        modflow.GWF.ConnectionLength(iConn)=TMPLT_GWF.ConnectionLength(iCoNN)
+                        modflow.GWF.PerpendicularArea(iConn)=TMPLT_GWF.PerpendicularArea(iConn)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
                     end if
                 end do
             end do
@@ -2372,22 +2372,22 @@
             
                 
         else
-            allocate(Modflow.GWF.ConnectionLength(TECPLOT_GWF.njag),Modflow.GWF.PerpendicularArea(TECPLOT_GWF.njag),stat=ialloc)
+            allocate(Modflow.GWF.ConnectionLength(TMPLT_GWF.njag),Modflow.GWF.PerpendicularArea(TMPLT_GWF.njag),stat=ialloc)
             call AllocChk(ialloc,'GWF Cell connection length, perpendicular area array')
             Modflow.GWF.ConnectionLength(:)=0.0d0
             Modflow.GWF.PerpendicularArea(:)=0.0d0
         
-            Modflow.GWF.njag=TECPLOT_GWF.njag
+            Modflow.GWF.njag=TMPLT_GWF.njag
         
-            allocate(Modflow.GWF.ia(TECPLOT_GWF.nElements),Modflow.GWF.ja(TECPLOT_GWF.njag),stat=ialloc)
+            allocate(Modflow.GWF.ia(TMPLT_GWF.nElements),Modflow.GWF.ja(TMPLT_GWF.njag),stat=ialloc)
             call AllocChk(ialloc,'GWF ia, ja arrays')
-            Modflow.GWF.ia(:)=TECPLOT_GWF.ia
-            Modflow.GWF.ja(:)=TECPLOT_GWF.ja
+            Modflow.GWF.ia(:)=TMPLT_GWF.ia
+            Modflow.GWF.ja(:)=TMPLT_GWF.ja
         
             Modflow.GWF.nodelay=TMPLT.nElements
             iConn=0
             iNbor=0
-            do i=1,TECPLOT_GWF.nElements
+            do i=1,TMPLT_GWF.nElements
                 iCell = myMOD(i,TMPLT.nElements)
                 iConn=iConn+1
                     
@@ -2399,7 +2399,7 @@
                         modflow.GWF.PerpendicularArea(iConn)=TMPLT.ElementArea(iCell)
                     else  ! SWF or GWF neighbour in adjacent column
                         if(TMPLT.nNodesPerElement == 3) then
-                            select case (TECPLOT_GWF.face(iNbor))
+                            select case (TMPLT_GWF.face(iNbor))
                             case ( 1 )
                                 modflow.GWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,iCell)   
                             case ( 2 )
@@ -2410,7 +2410,7 @@
                             modflow.GWF.ConnectionLength(iConn)=TMPLT.rCircle(iCell)
                             modflow.GWF.PerpendicularArea(iConn)=modflow.GWF.PerpendicularArea(iConn)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
                         else if(TMPLT.nNodesPerElement == 4) then
-                            select case (TECPLOT_GWF.face(iNbor))
+                            select case (TMPLT_GWF.face(iNbor))
                             case ( 1 )
                                 modflow.GWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,iCell)   
                                 modflow.GWF.ConnectionLength(iConn)=TMPLT.SideLength(1,iCell)/2.0d0
@@ -2456,35 +2456,35 @@
     end subroutine BuildModflowGWFDomain
     
     !----------------------------------------------------------------------
-    subroutine BuildModflowSWFDomain(Modflow,TMPLT,TECPLOT_SWF)
+    subroutine BuildModflowSWFDomain(Modflow,TMPLT,TMPLT_SWF)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_SWF
 
         integer :: i, j
 
         Modflow.SWF.name='SWF'
                 
         if(Modflow.NodalControlVolume) then
-            Modflow.SWF.nCells=TECPLOT_SWF.nNodes
+            Modflow.SWF.nCells=TMPLT_SWF.nNodes
         else
-            Modflow.SWF.nCells=TECPLOT_SWF.nElements
+            Modflow.SWF.nCells=TMPLT_SWF.nElements
         end if            
         
-        Modflow.SWF.nNodesPerCell=TECPLOT_SWF.nNodesPerElement
-        Modflow.SWF.nNodes=TECPLOT_SWF.nNodes  ! Used when choosing gb nodes
-        Modflow.SWF.nElements=TECPLOT_SWF.nElements  ! Used when choosing gb nodes
+        Modflow.SWF.nNodesPerCell=TMPLT_SWF.nNodesPerElement
+        Modflow.SWF.nNodes=TMPLT_SWF.nNodes  ! Used when choosing gb nodes
+        Modflow.SWF.nElements=TMPLT_SWF.nElements  ! Used when choosing gb nodes
 
         ! Modflow SWF cell coordinate 
         allocate(Modflow.SWF.xCell(Modflow.SWF.nCells),Modflow.SWF.yCell(Modflow.SWF.nCells),Modflow.SWF.zCell(Modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell coordinate arrays')
         if(Modflow.NodalControlVolume) then
             do i=1,Modflow.SWF.nCells
-                Modflow.SWF.xCell(i)=TECPLOT_SWF.x(i)
-                Modflow.SWF.yCell(i)=TECPLOT_SWF.y(i)
-                Modflow.SWF.zCell(i)=TECPLOT_SWF.z(i)
+                Modflow.SWF.xCell(i)=TMPLT_SWF.x(i)
+                Modflow.SWF.yCell(i)=TMPLT_SWF.y(i)
+                Modflow.SWF.zCell(i)=TMPLT_SWF.z(i)
             end do
         else
             do i=1,Modflow.SWF.nCells
@@ -2494,7 +2494,7 @@
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0
                 do j=1,Modflow.SWF.nNodesPerCell
-                    zc=zc+TECPLOT_SWF.z(TECPLOT_SWF.iNode(j,i))
+                    zc=zc+TMPLT_SWF.z(TMPLT_SWF.iNode(j,i))
                 end do
                 Modflow.SWF.zCell(i)=zc/Modflow.SWF.nNodesPerCell
             end do
@@ -2504,23 +2504,23 @@
         allocate(Modflow.SWF.x(Modflow.SWF.nNodes),Modflow.SWF.y(Modflow.SWF.nNodes),Modflow.SWF.z(Modflow.SWF.nNodes),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Node coordinate arrays')
         do i=1,Modflow.SWF.nNodes
-            Modflow.SWF.x(i)=TECPLOT_SWF.x(i)
-            Modflow.SWF.y(i)=TECPLOT_SWF.y(i)
-            Modflow.SWF.z(i)=TECPLOT_SWF.z(i)
+            Modflow.SWF.x(i)=TMPLT_SWF.x(i)
+            Modflow.SWF.y(i)=TMPLT_SWF.y(i)
+            Modflow.SWF.z(i)=TMPLT_SWF.z(i)
         end do
 
             ! Element node list
         allocate(Modflow.SWF.iNode(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell node list array')
-        Modflow.SWF.iNode(:,:) = TECPLOT_SWF.iNode(:,:)
+        Modflow.SWF.iNode(:,:) = TMPLT_SWF.iNode(:,:)
        
         ! Element side lengths
         allocate(Modflow.SWF.SideLength(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell SideLength array')
-        Modflow.SWF.SideLength(:,:) = TECPLOT_SWF.SideLength(:,:)
+        Modflow.SWF.SideLength(:,:) = TMPLT_SWF.SideLength(:,:)
                
         ! Modflow SWF cell layer number
-        Modflow.SWF.nLayers=TECPLOT_SWF.nLayers
+        Modflow.SWF.nLayers=TMPLT_SWF.nLayers
         allocate(Modflow.SWF.iLayer(Modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' Element layer number array')
         do i=1,Modflow.SWF.nCells
@@ -2529,27 +2529,27 @@
 
 
         ! Cell zone number
-        Modflow.SWF.nZones=TECPLOT_SWF.nZones
+        Modflow.SWF.nZones=TMPLT_SWF.nZones
         allocate(Modflow.SWF.iZone(Modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,trim(Modflow.SWF.name)//' iZone array')
         If(Modflow.NodalControlVolume) then
-            ! Must account for element-based zone numbers in TECPLOT_SWF
-            do i=1,Tecplot_SWF.nElements
-                do j=1,Tecplot_SWF.nNodesPerElement
-                    Modflow.SWF.iZone(TECPLOT_SWF.iNode(j,i))=TECPLOT_SWF.iZone(i)
+            ! Must account for element-based zone numbers in TMPLT_SWF
+            do i=1,TMPLT_SWF.nElements
+                do j=1,TMPLT_SWF.nNodesPerElement
+                    Modflow.SWF.iZone(TMPLT_SWF.iNode(j,i))=TMPLT_SWF.iZone(i)
                 end do
             end do
         else
             do i=1,Modflow.SWF.nCells
-                Modflow.SWF.iZone(i)=TECPLOT_SWF.iZone(i)
+                Modflow.SWF.iZone(i)=TMPLT_SWF.iZone(i)
             end do
         end if
         
         ! Cell Geometry: ia, ja arrays
         if(Modflow.NodalControlVolume) then
-            call NodeCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+            call NodeCentredSWFCellGeometry(Modflow, TMPLT_SWF,TMPLT)
         else
-            call MeshCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+            call MeshCentredSWFCellGeometry(Modflow, TMPLT_SWF,TMPLT)
         end if
         
         ! Modflow SWF material properties (cell-based)
@@ -3370,9 +3370,9 @@
     end subroutine ClearAllZones
 
     !-------------------------------------------------------------
-    subroutine CLN_IaJaStructure(Tecplot_CLN)
+    subroutine CLN_IaJaStructure(TMPLT_CLN)
         implicit none
-        type(TecplotDomain) Tecplot_CLN
+        type(TecplotDomain) TMPLT_CLN
         
         integer, parameter :: MAXCONNECTIONS=20
 
@@ -3382,82 +3382,82 @@
         
         real(dr) :: SeparationDistance
         
-        integer :: ia_TMP(Tecplot_CLN.nElements)
-        integer :: ja_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
-        !integer :: ja_TMP2(MAXCONNECTIONS,Tecplot_CLN.nElements)
-        !integer :: ja_TMP2_element(MAXCONNECTIONS,Tecplot_CLN.nElements)
-        !real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
-        !real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,Tecplot_CLN.nElements)
+        integer :: ia_TMP(TMPLT_CLN.nElements)
+        integer :: ja_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
+        !integer :: ja_TMP2(MAXCONNECTIONS,TMPLT_CLN.nElements)
+        !integer :: ja_TMP2_element(MAXCONNECTIONS,TMPLT_CLN.nElements)
+        !real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
+        !real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
 
         ! read and store cell connection information
         integer :: nFaceNeighborConnections
         integer :: nSizeInit
         
-        !integer,allocatable :: TECPLOT_CLN.Element(:)
-        !integer,allocatable :: TECPLOT_CLN.Face(:)
-        !integer,allocatable :: TECPLOT_CLN.Neighbour(:)
+        !integer,allocatable :: TMPLT_CLN.Element(:)
+        !integer,allocatable :: TMPLT_CLN.Face(:)
+        !integer,allocatable :: TMPLT_CLN.Neighbour(:)
 
         integer :: iNjag
         
         call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for Tecplot_CLN '//trim(Tecplot_CLN.name)//'...')
+        call Msg('  Generating IA/JA and cell connection arrays for TMPLT_CLN '//trim(TMPLT_CLN.name)//'...')
         
         ja_TMP(:,:)=0
         !ja_TMP2(:,:)=0
         !ConnectionLength_TMP(:,:)=0
         !PerpendicularArea_TMP(:,:)=0
         
-        do i=1,TECPLOT_CLN.nElements   ! First element connection is to itself
+        do i=1,TMPLT_CLN.nElements   ! First element connection is to itself
             ia_TMP(i)=1
             ja_TMP(ia_TMP(i),i)=-i     ! Negative entry shows start of element i list in ja 
         end do
 
         nSizeInit=2
-        allocate(TECPLOT_CLN.Element(nSizeInit),&
-                TECPLOT_CLN.Face(nSizeInit),&
-                TECPLOT_CLN.Neighbour(nSizeInit),stat=ialloc)
+        allocate(TMPLT_CLN.Element(nSizeInit),&
+                TMPLT_CLN.Face(nSizeInit),&
+                TMPLT_CLN.Neighbour(nSizeInit),stat=ialloc)
         call AllocChk(ialloc,'CLN element neighbour arrays')
 
         ! Brute force search for CLN neighbours
         nFaceNeighborConnections=0
-        do iEl=1,Tecplot_CLN.nElements ! Loop over elements
-            do k=1,Tecplot_CLN.nNodesPerElement ! Loop over nodes in element
-                iNd=Tecplot_CLN.iNode(k,iEl)
+        do iEl=1,TMPLT_CLN.nElements ! Loop over elements
+            do k=1,TMPLT_CLN.nNodesPerElement ! Loop over nodes in element
+                iNd=TMPLT_CLN.iNode(k,iEl)
                 
-                do jEl=iEl+1,Tecplot_CLN.nElements ! Loop over rest of elements
-                    do l=1,Tecplot_CLN.nNodesPerElement ! Loop over nodes in next element
-                        jNd=Tecplot_CLN.iNode(l,jEl)
-                        SeparationDistance=sqrt((Tecplot_CLN.x(iNd) - Tecplot_CLN.x(jNd))**2 + &
-                            (Tecplot_CLN.y(iNd) - Tecplot_CLN.y(jNd))**2 + &
-                            (Tecplot_CLN.z(iNd) - Tecplot_CLN.z(jNd))**2 )
+                do jEl=iEl+1,TMPLT_CLN.nElements ! Loop over rest of elements
+                    do l=1,TMPLT_CLN.nNodesPerElement ! Loop over nodes in next element
+                        jNd=TMPLT_CLN.iNode(l,jEl)
+                        SeparationDistance=sqrt((TMPLT_CLN.x(iNd) - TMPLT_CLN.x(jNd))**2 + &
+                            (TMPLT_CLN.y(iNd) - TMPLT_CLN.y(jNd))**2 + &
+                            (TMPLT_CLN.z(iNd) - TMPLT_CLN.z(jNd))**2 )
                         if(SeparationDistance < MinSeparationDistance) then
                             ! iEl is neighbour of jEl
                             ia_TMP(iEl)=ia_TMP(iEl)+1
                             ja_TMP(ia_TMP(iEl),iEl)=jEl
                             nFaceNeighborConnections=nFaceNeighborConnections+1
                             if(nFaceNeighborConnections > nSizeInit) then
-                                call growIntegerArray(TECPLOT_CLN.Element,nSizeInit,nSizeInit*2)
-                                call growIntegerArray(TECPLOT_CLN.Face,nSizeInit,nSizeInit*2)
-                                call growIntegerArray(TECPLOT_CLN.Neighbour,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Neighbour,nSizeInit,nSizeInit*2)
                                 nSizeInit=nSizeInit*2
                             end if
-                            TECPLOT_CLN.Element(nFaceNeighborConnections)=iEl
-                            TECPLOT_CLN.Face(nFaceNeighborConnections)=k
-                            TECPLOT_CLN.Neighbour(nFaceNeighborConnections)=jEl
+                            TMPLT_CLN.Element(nFaceNeighborConnections)=iEl
+                            TMPLT_CLN.Face(nFaceNeighborConnections)=k
+                            TMPLT_CLN.Neighbour(nFaceNeighborConnections)=jEl
                             
                             ! jEl is neighbour of iEl
                             ia_TMP(jEl)=ia_TMP(jEl)+1
                             ja_TMP(ia_TMP(jEl),jEl)=iEl
                             nFaceNeighborConnections=nFaceNeighborConnections+1
                             if(nFaceNeighborConnections > nSizeInit) then
-                                call growIntegerArray(TECPLOT_CLN.Element,nSizeInit,nSizeInit*2)
-                                call growIntegerArray(TECPLOT_CLN.Face,nSizeInit,nSizeInit*2)
-                                call growIntegerArray(TECPLOT_CLN.Neighbour,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(TMPLT_CLN.Neighbour,nSizeInit,nSizeInit*2)
                                 nSizeInit=nSizeInit*2
                             end if
-                            TECPLOT_CLN.Element(nFaceNeighborConnections)=jEl
-                            TECPLOT_CLN.Face(nFaceNeighborConnections)=l
-                            TECPLOT_CLN.Neighbour(nFaceNeighborConnections)=iEl
+                            TMPLT_CLN.Element(nFaceNeighborConnections)=jEl
+                            TMPLT_CLN.Face(nFaceNeighborConnections)=l
+                            TMPLT_CLN.Neighbour(nFaceNeighborConnections)=iEl
                         endif
                     end do
                 end do
@@ -3465,27 +3465,27 @@
         end do
 
         ! Determine size of ja (njag) and copy ja_TMP to ja 
-        Tecplot_CLN.njag=0
-        do i=1,Tecplot_CLN.nElements
-            Tecplot_CLN.njag=Tecplot_CLN.njag+ia_TMP(i)
+        TMPLT_CLN.njag=0
+        do i=1,TMPLT_CLN.nElements
+            TMPLT_CLN.njag=TMPLT_CLN.njag+ia_TMP(i)
         end do
-        allocate(Tecplot_CLN.ia(Tecplot_CLN.nElements),Tecplot_CLN.ja(Tecplot_CLN.njag),stat=ialloc)
-        call AllocChk(ialloc,trim(Tecplot_CLN.name)//'CLN ia, ja array')
-        !allocate(Tecplot_CLN.ConnectionLength(Tecplot_CLN.njag),Tecplot_CLN.PerpendicularArea(Tecplot_CLN.njag),stat=ialloc)
+        allocate(TMPLT_CLN.ia(TMPLT_CLN.nElements),TMPLT_CLN.ja(TMPLT_CLN.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_CLN.name)//'CLN ia, ja array')
+        !allocate(TMPLT_CLN.ConnectionLength(TMPLT_CLN.njag),TMPLT_CLN.PerpendicularArea(TMPLT_CLN.njag),stat=ialloc)
         !call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        !Tecplot_CLN.ConnectionLength(:)=0.0d0
-        !Tecplot_CLN.PerpendicularArea(:)=0.0d0
-        Tecplot_CLN.ia=ia_TMP
+        !TMPLT_CLN.ConnectionLength(:)=0.0d0
+        !TMPLT_CLN.PerpendicularArea(:)=0.0d0
+        TMPLT_CLN.ia=ia_TMP
         
         
         iNJag=0
-        do i=1,Tecplot_CLN.nElements
-            do j=1,Tecplot_CLN.ia(i)
+        do i=1,TMPLT_CLN.nElements
+            do j=1,TMPLT_CLN.ia(i)
                 iNjag=iNjag+1
-                Tecplot_CLN.ja(iNJag)=ja_TMP(j,i)
-                !Tecplot_CLN.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                !Tecplot_CLN.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                !Tecplot_CLN.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+                TMPLT_CLN.ja(iNJag)=ja_TMP(j,i)
+                !TMPLT_CLN.jaElement(iNJag)=ja_TMP2_Element(j,i)
+                !TMPLT_CLN.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
+                !TMPLT_CLN.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
             end do
         end do
            
@@ -4458,10 +4458,10 @@
     end subroutine GWF_IBOUNDv2_ToTecplot
 
     !-------------------------------------------------------------
-    subroutine GWFToTecplot(Modflow,TECPLOT_GWF)
+    subroutine GWFToTecplot(Modflow,TMPLT_GWF)
         implicit none
         type(ModflowProject) Modflow
-        type(TecplotDomain) TECPLOT_GWF
+        type(TecplotDomain) TMPLT_GWF
 
         integer :: Fnum
         character(MAX_STR) :: FName
@@ -4475,7 +4475,7 @@
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(TECPLOT_GWF.name)//'"'
+        write(FNum,*) 'Title = "'//trim(TMPLT_GWF.name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(modflow.GWF.name)//' Layer","'//trim(modflow.GWF.name)//' Zone",'
@@ -4536,8 +4536,8 @@
 
         write(FNum,'(a)') trim(VarSTR)
           
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',TECPLOT_GWF.nNodes,', E=',TECPLOT_GWF.nElements,&
-        ', datapacking=block, zonetype='//trim(TECPLOT_GWF.elementtype)
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',TMPLT_GWF.nNodes,', E=',TMPLT_GWF.nElements,&
+        ', datapacking=block, zonetype='//trim(TMPLT_GWF.elementtype)
         
         if(modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) !//&
@@ -4559,11 +4559,11 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.x(i),i=1,TECPLOT_GWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_GWF.x(i),i=1,TMPLT_GWF.nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.y(i),i=1,TECPLOT_GWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_GWF.y(i),i=1,TMPLT_GWF.nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (TECPLOT_GWF.z(i),i=1,TECPLOT_GWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_GWF.z(i),i=1,TMPLT_GWF.nNodes)
         
             
             write(FNum,'(a)') '# layer'
@@ -4627,14 +4627,14 @@
 
         
         
-        do i=1,TECPLOT_GWF.nElements
-            if(TECPLOT_GWF.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
-                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,3), TECPLOT_GWF.iNode(3,i),(TECPLOT_GWF.iNode(j,i),j=4,6), TECPLOT_GWF.iNode(6,i) 
-            else if(TECPLOT_GWF.nNodesPerElement==8) then ! 8-node brick 
-                write(FNum,'(8i8)') (TECPLOT_GWF.iNode(j,i),j=1,8) 
+        do i=1,TMPLT_GWF.nElements
+            if(TMPLT_GWF.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
+                write(FNum,'(8i8)') (TMPLT_GWF.iNode(j,i),j=1,3), TMPLT_GWF.iNode(3,i),(TMPLT_GWF.iNode(j,i),j=4,6), TMPLT_GWF.iNode(6,i) 
+            else if(TMPLT_GWF.nNodesPerElement==8) then ! 8-node brick 
+                write(FNum,'(8i8)') (TMPLT_GWF.iNode(j,i),j=1,8) 
             else
-                write(TmpSTR,'(i2)') TECPLOT_GWF.nNodesPerElement
-                call ErrMsg(trim(TECPLOT_GWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)') TMPLT_GWF.nNodesPerElement
+                call ErrMsg(trim(TMPLT_GWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
         end do
        
@@ -4643,15 +4643,15 @@
     end subroutine GWFToTecplot
 
     !-------------------------------------------------------------
-    subroutine HGSToModflowStructure(FNumMUT, Modflow, TECPLOT_GWF, TECPLOT_SWF)
+    subroutine HGSToModflowStructure(FNumMUT, Modflow, TMPLT_GWF, TMPLT_SWF)
         implicit none
         
 
         integer :: FNumMUT
         type (HGSProject) hgs
         type (ModflowProject) Modflow
-        type (TecplotDomain) TECPLOT_GWF
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_GWF
+        type (TecplotDomain) TMPLT_SWF
        
         ! read prefix for HGS project
         read(FNumMUT,'(a)') hgs.Prefix
@@ -4675,10 +4675,10 @@
             call ErrMsg('HGS 4-node tetrahedral elements not supported')
         case (6)
             call Msg('*** This HGS mesh has 6-node prism elements')
-            TECPLOT_GWF.ElementType='febrick'
+            TMPLT_GWF.ElementType='febrick'
         case (8)
             call Msg('*** This HGS mesh has 8-node brick elements')
-            TECPLOT_GWF.ElementType='febrick'
+            TMPLT_GWF.ElementType='febrick'
         case default
             write(TMPStr,'(i2)') hgs.mesh.nln
             call ErrMsg(trim(TmpSTR)//'-node HGS GWF elements not supported')
@@ -4691,10 +4691,10 @@
             case (4)
                 if(hgs.mesh.inolf(4,1)==0) then
                     call Msg('*** This HGS mesh has 3-node triangular elements (stored as quads with 4th entry as zero')
-                    TECPLOT_SWF.ElementType='fequadrilateral'
+                    TMPLT_SWF.ElementType='fequadrilateral'
                 else
                     call Msg('*** This HGS mesh has 4-node quadrilateral elements stored as quads with 4th entry as zero')
-                    TECPLOT_SWF.ElementType='fequadrilateral'
+                    TMPLT_SWF.ElementType='fequadrilateral'
                 end if
             case default
                 write(TMPStr,'(i2)') hgs.mesh.olfnln
@@ -4704,13 +4704,13 @@
             if(modflow.NodalControlVolume) then
                 call ErrMsg('call HgsOlfToNodeCenteredModflow(hgs,modflow)')
             else ! MeshCentered
-                call ErrMsg('!call HgsOlfToMeshCenteredModflow(hgs,TECPLOT_SWF)')
+                call ErrMsg('!call HgsOlfToMeshCenteredModflow(hgs,TMPLT_SWF)')
             end if
            
-            call DisplayDomainAttributes(TECPLOT_SWF)
+            call DisplayDomainAttributes(TMPLT_SWF)
             !call FindNeighbours(Modflow,modflow.SWF)
-            call SWFToTecplot(Modflow,TECPLOT_SWF)
-            call IaJa_FromTecplot(TECPLOT_SWF)
+            call SWFToTecplot(Modflow,TMPLT_SWF)
+            call IaJa_FromTecplot(TMPLT_SWF)
             !call WriteSWFFiles(Modflow)
         end if
         
@@ -4718,13 +4718,13 @@
         if(Modflow.NodalControlVolume) then
             call ErrMsg('!call HgsPmToNodeCenteredModflow(hgs,modflow)')
         else ! MeshCentered
-            call ErrMsg('!call HgsPmToMeshCenteredModflow(hgs,TECPLOT_GWF)')
+            call ErrMsg('!call HgsPmToMeshCenteredModflow(hgs,TMPLT_GWF)')
         end if
         
-        call DisplayDomainAttributes(TECPLOT_GWF)
+        call DisplayDomainAttributes(TMPLT_GWF)
         
-        call GWFToTecplot(Modflow,Tecplot_GWF)
-        call IaJa_FromTecplot(Tecplot_GWF)
+        call GWFToTecplot(Modflow,TMPLT_GWF)
+        call IaJa_FromTecplot(TMPLT_GWF)
         !call WriteGWFFiles(Modflow)
         
         ! Fracture element data
@@ -4737,99 +4737,99 @@
     !-------------------------------------------------------------
 
   !  !-------------------------------------------------------------
-  !  subroutine HgsPmToMeshCenteredModflow(Hgs,TECPLOT_GWF)
+  !  subroutine HgsPmToMeshCenteredModflow(Hgs,TMPLT_GWF)
   !      implicit none
   !      type (HgsProject) Hgs
-  !      type (TecplotDomain) TECPLOT_GWF
+  !      type (TecplotDomain) TMPLT_GWF
   !      integer :: i, j
   !      
   !     
-  !      TECPLOT_GWF.meshtype='UNSTRUCTURED'
+  !      TMPLT_GWF.meshtype='UNSTRUCTURED'
   !      
-  !      if(.not. allocated(TECPLOT_GWF.x)) then
+  !      if(.not. allocated(TMPLT_GWF.x)) then
   !          ! These HGS node coordinates are used in the tecplot output file 
-  !          TECPLOT_GWF.nNodes=hgs.mesh.nn  
-  !          allocate(TECPLOT_GWF.x(TECPLOT_GWF.nNodes),TECPLOT_GWF.y(TECPLOT_GWF.nNodes),TECPLOT_GWF.z(TECPLOT_GWF.nNodes), stat=ialloc)
+  !          TMPLT_GWF.nNodes=hgs.mesh.nn  
+  !          allocate(TMPLT_GWF.x(TMPLT_GWF.nNodes),TMPLT_GWF.y(TMPLT_GWF.nNodes),TMPLT_GWF.z(TMPLT_GWF.nNodes), stat=ialloc)
   !          call AllocChk(ialloc,'GWF node coordinate arrays')
-  !          TECPLOT_GWF.x(:)= hgs.mesh.x(:)
-  !          TECPLOT_GWF.y(:)= hgs.mesh.y(:)
-  !          TECPLOT_GWF.z(:)= hgs.mesh.z(:)
+  !          TMPLT_GWF.x(:)= hgs.mesh.x(:)
+  !          TMPLT_GWF.y(:)= hgs.mesh.y(:)
+  !          TMPLT_GWF.z(:)= hgs.mesh.z(:)
   !      end if
   !      
   !      
-  !      TECPLOT_GWF.nLayers=hgs.nsheet-1
-  !      !TECPLOT_GWF.iz=0
-  !      !TECPLOT_GWF.nodelay=hgs.ne2d   ! number of modflow cells per layer
+  !      TMPLT_GWF.nLayers=hgs.nsheet-1
+  !      !TMPLT_GWF.iz=0
+  !      !TMPLT_GWF.nodelay=hgs.ne2d   ! number of modflow cells per layer
   !
   !      
-  !      TECPLOT_GWF.nNodesPerElement=hgs.mesh.nln
-  !      TECPLOT_GWF.nElements=hgs.mesh.ne
+  !      TMPLT_GWF.nNodesPerElement=hgs.mesh.nln
+  !      TMPLT_GWF.nElements=hgs.mesh.ne
   !      
   !      ! Just define these for now
-  !      !TECPLOT_GWF.ic=0
+  !      !TMPLT_GWF.ic=0
   !      
   !      !
-  !      !allocate(TECPLOT_GWF.xCell(TECPLOT_GWF.nCells),TECPLOT_GWF.yCell(TECPLOT_GWF.nCells),TECPLOT_GWF.zCell(TECPLOT_GWF.nCells),TECPLOT_GWF.iLayer(TECPLOT_GWF.nCells),stat=ialloc)
+  !      !allocate(TMPLT_GWF.xCell(TMPLT_GWF.nCells),TMPLT_GWF.yCell(TMPLT_GWF.nCells),TMPLT_GWF.zCell(TMPLT_GWF.nCells),TMPLT_GWF.iLayer(TMPLT_GWF.nCells),stat=ialloc)
   !      !call AllocChk(ialloc,'GWF cell coordinate and layer arrays')
   !      
   !      !allocate(hgs.mesh.in(hgs.mesh.nln,hgs.mesh.ne),stat=ialloc)
-  !      allocate(TECPLOT_GWF.iNode(TECPLOT_GWF.nNodesPerElement,TECPLOT_GWF.nElements),stat=ialloc)
+  !      allocate(TMPLT_GWF.iNode(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
   !      call AllocChk(ialloc,'GWF iNode arrays')
-  !      TECPLOT_GWF.iNode(:,:) = hgs.mesh.in(:,:) 
+  !      TMPLT_GWF.iNode(:,:) = hgs.mesh.in(:,:) 
   !      
   !      !! Layer has quasi-3D confining bed below if non-zero
-  !      !allocate(TECPLOT_GWF.Laybcd(TECPLOT_GWF.nLayers),stat=ialloc)
+  !      !allocate(TMPLT_GWF.Laybcd(TMPLT_GWF.nLayers),stat=ialloc)
   !      !call AllocChk(ialloc,'GWF.Laybcd array')
-  !      !TECPLOT_GWF.Laybcd(:)=0
+  !      !TMPLT_GWF.Laybcd(:)=0
   !
   !      
   !      !!read(itmp) ((hgs.mesh.in(j,i),j=1,hgs.mesh.nln),i=1,hgs.mesh.ne)
-  !      !read(itmp) ((TECPLOT_GWF.iNode(j,i),j=1,TECPLOT_GWF.nNodesPerElement),i=1,TECPLOT_GWF.nCells)
+  !      !read(itmp) ((TMPLT_GWF.iNode(j,i),j=1,TMPLT_GWF.nNodesPerElement),i=1,TMPLT_GWF.nCells)
   !      
   !      !if(modflow.InnerCircles) then
   !      !    ! Use the SWF cel xy coords for the GWF cell but z as the centroid of the iNode array z coordinates
-  !      !    do i=1,TECPLOT_GWF.nCells
+  !      !    do i=1,TMPLT_GWF.nCells
   !      !        zc=0.0
-  !      !        do j=1,TECPLOT_GWF.nNodesPerElement
-  !      !            zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+  !      !        do j=1,TMPLT_GWF.nNodesPerElement
+  !      !            zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
   !      !        end do
-  !      !        TECPLOT_GWF.xCell(i)=Modflow.SWF.xCell(myMOD(i,Modflow.SWF.nCells))
-  !      !        TECPLOT_GWF.yCell(i)=Modflow.SWF.yCell(myMOD(i,Modflow.SWF.nCells))
-  !      !        TECPLOT_GWF.zCell(i)=zc/TECPLOT_GWF.nNodesPerElement
-  !      !        TECPLOT_GWF.iLayer(i)=1
+  !      !        TMPLT_GWF.xCell(i)=Modflow.SWF.xCell(myMOD(i,Modflow.SWF.nCells))
+  !      !        TMPLT_GWF.yCell(i)=Modflow.SWF.yCell(myMOD(i,Modflow.SWF.nCells))
+  !      !        TMPLT_GWF.zCell(i)=zc/TMPLT_GWF.nNodesPerElement
+  !      !        TMPLT_GWF.iLayer(i)=1
   !      !    end do
   !      !    
   !      !else
   !      !    ! Generate the modflow cell coordinates as the centroid of the iNode array coordinates
-  !      !    do i=1,TECPLOT_GWF.nCells
+  !      !    do i=1,TMPLT_GWF.nCells
   !      !        xc=0.0
   !      !        yc=0.0
   !      !        zc=0.0
-  !      !        do j=1,TECPLOT_GWF.nNodesPerElement
-  !      !            xc=xc+TECPLOT_GWF.x(TECPLOT_GWF.iNode(j,i))
-  !      !            yc=yc+TECPLOT_GWF.y(TECPLOT_GWF.iNode(j,i))
-  !      !            zc=zc+TECPLOT_GWF.z(TECPLOT_GWF.iNode(j,i))
+  !      !        do j=1,TMPLT_GWF.nNodesPerElement
+  !      !            xc=xc+TMPLT_GWF.x(TMPLT_GWF.iNode(j,i))
+  !      !            yc=yc+TMPLT_GWF.y(TMPLT_GWF.iNode(j,i))
+  !      !            zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
   !      !        end do
-  !      !        TECPLOT_GWF.xCell(i)=xc/TECPLOT_GWF.nNodesPerElement
-  !      !        TECPLOT_GWF.yCell(i)=yc/TECPLOT_GWF.nNodesPerElement
-  !      !        TECPLOT_GWF.zCell(i)=zc/TECPLOT_GWF.nNodesPerElement
-  !      !        TECPLOT_GWF.iLayer(i)=1
+  !      !        TMPLT_GWF.xCell(i)=xc/TMPLT_GWF.nNodesPerElement
+  !      !        TMPLT_GWF.yCell(i)=yc/TMPLT_GWF.nNodesPerElement
+  !      !        TMPLT_GWF.zCell(i)=zc/TMPLT_GWF.nNodesPerElement
+  !      !        TMPLT_GWF.iLayer(i)=1
   !      !    end do
   !      !end if
   !      
-  !      allocate(TECPLOT_GWF.iZone(TECPLOT_GWF.nElements),stat=ialloc)
+  !      allocate(TMPLT_GWF.iZone(TMPLT_GWF.nElements),stat=ialloc)
   !      call AllocChk(ialloc,'Read 3d Element property array')
-  !      TECPLOT_GWF.iZone = 0 ! automatic initialization
-  !      TECPLOT_GWF.iZone(:)=hgs.iprop(:)
+  !      TMPLT_GWF.iZone = 0 ! automatic initialization
+  !      TMPLT_GWF.iZone(:)=hgs.iprop(:)
 	 !   
   !      call freeunit(itmp)
   !  end subroutine HgsPmToMeshCenteredModflow
   !
   !  !-------------------------------------------------------------
-  !  subroutine HgsOlfToMeshCenteredModflow(hgs,TECPLOT_SWF)
+  !  subroutine HgsOlfToMeshCenteredModflow(hgs,TMPLT_SWF)
   !      implicit none
   !      type (HgsProject) Hgs
-  !      type (TecplotDomain) TECPLOT_SWF
+  !      type (TecplotDomain) TMPLT_SWF
   !
   !      integer :: i,j,i1
   !      real*8 :: x(3),y(3)
@@ -4837,22 +4837,22 @@
   !      
   !      integer, allocatable :: TMPArray(:,:)
   !      
-  !     TECPLOT_SWF.meshtype='UNSTRUCTURED'
+  !     TMPLT_SWF.meshtype='UNSTRUCTURED'
   !      
-  !      TECPLOT_SWF.nNodes=hgs.nnolf
+  !      TMPLT_SWF.nNodes=hgs.nnolf
   !
-  !      allocate(TECPLOT_SWF.x(TECPLOT_SWF.nNodes),TECPLOT_SWF.y(TECPLOT_SWF.nNodes),TECPLOT_SWF.z(TECPLOT_SWF.nNodes), stat=ialloc)
+  !      allocate(TMPLT_SWF.x(TMPLT_SWF.nNodes),TMPLT_SWF.y(TMPLT_SWF.nNodes),TMPLT_SWF.z(TMPLT_SWF.nNodes), stat=ialloc)
   !      call AllocChk(ialloc,'SWF node coordinate arrays')
-  !      TECPLOT_SWF.x = 0 ! automatic initialization
-  !      TECPLOT_SWF.y = 0 ! automatic initialization
-  !      TECPLOT_SWF.z = 0 ! automatic initialization
+  !      TMPLT_SWF.x = 0 ! automatic initialization
+  !      TMPLT_SWF.y = 0 ! automatic initialization
+  !      TMPLT_SWF.z = 0 ! automatic initialization
   !      
   !      
-  !      allocate(TECPLOT_SWF.gwf_nn_from_swf_nn(TECPLOT_SWF.nNodes),&
-  !               TECPLOT_SWF.swf_nn_from_gwf_nn(TECPLOT_GWF.nNodes), stat=ialloc)
+  !      allocate(TMPLT_SWF.gwf_nn_from_swf_nn(TMPLT_SWF.nNodes),&
+  !               TMPLT_SWF.swf_nn_from_gwf_nn(TMPLT_GWF.nNodes), stat=ialloc)
   !      call AllocChk(ialloc,'SWF link_pm arrays')
-  !      TECPLOT_SWF.gwf_nn_from_swf_nn(:) = hgs.link_Olf2pm(:)
-  !      TECPLOT_SWF.swf_nn_from_gwf_nn(:) = hgs.link_pm2Olf(:)
+  !      TMPLT_SWF.gwf_nn_from_swf_nn(:) = hgs.link_Olf2pm(:)
+  !      TMPLT_SWF.swf_nn_from_gwf_nn(:) = hgs.link_pm2Olf(:)
   !
   !      if(.not. allocated(Modflow.GWF.x)) then
   !          ! These HGS node coordinates are used in the tecplot output file 
@@ -4864,20 +4864,20 @@
   !          Modflow.GWF.z(:)= hgs.mesh.z(:)
   !      end if
   !
-  !      do i=1,TECPLOT_SWF.nNodes
-  !          TECPLOT_SWF.x(i)=Modflow.GWF.x(TECPLOT_SWF.gwf_nn_from_swf_nn(i))
-  !          TECPLOT_SWF.y(i)=Modflow.GWF.y(TECPLOT_SWF.gwf_nn_from_swf_nn(i))
-  !          TECPLOT_SWF.z(i)=Modflow.GWF.z(TECPLOT_SWF.gwf_nn_from_swf_nn(i))
+  !      do i=1,TMPLT_SWF.nNodes
+  !          TMPLT_SWF.x(i)=Modflow.GWF.x(TMPLT_SWF.gwf_nn_from_swf_nn(i))
+  !          TMPLT_SWF.y(i)=Modflow.GWF.y(TMPLT_SWF.gwf_nn_from_swf_nn(i))
+  !          TMPLT_SWF.z(i)=Modflow.GWF.z(TMPLT_SWF.gwf_nn_from_swf_nn(i))
   !      end do
   !      
   !      
-  !      TECPLOT_SWF.nNodesPerElement = hgs.mesh.OlfNLN
+  !      TMPLT_SWF.nNodesPerElement = hgs.mesh.OlfNLN
   !      
-  !      TECPLOT_SWF.nElements = hgs.mesh.nolfe
+  !      TMPLT_SWF.nElements = hgs.mesh.nolfe
   !      
-  !      allocate(TECPLOT_SWF.xCell(TECPLOT_SWF.nCells),TECPLOT_SWF.yCell(TECPLOT_SWF.nCells),TECPLOT_SWF.zCell(TECPLOT_SWF.nCells),stat=ialloc)
+  !      allocate(TMPLT_SWF.xCell(TMPLT_SWF.nCells),TMPLT_SWF.yCell(TMPLT_SWF.nCells),TMPLT_SWF.zCell(TMPLT_SWF.nCells),stat=ialloc)
   !      call AllocChk(ialloc,'SWF cell coordinate arrays')
-  !      allocate(TECPLOT_SWF.iLayer(TECPLOT_SWF.nCells),stat=ialloc)
+  !      allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nCells),stat=ialloc)
   !      call AllocChk(ialloc,'SWF layer array')
   !      
 		!!allocate(hgs.mesh.inolf(hgs.mesh.OlfNLN,hgs.mesh.nolfe), &
@@ -4885,55 +4885,55 @@
 		!!	hgs.iolf_3d_elem_map(hgs.mesh.nolfe), &
 		!!	stat=ialloc)
 		!!call AllocChk(ialloc,'Overland element arrays')
-  !      allocate(TECPLOT_SWF.iNode(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nCells),stat=ialloc)
+  !      allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nCells),stat=ialloc)
   !      call AllocChk(ialloc,'SWF iNode arrays')
-  !      TECPLOT_SWF.iNode(:,:) = hgs.mesh.inolf(:,:)
+  !      TMPLT_SWF.iNode(:,:) = hgs.mesh.inolf(:,:)
   !      
   !      ! These numbers represent the pm node number that is coincicent to the olf node
-  !      allocate(TMPArray(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nCells),stat=ialloc)
+  !      allocate(TMPArray(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nCells),stat=ialloc)
   !      call AllocChk(ialloc,'SWF TMPArray')
   !      TMPArray=0
-  !      do i=1,TECPLOT_SWF.nCells
-  !          do j=1,TECPLOT_SWF.nNodesPerElement
+  !      do i=1,TMPLT_SWF.nCells
+  !          do j=1,TMPLT_SWF.nNodesPerElement
   !              ! HGS assumes 4 nodes for OLF elements but if triangles 4th value is zero so check
-  !              if(TECPLOT_SWF.iNode(j,i) > 0) then
+  !              if(TMPLT_SWF.iNode(j,i) > 0) then
   !                  ! The conversion to SWF nn from GWF nn is a global SWF nn so subtract total number of GWF nodes
-  !                  TMPArray(j,i)=TECPLOT_SWF.swf_nn_from_gwf_nn(TECPLOT_SWF.iNode(j,i))-Modflow.GWF.nNodes
+  !                  TMPArray(j,i)=TMPLT_SWF.swf_nn_from_gwf_nn(TMPLT_SWF.iNode(j,i))-Modflow.GWF.nNodes
   !              end if
   !          end do
   !      end do
-  !      TECPLOT_SWF.iNode=TMPArray
+  !      TMPLT_SWF.iNode=TMPArray
   !      deallocate(TMPArray)
   !
   !      
   !      ! Generate the modflow cell coordinates 
   !      ! 
-  !      if(TECPLOT_SWF.iNode(4,1) > 0) then ! 4-node rectangles, use centroid of the iNode array coordinates
-  !          do i=1,TECPLOT_SWF.nCells
+  !      if(TMPLT_SWF.iNode(4,1) > 0) then ! 4-node rectangles, use centroid of the iNode array coordinates
+  !          do i=1,TMPLT_SWF.nCells
   !              xc=0.0
   !              yc=0.0
   !              zc=0.0
-  !              do j=1,TECPLOT_SWF.nNodesPerElement
-  !                  xc=xc+TECPLOT_SWF.x(TECPLOT_SWF.iNode(j,i))
-  !                  yc=yc+TECPLOT_SWF.y(TECPLOT_SWF.iNode(j,i))
-  !                  zc=zc+TECPLOT_SWF.z(TECPLOT_SWF.iNode(j,i))
+  !              do j=1,TMPLT_SWF.nNodesPerElement
+  !                  xc=xc+TMPLT_SWF.x(TMPLT_SWF.iNode(j,i))
+  !                  yc=yc+TMPLT_SWF.y(TMPLT_SWF.iNode(j,i))
+  !                  zc=zc+TMPLT_SWF.z(TMPLT_SWF.iNode(j,i))
   !              end do
-  !              TECPLOT_SWF.xCell(i)=xc/4
-  !              TECPLOT_SWF.yCell(i)=yc/4
-  !              TECPLOT_SWF.zCell(i)=zc/4
-  !              TECPLOT_SWF.iLayer(i)=1
+  !              TMPLT_SWF.xCell(i)=xc/4
+  !              TMPLT_SWF.yCell(i)=yc/4
+  !              TMPLT_SWF.zCell(i)=zc/4
+  !              TMPLT_SWF.iLayer(i)=1
   !          end do
   !      else ! triangle with third node repeated, use circumcircle approach
   !          
-  !          !allocate(BadTri(TECPLOT_SWF.nCells),stat=ialloc)
+  !          !allocate(BadTri(TMPLT_SWF.nCells),stat=ialloc)
   !          !call AllocChk(ialloc,'BadTri Array')
   !          !BadTri(:)=0
   !
-  !          do i=1,TECPLOT_SWF.nCells
+  !          do i=1,TMPLT_SWF.nCells
   !              ! xc and yc from circumcircles
   !              do j=1,3
-  !                  x(j)=TECPLOT_SWF.x(TECPLOT_SWF.iNode(j,i))
-  !                  y(j)=TECPLOT_SWF.y(TECPLOT_SWF.iNode(j,i))
+  !                  x(j)=TMPLT_SWF.x(TMPLT_SWF.iNode(j,i))
+  !                  y(j)=TMPLT_SWF.y(TMPLT_SWF.iNode(j,i))
   !              end do
   !              !call OuterCircle(x,y,area,xc,yc,radius,lseg,aseg,dseg,bad_triangle)
   !              !if(bad_triangle) then
@@ -4951,21 +4951,21 @@
   !              ! zc from centroid of the iNode array coordinates
   !              zc=0.0
   !              do j=1,3
-  !                  zc=zc+TECPLOT_SWF.z(TECPLOT_SWF.iNode(j,i))
+  !                  zc=zc+TMPLT_SWF.z(TMPLT_SWF.iNode(j,i))
   !              end do
   !              
-  !              TECPLOT_SWF.xCell(i)=xc
-  !              TECPLOT_SWF.yCell(i)=yc
-  !              TECPLOT_SWF.zCell(i)=zc/3
-  !              TECPLOT_SWF.iLayer(i)=1
+  !              TMPLT_SWF.xCell(i)=xc
+  !              TMPLT_SWF.yCell(i)=yc
+  !              TMPLT_SWF.zCell(i)=zc/3
+  !              TMPLT_SWF.iLayer(i)=1
   !          end do
   !      end if
   !      
   !      Modflow.InnerCircles=.true.
   !      
-  !      allocate(TECPLOT_SWF.iZone(TECPLOT_SWF.nCells),stat=ialloc)
+  !      allocate(TMPLT_SWF.iZone(TMPLT_SWF.nCells),stat=ialloc)
   !      call AllocChk(ialloc,'Read SWF cell property array')
-  !      TECPLOT_SWF.iZone(:) = hgs.iolf_id_elem(:i)
+  !      TMPLT_SWF.iZone(:) = hgs.iolf_id_elem(:i)
   !      
   !      
   !      
@@ -4990,7 +4990,8 @@
         
         call ModflowDomainGridToTecplot(FNameTecplotDat,domain)
 
-
+        nFaceNeighborConnections=0
+        
         call Msg(' ')
         call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
             
@@ -5243,30 +5244,30 @@
     end subroutine InitializeModflowFiles
 
     !----------------------------------------------------------------------
-    subroutine MeshCentredCLNCellGeometry(Modflow, Tecplot_CLN,TMPLT)
+    subroutine MeshCentredCLNCellGeometry(Modflow, TMPLT_CLN,TMPLT)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_CLN
+        type (TecplotDomain) TMPLT_CLN
         integer :: i
 
         ! For modflow cell connection and area calculations
         
         ! Generate ia/ja from scratch
-        call CLN_IaJaStructure(TECPLOT_CLN)
+        call CLN_IaJaStructure(TMPLT_CLN)
 
-        allocate(Modflow.CLN.ConnectionLength(TECPLOT_CLN.njag),Modflow.CLN.PerpendicularArea(TECPLOT_CLN.njag),stat=ialloc)
+        allocate(Modflow.CLN.ConnectionLength(TMPLT_CLN.njag),Modflow.CLN.PerpendicularArea(TMPLT_CLN.njag),stat=ialloc)
         call AllocChk(ialloc,'CLN Cell connection length, perpendicular area array')
         Modflow.CLN.ConnectionLength(:)=0.0d0
         Modflow.CLN.PerpendicularArea(:)=0.0d0
 
-        Modflow.CLN.njag=TECPLOT_CLN.njag
+        Modflow.CLN.njag=TMPLT_CLN.njag
         
-        allocate(Modflow.CLN.ia(TECPLOT_CLN.nElements),Modflow.CLN.ja(TECPLOT_CLN.njag),stat=ialloc)
+        allocate(Modflow.CLN.ia(TMPLT_CLN.nElements),Modflow.CLN.ja(TMPLT_CLN.njag),stat=ialloc)
         call AllocChk(ialloc,'CLN ia, ja arrays')
-        Modflow.CLN.ia(:)=TECPLOT_CLN.ia
-        Modflow.CLN.ja(:)=TECPLOT_CLN.ja
+        Modflow.CLN.ia(:)=TMPLT_CLN.ia
+        Modflow.CLN.ja(:)=TMPLT_CLN.ja
 
         ! Cell horizontal areas
         ! use existing TMPLT.CellArea (e.g. area of triangle)  
@@ -5286,20 +5287,20 @@
         !    do j=2,modflow.CLN.ia(i)
         !        iConn=iConn+1
         !        inBor=iNbor+1
-        !        modflow.CLN.ConnectionLength(iConn)=TECPLOT_CLN.Length(i)/2.0d0 
-        !        modflow.CLN.PerpendicularArea(iConn)=TECPLOT_CLN.DiameterOrWidth(i)   
+        !        modflow.CLN.ConnectionLength(iConn)=TMPLT_CLN.Length(i)/2.0d0 
+        !        modflow.CLN.PerpendicularArea(iConn)=TMPLT_CLN.DiameterOrWidth(i)   
         !    end do
         !end do
     
     end subroutine MeshCentredCLNCellGeometry
 
     !----------------------------------------------------------------------
-    subroutine MeshCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+    subroutine MeshCentredSWFCellGeometry(Modflow, TMPLT_SWF,TMPLT)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_SWF
         integer :: i, j
 
         ! For modflow cell connection and area calculations
@@ -5308,19 +5309,19 @@
 
 
         ! Generate ia/ja from face neighbour data calculated by Tecplot
-        call IaJa_FromTecplot(TECPLOT_SWF)
+        call IaJa_FromTecplot(TMPLT_SWF)
 
-        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
+        allocate(Modflow.SWF.ConnectionLength(TMPLT_SWF.njag),Modflow.SWF.PerpendicularArea(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
         Modflow.SWF.ConnectionLength(:)=0.0d0
         Modflow.SWF.PerpendicularArea(:)=0.0d0
 
-        Modflow.SWF.njag=TECPLOT_SWF.njag
+        Modflow.SWF.njag=TMPLT_SWF.njag
         
-        allocate(Modflow.SWF.ia(TECPLOT_SWF.nElements),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
+        allocate(Modflow.SWF.ia(TMPLT_SWF.nElements),Modflow.SWF.ja(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF ia, ja arrays')
-        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
-        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+        Modflow.SWF.ia(:)=TMPLT_SWF.ia
+        Modflow.SWF.ja(:)=TMPLT_SWF.ja
 
         ! Cell horizontal areas
         ! use existing TMPLT.CellArea (e.g. area of triangle)  
@@ -5341,7 +5342,7 @@
                 inBor=iNbor+1
                 ! SWF neighbours always in adjacent column
                 if(TMPLT.nNodesPerElement == 3) then
-                    select case (TECPLOT_SWF.face(iNbor))
+                    select case (TMPLT_SWF.face(iNbor))
                         case ( 1 )
                             modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(3,i)   
                         case ( 2 )
@@ -5354,7 +5355,7 @@
                     modflow.SWF.ConnectionLength(iConn)=TMPLT.rCircle(i)
                     modflow.SWF.PerpendicularArea(iConn)=modflow.SWF.PerpendicularArea(iConn)*1.0d0  ! assume thickness of 1?
                 else if(TMPLT.nNodesPerElement == 4) then
-                    select case (TECPLOT_SWF.face(iNbor))
+                    select case (TMPLT_SWF.face(iNbor))
                     case ( 1 )
                         modflow.SWF.PerpendicularArea(iConn)=TMPLT.SideLength(1,i)   
                         modflow.SWF.ConnectionLength(iConn)=TMPLT.SideLength(1,i)/2.0d0
@@ -5403,7 +5404,7 @@
         write(FNum,'(5e20.12)') (domain.z(i),i=1,domain.nNodes)
         
         do i=1,domain.nElements
-            if(domain.name == 'TECPLOT_GWF') then
+            if(domain.name == 'TMPLT_GWF') then
                 if(domain.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
                     write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i) 
                 else if(domain.nNodesPerElement==8) then ! 8-node brick 
@@ -5412,7 +5413,7 @@
                     write(TmpSTR,'(i2)') domain.nNodesPerElement
                     call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
                 end if
-            else if(domain.name == 'TECPLOT_SWF' .or. domain.name == 'TMPLT') then
+            else if(domain.name == 'TMPLT_SWF' .or. domain.name == 'TMPLT') then
                 if(domain.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
                     write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3) !, domain.iNode(3,i) 
                 else if(domain.nNodesPerElement==4) then ! 4-node quadrilateral
@@ -5425,7 +5426,7 @@
                     write(TmpSTR,'(i2)') domain.nNodesPerElement
                     call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
                 end if
-            else if(domain.name == 'TECPLOT_CLN' .or. domain.name == 'TMPLT') then
+            else if(domain.name == 'TMPLT_CLN' .or. domain.name == 'TMPLT') then
                 if(domain.nNodesPerElement==2) then ! 2-node line
                     write(FNum,'(8i8)') (domain.iNode(j,i),j=1,2) 
                 else
@@ -6403,12 +6404,12 @@
     end subroutine ModflowTMPLTScatterToTecplot
     
     !----------------------------------------------------------------------
-    subroutine NodeCentredSWFCellGeometry(Modflow, Tecplot_SWF,TMPLT)
+    subroutine NodeCentredSWFCellGeometry(Modflow, TMPLT_SWF,TMPLT)
         implicit none
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_SWF
         integer :: i, j
 
         ! For modflow cell connection and area calculations
@@ -6416,19 +6417,19 @@
         real(dr) :: TriangleArea
 
         ! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
-        call NodeListToIaJaStructure(TECPLOT_SWF,TMPLT)
+        call NodeListToIaJaStructure(TMPLT_SWF,TMPLT)
             
-        Modflow.SWF.njag=TECPLOT_SWF.njag
+        Modflow.SWF.njag=TMPLT_SWF.njag
         
-        allocate(Modflow.SWF.ia(TECPLOT_SWF.nNodes),Modflow.SWF.ja(TECPLOT_SWF.njag),stat=ialloc)
+        allocate(Modflow.SWF.ia(TMPLT_SWF.nNodes),Modflow.SWF.ja(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF ia, ja arrays')
-        Modflow.SWF.ia(:)=TECPLOT_SWF.ia
-        Modflow.SWF.ja(:)=TECPLOT_SWF.ja
+        Modflow.SWF.ia(:)=TMPLT_SWF.ia
+        Modflow.SWF.ja(:)=TMPLT_SWF.ja
         
-        allocate(Modflow.SWF.ConnectionLength(TECPLOT_SWF.njag),Modflow.SWF.PerpendicularArea(TECPLOT_SWF.njag),stat=ialloc)
+        allocate(Modflow.SWF.ConnectionLength(TMPLT_SWF.njag),Modflow.SWF.PerpendicularArea(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:)= TECPLOT_SWF.ConnectionLength(:)
-        Modflow.SWF.PerpendicularArea(:)=TECPLOT_SWF.PerpendicularArea(:)
+        Modflow.SWF.ConnectionLength(:)= TMPLT_SWF.ConnectionLength(:)
+        Modflow.SWF.PerpendicularArea(:)=TMPLT_SWF.PerpendicularArea(:)
       
         ! Cell horizontal areas
         ! calculate node-centred cell area based on TMPLT.CellArea
@@ -6461,10 +6462,10 @@
     end subroutine NodeCentredSWFCellGeometry
 
     !-------------------------------------------------------------
-    subroutine NodeCentredSWFIaJaStructureToGWF(TECPLOT_SWF,TECPLOT_GWF)
+    subroutine NodeCentredSWFIaJaStructureToGWF(TMPLT_SWF,TMPLT_GWF)
         implicit none
-        type(TecplotDomain) TECPLOT_SWF
-        type(TecplotDomain) TECPLOT_GWF
+        type(TecplotDomain) TMPLT_SWF
+        type(TecplotDomain) TMPLT_GWF
         
         integer, parameter :: MAXCONNECTIONS=20
 
@@ -6484,16 +6485,16 @@
 
         integer :: iNjag
         
-        nCellsGWF=TECPLOT_SWF.nNodes*(TECPLOT_GWF.nLayers+1)
+        nCellsGWF=TMPLT_SWF.nNodes*(TMPLT_GWF.nLayers+1)
         
         allocate(ia_TMP(nCellsGWF), ja_TMP(MAXCONNECTIONS,nCellsGWF), ja_TMP2(MAXCONNECTIONS,nCellsGWF), &
             ConnectionLength_TMP(MAXCONNECTIONS,nCellsGWF),PerpendicularArea_TMP(MAXCONNECTIONS,nCellsGWF), stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' cell build arrays')
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' cell build arrays')
         
 
         
         call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TECPLOT_GWF.name)//'...')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TMPLT_GWF.name)//'...')
         
         ia_TMP(:)=0
         ja_TMP(:,:)=0
@@ -6501,37 +6502,37 @@
         PerpendicularArea_TMP(:,:)=0
         
         ! Form GWF ia, ja from SWF ia, ja
-        do j=1,TECPLOT_GWF.nLayers+1
+        do j=1,TMPLT_GWF.nLayers+1
             iNjag=0
-            do i=1,TECPLOT_SWF.nNodes
-                iGWF_Cell=(j-1)*TECPLOT_SWF.nNodes+i
-                ia_TMP(iGWF_Cell)=TECPLOT_SWF.ia(i)
-                do k=1,TECPLOT_SWF.ia(i)
+            do i=1,TMPLT_SWF.nNodes
+                iGWF_Cell=(j-1)*TMPLT_SWF.nNodes+i
+                ia_TMP(iGWF_Cell)=TMPLT_SWF.ia(i)
+                do k=1,TMPLT_SWF.ia(i)
                     iNjag=iNjag+1
-                    kCell=(j-1)*TECPLOT_SWF.nNodes+TECPLOT_SWF.ja(iNJag)
+                    kCell=(j-1)*TMPLT_SWF.nNodes+TMPLT_SWF.ja(iNJag)
                     if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                     ja_TMP(k,iGWF_Cell)=kCell
                     
                     ! For now, assume we can inherit these from SWF domain.  Should really come from TMPLT.
-                    ConnectionLength_TMP(k,iGWF_Cell)=TECPLOT_SWF.ConnectionLength(iNjag)
-                    PerpendicularArea_TMP(k,iGWF_Cell)=TECPLOT_SWF.PerpendicularArea(iNjag)
+                    ConnectionLength_TMP(k,iGWF_Cell)=TMPLT_SWF.ConnectionLength(iNjag)
+                    PerpendicularArea_TMP(k,iGWF_Cell)=TMPLT_SWF.PerpendicularArea(iNjag)
                 end do
                     
-                if(j < TECPLOT_GWF.nLayers+1) then ! downward connection
+                if(j < TMPLT_GWF.nLayers+1) then ! downward connection
                     ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell+TECPLOT_SWF.nNodes
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell+TMPLT_SWF.nNodes
                 end if
                 if(j > 1) then ! upward connection
                     ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell-TECPLOT_SWF.nNodes
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iGWF_Cell-TMPLT_SWF.nNodes
                 end if
             end do
         end do
                         
                         
         ! Sort cell connection list, remove duplicates and determine ia
-        allocate(TECPLOT_GWF.ia(nCellsGWF),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' ia array')
+        allocate(TMPLT_GWF.ia(nCellsGWF),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' ia array')
         !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
         !call Msg(trim(TMPStr))
         do i=1,nCellsGWF
@@ -6542,38 +6543,38 @@
             !        call Msg(trim(TMPStr))
             !    end if
             !end do
-            TECPLOT_GWF.ia(i)=0
+            TMPLT_GWF.ia(i)=0
             !ja_TMP2(1,i)=i
             do j=1,MAXCONNECTIONS
                 if(ja_TMP(isort(j),i) == 0) cycle
                 !if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
-                TECPLOT_GWF.ia(i)=TECPLOT_GWF.ia(i)+1
-                ja_TMP2(TECPLOT_GWF.ia(i),i)=ja_TMP(isort(j),i)
+                TMPLT_GWF.ia(i)=TMPLT_GWF.ia(i)+1
+                ja_TMP2(TMPLT_GWF.ia(i),i)=ja_TMP(isort(j),i)
             end do
-!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,TECPLOT_GWF.ia(i))
+!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,TMPLT_GWF.ia(i))
         end do
         
         ! Determine size of ja (njag) and copy ja_TMP to ja 
-        TECPLOT_GWF.njag=0
+        TMPLT_GWF.njag=0
         do i=1,nCellsGWF
-            TECPLOT_GWF.njag=TECPLOT_GWF.njag+TECPLOT_GWF.ia(i)
+            TMPLT_GWF.njag=TMPLT_GWF.njag+TMPLT_GWF.ia(i)
         end do
-        allocate(TECPLOT_GWF.ja(TECPLOT_GWF.njag),TECPLOT_GWF.jaElement(TECPLOT_GWF.njag),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' node neighbour ja, jaElement array')
-        allocate(TECPLOT_GWF.ConnectionLength(TECPLOT_GWF.njag),TECPLOT_GWF.PerpendicularArea(TECPLOT_GWF.njag),stat=ialloc)
+        allocate(TMPLT_GWF.ja(TMPLT_GWF.njag),TMPLT_GWF.jaElement(TMPLT_GWF.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' node neighbour ja, jaElement array')
+        allocate(TMPLT_GWF.ConnectionLength(TMPLT_GWF.njag),TMPLT_GWF.PerpendicularArea(TMPLT_GWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        TECPLOT_GWF.ConnectionLength(:)=0.0d0
-        TECPLOT_GWF.PerpendicularArea(:)=0.0d0
+        TMPLT_GWF.ConnectionLength(:)=0.0d0
+        TMPLT_GWF.PerpendicularArea(:)=0.0d0
 
         
         iNJag=0
         do i=1,nCellsGWF
-            do j=1,TECPLOT_GWF.ia(i)
+            do j=1,TMPLT_GWF.ia(i)
                 iNjag=iNjag+1
-                TECPLOT_GWF.ja(iNJag)=abs(ja_TMP2(j,i))  ! restore first entry to positive number
-                !TECPLOT_GWF.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                TECPLOT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                TECPLOT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+                TMPLT_GWF.ja(iNJag)=abs(ja_TMP2(j,i))  ! restore first entry to positive number
+                !TMPLT_GWF.jaElement(iNJag)=ja_TMP2_Element(j,i)
+                TMPLT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
+                TMPLT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
             end do
         end do
            
@@ -7018,10 +7019,10 @@
     end subroutine StressPeriod
 
     !-------------------------------------------------------------
-    subroutine SWFToTecplot(Modflow,TECPLOT_SWF)
+    subroutine SWFToTecplot(Modflow,TMPLT_SWF)
         implicit none
         type(ModflowProject) Modflow
-        type(TecplotDomain) TECPLOT_SWF
+        type(TecplotDomain) TMPLT_SWF
 
         integer :: Fnum
         character(MAX_STR) :: FName
@@ -7035,7 +7036,7 @@
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(TECPLOT_SWF.name)//'"'
+        write(FNum,*) 'Title = "'//trim(TMPLT_SWF.name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(modflow.SWF.name)//' Zone","'//trim(modflow.SWF.name)//' zCell",'
@@ -7058,8 +7059,8 @@
                 
         write(FNum,'(a)') trim(VarSTR)
           
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',TECPLOT_SWF.nNodes,', E=',TECPLOT_SWF.nElements,&
-        ', datapacking=block, zonetype='//trim(TECPLOT_SWF.elementtype)
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',TMPLT_SWF.nNodes,', E=',TMPLT_SWF.nElements,&
+        ', datapacking=block, zonetype='//trim(TMPLT_SWF.elementtype)
             
         if(modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -7079,11 +7080,11 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.x(i),i=1,TECPLOT_SWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_SWF.x(i),i=1,TMPLT_SWF.nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.y(i),i=1,TECPLOT_SWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_SWF.y(i),i=1,TMPLT_SWF.nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5e20.12)') (TECPLOT_SWF.z(i),i=1,TECPLOT_SWF.nNodes)
+        write(FNum,'(5e20.12)') (TMPLT_SWF.z(i),i=1,TMPLT_SWF.nNodes)
         
         write(FNum,'(a)') '# zone'
         write(FNum,'(5i8)') (Modflow.SWF.iZone(i),i=1,Modflow.SWF.nCells)
@@ -7106,18 +7107,18 @@
             write(FNum,'(5e20.12)') (Modflow.SWF.CellArea(i),i=1,Modflow.SWF.nCells)
         end if
         
-        do i=1,TECPLOT_SWF.nElements
-            if(TECPLOT_SWF.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3) !, TECPLOT_SWF.iNode(3,i) 
-            else if(TECPLOT_SWF.nNodesPerElement==4) then ! 4-node quadrilateral
-                if(TECPLOT_SWF.iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,4) 
+        do i=1,TMPLT_SWF.nElements
+            if(TMPLT_SWF.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                write(FNum,'(8i8)') (TMPLT_SWF.iNode(j,i),j=1,3) !, TMPLT_SWF.iNode(3,i) 
+            else if(TMPLT_SWF.nNodesPerElement==4) then ! 4-node quadrilateral
+                if(TMPLT_SWF.iNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (TMPLT_SWF.iNode(j,i),j=1,4) 
                 else
-                    write(FNum,'(8i8)') (TECPLOT_SWF.iNode(j,i),j=1,3), TECPLOT_SWF.iNode(3,i) 
+                    write(FNum,'(8i8)') (TMPLT_SWF.iNode(j,i),j=1,3), TMPLT_SWF.iNode(3,i) 
                 end if
             else
-                write(TmpSTR,'(i2)') TECPLOT_SWF.nNodesPerElement
-                call ErrMsg(trim(TECPLOT_SWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)') TMPLT_SWF.nNodesPerElement
+                call ErrMsg(trim(TMPLT_SWF.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
         end do
        
@@ -7248,10 +7249,10 @@
     end subroutine WriteCHDFile
 
     !-------------------------------------------------------------
-    subroutine WriteCLNFiles(Modflow,TECPLOT_CLN)
+    subroutine WriteCLNFiles(Modflow,TMPLT_CLN)
         implicit none
         type (ModflowProject) Modflow
-        type (TecplotDomain) TECPLOT_CLN
+        type (TecplotDomain) TMPLT_CLN
         
         
         integer :: i, j, k, i1, i2
@@ -7349,10 +7350,10 @@
         write(Modflow.iCLN,'(5(1pg15.5))') (modflow.CLN.StartingHeads(i),i=1,modflow.CLN.nCells)
         
         !------------------- write CLN_GSF file
-        write(Modflow.iCLN_GSF,'(a)') trim(TECPLOT_CLN.meshtype)
+        write(Modflow.iCLN_GSF,'(a)') trim(TMPLT_CLN.meshtype)
         write(Modflow.iCLN_GSF,*) Modflow.CLN.nCells, Modflow.CLN.nLayers, Modflow.CLN.iz, Modflow.CLN.ic
         write(Modflow.iCLN_GSF,*) Modflow.CLN.nNodes
-        write(Modflow.iCLN_GSF,*) (TECPLOT_CLN.x(i),TECPLOT_CLN.y(i),TECPLOT_CLN.z(i),i=1,Modflow.CLN.nNodes)
+        write(Modflow.iCLN_GSF,*) (TMPLT_CLN.x(i),TMPLT_CLN.y(i),TMPLT_CLN.z(i),i=1,Modflow.CLN.nNodes)
         do i=1,Modflow.CLN.nCells
             write(Modflow.iCLN_GSF,'(i10,2x,3(1pg15.5),2x,2i10,10i10)') i,Modflow.CLN.xCell(i),Modflow.CLN.yCell(i),Modflow.CLN.zCell(i),Modflow.CLN.iLayer(i),Modflow.CLN.nNodesPerCell,(Modflow.CLN.iNode(j,i),j=1,Modflow.CLN.nNodesPerCell)
         end do
@@ -7400,10 +7401,10 @@
     end subroutine WriteDRNFile
 
     !-------------------------------------------------------------
-    subroutine WriteGWFFiles(Modflow,TECPLOT_GWF)
+    subroutine WriteGWFFiles(Modflow,TMPLT_GWF)
         implicit none
         type (ModflowProject) Modflow
-        type (TecplotDomain) TECPLOT_GWF
+        type (TecplotDomain) TMPLT_GWF
 
         integer :: i, j, k, i1, i2, nStrt,nEnd
         
@@ -7720,21 +7721,21 @@
         if(modflow.NodalControlVolume) then
             !------------------- GSF file for nodal control volume
             write(Modflow.iGSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
-            write(Modflow.iGSF,*) TECPLOT_GWF.nElements, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
+            write(Modflow.iGSF,*) TMPLT_GWF.nElements, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
             write(Modflow.iGSF,*) Modflow.GWF.nNodes
-            write(Modflow.iGSF,*) (TECPLOT_GWF.x(i),TECPLOT_GWF.y(i),TECPLOT_GWF.z(i),i=1,TECPLOT_GWF.nNodes)
-            do i=1,TECPLOT_GWF.nElements
-                write(Modflow.iGSF,'(12i10)') i,TECPLOT_GWF.nNodesPerElement,(TECPLOT_GWF.iNode(j,i),j=1,TECPLOT_GWF.nNodesPerElement)
+            write(Modflow.iGSF,*) (TMPLT_GWF.x(i),TMPLT_GWF.y(i),TMPLT_GWF.z(i),i=1,TMPLT_GWF.nNodes)
+            do i=1,TMPLT_GWF.nElements
+                write(Modflow.iGSF,'(12i10)') i,TMPLT_GWF.nNodesPerElement,(TMPLT_GWF.iNode(j,i),j=1,TMPLT_GWF.nNodesPerElement)
             end do
             do i=1,Modflow.GWF.nCells
                 write(Modflow.iGSF,'(i10,3(1pg15.5),i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i)
             end do
         else
             !------------------- GSF file for elemental control volume
-            write(Modflow.iGSF,'(a)') trim(TECPLOT_GWF.meshtype)
+            write(Modflow.iGSF,'(a)') trim(TMPLT_GWF.meshtype)
             write(Modflow.iGSF,*) Modflow.GWF.nCells, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
             write(Modflow.iGSF,*) Modflow.GWF.nNodes
-            write(Modflow.iGSF,*) (TECPLOT_GWF.x(i),TECPLOT_GWF.y(i),TECPLOT_GWF.z(i),i=1,TECPLOT_GWF.nNodes)
+            write(Modflow.iGSF,*) (TMPLT_GWF.x(i),TMPLT_GWF.y(i),TMPLT_GWF.z(i),i=1,TMPLT_GWF.nNodes)
             do i=1,Modflow.GWF.nCells
                 write(Modflow.iGSF,'(i10,2x,3(1pg15.5),2x,2i10,10i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i),Modflow.GWF.nNodesPerCell,(Modflow.GWF.iNode(j,i),j=1,Modflow.GWF.nNodesPerCell)
             end do
@@ -7745,10 +7746,10 @@
     end subroutine WriteGWFFiles
     
     !-------------------------------------------------------------
-    subroutine WriteSWFFiles(Modflow,TECPLOT_SWF)
+    subroutine WriteSWFFiles(Modflow,TMPLT_SWF)
         implicit none
         type (ModflowProject) Modflow
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_SWF
 
         integer :: i, j, i1, i2,k
         
@@ -7841,11 +7842,11 @@
         if(modflow.NodalControlVolume) then
             !------------------- write non-standard SWF_GSF file
             write(Modflow.iSWF_GSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
-            write(Modflow.iSWF_GSF,*) TECPLOT_SWF.nElements, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
+            write(Modflow.iSWF_GSF,*) TMPLT_SWF.nElements, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
             write(Modflow.iSWF_GSF,*) Modflow.SWF.nNodes
-            write(Modflow.iSWF_GSF,*) (TECPLOT_SWF.x(i),TECPLOT_SWF.y(i),TECPLOT_SWF.z(i),i=1,Modflow.SWF.nNodes)
-            do i=1,TECPLOT_SWF.nElements
-                write(Modflow.iSWF_GSF,'(12i10)') i,TECPLOT_SWF.nNodesPerElement,(TECPLOT_SWF.iNode(j,i),j=1,TECPLOT_SWF.nNodesPerElement)
+            write(Modflow.iSWF_GSF,*) (TMPLT_SWF.x(i),TMPLT_SWF.y(i),TMPLT_SWF.z(i),i=1,Modflow.SWF.nNodes)
+            do i=1,TMPLT_SWF.nElements
+                write(Modflow.iSWF_GSF,'(12i10)') i,TMPLT_SWF.nNodesPerElement,(TMPLT_SWF.iNode(j,i),j=1,TMPLT_SWF.nNodesPerElement)
             end do
             do i=1,Modflow.SWF.nCells
                 write(Modflow.iSWF_GSF,'(i10,3(1pg15.5),i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i)
@@ -7856,7 +7857,7 @@
             write(Modflow.iSWF_GSF,'(a)') trim(Modflow.SWF.meshtype)
             write(Modflow.iSWF_GSF,*) Modflow.SWF.nCells, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
             write(Modflow.iSWF_GSF,*) Modflow.SWF.nNodes
-            write(Modflow.iSWF_GSF,*) (TECPLOT_SWF.x(i),TECPLOT_SWF.y(i),TECPLOT_SWF.z(i),i=1,Modflow.SWF.nNodes)
+            write(Modflow.iSWF_GSF,*) (TMPLT_SWF.x(i),TMPLT_SWF.y(i),TMPLT_SWF.z(i),i=1,Modflow.SWF.nNodes)
             do i=1,Modflow.SWF.nCells
                 write(Modflow.iSWF_GSF,'(i10,2x,3(1pg15.5),2x,2i10,10i10)') i,Modflow.SWF.xCell(i),Modflow.SWF.yCell(i),Modflow.SWF.zCell(i),Modflow.SWF.iLayer(i),Modflow.SWF.nNodesPerCell,(Modflow.SWF.iNode(j,i),j=1,Modflow.SWF.nNodesPerCell)
             end do

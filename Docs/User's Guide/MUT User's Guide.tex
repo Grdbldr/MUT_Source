@@ -38,6 +38,7 @@
 
 %\usepackage{wrapfig}
 
+%\usepackage{parskip}
 
 \graphicspath{{Imagery/}} %Setting the graphicspath
 
@@ -50,7 +51,7 @@
 \newcommand{\mut}{\textsc{Mut}}
 \newcommand{\mf}{\textsc{Modflow}}
 \newcommand{\mfu}{\textsc{Modflow-Usg}}
-\newcommand{\mfus}{\textsc{Modflow-Usg-Swf}}
+\newcommand{\mfus}{\textsc{Modflow-Usg$^{Swf}$}}
 \newcommand{\tecplot}{\textsc{Tecplot}}
 \newcommand{\github}{\textsc{GitHub}}
 \newcommand{\ifort}{\textsc{Intel Fortran}}
@@ -70,6 +71,7 @@
                       \raisebox{.01in}{ \hspace*{.4\textwidth} $\bullet \bullet \bullet$}
                       \index{Input instructions ! #1} }
 
+\newcommand{\createspace}[2] {\vspace{.2in} \\ \includegraphics[width=#1\textwidth]{#2} \vspace{.2in} \\}
 
 \makeindex
 
@@ -104,17 +106,16 @@
 
 \chapter{Software Installation and Useage}\input{Installation}
 
-\chapter{Model Build}\input{ModelBuild}
-    \section{Suggested Workflow}\input{SuggestedWorkflow}
-    \section{\mut\ Input File Structure}\input{InputFile}
-    \section{\tecplot\ Useage}\input{Tecplot}
+\chapter{Model Build Workflow}\input{ModelBuild}
+    \pagebreak
+    \section{Template Mesh}\input{TemplateMesh}
     \section{Groundwater Flow(GWF) Domain}\input{GWF}
         \subsection{Constant Head(CHD)}\input{ConstantHead}
         \subsection{Drains(DRN)}\input{Drains}
-        \subsection{Recharge(RCH)}
+        \subsection{Recharge(RCH)}\input{Recharge}
         \subsection{Pumping}
-    \section{Connected Linear Networks(CLN) Domain}
-    \section{Surface Water Flow(SWF) Domain}
+    \section{Connected Linear Networks(CLN) Domain} \input{CLN}
+    \section{Surface Water Flow(SWF) Domain} \input{SWF}
         \subsection{Critical Depth}
         \subsection{Zero-Gradient Depth}
 
@@ -124,10 +125,15 @@
     \section{Verification}
         \subsection{Unsaturated flow in a 1D Column} \input{1D_Build}
         \subsection{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}
-        \subsection{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }
+        \subsection{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }\input{3D_Example_Abdul}
     \section{Illustration}
 
 \chapter{Tutorial}\input{Tutorial}
+    \section{\mut\ Useage} \input{MutUseage}
+        \subsection{Suggested Workflow}\input{SuggestedWorkflow}
+        \subsection{\mut\ Input File Structure}\input{InputFile}
+    \section{\github\ Useage in \vstudio} \input{GitInVStudio}
+    \section{\tecplot\ Useage}\input{Tecplot}
 
 
 \printindex

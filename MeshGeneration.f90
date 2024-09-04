@@ -287,10 +287,10 @@ Module MeshGeneration
     end subroutine ascii_file_elevation
     
     !----------------------------------------------------------------------
-    subroutine GenerateCLNDomain(FNum,TECPLOT_CLN)
+    subroutine GenerateCLNDomain(FNum,TMPLT_CLN)
         implicit none
         integer :: FNum
-        type(TecplotDomain) TECPLOT_CLN
+        type(TecplotDomain) TMPLT_CLN
         
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
@@ -300,11 +300,11 @@ Module MeshGeneration
         integer :: nPoints  ! number of points in list
         
 	    ! Build a single tecplot file which can have multiple CLN's
-        TECPLOT_CLN.name='TECPLOT_CLN'
-        TECPLOT_CLN.meshtype='UNSTRUCTURED'
-        TECPLOT_CLN.nZones=0
-        TECPLOT_CLN.nNodesPerElement=2
-        TECPLOT_CLN.ElementType='felineseg'
+        TMPLT_CLN.name='TMPLT_CLN'
+        TMPLT_CLN.meshtype='UNSTRUCTURED'
+        TMPLT_CLN.nZones=0
+        TMPLT_CLN.nNodesPerElement=2
+        TMPLT_CLN.ElementType='felineseg'
 
         read_Instructions: do
             read(FNum,'(a60)',iostat=status) Instruction
@@ -325,7 +325,7 @@ Module MeshGeneration
                 call xyzFromAsciiFile(FNum,xi,yi,zi,nPoints)
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
-                call CLNFromXYZPair(FNum,Tecplot_CLN)
+                call CLNFromXYZPair(FNum,TMPLT_CLN)
                 
             else
 			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
@@ -333,22 +333,22 @@ Module MeshGeneration
 
         end do read_Instructions
         
-        TECPLOT_CLN.IsDefined=.true.
+        TMPLT_CLN.IsDefined=.true.
         
-        allocate(TECPLOT_CLN.Element_Is(TECPLOT_CLN.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_CLN.name)//' Element_Is array')            
-        TECPLOT_CLN.Element_Is(:)=0
+        allocate(TMPLT_CLN.Element_Is(TMPLT_CLN.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_CLN.name)//' Element_Is array')            
+        TMPLT_CLN.Element_Is(:)=0
         
         continue
         
     end subroutine GenerateCLNDomain
     !----------------------------------------------------------------------
-    subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,TECPLOT_GWF)
+    subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,TMPLT_GWF)
         implicit none
 
         integer :: FNumMUT
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_GWF
+        type (TecplotDomain) TMPLT_GWF
         
         character(MAX_INST) :: instruction
         character(MAX_INST) :: zone_by_template_cmd			=   'zone by template'
@@ -384,7 +384,7 @@ Module MeshGeneration
         ilyr(:) = 0
         zi(:) = 0.0d0
 
-        if(.not. allocated(top_elev)) then  ! could have been allocated if SWF TECPLOT_GWF defined
+        if(.not. allocated(top_elev)) then  ! could have been allocated if SWF TMPLT_GWF defined
             allocate(base_elev(TMPLT.nNodes),top_elev(TMPLT.nNodes),stat=ialloc)
         else
             allocate(base_elev(TMPLT.nNodes),stat=ialloc)
@@ -402,7 +402,7 @@ Module MeshGeneration
             z(j)=top_elev(j)
         end do
 
-        TECPLOT_GWF.nZones=1
+        TMPLT_GWF.nZones=1
         nsheet=1
 
 	    ! Define mesh layers and sublayers
@@ -454,71 +454,71 @@ Module MeshGeneration
         end do read_slice2lyr
         
         
-        ! Copy the local and TMPLT data to the TECPLOT_GWF data structure
-        TECPLOT_GWF.name='TECPLOT_GWF'
-        TECPLOT_GWF.meshtype='UNSTRUCTURED'
-        TECPLOT_GWF.nNodes=TMPLT.nNodes*nsheet
-        allocate(TECPLOT_GWF.x(TECPLOT_GWF.nNodes),TECPLOT_GWF.y(TECPLOT_GWF.nNodes),TECPLOT_GWF.z(TECPLOT_GWF.nNodes), stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' node coordinate arrays')
-        do i=1,TECPLOT_GWF.nNodes
-            TECPLOT_GWF.x(i)= x(i)
-            TECPLOT_GWF.y(i)= y(i)
-            TECPLOT_GWF.z(i)= z(i)
+        ! Copy the local and TMPLT data to the TMPLT_GWF data structure
+        TMPLT_GWF.name='TMPLT_GWF'
+        TMPLT_GWF.meshtype='UNSTRUCTURED'
+        TMPLT_GWF.nNodes=TMPLT.nNodes*nsheet
+        allocate(TMPLT_GWF.x(TMPLT_GWF.nNodes),TMPLT_GWF.y(TMPLT_GWF.nNodes),TMPLT_GWF.z(TMPLT_GWF.nNodes), stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' node coordinate arrays')
+        do i=1,TMPLT_GWF.nNodes
+            TMPLT_GWF.x(i)= x(i)
+            TMPLT_GWF.y(i)= y(i)
+            TMPLT_GWF.z(i)= z(i)
         end do
         
-        TECPLOT_GWF.nLayers=nsheet-1
+        TMPLT_GWF.nLayers=nsheet-1
         
-        TECPLOT_GWF.nNodesPerElement=TMPLT.nNodesPerElement*2
-        TECPLOT_GWF.nElements=TMPLT.nElements*(nsheet-1)
+        TMPLT_GWF.nNodesPerElement=TMPLT.nNodesPerElement*2
+        TMPLT_GWF.nElements=TMPLT.nElements*(nsheet-1)
         
         ! Just define these for now
-        !TECPLOT_GWF.ic=0
+        !TMPLT_GWF.ic=0
         
         
         ! Cell node list
-        allocate(TECPLOT_GWF.iNode(TECPLOT_GWF.nNodesPerElement,TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element node list array')
-        do i=1,TECPLOT_GWF.nElements
-            do j=1,TECPLOT_GWF.nNodesPerElement
-                TECPLOT_GWF.iNode(j,i) = in(j,i) 
+        allocate(TMPLT_GWF.iNode(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element node list array')
+        do i=1,TMPLT_GWF.nElements
+            do j=1,TMPLT_GWF.nNodesPerElement
+                TMPLT_GWF.iNode(j,i) = in(j,i) 
             end do
         end do
         
         ! Element layer number
-        allocate(TECPLOT_GWF.iLayer(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element layer number array')
-        do i=1,TECPLOT_GWF.nElements
-            TECPLOT_GWF.iLayer(i) = ilyr(i) 
+        allocate(TMPLT_GWF.iLayer(TMPLT_GWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element layer number array')
+        do i=1,TMPLT_GWF.nElements
+            TMPLT_GWF.iLayer(i) = ilyr(i) 
         end do
         
 
         ! Element zone number
-        allocate(TECPLOT_GWF.iZone(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' iZone arrays')
-        do i=1,TECPLOT_GWF.nElements
-            TECPLOT_GWF.iZone(i) = iprp(i) 
+        allocate(TMPLT_GWF.iZone(TMPLT_GWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' iZone arrays')
+        do i=1,TMPLT_GWF.nElements
+            TMPLT_GWF.iZone(i) = iprp(i) 
         end do
         if(zone_by_template) then
-            TECPLOT_GWF.nZones=TMPLT.nZones
+            TMPLT_GWF.nZones=TMPLT.nZones
         else
-            TECPLOT_GWF.nZones=nlayers
+            TMPLT_GWF.nZones=nlayers
         end if
         
-        TECPLOT_GWF.ElementType='febrick'
+        TMPLT_GWF.ElementType='febrick'
 
         nz=nsheet
         zi(nsheet)=z((nsheet-1)*TMPLT.nNodes+1)
         
-        TECPLOT_GWF.IsDefined=.true.
+        TMPLT_GWF.IsDefined=.true.
 
-        allocate(TECPLOT_GWF.Element_Is(TECPLOT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_GWF.name)//' Element_Is array')            
-        TECPLOT_GWF.Element_Is(:)=0
+        allocate(TMPLT_GWF.Element_Is(TMPLT_GWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element_Is array')            
+        TMPLT_GWF.Element_Is(:)=0
     
     end subroutine GenerateLayeredGWFDomain
     
     !----------------------------------------------------------------------
-    subroutine GenerateSWFDomain(FNumMUT,TMPLT,TECPLOT_SWF)
+    subroutine GenerateSWFDomain(FNumMUT,TMPLT,TMPLT_SWF)
         implicit none
         
         character(MAX_INST) :: instruction
@@ -526,25 +526,25 @@ Module MeshGeneration
     
         integer :: FNumMUT
         type (TecplotDomain) TMPLT
-        type (TecplotDomain) TECPLOT_SWF
+        type (TecplotDomain) TMPLT_SWF
 
-	    ! Given the template (i.e. a 2D mesh), define SWF TECPLOT_SWF 
+	    ! Given the template (i.e. a 2D mesh), define SWF TMPLT_SWF 
 
         integer :: i, j
         
         ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
 
         ! Copy the template data to the Modflow SWF data structure
-        TECPLOT_SWF.name='TECPLOT_SWF'
-        TECPLOT_SWF.meshtype='UNSTRUCTURED'
+        TMPLT_SWF.name='TMPLT_SWF'
+        TMPLT_SWF.meshtype='UNSTRUCTURED'
         
-        TECPLOT_SWF.nNodes=TMPLT.nNodes
-        allocate(TECPLOT_SWF.x(TECPLOT_SWF.nNodes),TECPLOT_SWF.y(TECPLOT_SWF.nNodes),TECPLOT_SWF.z(TECPLOT_SWF.nNodes), stat=ialloc)
+        TMPLT_SWF.nNodes=TMPLT.nNodes
+        allocate(TMPLT_SWF.x(TMPLT_SWF.nNodes),TMPLT_SWF.y(TMPLT_SWF.nNodes),TMPLT_SWF.z(TMPLT_SWF.nNodes), stat=ialloc)
         call AllocChk(ialloc,'SWF node coordinate arrays')
-        TECPLOT_SWF.x(:)= TMPLT.x(:)
-        TECPLOT_SWF.y(:)= TMPLT.y(:)
+        TMPLT_SWF.x(:)= TMPLT.x(:)
+        TMPLT_SWF.y(:)= TMPLT.y(:)
 
-        ! Define elevation (z coordinate) of SWF TECPLOT_SWF
+        ! Define elevation (z coordinate) of SWF TMPLT_SWF
         allocate(top_elev(TMPLT.nNodes),stat=ialloc)
         call AllocChk(ialloc,'Template top elevation arrays')
 
@@ -567,7 +567,7 @@ Module MeshGeneration
             if(index(instruction, top_elevation_cmd)  /= 0) then
                 call top_elevation(FNumMUT,TMPLT)
 			    do j=1,TMPLT.nNodes
-				    TECPLOT_SWF.z(j)=top_elev(j)
+				    TMPLT_SWF.z(j)=top_elev(j)
 			    end do
 
 
@@ -579,57 +579,57 @@ Module MeshGeneration
         
         
         
-        TECPLOT_SWF.nLayers=1
-        !TECPLOT_SWF.iz=0
-        !TECPLOT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
+        TMPLT_SWF.nLayers=1
+        !TMPLT_SWF.iz=0
+        !TMPLT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
 
         
-        TECPLOT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-        TECPLOT_SWF.ElementType=TMPLT.ElementType
-        TECPLOT_SWF.nElements=TMPLT.nElements
+        TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
+        TMPLT_SWF.ElementType=TMPLT.ElementType
+        TMPLT_SWF.nElements=TMPLT.nElements
         
         ! Just define these for now
-        !TECPLOT_SWF.ic=0
+        !TMPLT_SWF.ic=0
         
         ! Element node list
-        allocate(TECPLOT_SWF.iNode(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element node list array')
-        do i=1,TECPLOT_SWF.nElements
-            do j=1,TECPLOT_SWF.nNodesPerElement
-                TECPLOT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
+        allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element node list array')
+        do i=1,TMPLT_SWF.nElements
+            do j=1,TMPLT_SWF.nNodesPerElement
+                TMPLT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
             end do
         end do
         
         ! Element side lengths
-        allocate(TECPLOT_SWF.SideLength(TECPLOT_SWF.nNodesPerElement,TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element SideLength array')
-        do i=1,TECPLOT_SWF.nElements
-            do j=1,TECPLOT_SWF.nNodesPerElement
-                TECPLOT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
+        allocate(TMPLT_SWF.SideLength(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element SideLength array')
+        do i=1,TMPLT_SWF.nElements
+            do j=1,TMPLT_SWF.nNodesPerElement
+                TMPLT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
             end do
         end do
         
         ! Element layer number
-        allocate(TECPLOT_SWF.iLayer(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element layer number array')
-        do i=1,TECPLOT_SWF.nElements
-            TECPLOT_SWF.iLayer(i) = 1
+        allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element layer number array')
+        do i=1,TMPLT_SWF.nElements
+            TMPLT_SWF.iLayer(i) = 1
         end do
         
 
         ! Element zone number
-        allocate(TECPLOT_SWF.iZone(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' iZone arrays')
-        do i=1,TECPLOT_SWF.nElements
-            TECPLOT_SWF.iZone(i) = TMPLT.iZone(i) 
-            if(TMPLT.iZone(j).gt.TECPLOT_SWF.nZones) TECPLOT_SWF.nZones=TMPLT.iZone(j)
+        allocate(TMPLT_SWF.iZone(TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
+        do i=1,TMPLT_SWF.nElements
+            TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
+            if(TMPLT.iZone(j).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(j)
         end do
 
-        TECPLOT_SWF.IsDefined=.true.
+        TMPLT_SWF.IsDefined=.true.
         
-        allocate(TECPLOT_SWF.Element_Is(TECPLOT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TECPLOT_SWF.name)//' Element_Is array')            
-        TECPLOT_SWF.Element_Is(:)=0
+        allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
+        TMPLT_SWF.Element_Is(:)=0
     
     end subroutine GenerateSWFDomain
 
@@ -765,10 +765,10 @@ Module MeshGeneration
     
 
     !----------------------------------------------------------------------
-    subroutine CLNFromXYZPair(FNum,TECPLOT_CLN)
+    subroutine CLNFromXYZPair(FNum,TMPLT_CLN)
         implicit none
         integer :: FNum
-        type(TecplotDomain) TECPLOT_CLN
+        type(TecplotDomain) TMPLT_CLN
 
         integer :: i
         integer :: nSizeInit, nNodesInit, nElementsInit
@@ -787,23 +787,23 @@ Module MeshGeneration
 	    zp(:) = 0
         
         
-        nNodesInit=TECPLOT_CLN.nNodes
-        nElementsInit=TECPLOT_CLN.nElements
-        TECPLOT_CLN.nZones=TECPLOT_CLN.nZones+1
+        nNodesInit=TMPLT_CLN.nNodes
+        nElementsInit=TMPLT_CLN.nElements
+        TMPLT_CLN.nZones=TMPLT_CLN.nZones+1
 
-        nSizeInit=max(2,TECPLOT_CLN.nNodes)
+        nSizeInit=max(2,TMPLT_CLN.nNodes)
 	    allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
 	    call AllocChk(ialloc,'xyzTMP arrays')
 	    xiTMP(:) = -999.0d0
 	    yiTMP(:) = -999.0d0
 	    ziTMP(:) = -999.0d0
         
-        if(.not. allocated(TECPLOT_CLN.x)) then  
-            allocate(TECPLOT_CLN.x(nSizeInit),TECPLOT_CLN.y(nSizeInit),TECPLOT_CLN.z(nSizeInit),stat=ialloc)
-	        call AllocChk(ialloc,'TECPLOT_CLN.xyz arrays')
-	        TECPLOT_CLN.x(:) = -999.0d0
-	        TECPLOT_CLN.y(:) = -999.0d0
-	        TECPLOT_CLN.z(:) = -999.0d0
+        if(.not. allocated(TMPLT_CLN.x)) then  
+            allocate(TMPLT_CLN.x(nSizeInit),TMPLT_CLN.y(nSizeInit),TMPLT_CLN.z(nSizeInit),stat=ialloc)
+	        call AllocChk(ialloc,'TMPLT_CLN.xyz arrays')
+	        TMPLT_CLN.x(:) = -999.0d0
+	        TMPLT_CLN.y(:) = -999.0d0
+	        TMPLT_CLN.z(:) = -999.0d0
         endif
 
         call Msg(TAB//'                X                Y                Z')
@@ -834,14 +834,14 @@ Module MeshGeneration
         cy=yp(1)
         cz=zp(1)
         do i=1,nCells+1
-            TECPLOT_CLN.nNodes=TECPLOT_CLN.nNodes+1
-            if(TECPLOT_CLN.nNodes > nSizeInit) then
-                xiTMP (1:nSizeInit) = TECPLOT_CLN.x 
-                call move_alloc (xiTMP, TECPLOT_CLN.x)
-                yiTMP (1:nSizeInit) = TECPLOT_CLN.y 
-                call move_alloc (yiTMP, TECPLOT_CLN.y)
-                ziTMP (1:nSizeInit) = TECPLOT_CLN.z 
-                call move_alloc (ziTMP, TECPLOT_CLN.z)
+            TMPLT_CLN.nNodes=TMPLT_CLN.nNodes+1
+            if(TMPLT_CLN.nNodes > nSizeInit) then
+                xiTMP (1:nSizeInit) = TMPLT_CLN.x 
+                call move_alloc (xiTMP, TMPLT_CLN.x)
+                yiTMP (1:nSizeInit) = TMPLT_CLN.y 
+                call move_alloc (yiTMP, TMPLT_CLN.y)
+                ziTMP (1:nSizeInit) = TMPLT_CLN.z 
+                call move_alloc (ziTMP, TMPLT_CLN.z)
                 
                 nSizeInit=nSizeInit*2
                 allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
@@ -851,16 +851,16 @@ Module MeshGeneration
 	            ziTMP(:) = -999.0d0
 
             endif
-            TECPLOT_CLN.x(TECPLOT_CLN.nNodes)=cx
-            TECPLOT_CLN.y(TECPLOT_CLN.nNodes)=cy
-            TECPLOT_CLN.z(TECPLOT_CLN.nNodes)=cz
+            TMPLT_CLN.x(TMPLT_CLN.nNodes)=cx
+            TMPLT_CLN.y(TMPLT_CLN.nNodes)=cy
+            TMPLT_CLN.z(TMPLT_CLN.nNodes)=cz
             cx=cx+dx
             cy=cy+dy
             cz=cz+dz
         end do
         
         ! Trim CLN xyz to final size
-        nSizeInit=TECPLOT_CLN.nNodes
+        nSizeInit=TMPLT_CLN.nNodes
         deallocate(xiTMP,yiTMP,ziTMP)
         allocate(xiTMP(nSizeInit),yiTMP(nSizeInit),ziTMP(nSizeInit),stat=ialloc)
 	    call AllocChk(ialloc,'xyzTMP points arrays')
@@ -868,73 +868,73 @@ Module MeshGeneration
 	    yiTMP(:) = -999.0d0
 	    ziTMP(:) = -999.0d0
         
-        xiTMP (1:nSizeInit) = TECPLOT_CLN.x 
-        call move_alloc (xiTMP, TECPLOT_CLN.x)
-        yiTMP (1:nSizeInit) = TECPLOT_CLN.y 
-        call move_alloc (yiTMP, TECPLOT_CLN.y)
-        ziTMP (1:nSizeInit) = TECPLOT_CLN.z 
-        call move_alloc (ziTMP, TECPLOT_CLN.z)
+        xiTMP (1:nSizeInit) = TMPLT_CLN.x 
+        call move_alloc (xiTMP, TMPLT_CLN.x)
+        yiTMP (1:nSizeInit) = TMPLT_CLN.y 
+        call move_alloc (yiTMP, TMPLT_CLN.y)
+        ziTMP (1:nSizeInit) = TMPLT_CLN.z 
+        call move_alloc (ziTMP, TMPLT_CLN.z)
         
-        if(.not. allocated(TECPLOT_CLN.iZone)) then  
-            TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
-            allocate(TECPLOT_CLN.iZone(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.iNode(TECPLOT_CLN.nNodesPerElement,TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.iLayer(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.xElement(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.yElement(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.zElement(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.ElementArea(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.Length(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.LowestElevation(TECPLOT_CLN.nElements), &
-                TECPLOT_CLN.SlopeAngle(TECPLOT_CLN.nElements), &
+        if(.not. allocated(TMPLT_CLN.iZone)) then  
+            TMPLT_CLN.nElements=TMPLT_CLN.nNodes-1
+            allocate(TMPLT_CLN.iZone(TMPLT_CLN.nElements), &
+                TMPLT_CLN.iNode(TMPLT_CLN.nNodesPerElement,TMPLT_CLN.nElements), &
+                TMPLT_CLN.iLayer(TMPLT_CLN.nElements), &
+                TMPLT_CLN.xElement(TMPLT_CLN.nElements), &
+                TMPLT_CLN.yElement(TMPLT_CLN.nElements), &
+                TMPLT_CLN.zElement(TMPLT_CLN.nElements), &
+                TMPLT_CLN.ElementArea(TMPLT_CLN.nElements), &
+                TMPLT_CLN.Length(TMPLT_CLN.nElements), &
+                TMPLT_CLN.LowestElevation(TMPLT_CLN.nElements), &
+                TMPLT_CLN.SlopeAngle(TMPLT_CLN.nElements), &
                 stat=ialloc)
             call AllocChk(ialloc,'CLN element arrays')
-            TECPLOT_CLN.iZone = -999 
-            TECPLOT_CLN.iNode = -999 
-            TECPLOT_CLN.iLayer = -999 
-            TECPLOT_CLN.xElement=-999.0d0
-            TECPLOT_CLN.yElement=-999.0d0
-            TECPLOT_CLN.zElement=-999.0d0
-            TECPLOT_CLN.ElementArea=-999.0d0
-            TECPLOT_CLN.Length=-999.0d0
-            TECPLOT_CLN.LowestElevation=-999.0d0
-            TECPLOT_CLN.SlopeAngle=-999.0d0
+            TMPLT_CLN.iZone = -999 
+            TMPLT_CLN.iNode = -999 
+            TMPLT_CLN.iLayer = -999 
+            TMPLT_CLN.xElement=-999.0d0
+            TMPLT_CLN.yElement=-999.0d0
+            TMPLT_CLN.zElement=-999.0d0
+            TMPLT_CLN.ElementArea=-999.0d0
+            TMPLT_CLN.Length=-999.0d0
+            TMPLT_CLN.LowestElevation=-999.0d0
+            TMPLT_CLN.SlopeAngle=-999.0d0
         else
-            nSizeInit=TECPLOT_CLN.nElements
-            TECPLOT_CLN.nElements=TECPLOT_CLN.nNodes-1
-            call growInteger2dArray(TECPLOT_CLN.iNode,2,nSizeInit,TECPLOT_CLN.nElements)
-            call growIntegerArray(TECPLOT_CLN.iZone,nSizeInit,TECPLOT_CLN.nElements)
-            call growIntegerArray(TECPLOT_CLN.iLayer,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.xElement,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.yElement,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.zElement,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.ElementArea,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.Length,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.LowestElevation,nSizeInit,TECPLOT_CLN.nElements)
-            call growRealArray(TECPLOT_CLN.SlopeAngle,nSizeInit,TECPLOT_CLN.nElements)
+            nSizeInit=TMPLT_CLN.nElements
+            TMPLT_CLN.nElements=TMPLT_CLN.nNodes-1
+            call growInteger2dArray(TMPLT_CLN.iNode,2,nSizeInit,TMPLT_CLN.nElements)
+            call growIntegerArray(TMPLT_CLN.iZone,nSizeInit,TMPLT_CLN.nElements)
+            call growIntegerArray(TMPLT_CLN.iLayer,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.xElement,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.yElement,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.zElement,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.ElementArea,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.Length,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.LowestElevation,nSizeInit,TMPLT_CLN.nElements)
+            call growRealArray(TMPLT_CLN.SlopeAngle,nSizeInit,TMPLT_CLN.nElements)
         end if
 
         ! generate line element incidences
-        do i=nElementsInit+1,TECPLOT_CLN.nElements
-            TECPLOT_CLN.iZone(i)=TECPLOT_CLN.nZones
-            TECPLOT_CLN.iNode(1,i)=i
-            TECPLOT_CLN.iNode(2,i)=i+1
-            TECPLOT_CLN.xElement(i)=(TECPLOT_CLN.x(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.x(TECPLOT_CLN.iNode(1,i)))/2.0d0
-            TECPLOT_CLN.yElement(i)=(TECPLOT_CLN.y(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.y(TECPLOT_CLN.iNode(1,i)))/2.0d0
-            TECPLOT_CLN.zElement(i)=(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)) + TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))/2.0d0
-            TECPLOT_CLN.Length(i)=sqrt( (TECPLOT_CLN.x(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.x(TECPLOT_CLN.iNode(1,i)))**2 + & 
-                                        (TECPLOT_CLN.y(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.y(TECPLOT_CLN.iNode(1,i)))**2 + & 
-                                        (TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)) - TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))**2) 
-            TECPLOT_CLN.LowestElevation(i)=min(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i)),TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i)))
-            TECPLOT_CLN.SlopeAngle(i)=asin(abs(TECPLOT_CLN.z(TECPLOT_CLN.iNode(2,i))-TECPLOT_CLN.z(TECPLOT_CLN.iNode(1,i))))* 180.0d0 * pi
+        do i=nElementsInit+1,TMPLT_CLN.nElements
+            TMPLT_CLN.iZone(i)=TMPLT_CLN.nZones
+            TMPLT_CLN.iNode(1,i)=i
+            TMPLT_CLN.iNode(2,i)=i+1
+            TMPLT_CLN.xElement(i)=(TMPLT_CLN.x(TMPLT_CLN.iNode(2,i)) + TMPLT_CLN.x(TMPLT_CLN.iNode(1,i)))/2.0d0
+            TMPLT_CLN.yElement(i)=(TMPLT_CLN.y(TMPLT_CLN.iNode(2,i)) + TMPLT_CLN.y(TMPLT_CLN.iNode(1,i)))/2.0d0
+            TMPLT_CLN.zElement(i)=(TMPLT_CLN.z(TMPLT_CLN.iNode(2,i)) + TMPLT_CLN.z(TMPLT_CLN.iNode(1,i)))/2.0d0
+            TMPLT_CLN.Length(i)=sqrt( (TMPLT_CLN.x(TMPLT_CLN.iNode(2,i)) - TMPLT_CLN.x(TMPLT_CLN.iNode(1,i)))**2 + & 
+                                        (TMPLT_CLN.y(TMPLT_CLN.iNode(2,i)) - TMPLT_CLN.y(TMPLT_CLN.iNode(1,i)))**2 + & 
+                                        (TMPLT_CLN.z(TMPLT_CLN.iNode(2,i)) - TMPLT_CLN.z(TMPLT_CLN.iNode(1,i)))**2) 
+            TMPLT_CLN.LowestElevation(i)=min(TMPLT_CLN.z(TMPLT_CLN.iNode(2,i)),TMPLT_CLN.z(TMPLT_CLN.iNode(1,i)))
+            TMPLT_CLN.SlopeAngle(i)=asin(abs(TMPLT_CLN.z(TMPLT_CLN.iNode(2,i))-TMPLT_CLN.z(TMPLT_CLN.iNode(1,i))))* 180.0d0 * pi
         end do
                     
-        TECPLOT_CLN.IsDefined=.true.
+        TMPLT_CLN.IsDefined=.true.
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TECPLOT_CLN.nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT_CLN.nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TECPLOT_CLN.nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT_CLN.nElements
         call Msg(TmpSTR)
 
 
@@ -1240,7 +1240,7 @@ Module MeshGeneration
         character(MAX_INST) :: offset_top_cmd				    =   'offset top'
         character(MAX_INST) :: constant_elevation_cmd		    =   'elevation constant'
         character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(MAX_INST) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
+        character(MAX_INST) :: ascii_file_elevation_cmd		    =   'elevation from ascii file'
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
         !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'

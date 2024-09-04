@@ -1,25 +1,26 @@
 \BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
 \BOOKMARK [0][-]{chapter.2}{Software Installation and Useage}{}% 2
-\BOOKMARK [1][-]{section.2.1}{Software Developer}{chapter.2}% 3
-\BOOKMARK [1][-]{section.2.2}{All Users}{chapter.2}% 4
-\BOOKMARK [0][-]{chapter.3}{Model Build}{}% 5
-\BOOKMARK [1][-]{section.3.1}{Suggested Workflow}{chapter.3}% 6
-\BOOKMARK [1][-]{section.3.2}{Mut Input File Structure}{chapter.3}% 7
-\BOOKMARK [1][-]{section.3.3}{Tecplot Useage}{chapter.3}% 8
-\BOOKMARK [1][-]{section.3.4}{Groundwater Flow\(GWF\) Domain}{chapter.3}% 9
-\BOOKMARK [2][-]{subsection.3.4.1}{Constant Head\(CHD\)}{section.3.4}% 10
-\BOOKMARK [2][-]{subsection.3.4.2}{Drains\(DRN\)}{section.3.4}% 11
-\BOOKMARK [2][-]{subsection.3.4.3}{Recharge\(RCH\)}{section.3.4}% 12
-\BOOKMARK [2][-]{subsection.3.4.4}{Pumping}{section.3.4}% 13
-\BOOKMARK [1][-]{section.3.5}{Connected Linear Networks\(CLN\) Domain}{chapter.3}% 14
-\BOOKMARK [1][-]{section.3.6}{Surface Water Flow\(SWF\) Domain}{chapter.3}% 15
-\BOOKMARK [2][-]{subsection.3.6.1}{Critical Depth}{section.3.6}% 16
-\BOOKMARK [2][-]{subsection.3.6.2}{Zero-Gradient Depth}{section.3.6}% 17
-\BOOKMARK [0][-]{chapter.4}{Model Execution and Post-Processing}{}% 18
-\BOOKMARK [0][-]{chapter.5}{Examples}{}% 19
-\BOOKMARK [1][-]{section.5.1}{Verification}{chapter.5}% 20
-\BOOKMARK [2][-]{subsection.5.1.1}{Unsaturated flow in a 1D Column}{section.5.1}% 21
-\BOOKMARK [2][-]{subsection.5.1.2}{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}{section.5.1}% 22
-\BOOKMARK [2][-]{subsection.5.1.3}{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }{section.5.1}% 23
-\BOOKMARK [1][-]{section.5.2}{Illustration}{chapter.5}% 24
-\BOOKMARK [0][-]{chapter.6}{Tutorial}{}% 25
+\BOOKMARK [0][-]{chapter.3}{Model Build Workflow}{}% 3
+\BOOKMARK [1][-]{section.3.1}{Template Mesh}{chapter.3}% 4
+\BOOKMARK [1][-]{section.3.2}{Groundwater Flow\(GWF\) Domain}{chapter.3}% 5
+\BOOKMARK [2][-]{subsection.3.2.1}{Constant Head\(CHD\)}{section.3.2}% 6
+\BOOKMARK [2][-]{subsection.3.2.2}{Drains\(DRN\)}{section.3.2}% 7
+\BOOKMARK [2][-]{subsection.3.2.3}{Recharge\(RCH\)}{section.3.2}% 8
+\BOOKMARK [2][-]{subsection.3.2.4}{Pumping}{section.3.2}% 9
+\BOOKMARK [1][-]{section.3.3}{Connected Linear Networks\(CLN\) Domain}{chapter.3}% 10
+\BOOKMARK [1][-]{section.3.4}{Surface Water Flow\(SWF\) Domain}{chapter.3}% 11
+\BOOKMARK [2][-]{subsection.3.4.1}{Critical Depth}{section.3.4}% 12
+\BOOKMARK [2][-]{subsection.3.4.2}{Zero-Gradient Depth}{section.3.4}% 13
+\BOOKMARK [0][-]{chapter.4}{Model Execution and Post-Processing}{}% 14
+\BOOKMARK [0][-]{chapter.5}{Examples}{}% 15
+\BOOKMARK [1][-]{section.5.1}{Verification}{chapter.5}% 16
+\BOOKMARK [2][-]{subsection.5.1.1}{Unsaturated flow in a 1D Column}{section.5.1}% 17
+\BOOKMARK [2][-]{subsection.5.1.2}{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}{section.5.1}% 18
+\BOOKMARK [2][-]{subsection.5.1.3}{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }{section.5.1}% 19
+\BOOKMARK [1][-]{section.5.2}{Illustration}{chapter.5}% 20
+\BOOKMARK [0][-]{chapter.6}{Tutorial}{}% 21
+\BOOKMARK [1][-]{section.6.1}{Mut Useage}{chapter.6}% 22
+\BOOKMARK [2][-]{subsection.6.1.1}{Suggested Workflow}{section.6.1}% 23
+\BOOKMARK [2][-]{subsection.6.1.2}{Mut Input File Structure}{section.6.1}% 24
+\BOOKMARK [1][-]{section.6.2}{GitHub Useage in Microsoft Visual Studio}{chapter.6}% 25
+\BOOKMARK [1][-]{section.6.3}{Tecplot Useage}{chapter.6}% 26
