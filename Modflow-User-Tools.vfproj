@@ -17,7 +17,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="Debug|x64" UseCompiler="ifxCompiler">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" HeapArrays="0" AdditionalIncludeDirectories="$(TEC360INCLUDE)" WarnUnusedVariables="true" WarnInterfaces="true" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" HeapArrays="0" AdditionalIncludeDirectories="$(TEC360INCLUDE)" WarnUnusedVariables="true" WarnInterfaces="true" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(TEC360LIB)" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="tecio.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -57,11 +57,13 @@
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 			<File RelativePath=".\fem.f90"/>
-			<File RelativePath=".\GeneralRoutines.f90"/>
+			<File RelativePath=".\GeneralRoutines.f90">
+			</File>
 			<File RelativePath=".\HGS.f90"/>
 			<File RelativePath=".\Materials.f90"/>
 			<File RelativePath=".\MeshGeneration.f90"/>
-			<File RelativePath=".\Modflow_USG.f90"/>
+			<File RelativePath=".\Modflow_USG.f90">
+			</File>
 			<File RelativePath=".\openspec.inc"/>
 			<File RelativePath=".\pre.f90"/>
 			<File RelativePath=".\raster.f90"/>

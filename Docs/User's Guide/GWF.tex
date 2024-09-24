@@ -18,7 +18,13 @@ A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template us
     {\Large \sf end generate layered gwf domain}
     }
 
-The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.
+The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.  If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.} using this instruction:
+
+\ins{Zone by template}
+    {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.
+
+    {\em This instruction should appear in the input file at the beginning of the \textsf{generate layered gwf domain} subtask before new layers are added.}
+    }
 
 \subsubsection{Defining the Top Elevation}
 To assign an elevation to the top layer of template nodes use this instruction:
@@ -143,8 +149,8 @@ Be default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where
     }
 
 \includegraphics[width=.15\textwidth]{UnderConstruction} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
-    
-    
+
+
 
 By default, \mut\ will stop and issue a warning message if the computed layer base elevation is greater than or equal to the current layer top elevation.  This instruction forces the base to be below the top by a set amount:
 
@@ -157,7 +163,7 @@ By default, \mut\ will stop and issue a warning message if the computed layer ba
     be subtracted from the current top elevation to get the base elevation.
     }
 
-By default, a new layer will not be subdivided vertically unless one the following two instructions is issued.  
+By default, a new layer will not be subdivided vertically unless one the following two instructions is issued.
 The first creates a uniform subdivision:
 
 \ins{Uniform sublayering}
@@ -188,7 +194,7 @@ This instruction creates a non-uniform subdivision:
 
 }
 
-    For example, these instructions:  
+    For example, these instructions:
     \texttt{
             \begin{tabbing}
             AAA\=AAA\=AAA   \kill
@@ -205,7 +211,7 @@ would subdivide the current layer vertically into three elements, between
     the current base and top elevation, with element height proportions of .1,
     1 and 10 from top to bottom.
 
-This instruction is most often used to define a layer of uniform thickness relative to an uneven top elevation: 
+This instruction is most often used to define a layer of uniform thickness relative to an uneven top elevation:
 
 \ins{Offset base}
     {\squish
@@ -230,43 +236,24 @@ This instruction is most often used to define a layer of uniform thickness relat
             elevation from list file
             elev.list
 
-            offset base                     
-            -1.0                           
+            offset base
+            -1.0
 
         end new layer
 
     end generate layered gwf domain
 \end{verbatim}
  create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{gs.asc}:
- 
- By default, element zone numbers reflect the horizontal layers added during mesh generation.
- If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.} using this instruction:
 
-\ins{Zone by template}
-    {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.
+\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
-    {\em This instruction should appear in the input file at the beginning of the \textsf{generate layered gwf domain}}
-    }
+\subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties}
 
-\begin{verbatim}
-    generate layered gwf domain
+Material properties may be defined by zone or on a cell-by-cell basis. 
 
-        top elevation
-            elevation constant
-            100.0
-        end top elevation
-
-        new layer
-            layer name
-            Top layer
-
-            uniform sublayering
-            100
-
-            elevation constant
-            0.0
-        end new layer
-
-    end generate layered gwf domain
-\end{verbatim}
-The \textsf{generate layered gwf domain} instruction is a subtask so it has a corresponding \textsf{end generate layered gwf domain} instruction.  The \gwf\ domain is generated from the top layer down, and the first instruction, \textsf{top elevation}, defines the ground surface elevation at the layer of elements in the TECPLOT\_GWF mesh. It must begin with a \textsf{top elevation} instruction and at least one \textsf{new layer} instruction. Not shown in this example is an optional additional instruction, \textsf{zone by template}.
+\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Discuss: 
+\begin{itemize}
+    \item zoned vs cell-by-cell input
+    \item how to choose elements, nodes, cells, zones etc.
+    \item databases vs direct input
+\end{itemize}  }

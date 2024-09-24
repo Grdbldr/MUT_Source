@@ -1,7 +1,8 @@
 \begin{theindex}
 
   \item \gwf\ Domain 
-    \subitem  layering, \hyperpage{23}
+    \subitem  layering, \hyperpage{24}
+    \subitem  material properties, \hyperpage{26}
 
   \indexspace
 
@@ -9,14 +10,14 @@
 
   \indexspace
 
-  \item Drains, \hyperpage{27, 28}
+  \item Drains, \hyperpage{27}
 
   \indexspace
 
   \item generate uniform rectangles, \hyperpage{18}
   \item Grid generation 
     \subitem  \textsf  {GWF}\ Domain 
-      \subsubitem  New layer, \hyperpage{23}
+      \subsubitem  New layer, \hyperpage{24}
 
   \indexspace
 
@@ -30,16 +31,16 @@
     \subitem  generate layered gwf domain, \hyperpage{21}
     \subitem  generate uniform rectangles, \hyperpage{18}
     \subitem  Layer name, \hyperpage{24}
-    \subitem  Minimum layer thickness, \hyperpage{24}
+    \subitem  Minimum layer thickness, \hyperpage{25}
     \subitem  new layer, \hyperpage{24}
     \subitem  nodal control volumes, \hyperpage{19}
-    \subitem  Offset base, \hyperpage{25}
+    \subitem  Offset base, \hyperpage{26}
     \subitem  Proportional sublayering, \hyperpage{25}
     \subitem  top elevation, \hyperpage{22}
     \subitem  Uniform sublayering, \hyperpage{25}
     \subitem  units of length, \hyperpage{16}
     \subitem  units of time, \hyperpage{16}
-    \subitem  Zone by template, \hyperpage{26}
+    \subitem  Zone by template, \hyperpage{21}
   \item Installation, \hyperpage{5}
 
 \end{theindex}
