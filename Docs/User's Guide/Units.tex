@@ -1,0 +1,39 @@
+\label{texfile:Units}
+By default, \mut\ uses meters and seconds as the units of length and time respectively.  
+
+The instruction \textsf{units of length} is used to change the default value:
+
+\ins{units of length}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{LengthUnit}  The desired unit of length: feet, meters or centimeters.
+        \end{enumerate}
+        
+        So, for example, to use units of centimeters instead of meters, we would put the string 'centimeters' in the input file, which would then be assigned to the string variable \str{LengthUnit}.
+    }
+
+When naming input variables in the command description, the following conventions will be used:
+\begin{itemize}
+    \item Alphanumeric string variable names will begin with
+    the string '\str{}'
+    \item Real number (i.e. containing a decimal point) variable names will begin with
+    the string '\rnum{}'
+    \item Integer number (i.e. no decimal point) variable names will begin with
+    the string '\inum{}'
+\end{itemize}
+
+The instruction \textsf{units of time} is used to change the default value:
+
+\ins{units of time}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{TimeUnit}  The desired unit of time: seconds, minutes, hours, days or years.
+        \end{enumerate}
+
+        So, for example, to use units of days instead of seconds, we would put the string 'days' in the input file, which would then be assigned to the string variable \str{TimeUnit}.
+    }
+
+
+

@@ -23,12 +23,17 @@
     ! This option changes it to a node-centred control volume approach
     character(MAX_INST) :: NodalControlVolumes_CMD='nodal control volumes'
 
+    ! Units
+    character(MAX_INST) :: UnitsTime_CMD	        =   'units of time'
+    character(MAX_INST) :: UnitsLength_CMD	        =   'units of length'
+    
     !---------------------------------------------------Database
     character(MAX_INST) :: SMS_Database_CMD	        =   'sms database'
     character(MAX_INST) :: GWFMaterialsDatabase_CMD	=   'gwf materials database'
     character(MAX_INST) :: CLNMaterialsDatabase_CMD	=   'cln materials database'
     character(MAX_INST) :: SWFMaterialsDatabase_CMD	=   'swf materials database'
     character(MAX_INST) :: ET_Database_CMD	        =   'et database'
+    
 
     ! Ways to define the 2D template mesh
     character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'
@@ -346,8 +351,12 @@
         ! LIST file
         character(128) :: FNameLIST
         integer :: iLIST
-        character(10) :: TUnits
-        character(10) :: LUnits
+        
+        ! Units
+        character(MAX_LBL) :: STR_TimeUnits
+        integer :: TimeUnits=1    ! default 1 is seconds
+        character(MAX_LBL) :: STR_LengthUnits
+        integer :: LengthUnits=2   ! default 2 is meters
         
         ! BAS6 file
         character(128) :: FNameBAS6
@@ -1622,6 +1631,14 @@
                 Modflow.NodalControlVolume=.true.
                 call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
 
+            ! Units set assignment
+            else if(index(instruction, UnitsTime_CMD)  /= 0) then
+                call UnitsTime(FnumMUT,Modflow)
+            else if(index(instruction, UnitsLength_CMD)  /= 0) then
+                call UnitsLength(FnumMUT,Modflow)
+                
+                
+                
             ! SMS parameter set assignment
             else if(index(instruction, SMS_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
@@ -4180,15 +4197,15 @@
                     if(status /= 0) return
                     if(index(line,'TOTAL TIME').gt.0) then
                         l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
+                        if(index(Modflow.STR_TimeUnits,'SECONDS').gt.0) then
                             read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'MINUTES').gt.0) then
                             read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'HOURS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'DAYS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'YEARS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
                         end if
                         exit loop
@@ -4365,17 +4382,38 @@
     subroutine GenOCFile(FNumMUT,Modflow)
         implicit none
         
+        character(MAX_INST) :: instruction
+
         integer :: FNumMUT
         
         integer :: i
         
+        real :: OutputTimes(1000)
+        
         type (ModflowProject) Modflow
         
+        modflow.nOutputTimes=0
         
-        read(FNumMut, *) modflow.nOutputTimes
+	    ! Change default behaviours and top elevation
+        read_oc: do
+            read(FNumMUT,'(a)',iostat=status) instruction
+            if(status /= 0) exit
+
+            call lcase(instruction)
+            if(index(instruction, 'end') /=0) then
+                call Msg(TAB//'end generate output control file')
+                exit read_oc
+            else
+                modflow.nOutputTimes=modflow.nOutputTimes+1
+                read(instruction,*) OutputTimes(modflow.nOutputTimes)
+                call Msg(TAB//instruction)
+            end if  
+        end do read_oc
+        
         allocate(modflow.OutputTimes(modflow.nOutputTimes),stat=ialloc)
-        call AllocChk(ialloc,'Output time array')  
-        read(FNumMut,*) (modflow.OutputTimes(i),i=1,modflow.nOutputTimes)
+        call AllocChk(ialloc,'Output time array')
+        
+        modflow.OutputTimes(:modflow.nOutputTimes)=OutputTimes(:modflow.nOutputTimes)
         
         call Msg(TAB//'   #     Output time')
         call Msg(TAB//'--------------------')
@@ -4541,8 +4579,8 @@
         
         if(modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
         else
             CellCenteredSTR=', VARLOCATION=([4'
             if(nVar.ge.5) then
@@ -4554,8 +4592,8 @@
             CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
 
             write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)  !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
         end if
         
         write(FNum,'(a)') '# x'
@@ -5243,6 +5281,7 @@
         return
     end subroutine InitializeModflowFiles
 
+
     !----------------------------------------------------------------------
     subroutine MeshCentredCLNCellGeometry(Modflow, TMPLT_CLN,TMPLT)
         implicit none
@@ -5467,8 +5506,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' CELLS", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
 
             do i=1,domain.nCells
                 write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i)
@@ -5523,8 +5562,8 @@
                 end if    
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
            
                 do i=1,domain.nCells
                     if(domain.Name == 'GWF') then
@@ -5559,8 +5598,8 @@
                 write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nSWBCCells,', t="'//trim(domain.name)//' SWBC", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
            
                 do i=1,domain.nCells
                     if(bcheck(domain.Cell_is(i),CriticalDepth)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
@@ -5585,8 +5624,8 @@
                 write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nDRNCells,', t="'//trim(domain.name)//' DRN", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
            
                 do i=1,domain.nCells
                     if(bcheck(domain.Cell_is(i),Drain)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
@@ -6159,8 +6198,8 @@
         
         if(Modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
         
         else
         
@@ -6174,8 +6213,8 @@
             CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
 
             write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
         endif
         
 
@@ -6271,14 +6310,14 @@
             if(Modflow.NodalControlVolume) then
                 write(FNum,'(a)') trim(ZoneSTR)// & 
                     trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
             else
         
                 write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)&
                     //trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
             end if
         
             if(allocated(domain.head)) then
@@ -6362,8 +6401,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Circle Centres", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
            
             do i=1,TMPLT.nElements
                     write(FNum,'(3(1pg20.9))') TMPLT.xcircle(i),TMPLT.ycircle(i)
@@ -6388,8 +6427,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements*TMPLT.nNodesPerElement,', t="'//trim(TMPLT.name)//' Edge Points", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
            
             do i=1,TMPLT.nElements
                     do j=1,TMPLT.nNodesPerElement
@@ -7454,7 +7493,8 @@
         !------------------- DISU file
 
         write(Modflow.iDISU,'(a)') '#1.   NODES    NLAY     NJAG     IVSD     NPER    ITMUNI   LENUNI   IDSYMRD'
-        write(Modflow.iDISU,'(10i9)') Modflow.GWF.nCells, Modflow.GWF.nLayers, Modflow.GWF.njag, IVSD, Modflow.nPeriods, 1,2 , 0
+        write(Modflow.iDISU,'(10i9)') Modflow.GWF.nCells, Modflow.GWF.nLayers, Modflow.GWF.njag, IVSD, Modflow.nPeriods, &
+            Modflow.TimeUnits, Modflow.LengthUnits , 0
             
         write(Modflow.iDISU,'(10i4)') (modflow.GWF.Laybcd(i),i=1,Modflow.GWF.nLayers)
             
@@ -7915,14 +7955,14 @@
             
             if(index(line,'MODEL TIME UNIT IS').gt.0) then
                 l1=index(line,'MODEL TIME UNIT IS')
-                Modflow.Tunits=line(l1+19:)
-                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.Tunits))//')",'
+                Modflow.STR_TimeUnits=line(l1+19:)
+                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.STR_TimeUnits))//')",'
 
                 continue
                 
             else if(index(line,'MODEL LENGTH UNIT IS').gt.0) then
                 l1=index(line,'MODEL LENGTH UNIT IS')
-                Modflow.Lunits=line(l1+21:)
+                Modflow.STR_LengthUnits=line(l1+21:)
                 
 
                 continue
@@ -8002,15 +8042,15 @@
                     
                     if(index(line,'TOTAL TIME').gt.0) then
                         l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.Tunits,'SECONDS').gt.0) then
+                        if(index(Modflow.STR_TimeUnits,'SECONDS').gt.0) then
                             read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.Tunits,'MINUTES').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'MINUTES').gt.0) then
                             read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.Tunits,'HOURS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'HOURS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.Tunits,'DAYS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'DAYS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.Tunits,'YEARS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnits,'YEARS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
                         end if
                         exit
@@ -8057,11 +8097,11 @@
 
                     write(output_line,'(a)')  'zone t="'//CurrentDir(l1:l2)//'"'
  
-                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.Tunits)//'"'
+                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'
                     l1=len_trim(output_line)+1
                     write(output_line(l1:),'(a)')	TMPStr                 
 
-                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.Lunits)//'"'
+                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
                     l1=len_trim(output_line)+1
                     write(output_line(l1:),'(a)')	TMPStr                 
                     
@@ -15675,6 +15715,73 @@
 	    return
     end subroutine Read_SWF_GSF
    
+    !----------------------------------------------------------------------
+    subroutine UnitsLength(FnumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowProject) Domain
+        
+        character(MAX_LBL) :: value
+        
+        read(FNumMUT,'(a)') value
+        call lcase(value)
+        
+        select case(value)
+        case ('feet')
+            Domain.STR_LengthUnits='FEET'
+            Domain.LengthUnits=1
+        case ('meters')
+            Domain.STR_LengthUnits='METERS'
+            Domain.LengthUnits=2
+        case ('centimeters')
+            Domain.STR_LengthUnits='CENTIMETERS'
+            Domain.LengthUnits=3
+        case default
+            call ErrMsg('Units of length '//trim(value)//' not recognized. Must be feet, meters, or centimeters.')
+        end select
+        
+        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Domain.STR_LengthUnits)
+        call Msg(TmpSTR)
+
+    end subroutine UnitsLength
+
+    !----------------------------------------------------------------------
+    subroutine UnitsTime(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowProject) Domain
+        
+        character(MAX_LBL) :: value
+        
+        read(FNumMUT,'(a)') value
+        call lcase(value)
+        
+        select case(value)
+        case ('seconds')
+            Domain.STR_TimeUnits='SECONDS'
+            Domain.TimeUnits=1
+        case ('minutes')
+            Domain.STR_TimeUnits='MINUTES'
+            Domain.TimeUnits=2
+        case ('hours')
+            Domain.STR_TimeUnits='HOURS'
+            Domain.TimeUnits=3
+        case ('days')
+            Domain.STR_TimeUnits='DAYS'
+            Domain.TimeUnits=4
+        case ('years')
+            Domain.STR_TimeUnits='YEARS'
+            Domain.TimeUnits=5
+        case default
+            call ErrMsg('Units of time '//trim(value)//' not recognized. Must be seconds, minutes, hours, days or years.')
+        end select
+        
+        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Domain.STR_TimeUnits)
+        call Msg(TmpSTR)
+
+    end subroutine UnitsTime
 
     
     

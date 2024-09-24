@@ -55,6 +55,9 @@
 \newcommand{\tecplot}{\textsc{Tecplot}}
 \newcommand{\github}{\textsc{GitHub}}
 \newcommand{\ifort}{\textsc{Intel Fortran}}
+\newcommand{\gb}{\textsc{Grid Builder}}
+\newcommand{\gwv}{\textsc{Groundwater Vistas}}
+\newcommand{\hgs}{\textsc{HydroGeoSphere}}
 
 % Code, variable names san serif
 \newcommand{\gwf}{\textsf{GWF}}
@@ -64,18 +67,40 @@
 % Filenames, system commands typewriter texttt
 \newcommand{\bin}{\texttt{USERBIN}}
 
+\newcommand{\ins}[2]{\includegraphics[width=0.3\textwidth]{BeginInstruction}
+                     \squish
+                     \begin{quote}
+                        {\Large \sf #1 } \\
+                        {#2  \rule{0.1in}{0.in}}
+                     \end{quote}
+                     \squish
+                     \includegraphics[width=0.3\textwidth]{EndInstruction}
+                     \index{Input instructions ! #1}
+                     }
 
-\newcommand{\ins}[1]{\rule{\textwidth}{0.02in}
-                      {\Large \sf #1 } \\
-                      %{#2  \rule{0.1in}{0.in}}  \\
-                      \raisebox{.01in}{ \hspace*{.4\textwidth} $\bullet \bullet \bullet$}
+\newcommand{\insp}[1]{\hspace*{.5in}{\sf #1} \\
                       \index{Input instructions ! #1} }
 
-\newcommand{\createspace}[2] {\vspace{.2in} \\ \includegraphics[width=#1\textwidth]{#2} \vspace{.2in} \\}
+
+\newcommand{\squish} {\vspace*{-.2in}}
+
+\newcommand{\str} [1] {\textbf{\$\_#1}}
+\newcommand{\rnum} [1] {\textbf{r\_#1}}
+\newcommand{\inum} [1] {\textbf{i\_#1}}
+
+
+
+%\newcommand{\createspace}[2] {\vspace{.2in} \\ \includegraphics[width=#1\textwidth]{#2} \vspace{.2in} \\}
 
 \makeindex
 
 \begin{document}
+
+% paragraph spacing
+\setlength{\parindent}{.0in}
+\setlength{\parskip}{.1in}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
 
 \begin{titlepage}
     \vspace{1in}
@@ -102,19 +127,21 @@
 
 \pagestyle{empty} \tableofcontents
 
+\pagestyle{plain}
 \chapter{Introduction}\input{Introduction}
 
 \chapter{Software Installation and Useage}\input{Installation}
 
 \chapter{Model Build Workflow}\input{ModelBuild}
+    \section{Defining the Units of Length and Time}\input{Units}
+    \section{Defining the Template Mesh}\input{TemplateMesh}
     \pagebreak
-    \section{Template Mesh}\input{TemplateMesh}
-    \section{Groundwater Flow(GWF) Domain}\input{GWF}
+    \section{Groundwater Flow(\gwf) Domain}\input{GWF}
         \subsection{Constant Head(CHD)}\input{ConstantHead}
         \subsection{Drains(DRN)}\input{Drains}
         \subsection{Recharge(RCH)}\input{Recharge}
         \subsection{Pumping}
-    \section{Connected Linear Networks(CLN) Domain} \input{CLN}
+    \section{Connected Linear Networks(\cln ) Domain} \input{CLN}
     \section{Surface Water Flow(SWF) Domain} \input{SWF}
         \subsection{Critical Depth}
         \subsection{Zero-Gradient Depth}
@@ -124,7 +151,7 @@
 \chapter{Examples}\input{Examples}
     \section{Verification}
         \subsection{Unsaturated flow in a 1D Column} \input{1D_Build}
-        \subsection{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}
+        \subsection{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow} \input{2D_Hillslope}
         \subsection{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }\input{3D_Example_Abdul}
     \section{Illustration}
 

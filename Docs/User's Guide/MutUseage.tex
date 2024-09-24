@@ -1,8 +1,8 @@
-\label{tutorial:MutUseage} In this tutorial, we will build a 3D fully-coupled GWF-SWF model, check the build using \tecplot, run \mfus\ to generate output, then examine the results using \tecplot.
+\label{tutorial:MutUseage} In this tutorial, we will build a 3D fully-coupled \gwf -SWF model, check the build using \tecplot, run \mfus\ to generate output, then examine the results using \tecplot.
 
 \begin{verbatim}
     ! This example builds a modflow project of the Abdul Field Experiment
-    ! The SWF mesh and top of the GWF mesh are defined by a 2D Grid Builder triangular mesh
+    ! The\swf\ mesh and top of the\gwf\ mesh are defined by a 2D Grid Builder triangular mesh
     build modflow usg
 \end{verbatim}
 
@@ -10,7 +10,7 @@ Any input line beginning with  is considered to be a comment and will be ignored
 
 The third line activates the \mut\ 'build modflow usg' environment, which accepts further instructions required to define the project. This environment can be split into roughly 4 sections:
 \begin{description}
-    \item[Grid definition] Instructions for defining the GWF, SWF and CLN numerical discretizations.
+    \item[Grid definition] Instructions for defining the \gwf,\swf\ and\cln\ numerical discretizations.
     \item[Modflow parameters] Instructions for supplying Modflow parameter values (e.g. solver inputs for the SMS package, hydraulic properties for the LPF package etc.)
     \item[Stress periods, boundary conditions] These instructions are repeated once for each desired stress period and include instructions about time stepping parameters and boundary conditions that are to be applied.
     \item[Output control] Instructions defining a list of output times at which Modflow output files (e.g. heads, drawdowns, cell-by-cell flows etc.) are to be written.
@@ -55,17 +55,17 @@ You can run \tecplot\ and load the \tecplot\ layout file \_\verb+build.lay+ by t
 \begin{verbatim}
     tec360 _build.lay
 \end{verbatim}
-Note the following:
+Some key features to note are:
 \begin{itemize}
     \item A \tecplot\ window should open: \\ \\
         \includegraphics[width=0.8\textwidth]{TecplotBuild} \\ \\
-    This \tecplot\ layout file has been constructed with multiple frames (see lower left 'Frames' window) showing details about the SWF and GWF model domains. This default view shows the distribution of the various materials defined in the model, such as the SWF domain materials called 'Grass' and 'Streambed'.  Detailed information about manipulating the data in \tecplot\ to produce the desired plots is discussed in Section~\ref{Tecplot}.
-    \item \tecplot\ data can be probed using the probe tool \includegraphics{ProbeToolButton} .  Here we see the results of probing a location in the SWF domain: \\
+    This \tecplot\ layout file has been constructed with multiple frames (see lower left 'Frames' window) showing details about the\swf\ and\gwf\ model domains. This default view shows the distribution of the various materials defined in the model, such as the\swf\ domain materials called 'Grass' and 'Streambed'.  Detailed information about manipulating the data in \tecplot\ to produce the desired plots is discussed in Section~\ref{Tecplot}.
+    \item \tecplot\ data can be probed using the probe tool \includegraphics{ProbeToolButton} .  Here we see the results of probing a location in the\swf\ domain: \\
         \includegraphics[width=0.4\textwidth]{SWFprobe} \\
-        SWF results were returned because the SWF frame is at the front of the frame stack.
-    \item In order to probe the GWF domain we have to move it to the front of the stack: \\
+       \swf\ results were returned because the\swf\ frame is at the front of the frame stack.
+    \item In order to probe the\gwf\ domain we have to move it to the front of the stack: \\
             \includegraphics[width=0.4\textwidth]{BringToFront} \\
-          Here we see the results of probing a location in the GWF domain: \\
+          Here we see the results of probing a location in the\gwf\ domain: \\
             \includegraphics[width=0.4\textwidth]{GWFprobe} \\
 
 \end{itemize}

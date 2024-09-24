@@ -1,24 +1,253 @@
 \label{texfile:GWF}
-A \mfus\ 3D groundwater flow (GWF) domain can be generated from the template using the
-instruction \textsf{generate layered gwf domain}, with the option of defining the \mf\ cell control volumes using template mesh element (mesh-centred  control volume) or node (node-centred control volume) locations.  , as shown in Figure~\ref{fig:ControlVolumes} for a triangular-element template mesh.
-    \vspace{.2in} \\
-   \includegraphics[width=0.9\textwidth]{ControlVolume}
-    \vspace{.2in} \\
-Note the following:
-\begin{figure}
-     \caption{Modflow cell control volume types defined from a triangular-element mesh.  On the left is a mesh-centred control volume, on the right a node-centred control volume.}
-    \label{fig:ControlVolumes}
-\end{figure}
-By default, the mesh-centred  control volume approach is used. If you would like to use the node-centred control volume approach instead, the first entry in the \texttt{build modflow usg} subtask should be:
+\includegraphics[width=.25\textwidth]{UnderConstruction} \textit{
+Should add some into material about GWF build}.
+
+\subsection{Generating a Layered \gwf\ Domain}
+A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template using this instruction:
+
+\ins{generate layered gwf domain}
+    {This subtask has instructions that are used to define:
+     \begin{itemize}
+        \item Element zone numbering scheme
+        \item Top elevation (i.e. $z$-coordinate)
+        \item Mesh layers and vertical discretization
+    \end{itemize}
+
+    Subtask instructions will be read and processed until an \textsf{end} instruction is encountered.  We suggest appending the subtask name to the \textsf{end} instruction:
+
+    {\Large \sf end generate layered gwf domain}
+    }
+
+The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.
+
+\subsubsection{Defining the Top Elevation}
+To assign an elevation to the top layer of template nodes use this instruction:
+
+\ins{top elevation}
+    {This subtask defines the elevation (i.e. $z$-coordinate) of the top layer of nodes in the \gwf\ finite-element template mesh in one of these ways:
+     \begin{itemize}
+        \item By assigning a given elevation to all nodes
+        \item By reading variable elevation data from a file
+        \item By interpolating elevation data from a function $z(x)$ where the elevation $z$ varies by the nodes $x$ coordinate.
+     \end{itemize}
+     One the elevation is defined, an \textsf{end} instruction is required to stop the subtask e.g.\:
+
+    {\Large \sf end top elevation}
+    }
+
+ The top elevation can be defined by one of these instructions: \label{'Page:TopElev'}
+
+ \ins{elevation constant}
+    {\squish
+    \begin{enumerate}
+    \item \rnum{elev}\  The elevation \rnum{elev}\ will be assigned to all top layer nodes.
+    \end{enumerate}
+    \squish
+    }
+
+ \ins{elevation from gb file}
+    {\squish
+    \begin{enumerate}
+    \item \str{file}\  The elevation data in the \gb\ nodal property file named \str{file}\ will be assigned to the top layer nodes.
+    \end{enumerate}
+    \squish
+    }
+
+The \gb\ nodal property file uses a legacy binary file format. You can develop your own ascii input files and read them using this instruction:
+
+ \ins{elevation from list file}
+    {\squish
+    \begin{enumerate}
+    \item \str{file}\  The elevation data in the ascii file named  \str{file}\ will be assigned to the top layer nodes.
+    \end{enumerate}
+    \squish
+    }
+
+Part of a sample list file \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_MODHMS} uses an ascii file input to define nodal elevations.} is shown here:
+    \begin{verbatim}
+    Kriged cell top elevation for layer 1
+     4.414571762E+000
+     4.415914536E+000
+     ...
+     4.415914536E+000
+     \end{verbatim}
+     \squish
+Some key features of this example are:
+\begin{itemize}
+  \item The first line of the file is discarded, and in this case contains a string describing the data.
+  \item You must supply a value for each node in the template finite-element mesh.
+  \item The data is read in free format so there can be more than one value entered per line.
+  \item Only the start and end of the file are shown here, with the string '\texttt{...}' replacing the middle portion.
+\end{itemize}
+
+To define the top elevation as a function of $x$ (usually used for cross-sectional models) use this instruction:
+
+ \ins{elevation from xz pairs}
+    {
+    \squish
+    \begin{enumerate}
+    \item \rnum{x(1)}, \rnum{y(1)}  First $x, y$ coordinate pair.
+    \item \textbf{...}
+    \item \rnum{x(n)}, \rnum{y(n)}  nth $x, y$ coordinate pair.
+    \end{enumerate}
+
+     This subtask reads a list of $xz$-coordinate pairs until an \textsf{end} instruction is encountered e.g.\:
+
+    {\Large \sf end elevation from xz pairs}
+    }
+
+A sample showing the use of this instruction \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Hillslope} uses the $xz$ pairs instruction to define the top elevation of the cross-sectional domnain.} is shown here:
+    \begin{verbatim}
+    elevation from xz pairs
+           0.0, 0.0
+        1000.0, 100.0
+    end elevation from xz pairs
+     \end{verbatim}
+     \squish
+Some key features of this example are:
+\begin{itemize}
+  \item The two given $xz$ pairs define a line that slopes from $z=0$ at $x=0$ to $z=100.0$ at $x=1000$.  You may supply as many pairs as needed to define the top of your cross-section.
+  \item $x$ coordinates must increase continuously from the top of the list to the bottom.
+  \item the $x$-range of the supplied pairs should cover the entire $x$-range of the template mesh.
+  \item For each node in the template mesh, the $x$ coordinate is used to interpolate an elevation (i.e. $z$ value) using the appropriate $xz$ pair.
+\end{itemize}
+
+\subsubsection{Adding Layers} \index{\gwf\ Domain ! layering}
+    {\em NOTE: The term layers used here should not be confused with the \mf\ term of the same name. A \mf\ layer is one cell thick, while a \mut\ layer can be one or more elements thick.}
+
+A \mfus\ model must contain at least 1 layer, and each layer is defined using this instruction:
+
+\ins{new layer}
+    {\index{Grid generation ! \gwf\ Domain ! New layer}
+    This subtask adds a new layer to the \gwf\ domain by defining the layer:
+     \begin{itemize}
+       \item Base elevation
+       \item Vertical discretization
+     \end{itemize}
+
+     It reads instructions until an \textsf{end} instruction is found e.g.\:
+
+    {\Large \sf end new layer}
+    }
+
+The base elevation is defined using the elevation instructions  described on page~\pageref{'Page:TopElev'} that are given for the \textsf{top elevation} instruction.
+
+Be default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where {\em n} is the current layer number.  If you want to assign your own layer name use this instruction:
+
+\ins{Layer name}
+    { \squish
+    \begin{enumerate}
+    \item \str{layer\_name} Layer name.
+    \end{enumerate}
+    Assigns the layer name \str{layer\_name}.
+    }
+
+\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
+    
+    
+
+By default, \mut\ will stop and issue a warning message if the computed layer base elevation is greater than or equal to the current layer top elevation.  This instruction forces the base to be below the top by a set amount:
+
+\ins{Minimum layer thickness}
+    {\squish
+    \begin{enumerate}
+    \item \rnum{MinThick} Minumum thickness value[L].
+    \end{enumerate}
+    This instruction causes \mut\ to enforce a minimum thickness constraint for the current layer. At nodes where the computed layer base elevation is greater than or equal to the current top elevation, \rnum{MinThick} will
+    be subtracted from the current top elevation to get the base elevation.
+    }
+
+By default, a new layer will not be subdivided vertically unless one the following two instructions is issued.  
+The first creates a uniform subdivision:
+
+\ins{Uniform sublayering}
+    {\squish
+    \begin{enumerate}
+    \item \inum{nsublayer} Number of sublayers.
+    \end{enumerate}
+    This instruction divides the layer vertically into \inum{nsublayer}
+    elements, which will each have the same element height, equal to the top elevation
+    minus the current base elevation divided by \inum{nsublayer}.
+    }
+
+This instruction creates a non-uniform subdivision:
+
+\ins{Proportional sublayering}
+    {\squish
+    \begin{enumerate}
+        \item \inum{nsublayer}  Number of proportional sublayers.
+        \item \rnum{sub\_thick(i),i=1,\inum{nsublayer}} Proportional thicknesses in order from top to bottom.
+    \end{enumerate}
+    This instruction can be used if you want to refine the \gwf\ domain mesh vertically,
+    for example, in the active zone with the \swf\ domain the ground surface in the .
+
+    It is important to understand that the variable \rnum{sub\_thick} is not
+    a true thickness, but is instead a relative thickness, which is used along
+    with the layer thickness to determine the element heights in the current
+    column.
+
+}
+
+    For example, these instructions:  
+    \texttt{
+            \begin{tabbing}
+            AAA\=AAA\=AAA   \kill
+                \>Proportional sublayering   \\
+                \>   \> 3                     \\
+                \>   \> 0.1           \\
+                \>   \>1.0            \\
+                \>   \>  10.0       \\
+                \> end       \\
+            \end{tabbing}
+    }
+    \squish
+would subdivide the current layer vertically into three elements, between
+    the current base and top elevation, with element height proportions of .1,
+    1 and 10 from top to bottom.
+
+This instruction is most often used to define a layer of uniform thickness relative to an uneven top elevation: 
+
+\ins{Offset base}
+    {\squish
+    \begin{enumerate}
+    \item \rnum{value} Thickness value (L) by which to offset the layer base elevation.
+    \end{enumerate}
+    This instruction causes the elevation of the base of the layer to be offset vertically by the given value.  This
+    can be used to create a surface a given distance below another surface.
+}
+
+    For example, these instructions:
 \begin{verbatim}
-    nodal control volumes
+        top elevation
+            elevation from list file
+            elev.list
+        end top elevation
+
+        new layer
+            uniform sublayering
+            3
+
+            elevation from list file
+            elev.list
+
+            offset base                     
+            -1.0                           
+
+        end new layer
+
+    end generate layered gwf domain
 \end{verbatim}
+ create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{gs.asc}:
+ 
+ By default, element zone numbers reflect the horizontal layers added during mesh generation.
+ If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.} using this instruction:
 
+\ins{Zone by template}
+    {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.
 
+    {\em This instruction should appear in the input file at the beginning of the \textsf{generate layered gwf domain}}
+    }
 
-
-
-, as shown in this example:
 \begin{verbatim}
     generate layered gwf domain
 
@@ -40,13 +269,4 @@ By default, the mesh-centred  control volume approach is used. If you would like
 
     end generate layered gwf domain
 \end{verbatim}
-The \textsf{generate layered gwf domain} instruction is a subtask so it has a corresponding \textsf{end generate layered gwf domain} instruction.  The GWF domain is generated from the top layer down, and the first instruction, \textsf{top elevation}, defines the ground surface elevation at the layer of elements in the TECPLOT\_GWF mesh. It must begin with a \textsf{top elevation} instruction and at least one \textsf{new layer} instruction. Not shown in this example is an optional additional instruction, \textsf{zone by template}.
-
- There are options for defining the top elevation:
-\begin{description}
-  \item[elevation constant] The value is assigned to all nodes in the top sheet of the TECPLOT\_GWF mesh.
-  \item[elevation from gb file] The file
-  \item[elevation from ascii file] The file
-  \item[elevation from xz pairs] The list
-
-\end{description}
+The \textsf{generate layered gwf domain} instruction is a subtask so it has a corresponding \textsf{end generate layered gwf domain} instruction.  The \gwf\ domain is generated from the top layer down, and the first instruction, \textsf{top elevation}, defines the ground surface elevation at the layer of elements in the TECPLOT\_GWF mesh. It must begin with a \textsf{top elevation} instruction and at least one \textsf{new layer} instruction. Not shown in this example is an optional additional instruction, \textsf{zone by template}.

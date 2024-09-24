@@ -259,7 +259,7 @@ Module MeshGeneration
         return
     end subroutine Quadtree2DMeshFromGWV
     !----------------------------------------------------------------------
-    subroutine ascii_file_elevation(fname,nprop,maxnnp)
+    subroutine list_file_elevation(fname,nprop,maxnnp)
         implicit none
 
         integer :: i
@@ -284,7 +284,7 @@ Module MeshGeneration
 
 	    call freeunit(itmp)
 
-    end subroutine ascii_file_elevation
+    end subroutine list_file_elevation
     
     !----------------------------------------------------------------------
     subroutine GenerateCLNDomain(FNum,TMPLT_CLN)
@@ -294,7 +294,7 @@ Module MeshGeneration
         
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(MAX_INST) :: CLNFromAsciiFile_cmd			=   'cln from ascii file'
+        character(MAX_INST) :: CLNFromListFile_cmd			=   'cln from list file'
         
         real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
         integer :: nPoints  ! number of points in list
@@ -321,8 +321,8 @@ Module MeshGeneration
             end if
                 
 
-            if(index(Instruction, CLNFromAsciiFile_cmd)  /= 0) then
-                call xyzFromAsciiFile(FNum,xi,yi,zi,nPoints)
+            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
+                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,TMPLT_CLN)
@@ -452,6 +452,8 @@ Module MeshGeneration
             end if
 
         end do read_slice2lyr
+        
+        if(.not. layer_defined) call ErrMsg('You must define at least 1 layer') 
         
         
         ! Copy the local and TMPLT data to the TMPLT_GWF data structure
@@ -955,7 +957,7 @@ Module MeshGeneration
         character(MAX_INST) :: proportional_sublayers_cmd	    =   'proportional sublayering'
         character(MAX_INST) :: constant_elevation_cmd		    =   'elevation constant'
         character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(MAX_INST) :: ascii_file_elevation_cmd		=   'elevation from ascii file'
+        character(MAX_INST) :: list_file_elevation_cmd		=   'elevation from list file'
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
         !character(MAX_INST) :: gms_file_elevation_cmd		    =   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
@@ -1072,10 +1074,10 @@ Module MeshGeneration
 			    call Msg(TAB//'Base elevation from '//trim(basefile))
                 call read_gb_nprop(basefile,base_elev,TMPLT.nNodes)
 
-            elseif(index(instruction,ascii_file_elevation_cmd) /=0) then
+            elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') basefile
 			    call Msg(TAB//'Base elevation from '//trim(basefile))
-                call ascii_file_elevation(basefile,base_elev,TMPLT.nNodes)
+                call list_file_elevation(basefile,base_elev,TMPLT.nNodes)
                 
                 
 
@@ -1240,7 +1242,7 @@ Module MeshGeneration
         character(MAX_INST) :: offset_top_cmd				    =   'offset top'
         character(MAX_INST) :: constant_elevation_cmd		    =   'elevation constant'
         character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
-        character(MAX_INST) :: ascii_file_elevation_cmd		    =   'elevation from ascii file'
+        character(MAX_INST) :: list_file_elevation_cmd		    =   'elevation from list file'
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
         !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
@@ -1266,7 +1268,7 @@ Module MeshGeneration
 
             call lcase(instruction)
             if(index(instruction, 'end') /=0) then
-                call Msg(TAB//'end top elevation instructions')
+                call Msg(TAB//'end top elevation')
                 exit read_top
             else
                 call lcase(instruction)
@@ -1292,10 +1294,10 @@ Module MeshGeneration
 			    call Msg('              Top elevation from '//trim(topfile))
                 call read_gb_nprop(topfile,top_elev,TMPLT.nNodes)
 
-            elseif(index(instruction,ascii_file_elevation_cmd) /=0) then
+            elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
 			    call Msg('              Top elevation from '//trim(topfile))
-                call ascii_file_elevation(topfile,top_elev,TMPLT.nNodes)
+                call list_file_elevation(topfile,top_elev,TMPLT.nNodes)
                 
             elseif(index(instruction, xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
@@ -1330,7 +1332,7 @@ Module MeshGeneration
     end subroutine top_elevation
     
     !----------------------------------------------------------------------
-    subroutine xyzFromAsciiFile(FNum,xi,yi,zi,nPoints)
+    subroutine xyzFromListFile(FNum,xi,yi,zi,nPoints)
         implicit none
         integer :: FNum
         
@@ -1399,7 +1401,7 @@ Module MeshGeneration
        
         continue
 
-    end subroutine xyzFromAsciiFile
+    end subroutine xyzFromListFile
 
     !----------------------------------------------------------------------
     subroutine xz_pairs_elevation(FNum,nprop,TMPLT)

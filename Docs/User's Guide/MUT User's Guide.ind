@@ -1,13 +1,45 @@
 \begin{theindex}
 
-  \item Constant head CHD, \hyperpage{17}
+  \item \gwf\ Domain 
+    \subitem  layering, \hyperpage{23}
 
   \indexspace
 
-  \item Drains, \hyperpage{17}
+  \item Constant head CHD, \hyperpage{27}
 
   \indexspace
 
-  \item Installation, \hyperpage{4}
+  \item Drains, \hyperpage{27, 28}
+
+  \indexspace
+
+  \item generate uniform rectangles, \hyperpage{18}
+  \item Grid generation 
+    \subitem  \textsf  {GWF}\ Domain 
+      \subsubitem  New layer, \hyperpage{23}
+
+  \indexspace
+
+  \item Input instructions 
+    \subitem  2d mesh from gb, \hyperpage{18}
+    \subitem  build modflow usg, \hyperpage{16}
+    \subitem  elevation constant, \hyperpage{22}
+    \subitem  elevation from gb file, \hyperpage{22}
+    \subitem  elevation from list file, \hyperpage{22}
+    \subitem  elevation from xz pairs, \hyperpage{23}
+    \subitem  generate layered gwf domain, \hyperpage{21}
+    \subitem  generate uniform rectangles, \hyperpage{18}
+    \subitem  Layer name, \hyperpage{24}
+    \subitem  Minimum layer thickness, \hyperpage{24}
+    \subitem  new layer, \hyperpage{24}
+    \subitem  nodal control volumes, \hyperpage{19}
+    \subitem  Offset base, \hyperpage{25}
+    \subitem  Proportional sublayering, \hyperpage{25}
+    \subitem  top elevation, \hyperpage{22}
+    \subitem  Uniform sublayering, \hyperpage{25}
+    \subitem  units of length, \hyperpage{16}
+    \subitem  units of time, \hyperpage{16}
+    \subitem  Zone by template, \hyperpage{26}
+  \item Installation, \hyperpage{5}
 
 \end{theindex}
