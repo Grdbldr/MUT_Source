@@ -8,9 +8,9 @@ Next we need to develop a \mut\ input file, which is a plain ascii text file tha
 Each modflow input file name must have the extension \texttt{mut}, and a prefix of your choice. Examples of valid \mut\ input file names are \texttt{\_build.mut} or \texttt{good.mut}. Most often, the easiest approach is to copy an existing input file and modify it as required.  This helps reduce set-up time and avoid potential errors that are introduced when creating input files from scratch.
 
 As you read along, we urge you to carry out the steps we describe as we move through the workflow.  It is good practice to copy the contents of an existing model to a new location (e.g.\ copy the folder \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}) and perform the actions yourself.  If you did so, your working directory would look something like this:
-    \vspace{.2in} \\
-    \includegraphics[width=0.4\textwidth]{vsf_column_folderinit}
-    \vspace{.2in} \\
+
+    \includegraphics[width=0.4\textwidth]{3_1_vsf_column_folderinit}
+
 In this example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{texfile:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
 
 \mut\ tries to obtain a prefix in one of these four ways:
@@ -23,9 +23,9 @@ In this example, there are two \mut\ input files, one for the model build called
     \item \textbf{From a prefix file:} If there is no command line argument, \mut\ checks for the presence of the file \texttt{\_mut.pfx} in the folder.  If present, \mut\ will read the prefix from it. For example, if the mut file was called \texttt{\_build.mut} then the file \texttt{mut.pfx} would have the single line \texttt{\_build}.
     \item \textbf{From the default input file:} If there is no command line argument or prefix file in the folder, \mut\ checks for the presence of the file \texttt{a.mut}.  If present in the folder, \mut\ will use it.
     \item \textbf{From the keyboard:} If none of these methods are successful, \mut\ will prompt for a prefix as shown here:
-        \vspace{.2in} \\
-        \includegraphics[width=0.6\textwidth]{mut_no_prefix}
-        \vspace{.2in} \\
+
+        \includegraphics[width=0.6\textwidth]{3_2_mut_no_prefix}
+
 \end{enumerate}
 
  In our preferred workflow, we would start a command prompt in the folder which contains the \mut\ input file as shown here:
@@ -33,15 +33,15 @@ In this example, there are two \mut\ input files, one for the model build called
     \item  Navigate to the folder in File Explorer (e.g.\ \texttt{C:$\backslash$1\_VSF\_Column\-$\backslash$SandBox}).
    \item  Click on the path in File Explorer:
 
-        \includegraphics[width=0.3\textwidth]{HighlightPath}
+        \includegraphics[width=0.3\textwidth]{3_3_HighlightPath}
 
     \item  Replace the existing path with the string 'cmd':
 
-        \includegraphics[width=0.5\textwidth]{cmd}
+        \includegraphics[width=0.5\textwidth]{3_4_cmd}
 
     \item Press Enter/Return and you will see a command prompt rooted at the input folder e.g.:
 
-        \includegraphics[width=0.4\textwidth]{cmdPrompt}
+        \includegraphics[width=0.4\textwidth]{3_5_cmdPrompt}
 
 \end{enumerate}
 
@@ -54,9 +54,9 @@ As \mut\ processes the input file, note these features:
     \item Output is written to both the screen and to the file \verb+_buildo.eco+ as execution progresses.  The first thing \mut\ writes is the version number, then the formal header, which also contains the build date.
     \item  As comment lines are stripped from the input file, they are echoed to the screen and eco file and can provide a synopsis of the input file contents.
     \item  Several new output files are created:
-        \vspace{.2in} \\
-        \includegraphics[width=0.8\textwidth]{buildFiles}
-        \vspace{.2in} \\
+
+        \includegraphics[width=0.8\textwidth]{3_6_buildFiles}
+
     \item If we start the model build prefix with the underscore character,  build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name. The build output contains several \tecplot\ output files that are indicated by the suffix \texttt{.tecplot.dat}.
     \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired but there are advantages to keeping this 'generic' one, such as portability of post-processing scripts or \tecplot\ layout files that follow this generic naming convention.
     \item Several scratch files (with prefix \texttt{scratcho}) are written. These are used for debugging during code development and can be ignored in most cases.

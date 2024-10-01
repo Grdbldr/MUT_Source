@@ -52,35 +52,35 @@
     character(MAX_INST) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
         
     !---------------------------------------------------Selection and assignment options
-    character(MAX_INST) :: ActiveDomain_CMD	                =   'active domain'
+    character(MAX_INST) :: ActiveDomain_CMD	                    =   'active domain'
+
+    character(MAX_INST) :: ChooseAllCells_CMD  	                =   'choose all cells'
+    character(MAX_INST) :: ClearAllCells_CMD	                =   'clear chosen cells'
+    character(MAX_INST) :: ChooseCellsByLayer_CMD  	            =   'choose cells by layer'
+    character(MAX_INST) :: ChooseCellAtXYZ_CMD                  =   'choose cell at xyz'
+    character(MAX_INST) :: ChooseCellsFromGBElements_CMD        =   'choose cells from gb elements'
+    character(MAX_INST) :: ChooseCellsFromGBNodes_CMD	        =   'choose cells from gb nodes'
+    character(MAX_INST) :: ChooseCellsFromFile_CMD              =   'choose cells from file'
+    character(MAX_INST) :: ChooseCellsByChosenZones_CMD         =   'choose cells by chosen zones'
+
+    character(MAX_INST) :: ChooseAllZones_CMD  	                =   'choose all zones'
+    character(MAX_INST) :: ClearAllZones_CMD	                =   'clear chosen zones'
+    character(MAX_INST) :: ChooseZoneNumber_CMD	                =   'choose zone number'
 
     character(MAX_INST) :: ClearAllNodes_CMD	                =   'clear chosen nodes'
-    character(MAX_INST) :: ChooseAllNodes_CMD                =   'choose all nodes'
-    character(MAX_INST) :: ChooseNodeAtXYZ_CMD               =   'choose node at xyz'
+    character(MAX_INST) :: ChooseAllNodes_CMD                   =   'choose all nodes'
+    character(MAX_INST) :: ChooseNodeAtXYZ_CMD                  =   'choose node at xyz'
     character(MAX_INST) :: ChooseGBNodes_CMD	                =   'choose gb nodes'
 
-    character(MAX_INST) :: ClearAllCells_CMD	                =   'clear chosen cells'
-    character(MAX_INST) :: ChooseAllCells_CMD  	            =   'choose all cells'
-    character(MAX_INST) :: ChooseCellsByLayer_CMD  	        =   'choose cells by layer'
-    character(MAX_INST) :: ChooseCellAtXYZ_CMD               =   'choose cell at xyz'
-    character(MAX_INST) :: ChooseCellsFromGBElements_CMD	    =   'choose cells from gb elements'
-    character(MAX_INST) :: ChooseCellsFromGBNodes_CMD	    =   'choose cells from gb nodes'
-
-    character(MAX_INST) :: ChooseCellsFromFile_CMD           =   'choose cells from file'
-    character(MAX_INST) :: FlagChosenCellInactive_CMD        =   'flag chosen cells inactive'
-
-    character(MAX_INST) :: ClearAllZones_CMD	                =   'clear chosen zones'
-    character(MAX_INST) :: ChooseAllZones_CMD  	            =   'choose all zones'
-    character(MAX_INST) :: ChooseZoneNumber_CMD	            =   'choose zone number'
-    
-    character(MAX_INST) :: FlagChosenNodesAsOuterBoundary_CMD		=   'flag chosen nodes as outer boundary'
+    character(MAX_INST) :: FlagChosenCellInactive_CMD           =   'flag chosen cells inactive'
+    character(MAX_INST) :: FlagChosenNodesAsOuterBoundary_CMD   =   'flag chosen nodes as outer boundary'
     
 
     !---------------------------------------------------Initial conditions
-    character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	=   'gwf initial head'
-    character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD    =   'gwf initial head function of z' 
-    character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	=   'swf initial depth'
-    character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	=   'cln initial depth'
+    character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	    =   'gwf initial head'
+    character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD  =   'gwf initial head function of z' 
+    character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	    =   'swf initial depth'
+    character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	    =   'cln initial depth'
     
     !---------------------------------------------------Boundary conditions
     character(MAX_INST) :: AssignCHDtoGWF_CMD		    =   'gwf constant head'
@@ -97,8 +97,8 @@
     character(MAX_INST) :: AssignKvtoGWF_CMD		        =   'gwf kv'
     character(MAX_INST) :: AssignSstoGWF_CMD		        =   'gwf ss'
     character(MAX_INST) :: AssignSytoGWF_CMD		        =   'gwf sy'
-    character(MAX_INST) :: AssignAlphatoGWF_CMD	    	=   'gwf alpha'
-    character(MAX_INST) :: AssignBetatoGWF_CMD	    	=   'gwf beta'
+    character(MAX_INST) :: AssignAlphatoGWF_CMD	    	    =   'gwf alpha'
+    character(MAX_INST) :: AssignBetatoGWF_CMD	    	    =   'gwf beta'
     character(MAX_INST) :: AssignSrtoGWF_CMD		        =   'gwf sr'
     character(MAX_INST) :: AssignBrookstoGWF_CMD		    =   'gwf brooks'
         
@@ -1869,6 +1869,19 @@
                     call ChooseCellsFromFile(FnumMUT,modflow.CLN)
                 end select
             
+            else if(index(instruction, ChooseCellsByChosenZones_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                    ! this will be done later
+                case (iGWF)
+                    call ChooseCellsByChosenZones(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellsByChosenZones(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellsByChosenZones(FnumMUT,modflow.CLN)
+                end select
+                
              else if(index(instruction, ChooseAllZones_CMD)  /= 0) then
                 select case(ActiveDomain)
                 !case (iTMPLT)
@@ -3024,6 +3037,40 @@
 
 
     end subroutine ChooseCellsFromFile
+
+    !----------------------------------------------------------------------
+    subroutine ChooseCellsByChosenZones(FNumMUT,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+
+        integer :: i, j
+	    integer :: ncount, iCell,status2
+
+        character*80 fname
+        logical togon(domain.nCells)
+
+       
+        ncount=0
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                do j=1,domain.nCells
+                    if(domain.iZone(j) == i) then
+                        call set(Domain.Cell_Is(j),chosen)
+                        ncount=ncount+1
+                    end if
+                end do
+            end if
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+
+
+    end subroutine ChooseCellsByChosenZones
 
     !----------------------------------------------------------------------
     subroutine ChooseCellsFromGBElements(FNumMUT,domain,TMPLT) 
@@ -5151,34 +5198,64 @@
     end subroutine IaJa_FromTecplot
 
     !----------------------------------------------------------------------
-    subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain) 
+    subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
         implicit none
-
         integer :: FNumMUT
-        type (ModflowDomain) Domain
-   	    
-        integer :: i, ncount	!tg-jan10
-   	    real(dr) :: z1, h1, z2, h2
+        type(ModflowDomain) domain
 
-		call Msg(TAB//'Chosen '//trim(domain.name)//' cells are assigned starting heads as a function of zCell')
+        integer :: i, j
+	    integer :: npairs
+	    real(dr) :: t
+                
+        character(256) :: instruction
 
-        read(FNumMUT,*) z1,h1
-        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z1,', Starting Head is ',h1
-        call Msg(TMPStr)
+	    real(dr) :: zp(1000)
+	    real(dr) :: hp(1000)
+	    zp(:) = 0
+	    hp(:) = 0
 
-        read(FNumMUT,*) z2,h2
-        write(TMPStr,'(a,g15.3,a,g15.3)') TAB//'At Z = ',z2,', Starting Head is ',h2
-        call Msg(TMPStr)
 
-		ncount=0
-		do i=1,domain.nCells
-			if(bcheck(domain.Cell_Is(i),chosen)) then
-				ncount=ncount+1
-				domain.StartingHeads(i)=h1-(h1-h2)*(domain.zCell(i)-z1)/(z2-z1)
-			endif
-		end do
-		write(ieco,*) 'Nodes affected: ',ncount
-		if(ncount == 0) call ErrMsg('Ncount zero from last command')
+        call Msg(TAB//'                Z              Head')
+
+	    npairs=0
+	    read_zhead_pairs:do
+		    read(FNumMUT,'(a)',iostat=status) instruction
+		    if(status /= 0) exit
+
+		    len=len_trim(instruction)
+            call lcase(instruction)
+
+            if(index(instruction,'end') /= 0) then
+                call Msg(TAB//'end gwf initial head function of z')
+                exit read_zhead_pairs
+		    else
+			    npairs=npairs+1
+			    read(instruction,*,iostat=status) zp(npairs),hp(npairs)
+
+			    if(npairs > 1) then
+			        if(zp(npairs) <= zp(npairs-1)) then
+				        call ErrMsg('Z values must be entered in ascending order')
+				    endif
+			    endif
+
+			    if(status /= 0) then
+				    call ErrMsg('Bad z-head pair')
+                endif
+                
+                write(TmpSTR,'(i8,2x,2g15.5)') npairs,zp(npairs),hp(npairs)
+                call Msg(TAB//trim(TmpSTR))
+
+		    endif
+	    end do read_zhead_pairs
+
+        do i=1,domain.nCells
+		    do j=1,npairs-1
+			    if(domain.zCell(i) >= zp(j) .and. domain.zCell(i) <= zp(j+1)) then  ! interpolate
+	                t=(domain.zCell(i)-zp(j))/(zp(j+1)-zp(j))
+				    domain.StartingHeads(i)=(1.0-t)*hp(j)+t*hp(j+1)
+			    end if
+		    end do
+        end do
 
     end subroutine InitialHeadFunctionOfZtoGWF
    
@@ -15716,11 +15793,11 @@
     end subroutine Read_SWF_GSF
    
     !----------------------------------------------------------------------
-    subroutine UnitsLength(FnumMUT,domain) 
+    subroutine UnitsLength(FnumMUT,Project) 
         implicit none
 
         integer :: FNumMUT
-        type (ModflowProject) Domain
+        type (ModflowProject) Project
         
         character(MAX_LBL) :: value
         
@@ -15729,29 +15806,29 @@
         
         select case(value)
         case ('feet')
-            Domain.STR_LengthUnits='FEET'
-            Domain.LengthUnits=1
+            Project.STR_LengthUnits='FEET'
+            Project.LengthUnits=1
         case ('meters')
-            Domain.STR_LengthUnits='METERS'
-            Domain.LengthUnits=2
+            Project.STR_LengthUnits='METERS'
+            Project.LengthUnits=2
         case ('centimeters')
-            Domain.STR_LengthUnits='CENTIMETERS'
-            Domain.LengthUnits=3
+            Project.STR_LengthUnits='CENTIMETERS'
+            Project.LengthUnits=3
         case default
             call ErrMsg('Units of length '//trim(value)//' not recognized. Must be feet, meters, or centimeters.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Domain.STR_LengthUnits)
+        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Project.STR_LengthUnits)
         call Msg(TmpSTR)
 
     end subroutine UnitsLength
 
     !----------------------------------------------------------------------
-    subroutine UnitsTime(FNumMUT,domain) 
+    subroutine UnitsTime(FNumMUT,Project) 
         implicit none
 
         integer :: FNumMUT
-        type (ModflowProject) Domain
+        type (ModflowProject) Project
         
         character(MAX_LBL) :: value
         
@@ -15760,25 +15837,25 @@
         
         select case(value)
         case ('seconds')
-            Domain.STR_TimeUnits='SECONDS'
-            Domain.TimeUnits=1
+            Project.STR_TimeUnits='SECONDS'
+            Project.TimeUnits=1
         case ('minutes')
-            Domain.STR_TimeUnits='MINUTES'
-            Domain.TimeUnits=2
+            Project.STR_TimeUnits='MINUTES'
+            Project.TimeUnits=2
         case ('hours')
-            Domain.STR_TimeUnits='HOURS'
-            Domain.TimeUnits=3
+            Project.STR_TimeUnits='HOURS'
+            Project.TimeUnits=3
         case ('days')
-            Domain.STR_TimeUnits='DAYS'
-            Domain.TimeUnits=4
+            Project.STR_TimeUnits='DAYS'
+            Project.TimeUnits=4
         case ('years')
-            Domain.STR_TimeUnits='YEARS'
-            Domain.TimeUnits=5
+            Project.STR_TimeUnits='YEARS'
+            Project.TimeUnits=5
         case default
             call ErrMsg('Units of time '//trim(value)//' not recognized. Must be seconds, minutes, hours, days or years.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Domain.STR_TimeUnits)
+        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Project.STR_TimeUnits)
         call Msg(TmpSTR)
 
     end subroutine UnitsTime

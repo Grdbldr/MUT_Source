@@ -2,9 +2,9 @@
 The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.   Below is an example
 \footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
   showing an exploded view of a template mesh (bottom image) that was used as a basis for generating  finite-element meshs for the \gwf\ (middle image) and\swf\ (upper image) domains:
-    \vspace{.2in} \\
-    \includegraphics[width=0.87\textwidth]{tmpltAbdul}
-    \vspace{.2in} \\
+
+    \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
+
 Some key features of this example are:
 \begin{itemize}
   \item The template mesh is assigned an elevation of zero, and only the $xy$ coordinate data are used to define the other domains.
@@ -64,9 +64,9 @@ To generate uniform 2D rectangular element template meshes \footnote{See for exa
 %    }
 
 There are two ways that \mf\ cell control volumes can be defined from the template mesh.  By default, \mut\ uses a mesh-centred approach as shown here for a triangular-element template mesh:
-    \vspace{.2in} \\
-    \includegraphics[width=0.6\textwidth]{MeshCentred}
-    \vspace{.2in} \\
+
+    \includegraphics[width=0.6\textwidth]{3_8_MeshCentred}
+
 Some key features to note are:
 \begin{itemize}
     \item Inner circles, which are tangent to all three element sides, are defined for each triangular element.  An example is shown by the dashed circular line in the yellow-shaded element.
@@ -84,9 +84,9 @@ To use a node-centred control volume approach, add this instruction {\em before}
      }
 
 The result of using a node-centred approach is shown here for a triangular-element template mesh:
-    \vspace{.2in} \\
-    \includegraphics[width=0.6\textwidth]{NodeCentred}
-    \vspace{.2in} \\
+
+    \includegraphics[width=0.6\textwidth]{3_9_NodeCentred}
+
 Some key features to note are:
 \begin{itemize}
     \item The blue-filled circles show that the locations of the defined \mf\ cell control volumes are now located at template mesh node locations.

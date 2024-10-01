@@ -243,17 +243,341 @@ This instruction is most often used to define a layer of uniform thickness relat
 
     end generate layered gwf domain
 \end{verbatim}
- create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{gs.asc}:
+ create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{elev.list}:
 
 \includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
 \subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties}
 
-Material properties may be defined by zone or on a cell-by-cell basis. 
+\gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ offers some simple instructions for selecting cells and assigning material property values to them.  As you might imagine, this instruction:
 
-\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Discuss: 
+\ins{choose all cells}
+    {Select all cells in the active model domain.
+     }
+
+selects all cells in the {\em active} model domain.
+
+This is an example of what we refer to as a {\em generic} instruction, which means it can be applied to any of the currently available model domains: \gwf, \swf\ or \cln.
+\pagebreak
+
+If our intention is to choose all cells in the \gwf\ domain, we first need to activate it using this instruction:
+
+\ins{active domain}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{Domain}  The name of the domain to be activated: \gwf, \swf\ or \cln\
+        \end{enumerate}
+        This instruction activates the given domain named in  \str{Domain} so that it will be used with generic instructions such as \textsf{choose all cells}.
+    }
+
+So to activate the \gwf\ domain, we would insert these instructions in the input file:
+\begin{verbatim}
+    active domain
+    gwf
+\end{verbatim}
+
+These instructions can be used to choose cells in various ways:
+
+\ins{choose cell at xyz}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{x1}, \rnum{y1}, \rnum{z1}  An $xyz$ coordinate triplet.
+        \end{enumerate}
+        The cell closest to the given $xyz$ coordinate triplet will be chosen.
+    }
+
+\ins{choose cells by layer}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{layer}  The number of the layer to be chosen.
+        \end{enumerate}
+        The cells in Modflow layer number \inum{Layer} will be chosen.  Remember that Modflow layers are one cell high and are numbered from the top to the bottom of the model domain.\footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} which uses the previous two instructions to define a constant head at  the base  and a recharge boundary condition at the top of the 1D column.}
+    }
+
+\ins{choose cells from file}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  The file \str{file} containing a list of cell numbers.
+        \end{enumerate}
+        The cells listed in the file \str{file} will be chosen.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_MODHMS} which uses this instruction to assign some cells as inactive.}
+    }
+
+\pagebreak
+\ins{choose cells from gb elements}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  The \gb\ chosen element file \str{file} containing information concerning the status, chosen or not chosen, of each element in the \gb\ model domain.
+        \end{enumerate}
+          If an element is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_Prism\_Cell} which uses this instruction to assign some cells as inactive.}
+    }
+
+\ins{choose cells from gb nodes}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  The \gb\ chosen node \str{file} containing information concerning the status, chosen or not chosen, of each node in the \gb\ model domain.
+        \end{enumerate}
+          If a node is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_Prism\_Cell\_nc} which uses this instruction to assign some cells as inactive.}
+    }
+
+The previous two instructions are used to choose cells for the mesh-centered and node-centered approaches respectively.
+
+Cell selection instructions are cumulative.  For example, you can modify the current selection by repeating instructions like  \textsf{choose cell at xyz} or \textsf{choose cells by layer} with different inputs and then assign properties to the current selection.  This instruction clears the selection before beginning new cell selection(s):
+
+\ins{clear chosen cells}
+    {Clears the current cell selection.
+     }
+
+It is good practice to clear the selection before starting a new selection. \mut\ echoes the results of the selection instructions to the screen and \texttt{.eco} file as shown in this example:
+\begin{verbatim}
+    clear chosen cells
+    	GWF Cells chosen:          0
+
+    choose all cells
+    	GWF Cells chosen:      39765
+\end{verbatim}
+If a cell selection instruction has unexpected results these are good places to check.
+
+\pagebreak
+These instructions can be used to assign material properties to the current cell selection:
+
+\ins{gwf kh}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Horizontal hydraulic conductivity [$L T^-1$].
+        \end{enumerate}
+          A horizontal hydraulic conductivity of \rnum{val} is assigned to the chosen cells.
+    }
+
+
+\ins{gwf kv}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Vertical hydraulic conductivity (L/T).
+        \end{enumerate}
+          A vertical hydraulic conductivity of \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf ss}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Specific storage (1/T).
+        \end{enumerate}
+          A specific storage of \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf sy}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Specific yield (-).
+        \end{enumerate}
+          A specific yield of  \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf alpha}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Van Genuchten/Brooks-Corey Alpha [$L^-1$].
+        \end{enumerate}
+          A Van Genuchten/Brooks-Corey Alpha of \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf beta}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Specific yield (-).
+        \end{enumerate}
+          A specific yield of \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf sr}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Residual saturation [-].
+        \end{enumerate}
+          A residual saturation of \rnum{val} is assigned to the chosen cells.
+    }
+
+\ins{gwf brooks}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{val}  Brooks-Corey exponent.
+        \end{enumerate}
+          A Brooks-Corey exponent of \rnum{val} is assigned to the chosen cells.
+    }
+
+Defining each different material property as described above can be tedious.  An alternative approach is to assign the full set of \gwf\ material properties using this instruction:
+
+\ins{chosen cells use gwf material number}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{val}  \gwf\ material number.
+        \end{enumerate}
+          A unique set of \gwf\ material properties is retrieved from a lookup table, using the given  material number \inum{val}, and assigned to the chosen cells.
+    }
+
+A lookup table of \gwf\ material properties  is provided in the file \texttt{qryGWFMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+
+In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
+
+\ins{gwf materials database}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  \gwf\ material properties lookup table file name.
+        \end{enumerate}
+          \mut\ uses the file \str{file} to look up \gwf\ material properties.
+    }
+
+
+You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
+
+\pagebreak
+During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions:
+
+\ins{choose all zones}
+    {Select all zones in the active model domain.
+     }
+
+\ins{choose zone number}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{value}  The number of the zone to be chosen.
+        \end{enumerate}
+        \squish
+    }
+
+\ins{clear chosen zones}
+    {Clears the current zone selection.
+     }
+
+The zone selection can be converted into a cell selection using this instruction:
+
+\ins{choose cells by chosen zones}
+    {If a zone is currently chosen, any cell which has that zone number will be chosen.
+     }
+This cell selection can now be used to assign material properties.
+
+Below is an example \footnote{See verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell}} of a case in which the element zone numbers have been assigned by layer number for a 3-layer case:
+
+\includegraphics[width=.86\textwidth]{3_10_GWFZones}
+
+\pagebreak
+Some key features to note are:
+\begin{itemize}
+    \item There are 3 zones, corresponding to the layers 1 to 3.
+    \item 'Zone 1', coloured dark blue, corresponds to layer 1.  Recall that the \mfus\ mesh is generated from the top down, so layer 1 is at the top of the model domain.
+    \item Each layer is composed of multiple \mf\ layers, which are each one cell thick.
+\end{itemize}
+
+The following example uses the materials database and zone selection to assign material properties for the 3-layer case:
+
+\begin{verbatim}
+    gwf materials database
+    	Materials file C:\MUT\MUT_Examples-main\_MUT_USERBIN\qryGWFMaterials.txt
+
+    active domain
+    	gwf
+
+    clear chosen zones
+    	GWF Zones chosen:          0
+
+    choose zone number
+    	Adding zone number:        1
+    	GWF zone numbers currently chosen:
+    	    1
+
+    choose zone number
+    	Adding zone number:        2
+    	GWF zone numbers currently chosen:
+    	    1
+    	    2
+
+    choose zone number
+    	Adding zone number:        3
+    	GWF zone numbers currently chosen:
+    	    1
+    	    2
+    	    3
+
+    clear chosen cells
+    	GWF Cells chosen:          0
+
+    choose cells by chosen zones
+    	GWF Cells chosen:      39765
+
+    chosen cells use gwf material number
+    	Assigning all chosen GWF cells properties of material               4, Borden sand
+    	Kh_Kx:                 1.00000E-05
+    	Kv_Kz:                 1.00000E-05
+    	Specific Storage:      1.20000E-07
+    	Specific Yield:        0.34000
+    	Alpha:                  1.9000
+    	Beta:                   6.0000
+    	Sr:                    0.18000
+    	Unsaturated Function Type:   Van Genuchten
+\end{verbatim} 
+
+Some key features to note are:
+\begin{itemize}
+    \item As we choose zone numbers, the list of currently chosen zones grows accordingly.
+    \item The final number of \gwf\ cells chosen is equal to the total number of cells in the domain, since we had selected all 3 layers prior to converting the  zone selection to a cell selection.
+    \item After assignment, the \gwf\ material number, name and assigned property values are echoed to screen and \texttt{.eco} file.
+\end{itemize}
+
+\subsubsection{Assigning Initial Conditions}  \index{\gwf\ Domain ! initial condition}
+
+\ins{gwf initial head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Initial (or starting) hydraulic head [L].
+        \end{enumerate}
+          An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
+    }
+
+\ins{gwf initial head function of z}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{z1}, \rnum{head1}  Initial (or starting) hydraulic head [L].
+        \item \rnum{z2}, \rnum{head2}  Initial (or starting) hydraulic head [L].
+        \end{enumerate}
+          An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
+    }
+
+
+\begin{verbatim}
+    gwf initial head function of z
+    !  z    head
+      0.0  -100.0
+    100.0     0.0
+\end{verbatim}
+
+
+
+\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Discuss:
 \begin{itemize}
     \item zoned vs cell-by-cell input
     \item how to choose elements, nodes, cells, zones etc.
     \item databases vs direct input
 \end{itemize}  }
+
+
+
+
