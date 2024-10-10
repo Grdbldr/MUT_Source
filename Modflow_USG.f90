@@ -88,7 +88,7 @@
     character(MAX_INST) :: AssignRCHtoGWF_CMD		    =   'gwf recharge'
     character(MAX_INST) :: AssignCHDtoSWF_CMD		    =   'swf constant head'
     character(MAX_INST) :: AssignRCHtoSWF_CMD		    =   'swf recharge'
-    character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	=   'swf critical depth'
+    character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	        =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
     
     !---------------------------------------------------GWF Properties
@@ -104,12 +104,14 @@
         
     !---------------------------------------------------CLN Properties
     character(MAX_INST) :: AssignMaterialtoCLN_CMD		    =   'chosen zones use cln material number'
-    character(MAX_INST) :: AssignSizetoCLN_CMD		        =   'cln radius or width'
+    !character(MAX_INST) :: AssignSizetoCLN_CMD		        =   'cln radius or width'
 
     !---------------------------------------------------SWF Properties
     character(MAX_INST) :: AssignMaterialtoSWF_CMD		    =   'chosen zones use swf material number'
     character(MAX_INST) :: AssignSgcltoSWF_CMD		        =   'swf to gwf connection length'
     character(MAX_INST) :: AssignManningtoSWF_CMD		    =   'swf manning'
+    character(MAX_INST) :: AssignDepressiontoSWF_CMD		=   'swf depression storage height'
+    character(MAX_INST) :: AssignObstructiontoSWF_CMD		=   'swf obstruction storage height'
     character(MAX_INST) :: AssignDepthForSmoothingtoSWF_CMD	=   'swf depth for smoothing'
         
     !---------------------------------------------------SMS Dataset
@@ -899,14 +901,14 @@
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
 
-        call Msg(TAB//'Assumes SWBC Critical Depth Length equals cell side 1 length') 
+        call Msg(TAB//'Assumes SWBC Critical Depth Length equals sqrt(cell area)') 
         
         if(Modflow.NodalControlVolume) then
             do i=1,domain.nCells
                 if(bcheck(domain.Cell_is(i),chosen)) then
                     call set(domain.Cell_is(i),CriticalDepth)
                     domain.nSWBCCells=domain.nSWBCCells+1
-                    domain.CriticalDepthLength(i)=domain.SideLength(1,k)
+                    domain.CriticalDepthLength(i)=SQRT(domain.cellarea(i))
                 endif
             end do
         else    
@@ -914,7 +916,8 @@
                 if(bcheck(domain.Cell_is(i),chosen)) then
                     call set(domain.Cell_is(i),CriticalDepth)
                     domain.nSWBCCells=domain.nSWBCCells+1
-                    domain.CriticalDepthLength(i)=+domain.SideLength(1,i)
+                    domain.CriticalDepthLength(i)=SQRT(domain.cellarea(i))
+                    
                 end if
             end do
         end if
@@ -1050,6 +1053,29 @@
     end subroutine AssignKvtoDomain
    
     !----------------------------------------------------------------------
+    subroutine AssignDepressiontoSWF(FnumMUT,domain)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//trim(domain.name)//' Depression Storage Height: '//trim(TmpSTR))
+
+
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                domain.DepressionStorageHeight(i)=value
+            end if
+        end do
+    
+    end subroutine AssignDepressiontoSWF
+
+    !----------------------------------------------------------------------
     subroutine AssignManningtoSWF(FnumMUT,domain)
         implicit none
 
@@ -1071,6 +1097,29 @@
         end do
     
     end subroutine AssignManningtoSWF
+
+    !----------------------------------------------------------------------
+    subroutine AssignObstructiontoSWF(FnumMUT,domain)
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowDomain) Domain
+        
+        integer :: i
+        real(dr) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'(g15.5)') value
+		call Msg(TAB//trim(domain.name)//' Obstruction Storage Height: '//trim(TmpSTR))
+
+
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_is(i),chosen)) then
+                domain.ObstructionStorageHeight(i)=value
+            end if
+        end do
+    
+    end subroutine AssignObstructiontoSWF
 
     !----------------------------------------------------------------------
     subroutine AssignMaterialtoGWF(FNumMUT, Domain) 
@@ -1981,6 +2030,10 @@
                 call AssignStartingDepthtoDomain(FnumMUT,modflow.SWF)
             else if(index(instruction, AssignManningtoSWF_CMD)  /= 0) then
                 call AssignManningtoSWF(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignDepressiontoSWF_CMD)  /= 0) then
+                call AssignDepressiontoSWF(FnumMUT,modflow.SWF)
+            else if(index(instruction, AssignObstructiontoSWF_CMD)  /= 0) then
+                call AssignObstructiontoSWF(FnumMUT,modflow.SWF)
             else if(index(instruction, AssignDepthForSmoothingtoSWF_CMD)  /= 0) then
                 call AssignDepthForSmoothingtoSWF(FnumMUT,modflow.SWF)
 
@@ -2504,8 +2557,8 @@
         end if            
         
         Modflow.SWF.nNodesPerCell=TMPLT_SWF.nNodesPerElement
-        Modflow.SWF.nNodes=TMPLT_SWF.nNodes  ! Used when choosing gb nodes
-        Modflow.SWF.nElements=TMPLT_SWF.nElements  ! Used when choosing gb nodes
+        Modflow.SWF.nNodes=TMPLT_SWF.nNodes  ! Used when choosing gb nodes, flagging outer boundary nodes
+        Modflow.SWF.nElements=TMPLT_SWF.nElements  ! Used when choosing gb elements
 
         ! Modflow SWF cell coordinate 
         allocate(Modflow.SWF.xCell(Modflow.SWF.nCells),Modflow.SWF.yCell(Modflow.SWF.nCells),Modflow.SWF.zCell(Modflow.SWF.nCells),stat=ialloc)
@@ -7039,6 +7092,57 @@
         read(FNumMUT,*) iSMSParameterSet
         write(TmpSTR,'(i4)') iSMSParameterSet
         call Msg(TAB//'Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
+        
+        write(TmpSTR,'(a,1pg15.5)')TAB//'OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)        ',SMS_HCLOSE(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)       ',SMS_HICLOSE(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'MAXIMUM NUMBER OF OUTER ITERATIONS     (MXITER)        ',SMS_MXITER(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'MAXIMUM NUMBER OF INNER ITERATIONS     (ITER1)         ',SMS_ITER1(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'SOLVER PRINTOUT INDEX                  (IPRSMS)        ',SMS_IPRSMS(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'NONLINEAR ITERATION METHOD             (NONLINMETH)    ',SMS_NONLINMETH(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'LINEAR SOLUTION METHOD                 (LINMETH)       ',SMS_NONLINMETH(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'D-B-D WEIGHT REDUCTION FACTOR          (THETA)         ',SMS_THETA(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'D-B-D WEIGHT INCREASE INCREMENT        (KAPPA)         ',SMS_KAPPA(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'D-B-D PREVIOUS HISTORY FACTOR          (GAMMA)         ',SMS_GAMMA(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'MOMENTUM TERM                          (AMOMENTUM)     ',SMS_AMOMENTUM(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'MAXIMUM NUMBER OF BACKTRACKS           (NUMTRACK)      ',SMS_NUMTRACK(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'BACKTRACKING TOLERANCE FACTOR          (BTOL)          ',SMS_BTOL(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'BACKTRACKING REDUCTION FACTOR          (BREDUC)        ',SMS_BREDUC(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'BACKTRACKING RESIDUAL LIMIT            (RES_LIM)       ',SMS_RES_LIM(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'TRUNCATED NEWTON FLAG                  (ITRUNCNEWTON)  ',SMS_ITRUNCNEWTON(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,a)')      TAB//'Options                                                ',SMS_Options(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'ACCELERATION METHOD                    (IACL)          ',SMS_IACL(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'EQUATION ORDERING FLAG                 (NORDER)        ',SMS_NORDER(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'LEVEL OF FILL                          (LEVEL)         ',SMS_LEVEL(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'MAXIMUM NUMBER OF ORTHOGONALIZATIONS   (NORTH)         ',SMS_NORTH(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'INDEX FOR USING REDUCED SYSTEM         (IREDSYS)       ',SMS_IREDSYS(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'RESIDUAL REDUCTION CONVERGE CRITERION  (RRCTOL)        ',SMS_RRCTOL(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'INDEX FOR USING DROP TOLERANCE         (IDROPTOL)      ',SMS_IDROPTOL(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,1pg15.5)')TAB//'DROP TOLERANCE VALUE                   (EPSRN)         ',SMS_EPSRN(iSMSParameterSet)
+        call Msg(trim(TmpSTR))
 
     end subroutine SMSParamterSetNumber
    
@@ -7053,11 +7157,11 @@
         character(MAX_INST) :: Type_CMD	                =   'type'
         character(MAX_INST) :: Duration_CMD	            =   'duration'
         character(MAX_INST) :: NumberOfTimesteps_CMD	=   'number of timesteps'
-        character(MAX_INST) :: Deltat_CMD	=   'deltat'
-        character(MAX_INST) :: Tminat_CMD	=   'tminat'
-        character(MAX_INST) :: Tmaxat_CMD	=   'tmaxat'
-        character(MAX_INST) :: Tadjat_CMD	=   'tadjat'
-        character(MAX_INST) :: Tcutat_CMD	=   'tcutat'
+        character(MAX_INST) :: Deltat_CMD	            =   'deltat'
+        character(MAX_INST) :: Tminat_CMD	            =   'tminat'
+        character(MAX_INST) :: Tmaxat_CMD	            =   'tmaxat'
+        character(MAX_INST) :: Tadjat_CMD	            =   'tadjat'
+        character(MAX_INST) :: Tcutat_CMD	            =   'tcutat'
         Modflow.nPeriods=Modflow.nPeriods+1  
         write(TmpSTR,'(a,i8)')TAB//'Stress period ',Modflow.nPeriods
         call Msg(trim(TmpSTR))

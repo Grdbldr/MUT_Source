@@ -1,1 +1,131 @@
-\label{texfile:CLN}
+\label{texfile:CLN} 
+A \cln\ domain is a quasi-3D network of modflow cells which are each defined by individual line segments. The flows between \cln\ cells are governed by either open- or closed-channel flow equations, depending on surrounding conditions, which ultimately provide a pressure head or water depth at each cell.
+
+\mut\ adds the \cln\ process equations to the global
+conductance matrix in order to represent fluxes between cells
+within the process as well as with cells of other processes.
+
+The current version of \mut\ has the following limitations for the definition of the \cln\ domain:
+\begin{enumerate}
+    \item General \cln\ domains, where the cell geometry is independent of the \gwf\ mesh and  cell-to-cell connection can be one-to-many or many-to-one are not yet implemented. \mut\ assumes a 1-to-1 connection exists between \cln\ cells and \gwf\ layer 1 cells (i.e. top layer).
+    \item \cln\ flows to the \swf\ domain are not yet implemented, just \cln\ flows to the \gwf\ domain.
+    \item No \cln\ domain boundary conditions have been implemented.  
+\end{enumerate}
+
+This is sufficient for the short-term purpose of solving the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, which compares the use of a \cln\ versus an \swf\ domain for simulating flow in a surface water domain coupled to a \gwf\ domain, but not for solving more general problems of interest.
+            
+\subsection{Generating a \cln\ Domain}
+A \cln\ domain can be added to the \mfus\ model using this instruction:
+
+\ins{generate cln domain}
+    {This subtask is currently limited to defining the \cln\ domain from a single pair of $xyz$ coordinates and a specified number of cells.
+
+    It reads instructions until an \textsf{end} instruction is found e.g.\:
+
+    {\Large \sf end generate cln domain}
+    }
+
+This instruction can be used to define a simple \cln\ domain:
+
+\ins{cln from xyz pair}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{x1}, \rnum{y1}, \rnum{z1}  First $xyz$ coordinate triplet.
+        \item \rnum{x2}, \rnum{y2}, \rnum{z2}  Second $xyz$ coordinate triplet.
+        \item \inum{nCells}  Number of cells in the \cln.
+        \end{enumerate}
+        The 2 given $xyz$ coordinates define the endpoints of a line defining the \cln.  The \cln\ is subdivided into \inum{nCells} individual cells.
+    }
+
+In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, the inputs are defined so the \cln\ cells coincide exactly with the top layer of \gwf\ cells as shown below:
+\begin{verbatim}
+    generate uniform rectangles
+    101.0, 101   !  Mesh length in X-direction and number of rectangular elements
+    1.0, 1   !  Mesh length in Y-direction and number of rectangular elements
+
+
+    generate layered gwf domain
+
+        top elevation
+            elevation from xz pairs
+                   0.0, 2.0
+                 101.0, 1.0
+            end elevation from xz pairs
+        end top elevation
+        
+        ...
+ 
+     generate cln domain
+        cln from xyz pair
+              0.0    0.5     2.0
+            101.0    0.5     1.0
+            101  ! number of new CLN cells
+
+    end generate cln domain
+\end{verbatim}   
+
+Some key features of this example are:
+\begin{itemize}
+    \item A template mesh of length 101.0 and with 101 elements is used to define the \gwf\ domain.  
+    \item The top of the \gwf\ domain slopes from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$.
+    \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that also slope from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$
+\end{itemize}
+
+
+\subsubsection{Assigning Material Properties}  \index{\cln\ Domain ! material properties}
+\cln\ domain material properties vary on a zone-by-zone basis.  In the current version of \mut\, the assignment of \cln\ material properties is very rudimentary.  
+
+Prior to assigning properties, we need to activate the \cln\ domain using these instructions:
+\begin{verbatim}
+    active domain
+    cln
+\end{verbatim}
+
+Zone selections must first be made using the instructions described on page~\pageref{page:zoneSelect} for the \gwf\ domain, then this instructions can be used to assign material properties to the current zone selection:
+
+\ins{chosen zones use cln material number}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{val}  \cln\ material number.
+        \end{enumerate}
+          A unique set of \cln\ material properties is retrieved from a lookup table, using the given  material number \inum{val}, and assigned to the chosen zones.
+    }
+
+A lookup table of \cln\ material properties  is provided in the file \texttt{qryCLNMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+
+In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
+
+\ins{cln materials database}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  \cln\ material properties lookup table file name.
+        \end{enumerate}
+          \mut\ uses the file \str{file} to look up \cln\ material properties.
+    }
+
+
+You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
+
+\subsubsection{Initial Conditions}  \index{\cln\ Domain ! initial condition ! initial (starting) depth}
+An initial (or starting) head should be assigned to each cell in the \cln\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
+
+To assign an initial head to the \cln\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}, then this instruction can be used to calculate an initial (or starting) head for the flow solution given an initial water depth:
+
+\ins{cln initial depth}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Initial depth [$L$].
+        \end{enumerate}
+          An initial depth of \rnum{value} is used to calculate an initial head at each of the chosen cells.
+    }
+
+\subsubsection{Boundary Conditions}  \index{\cln\ Domain ! boundary conditions}
+No \cln\ domain boundary conditions have been implemented in the current version of \mut. 
+
+In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, all boundary conditions are applied to the \gwf\ domain.
+
+

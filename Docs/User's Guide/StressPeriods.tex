@@ -1,0 +1,158 @@
+\label{section:StressPeriods}
+A \mfus\ simulation can be broken up into separate periods of time called ''stress periods''.  Boundary conditions can be defined at the beginning of each stress period and changed in subsequent stress periods.
+
+At least one stress period must be defined using this instruction:
+
+\ins{stress period}
+    {This subtask has several instructions that can be used to define the duration, type and timestepping parameters of the stress period.
+
+    It reads instructions until an \textsf{end} instruction is found e.g.\:
+
+    {\Large \sf end stress period}
+    }
+
+These instructions can be used to define the stress period parameters:
+
+\ins{type}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{type}  Stress period type.
+        \end{enumerate}
+        The stress period type is defined by the string \str{type}.  It can be one of the following:
+        \begin{itemize}
+            \item \textsf{SS} A steady-state stress period in which the simulation is carried out until it reaches a state of equilibrium with the defined boundary conditions.
+            \item \textsf{TR} A transient stress period in which the simulation is carried out for a specified duration with the defined boundary conditions.
+        \end{itemize}
+        \squish
+    }
+
+\ins{duration}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Stress period duration [T].
+        \end{enumerate}
+        The stress period duration, is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+    }
+
+\ins{number of timesteps}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{value}  Number of timesteps to be used for this stress period.
+        \end{enumerate}
+        \squish
+    }
+
+You can change the default  starting time step size of  $1\times10^{-3}$ seconds with this instruction:
+
+\ins{deltat}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Starting time step size [T].
+        \end{enumerate}
+        The  starting time step size used for the stress period  is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+    }
+
+You can change the default  minimum time step size of  $1\times10^{-5}$ seconds with this instruction:
+
+\ins{tminat}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Minimum time step size [T].
+        \end{enumerate}
+        The minimum time step size to allow for the stress period is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+    }
+
+You can change the default  maximum time step size of  $60.0$ seconds with this instruction:
+
+\ins{tmaxat}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Maximum time step size [T].
+        \end{enumerate}
+        The maximum time step size to allow for the stress period is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+    }
+
+
+You can change the default multiplier for time step size of  $1.1$  with this instruction:
+
+\ins{tadjat}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Multiplier for time step size [T].
+        \end{enumerate}
+        The multiplier for adjusting time step size when using adaptive time-stepping is defined by the string \rnum{value}.
+    }
+
+You can change the default divider for time step size of  $2.0$  with this instruction:
+
+\ins{tcutat}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Divider for time step size [T].
+        \end{enumerate}
+        The divider for adjusting time step size when using adaptive time-stepping is defined by the string \rnum{value}.
+    }
+    
+To add more stress periods, repeat the \textsf{stress period} subtask instructions and boundary condition definitions as many times as required.  Stress periods are numbered automatically as they are added.
+
+\pagebreak
+Here is an example which could be used to define two stress periods:
+\begin{verbatim}
+    ! stress period 1
+    stress period
+        type
+        TR
+
+        duration
+        3000.0d0
+    end stress period
+
+    active domain
+    swf
+        choose all cells
+        swf recharge
+        5.56d-6
+        4
+        
+        clear chosen nodes
+        choose cell at xyz
+        0.0 0.0 0.0 
+        swf constant head
+        1.0
+
+    ! stress period 2
+    stress period
+        type
+        TR
+
+        duration
+        3000.0d0
+    end stress period
+
+    active domain
+    swf
+        choose all cells
+        swf recharge
+        0.0d0
+        4
+\end{verbatim}
+
+Some key features of this example are:
+\begin{itemize}
+    \item Both stress periods are transient (type TR) with a duration of 3000.
+    \item The recharge applied to the \swf\ domain (recharge option 4) is 5.5e-6 for the first stress period, then is reduced to 0.0 in the second stress period.
+    \item The constant head applied to the \swf\ domain in stress period 1 is maintained for the entire simulation.  By default, a boundary condition is maintained through subsequent stress periods unless it is redefined.
+    \item Any boundary conditions given after an \textsf{end stress period} instruction apply to that stress period until another \textsf{stress period} instruction is encountered.
+\end{itemize}
+
+
+    
+

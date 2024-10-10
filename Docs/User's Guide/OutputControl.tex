@@ -1,0 +1,76 @@
+\label{section:OutputControl}
+This instruction can be used to generate a \mfus\ output control file:
+
+\ins{generate output control file}
+    {
+    \squish
+    \begin{enumerate}
+    \item \rnum{t(1)}  First output time [T].
+    \item \textbf{...}
+    \item \rnum{t(n)}  nth output time [T].
+    \end{enumerate}
+
+          This subtask reads a list of output times \rnum{t()} until an \textsf{end} instruction is encountered e.g.\:
+
+    {\Large \sf end generate output control file}
+    }
+    
+The verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_prism\_cell} generates an output control file with 10 output times using these instructions:
+\begin{verbatim}
+    ! -----------------------------------Output Control
+    generate output control file
+        1e-4
+        60.
+        300.0
+        600.0
+        900.0
+        1200.0
+        1500.0
+        3000.0
+        4500.0
+        6000.0
+    end generate output control file
+\end{verbatim}
+    
+The output control file looks like this:
+\begin{verbatim}
+    # MODFLOW-USG OC file written by Modflow-User-Tools version 1.28
+    ATSA NPTIMES   10
+      9.999999747378752E-005   60.0000000000000        300.000000000000
+       600.000000000000        900.000000000000        1200.00000000000
+       1500.00000000000        3000.00000000000        4500.00000000000
+       6000.00000000000
+    HEAD SAVE UNIT   114
+    HEAD PRINT FORMAT 0
+    DRAWDOWN SAVE UNIT   115
+    DRAWDOWN PRINT FORMAT 0
+    PERIOD     1
+        DELTAT   1.0000E-03
+        TMINAT   1.0000E-05
+        TMAXAT    60.00
+        TADJAT    1.100
+        TCUTAT    2.000
+            SAVE HEAD
+            PRINT HEAD
+            SAVE DRAWDOWN
+            SAVE BUDGET
+            PRINT BUDGET
+    PERIOD     2
+        DELTAT   1.0000E-03
+        TMINAT   1.0000E-05
+        TMAXAT    60.00
+        TADJAT    1.100
+        TCUTAT    2.000
+            SAVE HEAD
+            PRINT HEAD
+            SAVE DRAWDOWN
+            SAVE BUDGET
+            PRINT BUDGET
+\end{verbatim}
+
+Some key features of this example are:
+\begin{itemize}
+    \item \mut\ automatically inserts  the  adaptive time-stepping option (\texttt{ATSA}) in the file, defines the number of print times in the simulation (NPTIMES 10) and the list of print (i.e.\ output) times.
+    \item Two stress periods were defined and the listed parameters are using the default values.
+\end{itemize}
+

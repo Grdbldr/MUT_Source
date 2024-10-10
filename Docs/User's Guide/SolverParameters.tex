@@ -1,0 +1,16 @@
+\label{section:SolverParameters}
+A lookup table of \mfus\ solver parameters is provided in the file \texttt{qrySMS.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+
+In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
+
+\ins{sms database}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  Solver parameters lookup table file name.
+        \end{enumerate}
+          \mut\ uses the file \str{file} to look up the solver parameter values.
+    }
+
+
+You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.

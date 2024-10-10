@@ -1,6 +1,5 @@
 \label{texfile:GWF}
-\includegraphics[width=.25\textwidth]{UnderConstruction} \textit{
-Should add some into material about GWF build}.
+Currently, every \mfus\ model must contain a \gwf\ domain, which may be reduced to a single layer of very low hydraulic conductivity in cases where \gwf\ flow and interaction with other model domains is to be neglected.
 
 \subsection{Generating a Layered \gwf\ Domain}
 A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template using this instruction:
@@ -26,7 +25,7 @@ The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom
     {\em This instruction should appear in the input file at the beginning of the \textsf{generate layered gwf domain} subtask before new layers are added.}
     }
 
-\subsubsection{Defining the Top Elevation}
+\subsubsection{Defining the Top Elevation} \label{section:topelev}
 To assign an elevation to the top layer of template nodes use this instruction:
 
 \ins{top elevation}
@@ -36,7 +35,7 @@ To assign an elevation to the top layer of template nodes use this instruction:
         \item By reading variable elevation data from a file
         \item By interpolating elevation data from a function $z(x)$ where the elevation $z$ varies by the nodes $x$ coordinate.
      \end{itemize}
-     One the elevation is defined, an \textsf{end} instruction is required to stop the subtask e.g.\:
+     Once the elevation is defined, an \textsf{end} instruction is required to stop the subtask e.g.\:
 
     {\Large \sf end top elevation}
     }
@@ -92,17 +91,19 @@ To define the top elevation as a function of $x$ (usually used for cross-section
     {
     \squish
     \begin{enumerate}
-    \item \rnum{x(1)}, \rnum{y(1)}  First $x, y$ coordinate pair.
+    \item \rnum{x(1)}, \rnum{y(1)}  First $x, z$ coordinate pair.
     \item \textbf{...}
-    \item \rnum{x(n)}, \rnum{y(n)}  nth $x, y$ coordinate pair.
+    \item \rnum{x(n)}, \rnum{y(n)}  nth $x, z$ coordinate pair.
     \end{enumerate}
+
+     An elevation is calculated for each chosen cell, based on it's $x$-coordinate location, by interpolating an elevation from the given list of  $xz$-coordinate pairs.
 
      This subtask reads a list of $xz$-coordinate pairs until an \textsf{end} instruction is encountered e.g.\:
 
     {\Large \sf end elevation from xz pairs}
     }
 
-A sample showing the use of this instruction \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Hillslope} uses the $xz$ pairs instruction to define the top elevation of the cross-sectional domnain.} is shown here:
+Here is an example showing the use of this instruction \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Hillslope} uses the \textsf{elevation from xz pairs} pairs instruction to define the top elevation of the cross-sectional domain.}:
     \begin{verbatim}
     elevation from xz pairs
            0.0, 0.0
@@ -121,11 +122,10 @@ Some key features of this example are:
 \subsubsection{Adding Layers} \index{\gwf\ Domain ! layering}
     {\em NOTE: The term layers used here should not be confused with the \mf\ term of the same name. A \mf\ layer is one cell thick, while a \mut\ layer can be one or more elements thick.}
 
-A \mfus\ model must contain at least 1 layer, and each layer is defined using this instruction:
+A \mfus\ model must contain at least 1 layer, and each layer is defined using this instruction:     {\index{Grid generation ! \gwf\ Domain ! New layer}
 
 \ins{new layer}
-    {\index{Grid generation ! \gwf\ Domain ! New layer}
-    This subtask adds a new layer to the \gwf\ domain by defining the layer:
+    {This subtask adds a new layer to the \gwf\ domain by defining the layer:
      \begin{itemize}
        \item Base elevation
        \item Vertical discretization
@@ -138,17 +138,18 @@ A \mfus\ model must contain at least 1 layer, and each layer is defined using th
 
 The base elevation is defined using the elevation instructions  described on page~\pageref{'Page:TopElev'} that are given for the \textsf{top elevation} instruction.
 
-Be default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where {\em n} is the current layer number.  If you want to assign your own layer name use this instruction:
+By default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where {\em n} is the current layer number.  If you want to assign your own layer name use this instruction:
 
 \ins{Layer name}
-    { \squish
+    { 
+    \squish
     \begin{enumerate}
     \item \str{layer\_name} Layer name.
     \end{enumerate}
-    Assigns the layer name \str{layer\_name}.
+    \squish
     }
 
-\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
+\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
 
 
 
@@ -247,6 +248,11 @@ This instruction is most often used to define a layer of uniform thickness relat
 
 \includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
+\subsubsection{Cell Connection Properties}  \index{\gwf\ Domain ! cell connection properties}\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{
+\gwf\ cell to \gwf\ cell connection properties are automatically defined by \mut\ based on control-volume approach and element type. The code needs to be checked, verified and documented more completely.}
+
+
+
 \subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties}
 
 \gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ offers some simple instructions for selecting cells and assigning material property values to them.  As you might imagine, this instruction:
@@ -277,7 +283,7 @@ So to activate the \gwf\ domain, we would insert these instructions in the input
     gwf
 \end{verbatim}
 
-These instructions can be used to choose cells in various ways:
+These instructions can be used to choose cells in various ways\label{page:cellSelect}:
 
 \ins{choose cell at xyz}
     {
@@ -447,7 +453,7 @@ In order for \mut\ to access the lookup table, you first need to provide a link 
 You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
 
 \pagebreak
-During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions:
+During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions\label{page:zoneSelect}:
 
 \ins{choose all zones}
     {Select all zones in the active model domain.
@@ -531,7 +537,7 @@ The following example uses the materials database and zone selection to assign m
     	Beta:                   6.0000
     	Sr:                    0.18000
     	Unsaturated Function Type:   Van Genuchten
-\end{verbatim} 
+\end{verbatim}
 
 Some key features to note are:
 \begin{itemize}
@@ -540,7 +546,10 @@ Some key features to note are:
     \item After assignment, the \gwf\ material number, name and assigned property values are echoed to screen and \texttt{.eco} file.
 \end{itemize}
 
-\subsubsection{Assigning Initial Conditions}  \index{\gwf\ Domain ! initial condition}
+\subsubsection{Initial Conditions}  \index{\gwf\ Domain ! initial condition ! initial (starting) head}
+An initial (or starting) head should be assigned to each cell in the \gwf\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
+
+To assign a uniform hydraulic head to the \gwf\ model domain, you must first make a cell selection as described on page~\pageref{page:selectCells}, then use this instruction:
 
 \ins{gwf initial head}
     {
@@ -551,32 +560,87 @@ Some key features to note are:
           An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
     }
 
+To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elevation), use this instruction:
 \ins{gwf initial head function of z}
     {
-        \squish
-        \begin{enumerate}
-        \item \rnum{z1}, \rnum{head1}  Initial (or starting) hydraulic head [L].
-        \item \rnum{z2}, \rnum{head2}  Initial (or starting) hydraulic head [L].
-        \end{enumerate}
-          An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
+    \squish
+    \begin{enumerate}
+    \item \rnum{z(1)}, \rnum{head(1)}  First $z, head$ pair.
+    \item \rnum{z(2)}, \rnum{head(2)}  Second $z, head$ pair.
+    \item \textbf{...}
+    \item \rnum{z(n)}, \rnum{head(n)}  nth $z, head$  pair.
+    \end{enumerate}
+
+     An initial head is calculated for each chosen cell, based on it's $z$-coordinate location, by interpolating a head from the given list of  $z, head$ pairs.
+
+     This subtask reads a list of $z, head$ pairs until an \textsf{end} instruction is encountered e.g.\:
+
+    {\Large \sf end gwf initial head function of z}
     }
 
-
+This is commonly used to generate an initial head for a simple column model \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain} as shown here: :
 \begin{verbatim}
     gwf initial head function of z
     !  z    head
       0.0  -100.0
     100.0     0.0
 \end{verbatim}
-
-
-
-\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Discuss:
+Some key features of this example are:
 \begin{itemize}
-    \item zoned vs cell-by-cell input
-    \item how to choose elements, nodes, cells, zones etc.
-    \item databases vs direct input
-\end{itemize}  }
+  \item The two given $z,head$ pairs define an initial head  that varies from $head=-100.0$ at $z=0$ to $head=0.0$ at $z=100.0$.  You may supply as many pairs as needed to define the initial head.
+  \item $z$-coordinates must increase continuously from the top of the list to the bottom.
+  \item the $z$-range of the supplied pairs should cover the entire $z$-range of the model domain.
+  \item For each node in the model domain  mesh, the $z$ coordinate is used to interpolate an initial head (i.e. $head$ value) using the appropriate $z, head$ pair.
+\end{itemize}
+
+\subsubsection{Boundary Conditions}  \index{\gwf\ Domain ! boundary conditions}
+A constant head boundary condition fixes the head at a \gwf\ cell at a given value, allowing water to flow into or out of the \gwf\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \gwf\ model domain use this instruction:
+
+\ins{gwf constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Constant hydraulic head [L].
+        \end{enumerate}
+          An constant hydraulic head  of \rnum{value} is assigned to the chosen cells.
+    }
+
+A drain boundary condition allows water to flow out of the \gwf\ model domain if the hydraulic head of the cell is higher than the drain elevation.   To add a drain to the \gwf\ model domain use this instruction:
+
+\ins{gwf drain}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{value}  Drain conductance [L/T].
+        \end{enumerate}
+          A drain conductance of \rnum{value} is assigned to the chosen cells.  The top elevation of the cell is assigned automatically as the drain elevation
+    }
+
+\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we add an instruction where the drain elevation is specified?  }
+
+A recharge boundary condition forces  water to flow in to the \gwf\ model domain at a specified rate.   To add a recharge  to the \gwf\ model domain use this instruction:
+
+\ins{gwf recharge}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{value}  Recharge rate [L/T].
+            \item \inum{option}  Recharge option.
+        \end{enumerate}
+        A recharge rate of \rnum{value} is assigned to the chosen cells.
+
+        The recharge option \inum{option}is used to define where the recharge  is to be applied and can have one of the following values:
+        \begin{enumerate}
+            \item To top layer
+            \item To one specified node in each vertical column
+            \item To highest active node in each vertical column
+            \item To the swf domain on top of each vertical column
+        \end{enumerate}
+        \squish
+    }
+
+\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Sould we have an example of pumping with an assigned nodal flux?  Should it be from a CLN?  Is there a boundary condition that assures the head will not be drawn down below the pumping node elevation?}
+
 
 
 

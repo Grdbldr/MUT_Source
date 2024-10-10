@@ -50,6 +50,7 @@ To generate uniform 2D rectangular element template meshes \footnote{See for exa
     \textbf{\rnum{xl}/\inum{nbx}}. The domain is subdivided in a similar fashion in the $y$-direction, using the other input parameters.
     }
 
+\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Do we have a working quadtree example to add here as an option.}
 %This instruction reads a quadtree mesh to define a template mesh \footnote{See for example the verification case \texttt{UNDER CONSTRUCTION}}:
 %
 %\ins{2d quadtree mesh from groundwater vistas}
@@ -68,6 +69,8 @@ There are two ways that \mf\ cell control volumes can be defined from the templa
     \includegraphics[width=0.6\textwidth]{3_8_MeshCentred}
 
 Some key features to note are:
+    \label{page:MeshCentredApproach}
+    \phantomsection\label{page:MeshCentredApproach}.
 \begin{itemize}
     \item Inner circles, which are tangent to all three element sides, are defined for each triangular element.  An example is shown by the dashed circular line in the yellow-shaded element.
     \item The blue-filled circles show the locations of the defined \mf\ cell control volumes.
@@ -77,6 +80,7 @@ Some key features to note are:
 
 The mesh-centred approach is similar when using a  rectangular-element template mesh, with the rectangular element area and side lengths defining the vertical connection area and horizontal connection length respectively.
 
+\pagebreak
 To use a node-centred control volume approach, add this instruction {\em before} defining any \gwf\ or \swf\ model domains:
 
 \ins{nodal control volumes}
@@ -88,12 +92,13 @@ The result of using a node-centred approach is shown here for a triangular-eleme
     \includegraphics[width=0.6\textwidth]{3_9_NodeCentred}
 
 Some key features to note are:
+    \label{page:NodeCentredApproach}
+    \phantomsection\label{page:NodeCentredApproach}.
 \begin{itemize}
     \item The blue-filled circles show that the locations of the defined \mf\ cell control volumes are now located at template mesh node locations.
-    \item The vertical connection area of the cell (yellow-shaded polygon) is defined by the contributing area formed by joining the inner circle centres of each element containing the template mesh node.
+    \item The vertical connection area of the cell (yellow-shaded polygon) is defined by the contributing area formed by joining the inner circle centres of each element containing the template mesh node.         \label{page:NodeCentredApproach}
     \item The horizontal connection length of the cell is defined by the distance to a neghbouring node.
 \end{itemize}
-
 
 \includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Should explain how inner circle radius is used for connection length and perpendicular area for triangles.}
 

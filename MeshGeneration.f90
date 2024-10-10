@@ -294,7 +294,7 @@ Module MeshGeneration
         
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(MAX_INST) :: CLNFromListFile_cmd			=   'cln from list file'
+        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
         
         real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
         integer :: nPoints  ! number of points in list
@@ -1389,7 +1389,7 @@ Module MeshGeneration
 			    read(instruction,*,iostat=status) xi(nPoints),yi(nPoints),zi(nPoints)
 
 			    if(status /= 0) then
-				    call ErrMsg('Bad xz pair')
+				    call ErrMsg('Bad xyz triple')
                 endif
                 
                 write(TmpSTR,'(i8,2x,3g15.5)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints)
