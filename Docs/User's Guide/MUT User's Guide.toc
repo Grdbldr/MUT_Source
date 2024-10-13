@@ -1,14 +1,14 @@
 \contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}
 \contentsline {chapter}{\numberline {2}Software Installation and Useage}{5}{chapter.2}
-\contentsline {chapter}{\numberline {3}Model Build Workflow}{14}{chapter.3}
+\contentsline {chapter}{\numberline {3}\textsc {Mut}\ Execution and Pre-processing}{14}{chapter.3}
 \contentsline {section}{\numberline {3.1}Defining the Units of Length and Time}{18}{section.3.1}
 \contentsline {section}{\numberline {3.2}Defining the Template Mesh}{19}{section.3.2}
-\contentsline {section}{\numberline {3.3}Groundwater Flow(\textsf {GWF}) Domain}{23}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}Generating a Layered \textsf {GWF}\ Domain}{23}{subsection.3.3.1}
-\contentsline {subsubsection}{\numberline {3.3.1.1}Defining the Top Elevation}{23}{subsubsection.3.3.1.1}
-\contentsline {subsubsection}{\numberline {3.3.1.2}Adding Layers}{26}{subsubsection.3.3.1.2}
-\contentsline {subsubsection}{\numberline {3.3.1.3}Cell Connection Properties}{28}{subsubsection.3.3.1.3}
-\contentsline {subsubsection}{\numberline {3.3.1.4}Assigning Material Properties}{28}{subsubsection.3.3.1.4}
+\contentsline {section}{\numberline {3.3}Groundwater Flow(\textsf {GWF}) Domain}{24}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}Generating a Layered \textsf {GWF}\ Domain}{24}{subsection.3.3.1}
+\contentsline {subsubsection}{\numberline {3.3.1.1}Defining the Top Elevation}{24}{subsubsection.3.3.1.1}
+\contentsline {subsubsection}{\numberline {3.3.1.2}Adding Layers}{27}{subsubsection.3.3.1.2}
+\contentsline {subsubsection}{\numberline {3.3.1.3}Cell Connection Properties}{29}{subsubsection.3.3.1.3}
+\contentsline {subsubsection}{\numberline {3.3.1.4}Assigning Material Properties}{29}{subsubsection.3.3.1.4}
 \contentsline {subsubsection}{\numberline {3.3.1.5}Initial Conditions}{36}{subsubsection.3.3.1.5}
 \contentsline {subsubsection}{\numberline {3.3.1.6}Boundary Conditions}{37}{subsubsection.3.3.1.6}
 \contentsline {section}{\numberline {3.4}Surface Water Flow(\textsf {SWF}) Domain}{38}{section.3.4}
@@ -21,21 +21,16 @@
 \contentsline {subsection}{\numberline {3.5.1}Generating a \textsf {CLN}\ Domain}{45}{subsection.3.5.1}
 \contentsline {subsubsection}{\numberline {3.5.1.1}Assigning Material Properties}{46}{subsubsection.3.5.1.1}
 \contentsline {subsubsection}{\numberline {3.5.1.2}Initial Conditions}{47}{subsubsection.3.5.1.2}
-\contentsline {subsubsection}{\numberline {3.5.1.3}Boundary Conditions}{47}{subsubsection.3.5.1.3}
-\contentsline {section}{\numberline {3.6}Stress Periods}{47}{section.3.6}
+\contentsline {subsubsection}{\numberline {3.5.1.3}Boundary Conditions}{48}{subsubsection.3.5.1.3}
+\contentsline {section}{\numberline {3.6}Stress Periods}{48}{section.3.6}
 \contentsline {section}{\numberline {3.7}Output Control}{51}{section.3.7}
 \contentsline {section}{\numberline {3.8}Solver Parameters}{52}{section.3.8}
-\contentsline {chapter}{\numberline {4}Model Execution and Post-Processing}{54}{chapter.4}
-\contentsline {chapter}{\numberline {5}Examples}{55}{chapter.5}
-\contentsline {section}{\numberline {5.1}Verification}{55}{section.5.1}
-\contentsline {subsection}{\numberline {5.1.1}Unsaturated flow in a 1D Column}{55}{subsection.5.1.1}
-\contentsline {subsection}{\numberline {5.1.2}Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}{57}{subsection.5.1.2}
-\contentsline {subsection}{\numberline {5.1.3}Abdul's Experiment: 3D Unsaturated GroundwaterFlow }{58}{subsection.5.1.3}
-\contentsline {section}{\numberline {5.2}Illustration}{58}{section.5.2}
-\contentsline {chapter}{\numberline {6}Tutorial}{60}{chapter.6}
-\contentsline {section}{\numberline {6.1}\textsc {Mut}\ Useage}{60}{section.6.1}
-\contentsline {subsection}{\numberline {6.1.1}Suggested Workflow}{64}{subsection.6.1.1}
-\contentsline {subsection}{\numberline {6.1.2}\textsc {Mut}\ Input File Structure}{65}{subsection.6.1.2}
-\contentsline {section}{\numberline {6.2}\textsc {GitHub}\ Useage in \textsc {Microsoft Visual Studio}}{65}{section.6.2}
-\contentsline {section}{\numberline {6.3}\textsc {Tecplot}\ Useage}{65}{section.6.3}
-\contentsline {section}{\numberline {6.4}\textsc {Microsoft Access}\ Useage}{65}{section.6.4}
+\contentsline {chapter}{\numberline {4}\textsc {Modflow-Usg$^{Swf}$}\ Execution and Post-Processing}{55}{chapter.4}
+\contentsline {chapter}{\numberline {5}Model Verification}{58}{chapter.5}
+\contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{58}{section.5.1}
+\contentsline {section}{\numberline {5.2}2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{60}{section.5.2}
+\contentsline {section}{\numberline {5.3}3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{61}{section.5.3}
+\contentsline {chapter}{\numberline {6}Illustrative Example}{63}{chapter.6}
+\contentsline {chapter}{\numberline {A}\textsc {GitHub}\ Useage in \textsc {Microsoft Visual Studio}}{64}{appendix.A}
+\contentsline {chapter}{\numberline {B}\textsc {Tecplot}\ Useage}{65}{appendix.B}
+\contentsline {chapter}{\numberline {C}\textsc {Microsoft Access}\ Useage}{68}{appendix.C}

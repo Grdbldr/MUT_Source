@@ -1,6 +1,6 @@
 \BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
 \BOOKMARK [0][-]{chapter.2}{Software Installation and Useage}{}% 2
-\BOOKMARK [0][-]{chapter.3}{Model Build Workflow}{}% 3
+\BOOKMARK [0][-]{chapter.3}{Mut Execution and Pre-processing}{}% 3
 \BOOKMARK [1][-]{section.3.1}{Defining the Units of Length and Time}{chapter.3}% 4
 \BOOKMARK [1][-]{section.3.2}{Defining the Template Mesh}{chapter.3}% 5
 \BOOKMARK [1][-]{section.3.3}{Groundwater Flow\(GWF\) Domain}{chapter.3}% 6
@@ -25,17 +25,12 @@
 \BOOKMARK [1][-]{section.3.6}{Stress Periods}{chapter.3}% 25
 \BOOKMARK [1][-]{section.3.7}{Output Control}{chapter.3}% 26
 \BOOKMARK [1][-]{section.3.8}{Solver Parameters}{chapter.3}% 27
-\BOOKMARK [0][-]{chapter.4}{Model Execution and Post-Processing}{}% 28
-\BOOKMARK [0][-]{chapter.5}{Examples}{}% 29
-\BOOKMARK [1][-]{section.5.1}{Verification}{chapter.5}% 30
-\BOOKMARK [2][-]{subsection.5.1.1}{Unsaturated flow in a 1D Column}{section.5.1}% 31
-\BOOKMARK [2][-]{subsection.5.1.2}{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow}{section.5.1}% 32
-\BOOKMARK [2][-]{subsection.5.1.3}{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }{section.5.1}% 33
-\BOOKMARK [1][-]{section.5.2}{Illustration}{chapter.5}% 34
-\BOOKMARK [0][-]{chapter.6}{Tutorial}{}% 35
-\BOOKMARK [1][-]{section.6.1}{Mut Useage}{chapter.6}% 36
-\BOOKMARK [2][-]{subsection.6.1.1}{Suggested Workflow}{section.6.1}% 37
-\BOOKMARK [2][-]{subsection.6.1.2}{Mut Input File Structure}{section.6.1}% 38
-\BOOKMARK [1][-]{section.6.2}{GitHub Useage in Microsoft Visual Studio}{chapter.6}% 39
-\BOOKMARK [1][-]{section.6.3}{Tecplot Useage}{chapter.6}% 40
-\BOOKMARK [1][-]{section.6.4}{Microsoft Access Useage}{chapter.6}% 41
+\BOOKMARK [0][-]{chapter.4}{Modflow-UsgSwf Execution and Post-Processing}{}% 28
+\BOOKMARK [0][-]{chapter.5}{Model Verification}{}% 29
+\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 30
+\BOOKMARK [1][-]{section.5.2}{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{chapter.5}% 31
+\BOOKMARK [1][-]{section.5.3}{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{chapter.5}% 32
+\BOOKMARK [0][-]{chapter.6}{Illustrative Example}{}% 33
+\BOOKMARK [0][-]{appendix.A}{GitHub Useage in Microsoft Visual Studio}{}% 34
+\BOOKMARK [0][-]{appendix.B}{Tecplot Useage}{}% 35
+\BOOKMARK [0][-]{appendix.C}{Microsoft Access Useage}{}% 36

@@ -85,8 +85,8 @@
 \newcommand{\squish} {\vspace*{-.2in}}
 
 \newcommand{\str} [1] {\textbf{\$\_#1}}
-\newcommand{\rnum} [1] {\textbf{r\_#1}}
-\newcommand{\inum} [1] {\textbf{i\_#1}}
+\newcommand{\rnum} [1] {\textbf{R\_#1}}
+\newcommand{\inum} [1] {\textbf{I\_#1}}
 
 
 
@@ -132,7 +132,7 @@
 
 \chapter{Software Installation and Useage}\input{Installation}
 
-\chapter{Model Build Workflow}\input{ModelBuild}
+\chapter{\mut\ Execution and Pre-processing}\input{ModelBuild}
     \section{Defining the Units of Length and Time}\input{Units}
     \section{Defining the Template Mesh}\input{TemplateMesh}
     \pagebreak
@@ -143,28 +143,25 @@
     \section{Output Control} \input{OutputControl}
     \section{Solver Parameters} \input{SolverParameters}
 
-\chapter{Model Execution and Post-Processing}\input{ModelExecution}
+\chapter{\mfus\ Execution and Post-Processing}\input{ModelExecution}
 
-\chapter{Examples}\input{Examples}
-    \section{Verification}
-        \subsection{Unsaturated flow in a 1D Column} \input{1D_Build}
-        \subsection{Unsaturated flow in a 2D Hillslope: Drains vs Surfacewater Flow} \input{2D_Hillslope}
-        \subsection{Abdul's Experiment: 3D Unsaturated GroundwaterFlow }\input{3D_Example_Abdul}
-    \section{Illustration}
+\chapter{Model Verification}\input{ModelVerification}
+    \section{1D Variably-saturated Flow in a Column} \input{1D_Column}
+    \section{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow} \input{2D_Hillslope}
+    \section{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}\input{3D_Abduls_Problem}
 
-\chapter{Tutorial}\input{Tutorial}
-    \section{\mut\ Useage} \input{MutUseage}
-        \subsection{Suggested Workflow}\input{SuggestedWorkflow}
-        \subsection{\mut\ Input File Structure}\input{InputFile}
-    \section{\github\ Useage in \vstudio} \input{GitInVStudio}
-    \section{\tecplot\ Useage}\input{Tecplot}
-    \section{\dbase\ Useage}\input{Dbase}
+\chapter{Illustrative Example} \input{IllustrativeExample}
+
+
+\appendix
+\chapter{\github\ Useage in \vstudio} \input{GitInVStudio}
+\chapter{\tecplot\ Useage}\input{Tecplot}
+\chapter{\dbase\ Useage}\input{Dbase}
 
 
 \printindex
 \newpage
 
-%\appendix
 %\input{CookingNotes}
 %\input{Scans}
 

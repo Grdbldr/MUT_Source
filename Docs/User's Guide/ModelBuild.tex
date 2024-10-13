@@ -1,32 +1,24 @@
 \label{chapter:ModelBuild}
-This model build workflow
-is designed to create and fine-tune a \mfus\ model, which represents a conceptual model we have of some hydrogeologic flow system, real or imaginary. \mut\ provides the link between conceptual model and \mfus\ model, and is intended to minimize the amount of time we spend building and testing it.
+The first step in any model build is to develop a conceptual model, which defines the extent, inflows and outflows, material distributions and physical properties of a hydrogeologic flow system, real or imaginary. The intent of \mut\ is then to facilitate the production of a set of \mfus\ input files by minimizing the amount of time we spend building and testing it.  This chapter describes our current model build workflow, which can provide a sound basis for developing your own personal workflow.
 
-The first step in any workflow is to define the conceptual model, which defines the model extents, inflows and outflows and material distributions and physical properties.  To illustrate a model build, we will refer to the conceptual models developed for our existing suite of verification and illustration examples from Chapter~\ref{texfile:Examples}.
+The steps in our model build workflow are:
+\begin{enumerate}
+    \item Create a new working folder or copy an existing \mut\ project folder. \label{step:copy}
+    \item Modify the \mut\ input file (and other input files if necessary) to reflect the new Modflow project.\label{step:modify}
+    \item Run \mut\ to build the new Modflow project, which produces \tecplot\ output files for the various Modflow domains (i.e. \gwf,\swf\ and/or \cln ) created during the build process. \label{step:mut1}
+    \item Run \tecplot\ and examine the build output files.   \label{step:Tecplot1}
+    \item Repeat steps~\ref{step:modify}-\ref{step:Tecplot1} until the new project is defined correctly.
+\end{enumerate}
 
-Next we need to develop a \mut\ input file, which is a plain ascii text file that you can edit with your preferred editor (e.g. Windows Notepad). \footnote{Our personal favourite editor is WinEdt (\url{https://www.winedt.com/snap.html}), which also provides a nice \LaTeX\ document development environment when coupled with the \TeX\ software package MiKTeX.  This manual was produced using these word processing tools.}
-Each modflow input file name must have the extension \texttt{mut}, and a prefix of your choice. Examples of valid \mut\ input file names are \texttt{\_build.mut} or \texttt{good.mut}. Most often, the easiest approach is to copy an existing input file and modify it as required.  This helps reduce set-up time and avoid potential errors that are introduced when creating input files from scratch.
+A \mut\ input file is a plain ascii text file that you can edit with your preferred editor (e.g. Windows Notepad). \footnote{Our personal favourite editor is WinEdt (\url{https://www.winedt.com/snap.html}), which also provides a nice \LaTeX\ document development environment when coupled with the \TeX\ software package MiKTeX.  This manual was produced using these word processing tools.}
+The \mut\ input file name must have the extension \texttt{mut}, and a prefix of your choice. Examples of valid \mut\ input file names are \texttt{\_build.mut} or \texttt{good.mut}. Most often, the easiest approach is to copy an existing input file and modify it as required.  This helps reduce set-up time and avoid potential errors that are introduced when creating input files from scratch.
 
-As you read along, we urge you to carry out the steps we describe as we move through the workflow.  It is good practice to copy the contents of an existing model to a new location (e.g.\ copy the folder \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}) and perform the actions yourself.  If you did so, your working directory would look something like this:
+To illustrate our model build workflow, we will refer to the various conceptual models developed for our existing suite of verification examples described in  Chapter~\ref{chapter:ModelVerification}.  As you read along, we urge you to carry out the steps we describe as we move through the workflow.  It is good practice to copy the contents of an existing model to a new location (e.g.\ copy the folder \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}) and perform the actions yourself.  If you did so, your working directory would look something like this:
 
     \includegraphics[width=0.4\textwidth]{3_1_vsf_column_folderinit}
 
-In this example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{texfile:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
+In this example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{chapter:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
 
-\mut\ tries to obtain a prefix in one of these four ways:
-\begin{enumerate}
-    \item \textbf{From a command line argument:} \label{commarg} At the command prompt, \mut\ checks for the presence of a command line argument.  For example, typing this:
-\begin{verbatim}
-    mut MyInput
-\end{verbatim}
-        would cause \mut\ to process the input file \texttt{MyInput.mut}.
-    \item \textbf{From a prefix file:} If there is no command line argument, \mut\ checks for the presence of the file \texttt{\_mut.pfx} in the folder.  If present, \mut\ will read the prefix from it. For example, if the mut file was called \texttt{\_build.mut} then the file \texttt{mut.pfx} would have the single line \texttt{\_build}.
-    \item \textbf{From the default input file:} If there is no command line argument or prefix file in the folder, \mut\ checks for the presence of the file \texttt{a.mut}.  If present in the folder, \mut\ will use it.
-    \item \textbf{From the keyboard:} If none of these methods are successful, \mut\ will prompt for a prefix as shown here:
-
-        \includegraphics[width=0.6\textwidth]{3_2_mut_no_prefix}
-
-\end{enumerate}
 
  In our preferred workflow, we would start a command prompt in the folder which contains the \mut\ input file as shown here:
 \begin{enumerate}
@@ -39,28 +31,49 @@ In this example, there are two \mut\ input files, one for the model build called
 
         \includegraphics[width=0.5\textwidth]{3_4_cmd}
 
-    \item Press Enter/Return and you will see a command prompt rooted at the input folder e.g.:
+    \item Press Enter/Return and you will see a command prompt rooted at the input folder:
 
         \includegraphics[width=0.4\textwidth]{3_5_cmdPrompt}
 
 \end{enumerate}
 
-Now run \mut\ using the input file \texttt{\_build.mut} by typing:
+
+When you run \mut\, it will try to obtain a prefix in the following order:
+\begin{enumerate}
+    \item \textbf{From a command line argument:} \label{commarg} At the command prompt, \mut\ checks for the presence of a command line argument.  For example, typing this:
+\begin{verbatim}
+    mut MyInput
+\end{verbatim}
+        would cause \mut\ to process the input file \texttt{MyInput.mut}.  
+    \item \textbf{From a prefix file:} If there is no command line argument, \mut\ checks for the presence of the file \texttt{\_mut.pfx} in the folder.  If present, \mut\ will read the prefix from it. For example, if the mut file was called \texttt{\_build.mut} then the file \texttt{mut.pfx} would have the single line \texttt{\_build}.
+    \item \textbf{From the default input file:} If there is no command line argument or prefix file in the folder, \mut\ checks for the presence of the file \texttt{a.mut}.  If present in the folder, \mut\ will use it.
+    \item \textbf{From the keyboard:} If none of these methods are successful, \mut\ will prompt for a prefix as shown here:
+
+        \includegraphics[width=0.6\textwidth]{3_2_mut_no_prefix}
+
+\end{enumerate}
+
+So for example, we could  run \mut\ using the input file \texttt{\_build.mut} by typing:
 \begin{verbatim}
     mut _build
 \end{verbatim}
-As \mut\ processes the input file, note these features:
-\begin{itemize}
-    \item Output is written to both the screen and to the file \verb+_buildo.eco+ as execution progresses.  The first thing \mut\ writes is the version number, then the formal header, which also contains the build date.
-    \item  As comment lines are stripped from the input file, they are echoed to the screen and eco file and can provide a synopsis of the input file contents.
-    \item  Several new output files are created:
+which uses the first method to supply the prefix.
+
+As \mut\ processes the input file output is written to both the screen and to the file \verb+_buildo.eco+ as execution progresses.  The first thing written is the \mut\ version number, then the formal header, which also contains the build date.   
+
+Comment lines that are stripped from the input file are echoed to the screen and \verb+_buildo.eco+ file and can provide a synopsis of the input file contents.
+
+After \mut\ finishes, the working folder should look something like this:
 
         \includegraphics[width=0.8\textwidth]{3_6_buildFiles}
 
-    \item If we start the model build prefix with the underscore character,  build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name. The build output contains several \tecplot\ output files that are indicated by the suffix \texttt{.tecplot.dat}.
+Several new output files have been created, of which it may be noted:
+\begin{itemize}
+    \item Build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name.
+    \item \tecplot\ output files are indicated by the suffix \texttt{.tecplot.dat}.
     \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired but there are advantages to keeping this 'generic' one, such as portability of post-processing scripts or \tecplot\ layout files that follow this generic naming convention.
     \item Several scratch files (with prefix \texttt{scratcho}) are written. These are used for debugging during code development and can be ignored in most cases.
-    \item \mut\ deletes previously generated output files and writes a fresh set each time it is run.  This prevents confusion that can arise when out-of-date output files are present.
+    \item \mut\ deletes previously generated output files and writes a fresh set each time it is run.  This can prevent confusion that might arise if out-of-date output files were present.
         \footnote{For example, if we define a recharge boundary condition, \mut\ will create the file \texttt{\textit{prefix}o.Modflow.SWF\_RCH.Tecplot.dat} which shows the locations and recharge values assigned to Modflow cells.  If we then removed the recharge condition from the input file, but did not delete this output file, we may assume the recharge condition still applies.}
     \item If the run is successful the last line written will be \texttt{Normal exit}, otherwise an error message will be given.
 \end{itemize}
@@ -77,7 +90,7 @@ Comments begin with an exclamation point character: !\hspace{.1in}.  \mut\ creat
 The first instruction in the input file begins the model build:
 
 \ins{build modflow usg}
-    {This subtask has instructions that are used to define the components of the \mfus\ model such as:
+    {This  is a {\em subtask} that defines the components of the \mfus\ model such as:
      \begin{itemize}
         \item Units of length and time
         \item Numerical model meshes
@@ -97,6 +110,6 @@ We will use the formatting convention shown above when documenting new instructi
   \item The instruction name is presented in a large sans-serif font.
   \item Data inputs, if required, are presented and described in a numbered list.
   \item General notes about instruction usage are presented.
-  \item In the case of a subtask instruction, a suggested \textsf{end} instruction is presented.  The first three non-blank characters must be the string 'end', but the rest is optional.
+  \item In the case of a subtask instruction, a suggested \textsf{end} instruction is presented.  The first three non-blank characters must be the string \textsf{end}, but the rest is optional.
 \end{itemize}
 

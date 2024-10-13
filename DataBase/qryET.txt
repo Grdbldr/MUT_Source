@@ -1,2 +1,0 @@
-"ET ID","ET Name","Evaporation Depth","Root depth","LAI table","c1","c2","c3","Wilting Point","Field Capacity","Oxic limit","Anoxic limit","Evaporation minimum","Evaporation maximum","Canopy Storage Parameter","Initial Interception Storage"
-1,"Panday",3.000000,3.000000,"LAI_Table.txt",0.3000000,0.2000000,10.00000,0.2000000,0.3200000,0.7600000,0.9000000,0.2000000,0.3200000,0.0000000,0.0000000

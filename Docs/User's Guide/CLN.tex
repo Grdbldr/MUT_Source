@@ -9,11 +9,11 @@ The current version of \mut\ has the following limitations for the definition of
 \begin{enumerate}
     \item General \cln\ domains, where the cell geometry is independent of the \gwf\ mesh and  cell-to-cell connection can be one-to-many or many-to-one are not yet implemented. \mut\ assumes a 1-to-1 connection exists between \cln\ cells and \gwf\ layer 1 cells (i.e. top layer).
     \item \cln\ flows to the \swf\ domain are not yet implemented, just \cln\ flows to the \gwf\ domain.
-    \item No \cln\ domain boundary conditions have been implemented.  
+    \item No \cln\ domain boundary conditions have been implemented.
 \end{enumerate}
 
 This is sufficient for the short-term purpose of solving the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, which compares the use of a \cln\ versus an \swf\ domain for simulating flow in a surface water domain coupled to a \gwf\ domain, but not for solving more general problems of interest.
-            
+
 \subsection{Generating a \cln\ Domain}
 A \cln\ domain can be added to the \mfus\ model using this instruction:
 
@@ -53,9 +53,9 @@ In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF
                  101.0, 1.0
             end elevation from xz pairs
         end top elevation
-        
+
         ...
- 
+
      generate cln domain
         cln from xyz pair
               0.0    0.5     2.0
@@ -63,35 +63,24 @@ In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF
             101  ! number of new CLN cells
 
     end generate cln domain
-\end{verbatim}   
+\end{verbatim}
 
 Some key features of this example are:
 \begin{itemize}
-    \item A template mesh of length 101.0 and with 101 elements is used to define the \gwf\ domain.  
+    \item A template mesh of length 101.0 and with 101 elements is used to define the \gwf\ domain.
     \item The top of the \gwf\ domain slopes from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$.
     \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that also slope from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$
 \end{itemize}
 
 
 \subsubsection{Assigning Material Properties}  \index{\cln\ Domain ! material properties}
-\cln\ domain material properties vary on a zone-by-zone basis.  In the current version of \mut\, the assignment of \cln\ material properties is very rudimentary.  
+\cln\ domain material properties vary on a zone-by-zone basis.  In the current version of \mut\, the assignment of \cln\ material properties is very rudimentary.
 
 Prior to assigning properties, we need to activate the \cln\ domain using these instructions:
 \begin{verbatim}
     active domain
     cln
 \end{verbatim}
-
-Zone selections must first be made using the instructions described on page~\pageref{page:zoneSelect} for the \gwf\ domain, then this instructions can be used to assign material properties to the current zone selection:
-
-\ins{chosen zones use cln material number}
-    {
-        \squish
-        \begin{enumerate}
-        \item \inum{val}  \cln\ material number.
-        \end{enumerate}
-          A unique set of \cln\ material properties is retrieved from a lookup table, using the given  material number \inum{val}, and assigned to the chosen zones.
-    }
 
 A lookup table of \cln\ material properties  is provided in the file \texttt{qryCLNMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
 
@@ -106,6 +95,30 @@ In order for \mut\ to access the lookup table, you first need to provide a link 
           \mut\ uses the file \str{file} to look up \cln\ material properties.
     }
 
+Zone selections must first be made using the instructions described on page~\pageref{page:zoneSelect} for the \gwf\ domain.
+
+You can now assign a full set of \cln\ material properties to the current zone selection, as described on page~\pageref{page:zoneSelect}, using this instruction:
+
+\ins{chosen zones use cln material number}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{val}  \cln\ material ID number.
+        \end{enumerate}
+          A unique set of \cln\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen zones.
+    }
+
+The assigned \cln\ material properties are written to the screen and \texttt{.eco} file:
+\begin{verbatim}
+    chosen zones use cln material number
+    	Assigning all chosen CLN zones properties of material               3, CLN_for_SWF
+    	Geometry:           Rectangular
+    	Rectangular Width:       1.0000
+    	Rectangular Height:      1.0000
+    	Direction:          Horizontal
+    	Flow Treatment:     Unconfined/Mannings
+    	Longitudinal K:         5.48000E-02
+\end{verbatim}
 
 You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
 
@@ -124,7 +137,7 @@ To assign an initial head to the \cln\ model domain, you must first make a cell 
     }
 
 \subsubsection{Boundary Conditions}  \index{\cln\ Domain ! boundary conditions}
-No \cln\ domain boundary conditions have been implemented in the current version of \mut. 
+No \cln\ domain boundary conditions have been implemented in the current version of \mut.
 
 In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, all boundary conditions are applied to the \gwf\ domain.
 

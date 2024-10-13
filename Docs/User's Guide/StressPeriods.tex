@@ -100,10 +100,9 @@ You can change the default divider for time step size of  $2.0$  with this instr
         \end{enumerate}
         The divider for adjusting time step size when using adaptive time-stepping is defined by the string \rnum{value}.
     }
-    
+
 To add more stress periods, repeat the \textsf{stress period} subtask instructions and boundary condition definitions as many times as required.  Stress periods are numbered automatically as they are added.
 
-\pagebreak
 Here is an example which could be used to define two stress periods:
 \begin{verbatim}
     ! stress period 1
@@ -121,10 +120,10 @@ Here is an example which could be used to define two stress periods:
         swf recharge
         5.56d-6
         4
-        
+
         clear chosen nodes
         choose cell at xyz
-        0.0 0.0 0.0 
+        0.0 0.0 0.0
         swf constant head
         1.0
 

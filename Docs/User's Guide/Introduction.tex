@@ -1,4 +1,4 @@
-\label{texfile:Introduction} This document describes a new \mfu\footnote{\url{https://www.gsienv.com/software/modflow-usg/modflow-usg/}}  development environment which has these features:
+\label{chapter:Introduction} This document describes a new \mfu\footnote{\url{https://www.gsienv.com/software/modflow-usg/modflow-usg/}}  development environment which has these features:
 \begin{itemize}
     \item We refer to it as Modflow User Tools, or \mut\ for short.
     \item \mut\ is designed to work with a modified version of \mfu,  where a new surface water flow package, called \swf, has been added. Like the Connected Linear Network (\cln) package, the \swf\ package represents a new domain type that is fully-coupled to the 3D groundwater flow (\gwf) domain. There can also be cell-to-cell flows between the \swf\ and \cln\ domains.  The \swf\ domain uses the diffusion-wave approach so simulate 2D surface-water flow. We will refer to this new version of \mfu\ as \mfus\ in this manual.
@@ -9,9 +9,9 @@
 
 This document is subivided into these sections:
 \begin{description}
-    \item[Chapter~\ref{texfile:Installation}]\textbf{Installation and Setup:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
-     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{Model Build:} How to build a \mut\ input file, run \mut\ to produce a \mfus-compatible data set and \tecplot-compatible output files, and run \tecplot\ to review the results of the model build.
-    \item[Chapter~\ref{texfile:ModelExecution}]\textbf{Model Execution and Post-Processing} How to run \mfus\, run \mut\ to convert the output to \tecplot-compatible output files, and run and run \tecplot\ to visualize the results of the model run.
-    \item[Chapter~\ref{texfile:Examples}]\textbf{Examples} Examples of \mfus\ models built using \mut\ for both the verification and illustration of \mut\ and \mfus\ useage.
-    \item[Chapter~\ref{texfile:Tutorial}]\textbf{Tutorial} In the tutorial, we
+    \item[Chapter~\ref{chapter:Installation}]\textbf{Installation and Setup:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
+     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{Model Build:} How to build a \mut\ input file, produce a \mfus\ compatible data set and \tecplot\ compatible output files with \mut, then review the results of the model build with \tecplot.
+    \item[Chapter~\ref{chapter:ModelExecution}]\textbf{Model Execution and Post-Processing} How to run \mfus, convert the output to \tecplot-compatible output files with \mut, then visualize them with \tecplot.
+    \item[Chapter~\ref{chapter:ModelVerification}]\textbf{Model Verification} Examples used to verify the accuracy of \mfus\ models built using \mut.
+    \item[Chapter~\ref{chapter:IllustrativeExample}]\textbf{Illustrative Example} An example which illustrates the use of \mut\ and \mfus\ to simulate variably-saturated, fully-coupled   \gwf\-\swf\ flow in a large-scale watershed.
 \end{description} 

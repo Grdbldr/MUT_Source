@@ -10,15 +10,15 @@ The instruction \textsf{units of length} is used to change the default value:
         \item \str{units}  The desired units of length: feet, meters or centimeters.
         \end{enumerate}
 
-        So, for example, to use units of centimeters instead of meters, we would put the string 'centimeters' in the input file, which would then be assigned to the string variable \str{units}. }
+        So, for example, to use units of centimeters instead of meters, we would put the string \textsf{centimeters} in the input file, which would then be assigned to the string variable \str{units}. }
 
-When naming input variables in the command description, the following conventions will be used:
+This instruction requires one line of input, which in this case is a variable named \str{units}.  When naming input variables in the command description, the following conventions will be used:
 \begin{itemize}
     \item Alphanumeric string variable names will begin with
     the string '\str{}'
     \item Real number (i.e. containing a decimal point) variable names will begin with
     the string '\rnum{}'
-    \item Integer number (i.e. no decimal point) variable names will begin with
+    \item Integer number (i.e. {\em not}a  containing decimal point) variable names will begin with
     the string '\inum{}'
 \end{itemize}
 
@@ -31,8 +31,11 @@ The instruction \textsf{units of time} is used to change the default value:
         \item \str{units}  The desired unit of time: seconds, minutes, hours, days or years.
         \end{enumerate}
 
-        So, for example, to use units of days instead of seconds, we would put the string 'days' in the input file, which would then be assigned to the string variable \str{units}.
+        So, for example, to use units of days instead of seconds, we would put the string \textsf{days} in the input file, which would then be assigned to the string variable \str{units}.
     }
 
 \mut\ converts the string variable \str{units} to its numeric equivalent and passes that to \mfus\ through the variables \textsf{ITMUNI} and \textsf{LENUNI}.
+
+{\bf NOTE:} {\em When supplying input data that has units, you must be careful to supply the values in the unit system defined for the model. For example, hydraulic conductivity has units or length/time ($L/T$), so for the default case the values would be given in units of $m/s$. \\ \\
+ The supplied databases (see section~\ref{}) have fields that define the length and time units that apply to each database record, in which case \mut\ will convert them to the model defined unit system automatically.}
 
