@@ -355,9 +355,9 @@
         integer :: iLIST
         
         ! Units
-        character(MAX_LBL) :: STR_TimeUnits
+        character(MAX_LBL) :: STR_TimeUnit
         integer :: TimeUnits=1    ! default 1 is seconds
-        character(MAX_LBL) :: STR_LengthUnits
+        character(MAX_LBL) :: STR_LengthUnit
         integer :: LengthUnits=2   ! default 2 is meters
         
         ! BAS6 file
@@ -1122,40 +1122,46 @@
     end subroutine AssignObstructiontoSWF
 
     !----------------------------------------------------------------------
-    subroutine AssignMaterialtoGWF(FNumMUT, Domain) 
+    subroutine AssignMaterialtoGWF(FNumMUT, Domain, LengthUnit,TimeUnit) 
         implicit none
+        
+        character(*) :: LengthUnit,TimeUnit
 
         integer :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer :: i, len
         integer :: iMaterial
+        
+        real :: LengthConversionFactor
+        real :: TimeConversionFactor
         
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(g15.5)') iMaterial
         
         do i=1,nGWFMaterials
-            if(iMaterial == GWFMaterialID(i)) then
+            if(iMaterial == GWF_MaterialID(i)) then
                 iMaterial=i
                 exit
             endif
         end do
         
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWFMaterialName(iMaterial)))
+        write(TmpSTR,'(i5)') iMaterial
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
         
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//' / '//TRIM(GWF_TimeUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//' / '//TRIM(GWF_TimeUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)  ,'     '//'1.0'//' / '//TRIM(GWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)    ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Alpha:             ',Alpha(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Alpha:             ',Alpha(iMaterial)            ,'     '//'1.0'//' / '//TRIM(GWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Beta:              ',Beta(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Beta:              ',Beta(iMaterial)             ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Sr:                ',Sr(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Sr:                ',Sr(iMaterial)               ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
         select case(UnsaturatedFunctionType(iMaterial))
         case ('Van Genuchten')
@@ -1170,16 +1176,40 @@
             call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
         end select
         
+        LengthConversionFactor=LengthConverter(LengthUnit,GWF_LengthUnit(iMaterial))
+        TimeConversionFactor=TimeConverter(TimeUnit,GWF_TimeUnit(iMaterial))
+        if(LengthConversionFactor /= 1.0) then
+            call Msg(' ')
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Material length unit:    '//trim(GWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(LengthUnit)//' per '//TRIM(GWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+        endif
+            
+         if(TimeConversionFactor /= 1.0) then
+            call Msg(' ')
+            write(TmpSTR,'(a)')TAB//'Material time unit:    '//trim(GWF_TimeUnit(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Modflow time unit:     '//trim(TimeUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(TimeUnit)//' per '//TRIM(GWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+        endif
+
+       
         do i=1,domain.nCells
             if(bcheck(domain.Cell_is(i),chosen)) then
                 if(domain.name == 'GWF') then
-                    domain.Kh(i)=Kh_Kx(iMaterial)
-                    domain.Kv(i)=Kv_Kz(iMaterial)
-                    domain.Ss(i)=Specificstorage(iMaterial)
-                    domain.Sy(i)=SpecificYield(iMaterial)
-                    domain.Alpha(i)=Alpha(iMaterial)
-                    domain.Beta(i)=Beta(iMaterial)
-                    domain.Sr(i)=Sr(iMaterial)
+                    domain.Kh(i)=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain.Kv(i)=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain.Ss(i)=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
+                    domain.Sy(i)=SpecificYield(iMaterial)                                           ! -
+                    domain.Alpha(i)=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
+                    domain.Beta(i)=Beta(iMaterial)                                                  ! -
+                    domain.Sr(i)=Sr(iMaterial)                                                      ! -
                     
                     select case(UnsaturatedFunctionType(iMaterial))
                     case ('Van Genuchten')
@@ -1194,10 +1224,157 @@
             end if
         end do
         
+        if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
+            call Msg(' ')
+            write(TmpSTR,'(i5)') iMaterial
+		    call Msg(TAB//'Cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial))//' after unit conversion')
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(LengthUnit)//' / '//TRIM(TimeUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(LengthUnit)//' / '//TRIM(TimeUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)/LengthConversionFactor             ,'     '//'1.0'//' / '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)                                      ,'     DIMENSIONLESS'
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Alpha:             ',Alpha(iMaterial)/LengthConversionFactor                       ,'     '//'1.0'//' / '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Beta:              ',Beta(iMaterial)                                               ,'     DIMENSIONLESS'
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Sr:                ',Sr(iMaterial)                                                 ,'     DIMENSIONLESS'
+            call Msg(TmpSTR)
+            select case(UnsaturatedFunctionType(iMaterial))
+            case ('Van Genuchten')
+                write(TmpSTR,'(a)')    TAB//'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
+                call Msg(TmpSTR)
+            case ('Brooks-Corey')
+                write(TmpSTR,'(a)')        TAB//'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
+                call Msg(TmpSTR)
+                write(TmpSTR,'(a,1pg15.5)')TAB//'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
+                call Msg(TmpSTR)
+            case default
+                call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
+            end select
+
+        end if     
+        
+      
         continue
     
     end subroutine AssignMaterialtoGWF
     
+    real function LengthConverter(Project_LengthUnit,Material_LengthUnit)
+        implicit none
+        character(*) :: Project_LengthUnit
+        character(*) :: Material_LengthUnit
+        
+        select case(Project_LengthUnit)
+        case ('FEET')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=1.0
+            case ('METERS')
+                LengthConverter=3.280839895
+            case ('CENTIMETERS')
+                LengthConverter=3.280839895*100.0
+            end select
+
+        case ('METERS')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=1.0/3.280839895
+            case ('METERS')
+                LengthConverter=1.0
+            case ('CENTIMETERS')
+                LengthConverter=100.0
+            end select
+
+        case ('CENTIMETERS')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=0.032808398950131
+            case ('METERS')
+                LengthConverter=1.0/100.0
+            case ('CENTIMETERS')
+                LengthConverter=1.0
+            end select
+        end select
+    
+    end function LengthConverter
+    
+    real function TimeConverter(Project_TimeUnit,Material_TimeUnit)
+        implicit none
+        character(*) :: Project_TimeUnit
+        character(*) :: Material_TimeUnit
+        
+        select case(Project_TimeUnit)
+        case ('SECONDS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0
+            case ('MINUTES')
+                TimeConverter=60.0
+            case ('HOURS')
+                TimeConverter=60.0*60.0
+            case ('DAYS')
+                TimeConverter=60.0*60.0*24.0
+            case ('YEARS')
+                TimeConverter=60.0*60.0*24.0*365.0
+            end select
+        case ('MINUTES')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0/60.0
+            case ('MINUTES')
+                TimeConverter=1.0
+            case ('HOURS')
+                TimeConverter=60.0
+            case ('DAYS')
+                TimeConverter=60.0*24.0
+            case ('YEARS')
+                TimeConverter=60.0*24.0*365.0
+            end select
+        case ('HOURS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0/60.0/60.0
+            case ('MINUTES')
+                TimeConverter=1.0/60.0
+            case ('HOURS')
+                TimeConverter=1.0
+            case ('DAYS')
+                TimeConverter=24.0
+            case ('YEARS')
+                TimeConverter=24.0*365.0
+            end select
+        case ('DAYS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                 TimeConverter=1.0/60.0/60.0/24.0
+            case ('MINUTES')
+                 TimeConverter=1.0/60.0/24.0
+            case ('HOURS')
+                 TimeConverter=1.0/24.0
+            case ('DAYS')
+                TimeConverter=1.0
+            case ('YEARS')
+                TimeConverter=24.0
+            end select
+        case ('YEARS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                 TimeConverter=1.0/60.0/60.0/24.0/365.0
+            case ('MINUTES')
+                 TimeConverter=1.0/60.0/24.0/365.0
+            case ('HOURS')
+                 TimeConverter=1.0/24.0/365.0
+            case ('DAYS')
+                 TimeConverter=1.0/365.0
+            case ('YEARS')
+                TimeConverter=1.0
+            end select
+        end select
+    
+    end function TimeConverter
     !----------------------------------------------------------------------
     subroutine AssignMaterialtoCLN(FnumMUT,CLN)
         implicit none
@@ -1293,40 +1470,88 @@
     end subroutine AssignMaterialtoCLN
     
     !----------------------------------------------------------------------
-    subroutine AssignMaterialtoSWF(FnumMUT,domain)
+    subroutine AssignMaterialtoSWF(FnumMUT,domain, LengthUnit,TimeUnit)
         implicit none
+
+        character(*) :: LengthUnit,TimeUnit
 
         integer :: FNumMUT
         type (ModflowDomain) Domain
         
         integer :: i
         real(dr) :: iMaterial
+
+        real :: LengthConversionFactor
+        real :: TimeConversionFactor
         
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(g15.5)') iMaterial
         
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWFMaterialName(iMaterial)))
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)
+		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)     ,'     '//TRIM(SWF_LengthUnit(iMaterial))//'^(-1/3)  '//TRIM(SWF_TimeUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial) ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial),'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,1pg15.5)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)
+        write(TmpSTR,'(a,1pg15.5,a)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
+
+                
+        LengthConversionFactor=LengthConverter(LengthUnit,SWF_LengthUnit(iMaterial))
+        TimeConversionFactor=TimeConverter(TimeUnit,SWF_TimeUnit(iMaterial))
+        if(LengthConversionFactor /= 1.0) then
+            call Msg(' ')
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Material length unit:    '//trim(SWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(LengthUnit)//' per '//TRIM(SWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+        endif
+            
+         if(TimeConversionFactor /= 1.0) then
+            call Msg(' ')
+            write(TmpSTR,'(a)')TAB//'Material time unit:    '//trim(SWF_TimeUnit(iMaterial))
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a)')TAB//'Modflow time unit:     '//trim(TimeUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(TimeUnit)//' per '//TRIM(SWF_LengthUnit(iMaterial))
+            call Msg(TmpSTR)
+        endif
+
        
+
         do i=1,domain.nZones
             if(bcheck(domain.Zone_is(i),chosen)) then
-                domain.Manning(i)=ManningCoefficient(iMaterial)
-                domain.DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)
-                domain.ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)
-                domain.H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)
-                domain.H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)
-            end if
-        end do
-    
+                domain.Manning(i)=ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor ! L^(-1/3) T
+                domain.DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)*LengthConversionFactor         ! L
+                domain.ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)*LengthConversionFactor       ! L
+                domain.H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)*LengthConversionFactor                  ! L
+                domain.H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)*LengthConversionFactor                  ! L
+            end if                                                                               
+        end do                                                                                   
+
+        if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
+            call Msg(' ')
+            write(TmpSTR,'(i5)') iMaterial
+		    call Msg(TAB//'Cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial))//' after unit conversion')
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor      ,'     '//TRIM(LengthUnit)//'^(-1/3)  '//TRIM(TimeUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)*LengthConversionFactor ,'     '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)*LengthConversionFactor,'     '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)*LengthConversionFactor      ,'     '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,1pg15.5,a)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(LengthUnit)
+            call Msg(TmpSTR)
+
+        end if     
+
     end subroutine AssignMaterialtoSWF
 
     !----------------------------------------------------------------------
@@ -1342,7 +1567,7 @@
         integer :: nRCHoption
         
         read(FNumMUT,*) rech
-        write(TmpSTR,'(a,g15.5)') TAB//'Assigning '//domain.name//' recharge: ',rech
+        write(TmpSTR,'(a,g15.5,a)') TAB//'Assigning '//domain.name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//' \ '//TRIM(modflow.STR_Timeunit)
 		call Msg(trim(TmpSTR))
         read(FNumMUT,*) nRCHoption
         write(TmpSTR,'(a,g15.5)') TAB//'Assigning '//domain.name//' recharge option: ',nRCHoption
@@ -1993,7 +2218,7 @@
                 
             ! GWF properties assignment
             else if(index(instruction, AssignMaterialtoGWF_CMD)  /= 0) then
-                call AssignMaterialtoGWF(FnumMUT,modflow.GWF )
+                call AssignMaterialtoGWF(FnumMUT,modflow.GWF,modflow.STR_LengthUnit,modflow.STR_TimeUnit)
             else if(index(instruction, AssignKhtoGWF_CMD)  /= 0) then
                 call AssignKhtoDomain(FnumMUT,modflow.GWF)
             else if(index(instruction, AssignKvtoGWF_CMD)  /= 0) then
@@ -2023,7 +2248,7 @@
                 
             ! SWF properties assignment
             else if(index(instruction, AssignMaterialtoSWF_CMD)  /= 0) then
-                call AssignMaterialtoSWF(FnumMUT,modflow.SWF)
+                call AssignMaterialtoSWF(FnumMUT,modflow.SWF,modflow.STR_LengthUnit,modflow.STR_TimeUnit)
             else if(index(instruction, AssignSgcltoSWF_CMD)  /= 0) then
                 call AssignSgcltoDomain(FnumMUT,modflow.SWF)
             else if(index(instruction, AssignStartingDepthtoSWF_CMD)  /= 0) then
@@ -4297,15 +4522,15 @@
                     if(status /= 0) return
                     if(index(line,'TOTAL TIME').gt.0) then
                         l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.STR_TimeUnits,'SECONDS').gt.0) then
+                        if(index(Modflow.STR_TimeUnit,'SECONDS').gt.0) then
                             read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'MINUTES').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'MINUTES').gt.0) then
                             read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'HOURS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'HOURS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'DAYS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'DAYS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'YEARS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'YEARS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
                         end if
                         exit loop
@@ -4515,10 +4740,11 @@
         
         modflow.OutputTimes(:modflow.nOutputTimes)=OutputTimes(:modflow.nOutputTimes)
         
+        call Msg(' ')
         call Msg(TAB//'   #     Output time')
         call Msg(TAB//'--------------------')
         do i=1,modflow.nOutputTimes
-            write(TmpSTR,'(i4,2x,g15.5)') i, modflow.OutputTimes(i)
+            write(TmpSTR,'(i4,2x,g15.5,a)') i, modflow.OutputTimes(i),'     '//TRIM(modflow.STR_TimeUnit)
             call Msg(TAB//trim(TmpSTR))
         end do
     
@@ -4679,8 +4905,8 @@
         
         if(modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
         else
             CellCenteredSTR=', VARLOCATION=([4'
             if(nVar.ge.5) then
@@ -4692,8 +4918,8 @@
             CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
 
             write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)  !//&
-                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
         end if
         
         write(FNum,'(a)') '# x'
@@ -5321,6 +5547,10 @@
         call Msg('  ')
         call Msg('  Initialize Modflow project files with prefix: '//Modflow.Prefix)
         
+        ! Initialize default units
+        Modflow.STR_LengthUnit='METERS'
+        Modflow.STR_TimeUnit='SECONDS'
+        
         ! Initialize NAM fil
         Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
         call OpenAscii(Modflow.iNAM,Modflow.FNameNAM)
@@ -5636,8 +5866,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' CELLS", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
 
             do i=1,domain.nCells
                 write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i)
@@ -5692,8 +5922,8 @@
                 end if    
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
                 do i=1,domain.nCells
                     if(domain.Name == 'GWF') then
@@ -5728,8 +5958,8 @@
                 write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nSWBCCells,', t="'//trim(domain.name)//' SWBC", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
                 do i=1,domain.nCells
                     if(bcheck(domain.Cell_is(i),CriticalDepth)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
@@ -5754,8 +5984,8 @@
                 write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nDRNCells,', t="'//trim(domain.name)//' DRN", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
-                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
                 do i=1,domain.nCells
                     if(bcheck(domain.Cell_is(i),Drain)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
@@ -6328,8 +6558,8 @@
         
         if(Modflow.NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
         
         else
         
@@ -6343,8 +6573,8 @@
             CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
 
             write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//&
-                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                ', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
         endif
         
 
@@ -6440,14 +6670,14 @@
             if(Modflow.NodalControlVolume) then
                 write(FNum,'(a)') trim(ZoneSTR)// & 
                     trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
             else
         
                 write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)&
                     //trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1 & 
-                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    , AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    ', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
             end if
         
             if(allocated(domain.head)) then
@@ -6531,8 +6761,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Circle Centres", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
             do i=1,TMPLT.nElements
                     write(FNum,'(3(1pg20.9))') TMPLT.xcircle(i),TMPLT.ycircle(i)
@@ -6557,8 +6787,8 @@
             write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements*TMPLT.nNodesPerElement,', t="'//trim(TMPLT.name)//' Edge Points", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
-            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'//&
-            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+            !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+            !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
             do i=1,TMPLT.nElements
                     do j=1,TMPLT.nNodesPerElement
@@ -7198,7 +7428,7 @@
 
             else if(index(instruction,Duration_cmd) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodDuration(Modflow.nPeriods)
-                write(TmpSTR,'(a,1pg12.4)')TAB,modflow.StressPeriodDuration(Modflow.nPeriods)
+                write(TmpSTR,'(a,1pg12.4,a)')TAB,modflow.StressPeriodDuration(Modflow.nPeriods),'     '//TRIM(modflow.STR_TimeUnit)
                 call Msg(trim(TmpSTR))
                 
             else if(index(instruction,NumberOfTimesteps_CMD) /=0) then
@@ -8136,14 +8366,14 @@
             
             if(index(line,'MODEL TIME UNIT IS').gt.0) then
                 l1=index(line,'MODEL TIME UNIT IS')
-                Modflow.STR_TimeUnits=line(l1+19:)
-                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.STR_TimeUnits))//')",'
+                Modflow.STR_TimeUnit=line(l1+19:)
+                var_line='VARIABLES = "TOTAL TIME'//'('//trim(adjustl(Modflow.STR_TimeUnit))//')",'
 
                 continue
                 
             else if(index(line,'MODEL LENGTH UNIT IS').gt.0) then
                 l1=index(line,'MODEL LENGTH UNIT IS')
-                Modflow.STR_LengthUnits=line(l1+21:)
+                Modflow.STR_LengthUnit=line(l1+21:)
                 
 
                 continue
@@ -8223,15 +8453,15 @@
                     
                     if(index(line,'TOTAL TIME').gt.0) then
                         l1=index(line,'TOTAL TIME')
-                        if(index(Modflow.STR_TimeUnits,'SECONDS').gt.0) then
+                        if(index(Modflow.STR_TimeUnit,'SECONDS').gt.0) then
                             read(line(l1+10:),*) TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'MINUTES').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'MINUTES').gt.0) then
                             read(line(l1+10:),*) dum1, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'HOURS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'HOURS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'DAYS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'DAYS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, TotalTime
-                        elseif(index(Modflow.STR_TimeUnits,'YEARS').gt.0) then
+                        elseif(index(Modflow.STR_TimeUnit,'YEARS').gt.0) then
                             read(line(l1+10:),*) dum1, dum2, dum3, dum4, TotalTime
                         end if
                         exit
@@ -8278,11 +8508,11 @@
 
                     write(output_line,'(a)')  'zone t="'//CurrentDir(l1:l2)//'"'
  
-                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnits)//'"'
+                    TMPStr=', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'
                     l1=len_trim(output_line)+1
                     write(output_line(l1:),'(a)')	TMPStr                 
 
-                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnits)//'"'
+                    TMPStr=', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
                     l1=len_trim(output_line)+1
                     write(output_line(l1:),'(a)')	TMPStr                 
                     
@@ -15910,19 +16140,19 @@
         
         select case(value)
         case ('feet')
-            Project.STR_LengthUnits='FEET'
+            Project.STR_LengthUnit='FEET'
             Project.LengthUnits=1
         case ('meters')
-            Project.STR_LengthUnits='METERS'
+            Project.STR_LengthUnit='METERS'
             Project.LengthUnits=2
         case ('centimeters')
-            Project.STR_LengthUnits='CENTIMETERS'
+            Project.STR_LengthUnit='CENTIMETERS'
             Project.LengthUnits=3
         case default
             call ErrMsg('Units of length '//trim(value)//' not recognized. Must be feet, meters, or centimeters.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Project.STR_LengthUnits)
+        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Project.STR_LengthUnit)
         call Msg(TmpSTR)
 
     end subroutine UnitsLength
@@ -15941,25 +16171,25 @@
         
         select case(value)
         case ('seconds')
-            Project.STR_TimeUnits='SECONDS'
+            Project.STR_TimeUnit='SECONDS'
             Project.TimeUnits=1
         case ('minutes')
-            Project.STR_TimeUnits='MINUTES'
+            Project.STR_TimeUnit='MINUTES'
             Project.TimeUnits=2
         case ('hours')
-            Project.STR_TimeUnits='HOURS'
+            Project.STR_TimeUnit='HOURS'
             Project.TimeUnits=3
         case ('days')
-            Project.STR_TimeUnits='DAYS'
+            Project.STR_TimeUnit='DAYS'
             Project.TimeUnits=4
         case ('years')
-            Project.STR_TimeUnits='YEARS'
+            Project.STR_TimeUnit='YEARS'
             Project.TimeUnits=5
         case default
             call ErrMsg('Units of time '//trim(value)//' not recognized. Must be seconds, minutes, hours, days or years.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Project.STR_TimeUnits)
+        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Project.STR_TimeUnit)
         call Msg(TmpSTR)
 
     end subroutine UnitsTime

@@ -3,8 +3,10 @@ Module Materials
     implicit none
 
         integer :: nGWFMaterials
-        integer,allocatable :: GWFMaterialID(:)
-        character*256, allocatable :: GWFMaterialName(:)
+        integer,allocatable :: GWF_MaterialID(:)
+        character*256, allocatable :: GWF_MaterialName(:)
+        character*256, allocatable :: GWF_LengthUnit(:)
+        character*256, allocatable :: GWF_TimeUnit(:)
         real, allocatable :: Porosity(:)
         real, allocatable :: Kh_Kx(:)
         real, allocatable :: Kv_Kz(:)
@@ -24,6 +26,8 @@ Module Materials
         integer,allocatable         :: CLN_ID(:)
         character*256, allocatable  :: CLN_Name(:)
         character*256, allocatable  :: CLN_Type(:)
+        character*256, allocatable  :: CLN_LengthUnit(:)
+        character*256, allocatable  :: CLN_TimeUnit(:)
         character*256, allocatable  :: Geometry(:)
         character*256, allocatable  :: Direction(:)
         real, allocatable           :: CircularRadius(:)
@@ -33,8 +37,10 @@ Module Materials
         character*256, allocatable  :: FlowTreatment(:)
         
         integer :: nSWFMaterials
-        integer,allocatable :: SWFMaterialID(:)
-        character*256, allocatable :: SWFMaterialName(:)
+        integer,allocatable :: SWF_MaterialID(:)
+        character*256, allocatable :: SWF_MaterialName(:)
+        character*256, allocatable :: SWF_LengthUnit(:)
+        character*256, allocatable :: SWF_TimeUnit(:)
         real, allocatable :: ManningCoefficient(:)
         real, allocatable :: DepressionStorageHeight(:)
         real, allocatable :: ObstructionStorageHeight(:)
@@ -44,6 +50,8 @@ Module Materials
         integer :: nET
         integer,allocatable :: ET_ID(:)
         character*256, allocatable :: ET_Name(:)
+        character*256, allocatable :: ET_LengthUnit(:)
+        character*256, allocatable :: ET_TimeUnit(:)
         real, allocatable :: EvaporationDepth(:)
         real, allocatable :: RootDepth(:)
         character*256, allocatable :: LAI_Table(:)
@@ -114,8 +122,10 @@ Module Materials
             if(id>nGWFMaterials) nGWFMaterials=id        
         end do
         
-        allocate(GWFMaterialID(nGWFMaterials), & 
-            GWFMaterialName(nGWFMaterials), & 
+        allocate(GWF_MaterialID(nGWFMaterials), & 
+            GWF_MaterialName(nGWFMaterials), & 
+            GWF_LengthUnit(nGWFMaterials), &
+            GWF_TimeUnit(nGWFMaterials), &
             Porosity(nGWFMaterials), & 
             Kh_Kx(nGWFMaterials), & 
             Kv_Kz(nGWFMaterials), & 
@@ -136,8 +146,10 @@ Module Materials
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nGWFMaterials
-	        read(itmp,*,iostat=status) GWFMaterialID(i), &
-                GWFMaterialName(i), & 
+	        read(itmp,*,iostat=status) GWF_MaterialID(i), &
+                GWF_MaterialName(i), & 
+                GWF_LengthUnit(i), &
+                GWF_TimeUnit(i), &
                 Porosity(i), & 
                 Kh_Kx(i), & 
                 Kv_Kz(i), & 
@@ -237,8 +249,10 @@ Module Materials
             if(id>nSWFMaterials) nSWFMaterials=id        
         end do
         
-        allocate(SWFMaterialID(nSWFMaterials), & 
-            SWFMaterialName(nSWFMaterials), & 
+        allocate(SWF_MaterialID(nSWFMaterials), & 
+            SWF_MaterialName(nSWFMaterials), & 
+            SWF_LengthUnit(nGWFMaterials), &
+            SWF_TimeUnit(nGWFMaterials), &
             ManningCoefficient(nSWFMaterials), & 
             DepressionStorageHeight(nSWFMaterials), &
             ObstructionStorageHeight(nSWFMaterials), & 
@@ -250,8 +264,10 @@ Module Materials
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nSWFMaterials
-	        read(itmp,*,iostat=status) SWFMaterialID(i), & 
-                SWFMaterialName(i), & 
+	        read(itmp,*,iostat=status) SWF_MaterialID(i), & 
+                SWF_MaterialName(i), & 
+                SWF_LengthUnit(i), &
+                SWF_TimeUnit(i), &
                 ManningCoefficient(i), & 
                 DepressionStorageHeight(i), &
                 ObstructionStorageHeight(i), & 
