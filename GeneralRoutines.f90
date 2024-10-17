@@ -109,7 +109,9 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.30'
+    character(5) :: MUTVersion=' 1.31'
+    character(MAX_LBL) :: UnitsOfLength='METERS'
+    character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
     !---------------------------------------------- HGS domain coupling scheme types
 	integer :: multi = 1
@@ -4388,6 +4390,22 @@ module GeneralRoutines    !### bit setting routines
         end do
 
     end subroutine LwrCse
+    
+    subroutine UprCse(string) !--- Make uppercase.
+	    implicit none
+
+        character*(*) :: string
+        integer :: length,i,j
+        length=len(string)
+        do i=1,length
+            j=ichar(string(i:i))
+            if(j.ge.97 .and. j.le.122) then
+                j=j-32
+                string(i:i)=char(j)
+            end if
+        end do
+
+    end subroutine UprCse
 
     subroutine EnterPrefix(prefix,lp,UserFNum,ext)
 	    implicit none
@@ -4520,13 +4538,11 @@ module GeneralRoutines    !### bit setting routines
             read(nin,'(a)',iostat=status) line
             if(status /= 0) exit read_line
 
-
             len=len_trim(line)
 		    do i=1,len
 			    j=ichar(line(i:i))
 			    if(j == 9)  line(i:i)=' '  ! replace tabs with blanks
 		    end do
-
             line=adjustl(line)
             len=len_trim(line)
 
@@ -4551,8 +4567,6 @@ module GeneralRoutines    !### bit setting routines
 			                j=ichar(line_i(i:i))
 			                if(j == 9)  line_i(i:i)=' '  ! replace tabs with blanks
 		                end do
-
-
 					    line_i=adjustl(line_i)
                         len=len_trim(line_i)
 
@@ -4568,6 +4582,39 @@ module GeneralRoutines    !### bit setting routines
 				    call freeunit(FnumInclude)
                 end if
 
+            else if(line(1:13) == 'units of time') then ! set units of time now
+                write(nout,'(a)') trim(line)
+                read(nin,'(a)',iostat=status) line
+                if(status /= 0) exit read_line
+                
+                len=len_trim(line)
+		        do i=1,len
+			        j=ichar(line(i:i))
+			        if(j == 9)  line(i:i)=' '  ! replace tabs with blanks
+		        end do
+				line=adjustl(line)
+                len=len_trim(line)
+                call UprCse(line)
+                
+                read(line,'(a)') UnitsOfTime
+                write(nout,'(a)') trim(line)
+                
+            else if(line(1:13) == 'units of length') then ! set units of time now
+                write(nout,'(a)') trim(line)
+                read(nin,'(a)',iostat=status) line
+                if(status /= 0) exit read_line
+                
+                len=len_trim(line)
+		        do i=1,len
+			        j=ichar(line(i:i))
+			        if(j == 9)  line(i:i)=' '  ! replace tabs with blanks
+		        end do
+				line_i=adjustl(line)
+                len=len_trim(line)
+                call UprCse(line)
+                
+                read(line,'(a)') UnitsOfLength
+                write(nout,'(a)') trim(line)
 
             else ! instruction or data, write to nout
                 write(nout,'(a)') trim(line)

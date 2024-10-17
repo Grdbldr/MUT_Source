@@ -112,6 +112,8 @@ module Tecplot !
     
     type TecplotDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
+        character(MAX_LBL) :: STR_LengthUnit
+        
         logical :: IsDefined=.false.      ! this type of domain has been defined 
         character(128) :: MeshType      ! structured or unstructured?
         character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
@@ -3940,7 +3942,7 @@ module Tecplot !
 		    write(ieco,'(a)') ' '
 		    write(ieco,'(a,a)') 'INSTRUCTION: ',plot_instruction
 
-		    call lcase(plot_instruction)
+		    call LwrCse(plot_instruction)
 
 		    if(plot_instruction .eq. tecplot_mode_str) then
 			    tecplot_mode=.true.
@@ -3985,7 +3987,7 @@ module Tecplot !
 		    write(ieco,'(a)') ' '
 		    write(ieco,'(a,a)') 'INSTRUCTION: ',plot_instruction
 
-		    call lcase(plot_instruction)
+		    call LwrCse(plot_instruction)
 
 		    if(plot_instruction .eq. medium.Plot_str) then
 			    medium.Plot=.true.
@@ -5450,21 +5452,6 @@ end subroutine enter_prefix
 	    write(ieco,'(a14,3f17.5)') 'Delta x, y, z  ',Global.X(node)-x1,Global.Y(node)-y1,Global.Z(node)-z1
 
     end subroutine find_node
-    !------------------------------------------------------------------------
-    subroutine lcase(string)
-        implicit none
-        
-        integer :: i, j
-        character(*) :: string
-        do i=1,len_trim(string)
-            j=ichar(string(i:i))
-            if(j.ge.65 .and. j.le.90) then
-                j=j+32
-                string(i:i)=char(j)
-            end if
-        end do
-
-    end subroutine lcase
     !----------------------------------------------------------------------
     subroutine strip_comments(nin,nout)
          

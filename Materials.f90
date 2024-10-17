@@ -5,8 +5,6 @@ Module Materials
         integer :: nGWFMaterials
         integer,allocatable :: GWF_MaterialID(:)
         character*256, allocatable :: GWF_MaterialName(:)
-        character*256, allocatable :: GWF_LengthUnit(:)
-        character*256, allocatable :: GWF_TimeUnit(:)
         real, allocatable :: Porosity(:)
         real, allocatable :: Kh_Kx(:)
         real, allocatable :: Kv_Kz(:)
@@ -18,16 +16,13 @@ Module Materials
         real, allocatable :: Beta(:)
         real, allocatable :: Sr(:)
         real, allocatable :: BrooksCoreyExponent(:)   
-        integer, allocatable :: Tabular_Input(:)
-        character*256, allocatable :: PSTable(:)
-        character*256, allocatable :: SKrTable(:)
+        character*256, allocatable :: GWF_LengthUnit(:)
+        character*256, allocatable :: GWF_TimeUnit(:)
         
         integer :: nCLNMaterials
         integer,allocatable         :: CLN_ID(:)
         character*256, allocatable  :: CLN_Name(:)
         character*256, allocatable  :: CLN_Type(:)
-        character*256, allocatable  :: CLN_LengthUnit(:)
-        character*256, allocatable  :: CLN_TimeUnit(:)
         character*256, allocatable  :: Geometry(:)
         character*256, allocatable  :: Direction(:)
         real, allocatable           :: CircularRadius(:)
@@ -35,22 +30,23 @@ Module Materials
         real, allocatable           :: RectangularHeight(:)
         real, allocatable           :: LongitudinalK(:)
         character*256, allocatable  :: FlowTreatment(:)
+        character*256, allocatable  :: CLN_LengthUnit(:)
+        character*256, allocatable  :: CLN_TimeUnit(:)
         
         integer :: nSWFMaterials
         integer,allocatable :: SWF_MaterialID(:)
         character*256, allocatable :: SWF_MaterialName(:)
-        character*256, allocatable :: SWF_LengthUnit(:)
-        character*256, allocatable :: SWF_TimeUnit(:)
         real, allocatable :: ManningCoefficient(:)
         real, allocatable :: DepressionStorageHeight(:)
         real, allocatable :: ObstructionStorageHeight(:)
         real, allocatable :: SWFSmoothingDepth1(:)
         real, allocatable :: SWFSmoothingDepth2(:)
+        character*256, allocatable :: SWF_LengthUnit(:)
+        character*256, allocatable :: SWF_TimeUnit(:)
 
         integer :: nET
         integer,allocatable :: ET_ID(:)
         character*256, allocatable :: ET_Name(:)
-        character*256, allocatable :: ET_LengthUnit(:)
         character*256, allocatable :: ET_TimeUnit(:)
         real, allocatable :: EvaporationDepth(:)
         real, allocatable :: RootDepth(:)
@@ -66,6 +62,7 @@ Module Materials
         real, allocatable :: EvaporationMaximum(:)
         real, allocatable :: CanopyStorageParameter(:)
         real, allocatable :: InitialInterceptionStorage(:)
+        character*256, allocatable :: ET_LengthUnit(:)
         
         integer :: nSMS
         integer :: iSMSParameterSet
@@ -96,6 +93,7 @@ Module Materials
         real, allocatable ::            SMS_RRCTOL(:)
         integer, allocatable ::         SMS_IDROPTOL(:)
         real, allocatable ::            SMS_EPSRN(:)
+        character*256, allocatable ::   SMS_LengthUnit(:)
    
     contains
     
@@ -124,8 +122,6 @@ Module Materials
         
         allocate(GWF_MaterialID(nGWFMaterials), & 
             GWF_MaterialName(nGWFMaterials), & 
-            GWF_LengthUnit(nGWFMaterials), &
-            GWF_TimeUnit(nGWFMaterials), &
             Porosity(nGWFMaterials), & 
             Kh_Kx(nGWFMaterials), & 
             Kv_Kz(nGWFMaterials), & 
@@ -137,38 +133,71 @@ Module Materials
             Beta(nGWFMaterials), & 
             Sr(nGWFMaterials), & 
             BrooksCoreyExponent(nGWFMaterials), & 
-            Tabular_Input(nGWFMaterials), & 
-            PSTable(nGWFMaterials), & 
-            SKrTable(nGWFMaterials), & 
+            GWF_LengthUnit(nGWFMaterials), &
+            GWF_TimeUnit(nGWFMaterials), &
             stat=ialloc)
         call AllocChk(ialloc,'GWF material database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nGWFMaterials
-	        read(itmp,*,iostat=status) GWF_MaterialID(i), &
-                GWF_MaterialName(i), & 
-                GWF_LengthUnit(i), &
-                GWF_TimeUnit(i), &
-                Porosity(i), & 
-                Kh_Kx(i), & 
-                Kv_Kz(i), & 
-                Ky(i), & 
-                Specificstorage(i), & 
-                SpecificYield(i), & 
-                UnsaturatedFunctionType(i), & 
-                Alpha(i), & 
-                Beta(i), & 
-                Sr(i), & 
-                BrooksCoreyExponent(i), & 
-                Tabular_Input(i), & 
-                PSTable(i), & 
-                SKrTable(i)
+            read(itmp,'(a)') line
+            
+            ! parse line by commas
+            GWF_MaterialID(i)           =ParseLineINum(line)
+            GWF_MaterialName(i)         =ParseLineSTR(line)
+	        Porosity(i)                 =ParseLineRNUM(line)
+	        Kh_Kx(i)                    =ParseLineRNUM(line)
+            Kv_Kz(i)                    =ParseLineRNUM(line) 
+            Ky(i)                       =ParseLineRNUM(line)
+            Specificstorage(i)          =ParseLineRNUM(line) 
+            SpecificYield(i)            =ParseLineRNUM(line)
+            UnsaturatedFunctionType(i)  =ParseLineSTR(line)
+            Alpha(i)                    =ParseLineRNUM(line)
+            Beta(i)                     =ParseLineRNUM(line)
+            Sr(i)                       =ParseLineRNUM(line)
+            BrooksCoreyExponent(i)      =ParseLineRNUM(line) 
+            GWF_LengthUnit(i)           =ParseLineSTR(line)
+            GWF_TimeUnit(i)             =ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
 
     end subroutine DB_ReadGWFMaterials
+    
+    integer function ParseLineINum(line)
+        implicit none
+        character(*) :: line
+        integer :: j
+    
+        j=INDEX(line,',')
+        read(line(:j-1),*) ParseLineINum
+        line=line(j+1:)
+        
+    end function ParseLineINum
+
+    real function ParseLineRNum(line)
+        implicit none
+        character(*) :: line
+        integer :: j
+    
+        j=INDEX(line,',')
+        read(line(:j-1),*) ParseLineRNum
+        line=line(j+1:)
+        
+    end function ParseLineRNum
+    
+    character(MAX_LBL) function ParseLineSTR(line)
+        implicit none
+        character(*) :: line
+        integer :: j
+    
+        j=INDEX(line,',')
+        read(line(:j-1),'(a)') ParseLineSTR
+        line=line(j+1:)
+        
+    end function ParseLineSTR
+
     
     !----------------------------------------------------------------------
     subroutine DB_ReadCLNMaterials(FName)
@@ -203,23 +232,29 @@ Module Materials
                  RectangularHeight(nCLNMaterials), & 
                  LongitudinalK(nCLNMaterials), & 
                  FlowTreatment(nCLNMaterials), & 
+                 CLN_LengthUnit(nCLNMaterials), &
+                 CLN_TimeUnit(nCLNMaterials), &
         stat=ialloc)
         call AllocChk(ialloc,'CLN material database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nCLNMaterials
-	        read(itmp,*,iostat=status)  CLN_ID(i), & 
-                                        CLN_Name(i), & 
-                                        CLN_Type(i), & 
-                                        Geometry(i), &
-                                        Direction(i), &
-                                        CircularRadius(i), &
-                                        RectangularWidth(i), & 
-                                        RectangularHeight(i), & 
-                                        LongitudinalK(i), &
-                                        FlowTreatment(i)
-            continue
+            read(itmp,'(a)') line
+            
+            ! parse line by commas
+            CLN_ID(i)           =ParseLineINum(line) 
+            CLN_Name(i)         =ParseLineSTR(line) 
+            CLN_Type(i)         =ParseLineSTR(line) 
+            Geometry(i)         =ParseLineSTR(line)
+            Direction(i)        =ParseLineSTR(line)
+            CircularRadius(i)   =ParseLineRNUM(line)
+            RectangularWidth(i) =ParseLineRNUM(line) 
+            RectangularHeight(i)=ParseLineRNUM(line) 
+            LongitudinalK(i)    =ParseLineRNUM(line)
+            FlowTreatment(i)    =ParseLineSTR(line)
+            CLN_LengthUnit(i)   =ParseLineSTR(line)
+            CLN_TimeUnit(i)     =ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
@@ -251,28 +286,31 @@ Module Materials
         
         allocate(SWF_MaterialID(nSWFMaterials), & 
             SWF_MaterialName(nSWFMaterials), & 
-            SWF_LengthUnit(nGWFMaterials), &
-            SWF_TimeUnit(nGWFMaterials), &
             ManningCoefficient(nSWFMaterials), & 
             DepressionStorageHeight(nSWFMaterials), &
             ObstructionStorageHeight(nSWFMaterials), & 
             SWFSmoothingDepth1(nSWFMaterials), & 
             SWFSmoothingDepth2(nSWFMaterials), &  
+            SWF_LengthUnit(nSWFMaterials), &
+            SWF_TimeUnit(nSWFMaterials), &
             stat=ialloc)
         call AllocChk(ialloc,'SWF material database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nSWFMaterials
-	        read(itmp,*,iostat=status) SWF_MaterialID(i), & 
-                SWF_MaterialName(i), & 
-                SWF_LengthUnit(i), &
-                SWF_TimeUnit(i), &
-                ManningCoefficient(i), & 
-                DepressionStorageHeight(i), &
-                ObstructionStorageHeight(i), & 
-                SWFSmoothingDepth1(i), &  
-                SWFSmoothingDepth2(i)   
+            read(itmp,'(a)') line
+            
+            ! parse line by commas
+	        SWF_MaterialID(i)               =ParseLineINum(line) 
+            SWF_MaterialName(i)             =ParseLineSTR(line) 
+            ManningCoefficient(i)           =ParseLineRNum(line) 
+            DepressionStorageHeight(i)      =ParseLineRNum(line)
+            ObstructionStorageHeight(i)     =ParseLineRNum(line) 
+            SWFSmoothingDepth1(i)           =ParseLineRNum(line)  
+            SWFSmoothingDepth2(i)           =ParseLineRNum(line)   
+            SWF_LengthUnit(i)               =ParseLineSTR(line)
+            SWF_TimeUnit(i)                 =ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
@@ -288,20 +326,20 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+        integer :: id
 
 		call Msg(TAB//TAB//'ET file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
         read(itmp,'(a)') line
-        i=0
+        nET=0
         do
-	        read(itmp,*,iostat=status) line
+	        read(itmp,*,iostat=status) id
             if(status/=0) exit
-            i=i+1        
+            if(id>nET) nET=id        
         end do
         
-        nET=i
         allocate(ET_ID(nET), & 
             ET_Name(nET), & 
             EvaporationDepth(nET), & 
@@ -317,28 +355,36 @@ Module Materials
             EvaporationMinimum(nET), & 
             EvaporationMaximum(nET), & 
             CanopyStorageParameter(nET), & 
-            InitialInterceptionStorage(nET), stat=ialloc)
+            InitialInterceptionStorage(nET), &
+            ET_LengthUnit(nET), &
+            ET_TimeUnit(nET), &
+         stat=ialloc)            
         call AllocChk(ialloc,'ET database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nET
-	        read(itmp,*,iostat=status) ET_ID(i), & 
-                ET_Name(i), & 
-                EvaporationDepth(i), & 
-                RootDepth(i), &  
-                LAI_Table(i), &  
-                C1(i), & 
-                C2(i), & 
-                C3(i), & 
-                WiltingPoint(i), & 
-                FieldCapacity(i), & 
-                OxicLimit(i), & 
-                AnoxicLimit(i), & 
-                EvaporationMinimum(i), & 
-                EvaporationMaximum(i), & 
-                CanopyStorageParameter(i), & 
-                InitialInterceptionStorage(i)
+            read(itmp,'(a)') line
+            
+            ! parse line by commas
+	        ET_ID(i)                        =ParseLineINum(line) 
+            ET_Name(i)                      =ParseLineSTR(line) 
+            EvaporationDepth(i)             =ParseLineRNum(line) 
+            RootDepth(i)                    =ParseLineRNum(line)  
+            LAI_Table(i)                    =ParseLineSTR(line)  
+            C1(i)                           =ParseLineRNum(line) 
+            C2(i)                           =ParseLineRNum(line) 
+            C3(i)                           =ParseLineRNum(line) 
+            WiltingPoint(i)                 =ParseLineRNum(line) 
+            FieldCapacity(i)                =ParseLineRNum(line) 
+            OxicLimit(i)                    =ParseLineRNum(line) 
+            AnoxicLimit(i)                  =ParseLineRNum(line) 
+            EvaporationMinimum(i)           =ParseLineRNum(line) 
+            EvaporationMaximum(i)           =ParseLineRNum(line) 
+            CanopyStorageParameter(i)       =ParseLineRNum(line) 
+            InitialInterceptionStorage(i)   =ParseLineRNum(line)
+            ET_LengthUnit(i)                =ParseLineSTR(line)
+            ET_TimeUnit(i)                  =ParseLineSTR(line)
         end do
         
         
@@ -354,20 +400,20 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+        integer :: id
 
 		call Msg(TAB//'SMS file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
         read(itmp,'(a)') line
-        i=0
+        nSMS=0
         do
-	        read(itmp,*,iostat=status) line
+	        read(itmp,*,iostat=status) id
             if(status/=0) exit
-            i=i+1        
+            if(id>nSMS) nSMS=id        
         end do
         
-        nSMS=i
         allocate(SMS_ID(nSMS), & 
             SMS_Name(nSMS), & 
             SMS_HCLOSE(nSMS), & 
@@ -394,40 +440,46 @@ Module Materials
             SMS_IREDSYS(nSMS), &
             SMS_RRCTOL(nSMS), &
             SMS_IDROPTOL(nSMS), &
-            SMS_EPSRN(nSMS),stat=ialloc)
+            SMS_EPSRN(nSMS), &
+            SMS_LengthUnit(nSMS),&
+        stat=ialloc) 
         call AllocChk(ialloc,'SMS database arrays')
 
         rewind(itmp)
         read(itmp,'(a)') line
         do i=1,nSMS
-	        read(itmp,*,iostat=status)  SMS_ID(i), & 
-                SMS_Name(i), & 
-                SMS_HCLOSE(i), & 
-                SMS_HICLOSE(i), & 
-                SMS_MXITER(i), & 
-                SMS_ITER1(i), & 
-                SMS_IPRSMS(i), & 
-                SMS_NONLINMETH(i), & 
-                SMS_LINMETH(i), & 
-                SMS_THETA(i), & 
-                SMS_KAPPA(i), & 
-                SMS_GAMMA(i), & 
-                SMS_AMOMENTUM(i), & 
-                SMS_NUMTRACK(i), & 
-                SMS_BTOL(i), & 
-                SMS_BREDUC(i), & 
-                SMS_RES_LIM(i), & 
-                SMS_ITRUNCNEWTON(i), & 
-                SMS_Options(i), &
-                SMS_IACL(i), &
-                SMS_NORDER(i), &
-                SMS_LEVEL(i), &
-                SMS_NORTH(i), &
-                SMS_IREDSYS(i), &
-                SMS_RRCTOL(i), &
-                SMS_IDROPTOL(i), &
-                SMS_EPSRN(i)
-        end do
+            read(itmp,'(a)') line
+            
+            ! parse line by commas
+            SMS_ID(i)           =ParseLineINum(line) 
+            SMS_Name(i)         =ParseLineSTR(line) 
+            SMS_HCLOSE(i)       =ParseLineRNum(line) 
+            SMS_HICLOSE(i)      =ParseLineRNum(line) 
+            SMS_MXITER(i)       =ParseLineINum(line) 
+            SMS_ITER1(i)        =ParseLineINum(line) 
+            SMS_IPRSMS(i)       =ParseLineINum(line) 
+            SMS_NONLINMETH(i)   =ParseLineINum(line) 
+            SMS_LINMETH(i)      =ParseLineINum(line) 
+            SMS_THETA(i)        =ParseLineRNum(line) 
+            SMS_KAPPA(i)        =ParseLineRNum(line) 
+            SMS_GAMMA(i)        =ParseLineRNum(line) 
+            SMS_AMOMENTUM(i)    =ParseLineRNum(line) 
+            SMS_NUMTRACK(i)     =ParseLineINum(line) 
+            SMS_BTOL(i)         =ParseLineRNum(line) 
+            SMS_BREDUC(i)       =ParseLineRNum(line) 
+            SMS_RES_LIM(i)      =ParseLineRNum(line) 
+            SMS_ITRUNCNEWTON(i) =ParseLineINum(line) 
+            SMS_Options(i)      =ParseLineSTR(line)
+            SMS_IACL(i)         =ParseLineINum(line)
+            SMS_NORDER(i)       =ParseLineINum(line)
+            SMS_LEVEL(i)        =ParseLineINum(line)
+            SMS_NORTH(i)        =ParseLineINum(line)
+            SMS_IREDSYS(i)      =ParseLineINum(line)
+            SMS_RRCTOL(i)       =ParseLineRNum(line)
+            SMS_IDROPTOL(i)     =ParseLineINum(line)
+            SMS_EPSRN(i)        =ParseLineRNum(line) 
+            SMS_LengthUnit(i)   =ParseLineSTR(line)
+       end do
         
         
         call freeunit(itmp)
