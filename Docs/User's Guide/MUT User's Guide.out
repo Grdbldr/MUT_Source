@@ -1,6 +1,6 @@
 \BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
 \BOOKMARK [0][-]{chapter.2}{Software Installation and Useage}{}% 2
-\BOOKMARK [0][-]{chapter.3}{Mut Execution and Pre-processing}{}% 3
+\BOOKMARK [0][-]{chapter.3}{Model Build}{}% 3
 \BOOKMARK [1][-]{section.3.1}{Defining the Units of Length and Time}{chapter.3}% 4
 \BOOKMARK [1][-]{section.3.2}{Defining the Template Mesh}{chapter.3}% 5
 \BOOKMARK [1][-]{section.3.3}{Groundwater Flow\(GWF\) Domain}{chapter.3}% 6
@@ -25,12 +25,4 @@
 \BOOKMARK [1][-]{section.3.6}{Stress Periods}{chapter.3}% 25
 \BOOKMARK [1][-]{section.3.7}{Output Control}{chapter.3}% 26
 \BOOKMARK [1][-]{section.3.8}{Solver Parameters}{chapter.3}% 27
-\BOOKMARK [0][-]{chapter.4}{Modflow-UsgSwf Execution and Post-Processing}{}% 28
-\BOOKMARK [0][-]{chapter.5}{Model Verification}{}% 29
-\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 30
-\BOOKMARK [1][-]{section.5.2}{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{chapter.5}% 31
-\BOOKMARK [1][-]{section.5.3}{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{chapter.5}% 32
-\BOOKMARK [0][-]{chapter.6}{Illustrative Example}{}% 33
-\BOOKMARK [0][-]{appendix.A}{GitHub Useage in Microsoft Visual Studio}{}% 34
-\BOOKMARK [0][-]{appendix.B}{Tecplot Useage}{}% 35
-\BOOKMARK [0][-]{appendix.C}{Microsoft Access Useage}{}% 36
+\BOOKMARK [1][-]{section.3.9}{3D Model Build Visualization}{chapter.3}% 28

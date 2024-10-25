@@ -1,6 +1,5 @@
 \label{texfile:TemplateMesh}
-The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.   Below is an example
-\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
+The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.   Below is an example\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
   showing an exploded view of a template mesh (bottom image) that was used as a basis for generating  finite-element meshs for the \gwf\ (middle image) and\swf\ (upper image) domains:
 
     \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
@@ -12,20 +11,19 @@ Some key features of this example are:
   \item The \swf\ domain has been assigned the same elevation as the \gwf\ domain i.e.\ they are coincident.
 \end{itemize}
 
-\pagebreak
  In this example, the template mesh was defined using these instructions:
  \squish
 \begin{verbatim}
     2d mesh from gb
     .\gb\grid
 \end{verbatim}
-The instruction \textsf{2d mesh from gb}, which requires a single line of input, \texttt{.$\backslash$gb$\backslash$grid}, is documented as shown here:
+The instruction \textsf{2d mesh from gb}, which requires a single line of input (i.e.: \texttt{.$\backslash$gb$\backslash$grid}), is documented as shown here:
 
 \ins{2d mesh from gb}
     {
         \squish
         \begin{enumerate}
-        \item \str{Prefix}  The \gb\ \footnote{\gb\ is a legacy 2D triangular finite-element grid generator.} dataset prefix, including the path to it.
+        \item \str{Prefix}  The \gb\footnote{\gb\ is a legacy 2D triangular finite-element grid generator.} dataset prefix, including the path to it.
         \end{enumerate}
         Given \str{Prefix}, this instruction reads the 2D finite-element grid data and uses it to define the 2D template mesh.  \str{Prefix} should contain a relative path to the dataset.  Examples of relative paths are:
         \begin{description}
@@ -36,7 +34,18 @@ The instruction \textsf{2d mesh from gb}, which requires a single line of input,
         \squish
     }
 
-To generate uniform 2D rectangular element template meshes \footnote{See for example the verification cases \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} or \texttt{MUT\_Examples$\backslash$6\_Abdul\_MODHMS}} use this instruction:
+Most input instructions, including \textsf{2d mesh from gb}, do not supply length (or time) units explicitly, so \mut\ assumes the defined units of length or time (e.g.\ the default units of meters and seconds) apply to the given input data. When supplying input data {\em you must be careful to supply the values in the unit system defined for the model}.  As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file, for example: 
+\begin{verbatim}
+    2d mesh from gb
+    	Number of nodes:           1372
+    	Number of elements:        2651
+    	Assumed length Units:  METERS
+\end{verbatim}
+
+When databases are used to define material parameter values (see Section~\ref{section:matprops}), fields defining the length and time units of each record are included. In this case \mut\ will automatically convert the parameter values to the unit system that has been defined for the \mfus\ model.
+
+\pagebreak
+To generate uniform 2D rectangular element template meshes\footnote{See for example the verification cases \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} or \texttt{MUT\_Examples$\backslash$6\_Abdul\_MODHMS}} use this instruction:
 
 \ins{generate uniform rectangles}
     {\index{generate uniform rectangles}
@@ -80,7 +89,6 @@ Some key features to note are:
 
 The mesh-centred approach is similar when using a  rectangular-element template mesh, with the rectangular element area and side lengths defining the vertical connection area and horizontal connection length respectively.
 
-\pagebreak
 To use a node-centred control volume approach, add this instruction {\em before} defining any \gwf\ or \swf\ model domains:
 
 \ins{nodal control volumes}

@@ -17,7 +17,7 @@ A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template us
     {\Large \sf end generate layered gwf domain}
     }
 
-The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.  If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.} using this instruction:
+The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.  If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh using this instruction\footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.}:
 
 \ins{Zone by template}
     {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.
@@ -253,19 +253,15 @@ This instruction is most often used to define a layer of uniform thickness relat
 
 
 
-\subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties}
+\subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties} \label{section:matprops}
 
-\gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ offers some simple instructions for selecting cells and assigning material property values to them.  As you might imagine, this instruction:
+\gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ has instructions for selecting subsets of cells. A cell is selected when a true/false attribute (referred to as  the cells \textsf{Chosen} attribute) is set to true. Selected cells can be assigned material property values.  This instruction:
 
 \ins{choose all cells}
     {Select all cells in the active model domain.
      }
 
-selects all cells in the {\em active} model domain.
-
-This is an example of what we refer to as a {\em generic} instruction, which means it can be applied to any of the currently available model domains: \gwf, \swf\ or \cln.
-
-If our intention is to choose all cells in the \gwf\ domain, we first need to activate it using this instruction:
+selects all cells in the {\em active} model domain.  This is an example of what we refer to as a {\em generic} instruction, which means it will be applied to the currently active model domain: \gwf, \swf\ or \cln.  To choose all cells in the \gwf\ domain, we first need to activate it using this instruction:
 
 \ins{active domain}
     {
@@ -348,8 +344,104 @@ It is good practice to clear the selection before starting a new selection. \mut
 \end{verbatim}
 If a cell selection instruction has unexpected results these are good places to check.
 
-\pagebreak
-These instructions can be used to assign material properties to the current cell selection:
+The recommended way to assign domain material properties is through the use of a lookup table.  Lookup tables are provided for the each domain in the \bin\ directory, as outlined on page~\pageref{page:userbin}. In this case, the file \texttt{GWF.csv} contains the lookup table for the \gwf\ domain.
+
+In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
+
+\ins{gwf materials database}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{file}  \gwf\ material properties lookup table file name.
+        \end{enumerate}
+          \mut\ uses the file \str{file} to look up \gwf\ material properties.
+    }
+
+In the case of the \gwf\ domain, the instructions:
+\begin{verbatim}
+    gwf materials database
+    GWF.csv
+\end{verbatim}
+would be used to link to the lookup table.
+
+You can now assign a set of \gwf\ material properties to the current cell selection using this instruction:
+
+\ins{chosen cells use gwf material number}
+    {
+        \squish
+        \begin{enumerate}
+        \item \inum{val}  \gwf\ material ID number.
+        \end{enumerate}
+          A unique set of \gwf\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen cells.
+    }
+
+The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses these instructions to assign units of length and time for the \mfus\ model and properties for material number 1 as shown here:
+\begin{verbatim}
+    build modflow usg
+        units of length
+        centimeters
+
+        units of time
+        days
+
+        ... etc
+
+        gwf materials database
+        GWF.csv
+
+        active domain
+        gwf
+           choose all cells
+
+            chosen cells use gwf material number
+            1
+\end{verbatim}
+The line \texttt{'...\ etc'} indicates a section of the input file that did not need to be shown for the purposes of this example.
+
+The first few lines of the \texttt{GWF.csv} file are shown here:
+
+    \includegraphics[width=0.95\textwidth]{3_11_GWFcsv}
+
+Some key features to note are:
+\begin{itemize}
+    \item CSV files can be loaded and examined using \excel.
+    \item The first line is a header with contains field (i.e. column) names.
+    \item The first column contains the material ID number, followed by the material parameters (one per column), unit definitions and notes.
+    \item Material 1 defines length units of centimeters and time units of days.  These are the same as the defined \mfus\ units so no unit conversion is required in this case.
+\end{itemize}
+
+Shown below is the output echoed to the screen and \texttt{\_buildo.eco} file for the verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column}: \begin{verbatim}
+    gwf materials database
+        Materials file C:\MUT\MUT_Examples-main\_MUT_USERBIN\GWF.csv
+
+    active domain
+        gwf
+
+    choose all cells
+        GWF Cells chosen:        100
+
+    chosen cells use gwf material number
+        Assigning all chosen GWF cells properties of material     1, 1D Column
+        Kh_Kx:                  10.000         CENTIMETERS   DAYS^(-1)
+        Kv_Kz:                  10.000         CENTIMETERS   DAYS^(-1)
+        Specific Storage:      1.00000E-07     CENTIMETERS^(-1)
+        Specific Yield:        0.43000         DIMENSIONLESS
+        Alpha:                 3.60000E-02     CENTIMETERS^(-1)
+        Beta:                   1.5600         DIMENSIONLESS
+        Sr:                    0.18140         DIMENSIONLESS
+        Unsaturated Function Type:   Van Genuchten
+
+\end{verbatim}
+Some key features to note are:
+\begin{itemize}
+    \item The location and name of the materials database file used are shown.
+    \item The material name (\texttt{1D Column}) associated with material ID number 1 is shown.
+    \item The units defined in the database for each property are given. For example, property  \texttt{Kh\_Kx} has units of \verb+CENTIMETERS DAYS^(-1)+, where the string \verb+^(-1)+ means 'raised to the power of minus 1', giving units of \verb+CENTIMETERS/DAYS+.
+\end{itemize}
+
+Editing the \texttt{csv} files directly is not recommended. To modify or define database files, please refer to the quidelines given in Appendix~\ref{Appendix:ExcelUseage}.
+
+The following section describes instructions used to assign values to individual materials properties for the current cell selection.  When using these instruction, {\em you must be careful to supply the values in the unit system defined for the model}. This first instruction is used to define the horizontal hydraulic conductivity, \texttt{Kh}:
 
 \ins{gwf kh}
     {
@@ -360,6 +452,7 @@ These instructions can be used to assign material properties to the current cell
           A horizontal hydraulic conductivity of \rnum{val} is assigned to the chosen cells.
     }
 
+As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file.
 
 \ins{gwf kv}
     {
@@ -424,33 +517,6 @@ These instructions can be used to assign material properties to the current cell
           A Brooks-Corey exponent of \rnum{val} is assigned to the chosen cells.
     }
 
-Defining each different material property as described above can be tedious.  A lookup table of \gwf\ material properties  is provided in the file \texttt{qryGWFMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
-
-In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
-
-\ins{gwf materials database}
-    {
-        \squish
-        \begin{enumerate}
-        \item \str{file}  \gwf\ material properties lookup table file name.
-        \end{enumerate}
-          \mut\ uses the file \str{file} to look up \gwf\ material properties.
-    }
-
-You can now assign a full set of \gwf\ material properties to the current cell selection, as described on page~\pageref{page:cellSelect}, using this instruction:
-
-\ins{chosen cells use gwf material number}
-    {
-        \squish
-        \begin{enumerate}
-        \item \inum{val}  \gwf\ material ID number.
-        \end{enumerate}
-          A unique set of \gwf\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen cells.
-    }
-
-You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
-
-\pagebreak
 During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions\label{page:zoneSelect}:
 
 \ins{choose all zones}
@@ -475,13 +541,13 @@ The zone selection can be converted into a cell selection using this instruction
 \ins{choose cells by chosen zones}
     {If a zone is currently chosen, any cell which has that zone number will be chosen.
      }
+
 This cell selection can now be used to assign material properties.
 
-Below is an example \footnote{See verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell}} of a case in which the element zone numbers have been assigned by layer number for a 3-layer case:
+Below is an example\footnote{See verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell}} of a case in which the element zone numbers have been assigned by layer number for a 3-layer case:
 
 \includegraphics[width=.86\textwidth]{3_10_GWFZones}
 
-\pagebreak
 Some key features to note are:
 \begin{itemize}
     \item There are 3 zones, corresponding to the layers 1 to 3.
@@ -489,15 +555,31 @@ Some key features to note are:
     \item Each layer is composed of multiple \mf\ layers, which are each one cell thick.
 \end{itemize}
 
-The following example uses the materials database and zone selection to assign material properties for the 3-layer case:
-
+The following section from the input file shows how material properties were assigned for the 3-layer case:
 \begin{verbatim}
     gwf materials database
-    	Materials file C:\MUT\MUT_Examples-main\_MUT_USERBIN\qryGWFMaterials.txt
+    GWF.csv
 
     active domain
-    	gwf
+    gwf
 
+        clear chosen zones
+        choose zone number
+        1
+        choose zone number
+        2
+        choose zone number
+        3
+
+        clear chosen cells
+        choose cells by chosen zones
+
+        chosen cells use gwf material number
+        5
+\end{verbatim}
+
+The following section from the \texttt{eco} file shows zone selection output for the 3-layer case:
+\begin{verbatim}
     clear chosen zones
     	GWF Zones chosen:          0
 
@@ -524,25 +606,14 @@ The following example uses the materials database and zone selection to assign m
 
     choose cells by chosen zones
     	GWF Cells chosen:      39765
-
-    chosen cells use gwf material number
-    	Assigning all chosen GWF cells properties of material               4, Borden sand
-    	Kh_Kx:                 1.00000E-05
-    	Kv_Kz:                 1.00000E-05
-    	Specific Storage:      1.20000E-07
-    	Specific Yield:        0.34000
-    	Alpha:                  1.9000
-    	Beta:                   6.0000
-    	Sr:                    0.18000
-    	Unsaturated Function Type:   Van Genuchten
 \end{verbatim}
 
 Some key features to note are:
 \begin{itemize}
     \item As we choose zone numbers, the list of currently chosen zones grows accordingly.
     \item The final number of \gwf\ cells chosen is equal to the total number of cells in the domain, since we had selected all 3 layers prior to converting the  zone selection to a cell selection.
-    \item After assignment, the \gwf\ material number, name and assigned property values are echoed to screen and \texttt{.eco} file.
 \end{itemize}
+Since we are assigning uniform properties to the entire model domain, this example could be simplified by simply choosing all cells then assigning properties.  However, if you wanted to assign different material properties to each zone, you can easily do so by modifying the example to assign properties to one zone at a time, being careful to clear the zone and cell selections for each layer.
 
 \subsubsection{Initial Conditions}  \index{\gwf\ Domain ! initial condition ! initial (starting) head}
 An initial (or starting) head should be assigned to each cell in the \gwf\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
@@ -557,6 +628,14 @@ To assign a uniform hydraulic head to the \gwf\ model domain, you must first mak
         \end{enumerate}
           An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
     }
+
+As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file:
+\begin{verbatim}
+    gwf initial head
+    	Assigning all chosen GWF cells starting heads of     2.7800         METERS
+
+\end{verbatim}
+
 
 To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elevation), use this instruction:
 \ins{gwf initial head function of z}
@@ -576,7 +655,7 @@ To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elev
     {\Large \sf end gwf initial head function of z}
     }
 
-This is commonly used to generate an initial head for a simple column model \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain} as shown here: :
+This is commonly used to generate an initial head for a simple column model\footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain} as shown here: :
 \begin{verbatim}
     gwf initial head function of z
     !  z    head
@@ -637,7 +716,9 @@ A recharge boundary condition forces  water to flow in to the \gwf\ model domain
         \squish
     }
 
-\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Sould we have an example of pumping with an assigned nodal flux?  Should it be from a CLN?  Is there a boundary condition that assures the head will not be drawn down below the pumping node elevation?}
+
+
+\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we have an example of pumping with an assigned nodal flux?  Should it be from a CLN?  Is there a boundary condition that assures the head will not be drawn down below the pumping node elevation?}
 
 
 
