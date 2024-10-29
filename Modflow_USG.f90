@@ -1916,17 +1916,15 @@
                     
                    
                     if(modflow.SWF.nCells >0) then
-                        call AddSWFFiles(Modflow)
                         call WriteSWFFiles(Modflow,TMPLT_SWF)
                         call SWFToTecplot(Modflow,TMPLT_SWF)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.SWF)                
                     end if
                 
                     if(modflow.CLN.nCells >0) then
-                        call AddCLNFiles(Modflow)
                         call WriteCLNFiles(Modflow,TMPLT_CLN)
-                        !call ModflowDomainToTecplot(Modflow,TMPLT_CLN)
-                        !call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
+                        call CLNToTecplot(Modflow,TMPLT_CLN)
+                        call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
                     end if
                     
                     if(modflow.iCHD>0) call WriteCHDFile(Modflow)
@@ -2028,12 +2026,15 @@
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
                 call GenerateSWFDomain(FnumMUT,TMPLT,TMPLT_SWF)
                 call BuildModflowSWFDomain(Modflow,TMPLT,TMPLT_SWF)
+                call AddSWFFiles(Modflow)
+
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
                 call GenerateCLNDomain(FnumMUT,TMPLT_CLN)
                 !call CLN_IaJaStructure(TMPLT_CLN)
                 call BuildModflowCLNDomain(Modflow,TMPLT,TMPLT_CLN)
+                call AddCLNFiles(Modflow)
                 !JustBuilt=.true.
 
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
@@ -3807,7 +3808,7 @@
         integer :: iNjag
         
         call Msg(' ')
-        call Msg('  Generating IA/JA and cell connection arrays for TMPLT_CLN '//trim(TMPLT_CLN.name)//'...')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TMPLT_CLN.name)//'...')
         
         ja_TMP(:,:)=0
         !ja_TMP2(:,:)=0
@@ -4547,6 +4548,108 @@
       RETURN
       END subroutine CLN_ReadRectangularProperties
       
+    !-------------------------------------------------------------
+    subroutine CLNToTecplot(Modflow,TMPLT_CLN)
+        implicit none
+        type(ModflowProject) Modflow
+        type(TecplotDomain) TMPLT_CLN
+
+        integer :: Fnum
+        character(MAX_STR) :: FName
+        integer :: i, j
+
+        ! tecplot output file
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.CLN.name)//'.tecplot.dat'
+        
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+
+        write(FNum,*) 'Title = "'//trim(TMPLT_CLN.name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","'//trim(modflow.CLN.name)//' Zone","'//trim(modflow.CLN.name)//' zCell",'
+        nVar=5
+            
+        if(allocated(Modflow.CLN.Sgcl)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' CLN-GWF connection length",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow.CLN.StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' Initial Depth",'
+            nVar=nVar+1
+        end if
+        
+        if(allocated(Modflow.CLN.CellArea)) then
+            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' Cell area",'
+            nVar=nVar+1
+        end if
+                
+        write(FNum,'(a)') trim(VarSTR)
+          
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.CLN.name)//'"  ,N=',TMPLT_CLN.nNodes,', E=',TMPLT_CLN.nElements,&
+        ', datapacking=block, zonetype='//trim(TMPLT_CLN.elementtype)
+            
+        if(modflow.NodalControlVolume) then
+            write(FNum,'(a)') trim(ZoneSTR) 
+        else
+            CellCenteredSTR=', VARLOCATION=([4'
+            if(nVar.ge.5) then
+                do j=5,nVar
+                    if(.not. Modflow.NodalControlVolume) then  ! z Cell is not CELLCENTERED
+                        write(str2,'(i2)') j
+                        CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+                    end if
+                end do
+            end if
+            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+
+            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR) 
+        end if
+        
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5e20.12)') (TMPLT_CLN.x(i),i=1,TMPLT_CLN.nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5e20.12)') (TMPLT_CLN.y(i),i=1,TMPLT_CLN.nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5e20.12)') (TMPLT_CLN.z(i),i=1,TMPLT_CLN.nNodes)
+        
+        write(FNum,'(a)') '# zone'
+        write(FNum,'(5i8)') (Modflow.CLN.iZone(i),i=1,Modflow.CLN.nCells)
+            
+        write(FNum,'(a)') '# zCell i.e. cell bottom'
+        write(FNum,'(5e20.12)') (Modflow.CLN.zCell(i),i=1,Modflow.CLN.nCells)
+            
+        if(allocated(Modflow.CLN.Sgcl)) then
+            write(FNum,'(a)') '# SW-GW connection length'
+            write(FNum,'(5e20.12)') (Modflow.CLN.Sgcl(i),i=1,Modflow.CLN.nCells)
+        end if
+
+        if(allocated(Modflow.CLN.StartingHeads)) then
+            write(FNum,'(a)') '# Starting depth'
+            write(FNum,'(5e20.12)') (Modflow.CLN.StartingHeads(i)-Modflow.CLN.ZCell(i),i=1,Modflow.CLN.nCells)
+        end if
+
+        if(allocated(Modflow.CLN.CellArea)) then
+            write(FNum,'(a)') '# Cell Area'
+            write(FNum,'(5e20.12)') (Modflow.CLN.CellArea(i),i=1,Modflow.CLN.nCells)
+        end if
+        
+        do i=1,TMPLT_CLN.nElements
+            if(TMPLT_CLN.nNodesPerElement==2) then ! 2-node line, repeat node 3 for 4-node tecplot type fequadrilateral
+                write(FNum,'(8i8)') (TMPLT_CLN.iNode(j,i),j=1,2) !, TMPLT_CLN.iNode(3,i) 
+            else
+                write(TmpSTR,'(i2)') TMPLT_CLN.nNodesPerElement
+                call ErrMsg(trim(TMPLT_CLN.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine CLNToTecplot
+
     !-------------------------------------------------------------
     subroutine CreateStepPeriodTimeFile(Modflow)
         implicit none
@@ -16067,7 +16170,7 @@
         modflow.GWF.Cell_Is(:)=0
     
         write(TmpSTR,'(i10)') Modflow.GWF.nCells 
-        call Msg('nCells: '//TmpSTR)
+        call Msg('Number of Cells: '//trim(TmpSTR))
 
 	    return
     end subroutine Read_GWF_GSF
@@ -16127,7 +16230,7 @@
         Modflow.CLN.Cell_Is(:)=0
 
         write(TmpSTR,'(i10)') Modflow.CLN.nCells 
-        call Msg('nCells: '//TmpSTR)
+        call Msg('Number of Cells: '//trim(TmpSTR))
 
         return
     end subroutine Read_CLN_GSF
@@ -16211,7 +16314,7 @@
         Modflow.SWF.IsDefined=.true.
 
         write(TmpSTR,'(i10)') Modflow.SWF.nCells 
-        call Msg('nCells: '//TmpSTR)
+        call Msg('Number of Cells: '//trim(TmpSTR))
         allocate(modflow.SWF.Cell_Is(modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell_Is array')            
         modflow.SWF.Cell_Is(:)=0

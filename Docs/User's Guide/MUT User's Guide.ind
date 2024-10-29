@@ -1,49 +1,54 @@
 \begin{theindex}
 
   \item \cln\ Domain 
-    \subitem  boundary conditions, \hyperpage{49}
+    \subitem  boundary conditions, \hyperpage{48}
     \subitem  initial condition 
       \subsubitem  initial (starting) depth, \hyperpage{48}
     \subitem  material properties, \hyperpage{47}
+    \subitem  {\tt \_build.lay} 
+      \subsubitem  {\sf CLN} frame, \hyperpage{71}
   \item \gwf\ Domain 
     \subitem  boundary conditions, \hyperpage{38}
     \subitem  cell connection properties, \hyperpage{28}
     \subitem  initial condition 
       \subsubitem  initial (starting) head, \hyperpage{37}
-    \subitem  layering, \hyperpage{26}
+    \subitem  layering, \hyperpage{25}
     \subitem  material properties, \hyperpage{28}
     \subitem  {\tt \_build.lay} 
-      \subsubitem  {\sf GWF Cells} frame, \hyperpage{61}
+      \subsubitem  {\sf GWF Cells} frame, \hyperpage{62}
       \subsubitem  {\sf GWF} frame, \hyperpage{57}
   \item \swf\ Domain 
     \subitem  boundary conditions, \hyperpage{43}
     \subitem  cell connection properties, \hyperpage{40}
     \subitem  initial condition 
-      \subsubitem  initial (starting) depth, \hyperpage{43}
+      \subsubitem  initial (starting) depth, \hyperpage{42}
     \subitem  material properties, \hyperpage{41}
     \subitem  {\tt \_build.lay} 
       \subsubitem  {\sf SWF} frame, \hyperpage{65}
   \item \tecplot\ 
-    \subitem  custom labels, \hyperpage{65}
+    \subitem  Custom labels, \hyperpage{65}
     \subitem  data set information, \hyperpage{59}
     \subitem  frame order, \hyperpage{56}
     \subitem  probe tool, \hyperpage{59}
+    \subitem  slices and Fence diagrams, \hyperpage{81}
+    \subitem  value blanking, \hyperpage{81}
+    \subitem  Zoom Tool, \hyperpage{68}
 
   \indexspace
 
   \item generate uniform rectangles, \hyperpage{21}
   \item Grid generation 
     \subitem  \gwf\ Domain 
-      \subsubitem  New layer, \hyperpage{26}
+      \subsubitem  New layer, \hyperpage{25}
 
   \indexspace
 
   \item Input instructions 
     \subitem  2d mesh from gb, \hyperpage{20}
-    \subitem  active domain, \hyperpage{29}
+    \subitem  active domain, \hyperpage{28}
     \subitem  build modflow usg, \hyperpage{17}
-    \subitem  choose all cells, \hyperpage{29}
-    \subitem  choose all nodes, \hyperpage{45}
+    \subitem  choose all cells, \hyperpage{28}
+    \subitem  choose all nodes, \hyperpage{44}
     \subitem  choose all zones, \hyperpage{34}
     \subitem  choose cell at xyz, \hyperpage{29}
     \subitem  choose cells by chosen zones, \hyperpage{35}
@@ -52,18 +57,18 @@
     \subitem  choose cells from gb elements, \hyperpage{30}
     \subitem  choose cells from gb nodes, \hyperpage{30}
     \subitem  choose gb nodes, \hyperpage{45}
-    \subitem  choose node at xyz, \hyperpage{45}
+    \subitem  choose node at xyz, \hyperpage{44}
     \subitem  choose zone number, \hyperpage{34}
     \subitem  chosen cells use gwf material number, \hyperpage{31}
-    \subitem  chosen zones use cln material number, \hyperpage{48}
+    \subitem  chosen zones use cln material number, \hyperpage{47}
     \subitem  chosen zones use swf material number, \hyperpage{42}
     \subitem  clear chosen cells, \hyperpage{30}
     \subitem  clear chosen nodes, \hyperpage{45}
     \subitem  clear chosen zones, \hyperpage{34}
     \subitem  cln from xyz pair, \hyperpage{46}
     \subitem  cln initial depth, \hyperpage{48}
-    \subitem  cln materials database, \hyperpage{48}
-    \subitem  deltat, \hyperpage{50}
+    \subitem  cln materials database, \hyperpage{47}
+    \subitem  deltat, \hyperpage{49}
     \subitem  duration, \hyperpage{49}
     \subitem  elevation constant, \hyperpage{24}
     \subitem  elevation from gb file, \hyperpage{24}
@@ -89,33 +94,34 @@
     \subitem  gwf ss, \hyperpage{33}
     \subitem  gwf sy, \hyperpage{33}
     \subitem  Layer name, \hyperpage{26}
-    \subitem  Minimum layer thickness, \hyperpage{27}
+    \subitem  Minimum layer thickness, \hyperpage{26}
     \subitem  new layer, \hyperpage{26}
     \subitem  nodal control volumes, \hyperpage{22}
-    \subitem  number of timesteps, \hyperpage{50}
-    \subitem  Offset base, \hyperpage{28}
+    \subitem  number of timesteps, \hyperpage{49}
+    \subitem  Offset base, \hyperpage{27}
+    \subitem  postprocess existing modflow model, \hyperpage{75}
     \subitem  Proportional sublayering, \hyperpage{27}
-    \subitem  sms database, \hyperpage{54}
+    \subitem  sms database, \hyperpage{53}
     \subitem  sms parameter set number, \hyperpage{54}
     \subitem  stress period, \hyperpage{49}
     \subitem  swf constant head, \hyperpage{43}
     \subitem  swf critical depth, \hyperpage{44}
-    \subitem  swf critical depth with sidelength1, \hyperpage{44}
-    \subitem  swf depression storage height, \hyperpage{42}
-    \subitem  swf depth for smoothing, \hyperpage{42}
-    \subitem  swf initial depth, \hyperpage{43}
+    \subitem  swf critical depth with sidelength1, \hyperpage{43}
+    \subitem  swf depression storage height, \hyperpage{41}
+    \subitem  swf depth for smoothing, \hyperpage{41}
+    \subitem  swf initial depth, \hyperpage{42}
     \subitem  swf manning, \hyperpage{41}
     \subitem  swf materials database, \hyperpage{42}
-    \subitem  swf obstruction storage height, \hyperpage{42}
-    \subitem  swf recharge, \hyperpage{44}
-    \subitem  swf to gwf connection length, \hyperpage{41}
+    \subitem  swf obstruction storage height, \hyperpage{41}
+    \subitem  swf recharge, \hyperpage{43}
+    \subitem  swf to gwf connection length, \hyperpage{40}
     \subitem  tadjat, \hyperpage{50}
-    \subitem  tcutat, \hyperpage{51}
+    \subitem  tcutat, \hyperpage{50}
     \subitem  tmaxat, \hyperpage{50}
     \subitem  tminat, \hyperpage{50}
     \subitem  top elevation, \hyperpage{24}
     \subitem  type, \hyperpage{49}
-    \subitem  Uniform sublayering, \hyperpage{27}
+    \subitem  Uniform sublayering, \hyperpage{26}
     \subitem  units of length, \hyperpage{18}
     \subitem  units of time, \hyperpage{19}
     \subitem  Zone by template, \hyperpage{23}
@@ -125,5 +131,9 @@
 
   \item Model Build 
     \subitem  visualization, \hyperpage{55}
+
+  \indexspace
+
+  \item Volumetric water budget, \hyperpage{75}
 
 \end{theindex}

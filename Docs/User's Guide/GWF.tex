@@ -149,7 +149,7 @@ By default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where
     \squish
     }
 
-\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
+%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
 
 
 
@@ -246,10 +246,12 @@ This instruction is most often used to define a layer of uniform thickness relat
 \end{verbatim}
  create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{elev.list}:
 
-\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
+%\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
-\subsubsection{Cell Connection Properties}  \index{\gwf\ Domain ! cell connection properties}\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{
-\gwf\ cell to \gwf\ cell connection properties are automatically defined by \mut\ based on control-volume approach and element type. The code needs to be checked, verified and documented more completely.}
+\subsubsection{Cell Connection Properties}  \index{\gwf\ Domain ! cell connection properties}
+
+%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{
+%\gwf\ cell to \gwf\ cell connection properties are automatically defined by \mut\ based on control-volume approach and element type. The code needs to be checked, verified and documented more completely.}
 
 
 
@@ -693,7 +695,7 @@ A drain boundary condition allows water to flow out of the \gwf\ model domain if
           A drain conductance of \rnum{value} is assigned to the chosen cells.  The top elevation of the cell is assigned automatically as the drain elevation
     }
 
-\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we add an instruction where the drain elevation is specified?  }
+%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we add an instruction where the drain elevation is specified?  }
 
 A recharge boundary condition forces  water to flow in to the \gwf\ model domain at a specified rate.   To add a recharge  to the \gwf\ model domain use this instruction:
 
@@ -718,7 +720,7 @@ A recharge boundary condition forces  water to flow in to the \gwf\ model domain
 
 
 
-\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we have an example of pumping with an assigned nodal flux?  Should it be from a CLN?  Is there a boundary condition that assures the head will not be drawn down below the pumping node elevation?}
+%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we have an example of pumping with an assigned nodal flux?  Should it be from a CLN?  Is there a boundary condition that assures the head will not be drawn down below the pumping node elevation?}
 
 
 
