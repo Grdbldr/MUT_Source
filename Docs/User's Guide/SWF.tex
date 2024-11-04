@@ -41,18 +41,15 @@ Currently, the element zone numbering for the \swf\ domain is determined by the 
 
 \subsubsection{Cell Connection Properties}  \index{\swf\ Domain ! cell connection properties}
 
-%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{
-%\swf\ cell to \swf\ cell connection properties are automatically defined by \mut\ based on control-volume approach and element type. The code needs to be checked, verified and documented more completely.}
+The \swf-\swf\ lateral cell connection lengths and areas are defined in the same way as they are for the \gwf\ domain (see Section~\ref{section:GWFCellConnections}), except lateral connection area uses surface water depth instead of cell thickness.
 
-These \swf\ cell connection properties vary on a cell-by-cell basis:
+\swf-\gwf\ cell connection properties vary on a cell-by-cell basis:
 \begin{itemize}
-     \item The \swf-\gwf\ connection length.
-     \item The \swf-\gwf\ connection area.
+     \item By default, the \swf-\gwf\ connection length is assigned a value of 0.001.
+     \item The vertical \swf-\gwf\ connection area is defined in the same way as it is for vertical \gwf-\gwf\ cell connections (see Section~\ref{section:GWFCellConnections}).
 \end{itemize}
 
-Cell selections must first be made using the instructions described on page~\pageref{page:cellSelect} for the \gwf\ domain.
-
-Currently, \mut\ assigns a default value of 0.001 $m$ for the \swf\ cell to \gwf\ cell connection length, and this instruction allows you to change it:
+You can use this instruction to change the \swf-\gwf\ vertical cell connection length after making a cell selection (see the instructions described on page~\pageref{page:cellSelect} for the \gwf\ domain):
 
 \ins{swf to gwf connection length}
     {
@@ -62,12 +59,6 @@ Currently, \mut\ assigns a default value of 0.001 $m$ for the \swf\ cell to \gwf
         \end{enumerate}
           A \swf\ cell to \gwf\ cell connection length \rnum{value} is assigned to the chosen cells.
     }
-
-Currently, \mut\ assigns a \swf-\gwf\ connection area depending on which control volume approach is used :
-\begin{description}
-\item [Mesh-centred approach] The connection area will be calculated as the template mesh element area (i.e.\ the yellow triangle shown on page~\pageref{page:MeshCentredApproach}).
-\item [Node-centred approach] The connection area will be calculated as  the contibuting area of neighbouring template mesh elements (i.e.\ the yellow polygon shown on page~\pageref{page:NodeCentredApproach}).
-\end{description}
 
 \subsubsection{Assigning Material Properties}  \index{\swf\ Domain ! material properties}
 Unlike the \gwf\ domain, \swf\ domain material properties vary on a zone-by-zone basis, which means assigning material property values are done using zone selections instead of cell selections.
@@ -160,7 +151,7 @@ The assigned \swf\ material properties are written to the screen and \texttt{.ec
     	SWF Smoothing Depth 2:          1.00000E-06
 \end{verbatim}
 
-You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
+You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUseage}.
 
 \subsubsection{Initial Conditions}  \index{\swf\ Domain ! initial condition ! initial (starting) depth}
 An initial (or starting) head should be assigned to each cell in the \swf\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.

@@ -19,19 +19,31 @@
 \BOOKMARK [3][-]{subsubsection.3.4.1.4}{Boundary Conditions}{subsection.3.4.1}% 19
 \BOOKMARK [1][-]{section.3.5}{Connected Linear Network\(CLN\) Domain}{chapter.3}% 20
 \BOOKMARK [2][-]{subsection.3.5.1}{Generating a CLN Domain}{section.3.5}% 21
-\BOOKMARK [3][-]{subsubsection.3.5.1.1}{Assigning Material Properties}{subsection.3.5.1}% 22
-\BOOKMARK [3][-]{subsubsection.3.5.1.2}{Initial Conditions}{subsection.3.5.1}% 23
-\BOOKMARK [3][-]{subsubsection.3.5.1.3}{Boundary Conditions}{subsection.3.5.1}% 24
-\BOOKMARK [1][-]{section.3.6}{Stress Periods}{chapter.3}% 25
-\BOOKMARK [1][-]{section.3.7}{Output Control}{chapter.3}% 26
-\BOOKMARK [1][-]{section.3.8}{Solver Parameters}{chapter.3}% 27
-\BOOKMARK [1][-]{section.3.9}{3D Model Build Visualization}{chapter.3}% 28
-\BOOKMARK [2][-]{subsection.3.9.1}{GWF Domain}{section.3.9}% 29
-\BOOKMARK [2][-]{subsection.3.9.2}{SWF Domain}{section.3.9}% 30
-\BOOKMARK [2][-]{subsection.3.9.3}{CLN Domain}{section.3.9}% 31
-\BOOKMARK [0][-]{chapter.4}{Modflow-UsgSwf Execution and Post-Processing}{}% 32
-\BOOKMARK [0][-]{chapter.5}{Model Verification}{}% 33
-\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 34
-\BOOKMARK [1][-]{section.5.2}{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{chapter.5}% 35
-\BOOKMARK [1][-]{section.5.3}{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{chapter.5}% 36
-\BOOKMARK [0][-]{appendix.A}{Microsoft Excel Database Files}{}% 37
+\BOOKMARK [3][-]{subsubsection.3.5.1.1}{Cell Connection Properties}{subsection.3.5.1}% 22
+\BOOKMARK [3][-]{subsubsection.3.5.1.2}{Assigning Material Properties}{subsection.3.5.1}% 23
+\BOOKMARK [3][-]{subsubsection.3.5.1.3}{Initial Conditions}{subsection.3.5.1}% 24
+\BOOKMARK [3][-]{subsubsection.3.5.1.4}{Boundary Conditions}{subsection.3.5.1}% 25
+\BOOKMARK [1][-]{section.3.6}{Stress Periods}{chapter.3}% 26
+\BOOKMARK [1][-]{section.3.7}{Output Control}{chapter.3}% 27
+\BOOKMARK [1][-]{section.3.8}{Solver Parameters}{chapter.3}% 28
+\BOOKMARK [1][-]{section.3.9}{3D Model Build Visualization}{chapter.3}% 29
+\BOOKMARK [2][-]{subsection.3.9.1}{GWF Domain}{section.3.9}% 30
+\BOOKMARK [2][-]{subsection.3.9.2}{SWF Domain}{section.3.9}% 31
+\BOOKMARK [2][-]{subsection.3.9.3}{CLN Domain}{section.3.9}% 32
+\BOOKMARK [0][-]{chapter.4}{Modflow-UsgSwf Execution and Post-Processing}{}% 33
+\BOOKMARK [1][-]{section.4.1}{Modflow-UsgSwf Execution}{chapter.4}% 34
+\BOOKMARK [1][-]{section.4.2}{Mut Post-processing}{chapter.4}% 35
+\BOOKMARK [1][-]{section.4.3}{Volumetric Water Budget Plots}{chapter.4}% 36
+\BOOKMARK [1][-]{section.4.4}{3D Visualization of Model Results}{chapter.4}% 37
+\BOOKMARK [2][-]{subsection.4.4.1}{Solution Times and Animation}{section.4.4}% 38
+\BOOKMARK [2][-]{subsection.4.4.2}{Data Set Infomation}{section.4.4}% 39
+\BOOKMARK [2][-]{subsection.4.4.3}{Inactive Cells and Value Blanking }{section.4.4}% 40
+\BOOKMARK [2][-]{subsection.4.4.4}{Slices and Fence Diagrams}{section.4.4}% 41
+\BOOKMARK [2][-]{subsection.4.4.5}{Defining New Variables}{section.4.4}% 42
+\BOOKMARK [2][-]{subsection.4.4.6}{Water Table Isosurface Plot}{section.4.4}% 43
+\BOOKMARK [2][-]{subsection.4.4.7}{Infiltration Plot}{section.4.4}% 44
+\BOOKMARK [0][-]{chapter.5}{Model Verification}{}% 45
+\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 46
+\BOOKMARK [1][-]{section.5.2}{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{chapter.5}% 47
+\BOOKMARK [1][-]{section.5.3}{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{chapter.5}% 48
+\BOOKMARK [0][-]{appendix.A}{Microsoft Excel Database Files}{}% 49

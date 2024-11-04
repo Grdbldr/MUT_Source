@@ -248,11 +248,35 @@ This instruction is most often used to define a layer of uniform thickness relat
 
 %\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
-\subsubsection{Cell Connection Properties}  \index{\gwf\ Domain ! cell connection properties}
+\subsubsection{Cell Connection Properties}  
+\label{section:GWFCellConnections}
+\index{\gwf\ Domain ! cell connection properties}
 
-%\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{
-%\gwf\ cell to \gwf\ cell connection properties are automatically defined by \mut\ based on control-volume approach and element type. The code needs to be checked, verified and documented more completely.}
+Currently, \mut\ defines lateral connections between neighbouring cells (i.e. that share a common side) in the template 2D finite element mesh, and vertical connections between neighbouring cells (i.e. that share a common face) in the stacked 3D \gwf\ finite-element mesh.
 
+The \gwf-\gwf\ cell connection length (distance from cell to cell) and area (cross-sectional area perpendicular to the direction of flow) vary on a cell-by-cell basis, and depend on control volume approach (mesh- or node-centred) and element shape (triangle or rectangle).
+
+Consider the mesh-centred case, where cell control volumes are defined at the triangular element centroid:
+
+        \includegraphics[width=0.6\textwidth]{3_8b_MeshCentredCellConnection}
+
+The yellow triangle shows the footprint of a \mfus\ cell.
+
+Cell B is a lateral neighbour of Cell A and shares side 1-2.  The lateral connection length between A and B is the sum of the lengths of the inner circle radii for each cell: A-a' + B-b'.  The lateral connection area is the product of the length of the shared side 1-2 and the cell thickness.
+
+In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area equals the area of the template mesh element (yellow triangle).
+
+Here is the node-centred case, where cell control volumes are defined at the triangular element node:
+
+        \includegraphics[width=0.6\textwidth]{3_8b_NodeCentredCellConnection}
+
+The yellow polygon shows the footprint of a \mfus\ cell.
+
+Cell B is a lateral neighbour of Cell A.  The lateral connection length between A and B is the distance from node A to node B. The lateral connection area is defined by the product of the sum of the inner circle radii for each triangle: C-c' + D-d' and the cell thickness.
+
+In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area is the area of the polygon formed by joining the inner circle centres of the common template mesh elements (yellow polygon).
+
+Cell connection data are define in a similar fashion for model domains that are generated from a rectangular element template mesh.  In this case, element side lengths are used to define connection lengths and areas instead of inner circle radii.
 
 
 \subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties} \label{section:matprops}

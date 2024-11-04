@@ -1,4 +1,4 @@
-\label{texfile:CLN} 
+\label{texfile:CLN}
 A \cln\ domain is a quasi-3D network of modflow cells which are each defined by individual line segments. The flows between \cln\ cells are governed by either open- or closed-channel flow equations, depending on surrounding conditions, which ultimately provide a pressure head or water depth at each cell.
 
 \mut\ adds the \cln\ process equations to the global
@@ -72,6 +72,13 @@ Some key features of this example are:
     \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that also slope from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$
 \end{itemize}
 
+\subsubsection{Cell Connection Properties}  \index{\cln\ Domain ! cell connection properties}
+
+\cln\ domain cells are currently limited to have a direct one-to-one correspondence with cells in the top layer of the \gwf\ domain, as is the case for the simple verification example \texttt{3\_1\_CLN\_for\_SWF}.  A more general approach, in which \cln\ cells do not have to conform to the \gwf\ or \swf\ meshes will be developed in subsequent version of \mut.
+
+\cln-\cln\ cells are connected through neighbouring nodes and connection properties are defined by the channel geometry inputs. 
+
+\cln-\gwf\ cell vertical connections are defined by element areas.
 
 \subsubsection{Assigning Material Properties}  \index{\cln\ Domain ! material properties}
 \cln\ domain material properties vary on a zone-by-zone basis.  In the current version of \mut\, the assignment of \cln\ material properties is very rudimentary.
