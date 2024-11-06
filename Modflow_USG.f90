@@ -86,10 +86,13 @@
     character(MAX_INST) :: AssignCHDtoGWF_CMD		    =   'gwf constant head'
     character(MAX_INST) :: AssignDRNtoGWF_CMD		    =   'gwf drain'
     character(MAX_INST) :: AssignRCHtoGWF_CMD		    =   'gwf recharge'
+    character(MAX_INST) :: AssignWELtoGWF_CMD		    =   'gwf well'
     character(MAX_INST) :: AssignCHDtoSWF_CMD		    =   'swf constant head'
     character(MAX_INST) :: AssignRCHtoSWF_CMD		    =   'swf recharge'
+    character(MAX_INST) :: AssignWELtoSWF_CMD		    =   'swf well'
     character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	        =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
+    character(MAX_INST) :: AssignWELtoCLN_CMD		    =   'cln well'
     
     !---------------------------------------------------GWF Properties
     character(MAX_INST) :: AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
@@ -213,6 +216,9 @@
         integer :: nDRNCells=0        
         real(dr), allocatable :: DrainElevation(:)  ! DRN assigned Drain Elevation value
         real(dr), allocatable :: DrainConductance(:)  ! DRN assigned Drain Conductance value
+
+        integer :: nWELCells=0        
+        real(dr), allocatable :: PumpingRate(:)  ! WEL assigned Pumping Rate value
         
         real(dr), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
         integer :: nSWBCCells=0        
@@ -264,6 +270,7 @@
         real, allocatable :: Cbb_STORAGE(:,:)
 	    real, allocatable :: Cbb_CONSTANT_HEAD(:,:)
 	    real, allocatable :: Cbb_RECHARGE(:,:)
+	    real, allocatable :: Cbb_WELLS(:,:)
 	    real, allocatable :: Cbb_DRAINS(:,:)
 	    real, allocatable :: Cbb_CLN(:,:)
 	    real, allocatable :: Cbb_SWF(:,:)
@@ -810,6 +817,8 @@
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
             write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
             write(Modflow.iCHD,'(a,1pg10.1)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',MUTVersion
+        else
+            pause 'next stress period?'
         end if
 
     end subroutine AssignCHDtoDomain
@@ -897,7 +906,7 @@
         type (ModflowProject) modflow
         type (ModflowDomain) domain
         
-        integer :: i, k
+        integer :: i
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
 
@@ -1128,7 +1137,7 @@
         integer :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i, len
+        integer :: i
         integer :: iMaterial
         
         real :: LengthConversionFactor
@@ -1544,8 +1553,6 @@
         real :: LengthConversionFactor
         real :: TimeConversionFactor
         
-        REAL :: test
-        
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
         
@@ -1694,6 +1701,131 @@
             endif                
         end if
     end subroutine AssignRCHtoDomain
+    
+    !----------------------------------------------------------------------
+    subroutine AssignWELtoDomain(FNumMUT,modflow,domain) 
+        implicit none
+
+        integer :: FNumMUT
+        type (ModflowProject) modflow
+        type (ModflowDomain) Domain
+        
+        integer :: i, itmp, itmpcln
+        real(dr) :: PumpRate
+        
+        read(FNumMUT,*) PumpRate
+        write(TmpSTR,'(a,g15.5,a)') TAB//'Assigning '//domain.name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
+		call Msg(trim(TmpSTR))
+        
+        if(.not. allocated(domain.PumpingRate)) then ! 
+            allocate(domain.PumpingRate(domain.nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell PumpingRate array')            
+            domain.PumpingRate(:)=-999.d0
+        end if
+
+        itmp=0
+        itmpcln=0
+
+        if(domain.name == 'GWF') then
+            do i=1,domain.nCells
+                if(bcheck(domain.Cell_is(i),chosen)) then
+                    call set(domain.Cell_Is(i),Well)
+                    domain.PumpingRate(i)=PumpRate
+                    itmp=itmp+1
+                endif
+            end do
+        else if(domain.name == 'CLN') then
+            do i=1,domain.nCells
+                if(bcheck(domain.Cell_is(i),chosen)) then
+                    call set(domain.Cell_Is(i),Well)
+                    domain.PumpingRate(i)=PumpRate
+                    itmpcln=itmpcln+1
+                endif
+            end do
+        endif    
+        
+
+        if(modflow.iWEL == 0) then ! Initialize WEL file and write data to NAM
+            Modflow.FNameWEL=trim(Modflow.Prefix)//'.WEL'
+            call OpenAscii(Modflow.iWEL,Modflow.FNameWEL)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameWEL))
+            write(Modflow.iNAM,'(a,i4,a)') 'WEL  ',Modflow.iWEL,' '//trim(Modflow.FNameWEL)
+            write(Modflow.iWEL,'(a,1pg10.1)') '# MODFLOW-USG WEL file written by Modflow-User-Tools version ',MUTVersion
+            if(itmp>0 .AND. itmpcln>0) then
+                call ErrMsg('WEL package can currently only be used for GWF or CLN domains but not both at the same time')
+            else if(itmp>0) then
+                write(Modflow.iWEL,'(2i8)') itmp, modflow.GWF.icbb
+                write(Modflow.iWEL,'(3i8)') itmp, 0, 0 
+            else if(itmpcln>0) then
+                write(Modflow.iWEL,'(2i8)') itmpcln, modflow.CLN.icbb
+                write(Modflow.iWEL,'(3i8)') 0, 0, itmpcln 
+            endif
+                
+            if(domain.name == 'GWF') then
+                do i=1,domain.nCells
+                    if(bcheck(domain.Cell_is(i),Well)) then
+                        write(Modflow.iWEL,'(i8,pg15.5,i8)') i,domain.PumpingRate(i),0
+                    endif
+                end do
+            else if(domain.name == 'CLN') then
+                do i=1,domain.nCells
+                    if(bcheck(domain.Cell_is(i),Well)) then
+                        write(Modflow.iWEL,'(i8,pg15.5,i8)') i,domain.PumpingRate(i),0
+                    endif
+                end do
+            endif
+        else
+            pause 'next stress period?'
+        end if
+    
+    end subroutine AssignWELtoDomain
+  !  !----------------------------------------------------------------------
+  !  subroutine AssignWELtoDomain(FNumMUT,modflow,domain) 
+  !      implicit none
+  !
+  !      integer :: FNumMUT
+  !      type (ModflowProject) modflow
+  !      type (ModflowDomain) Domain
+  !      
+  !      integer :: i
+  !      real(dr) :: PumpRate
+  !      
+  !      read(FNumMUT,*) PumpRate
+  !      write(TmpSTR,'(a,g15.5,a)') TAB//'Assigning '//domain.name//' pumping rate: ',PumpRate,'     '//TRIM(UnitsOfLength)//'^(3)     '//TRIM(UnitsOfTime)
+		!call Msg(trim(TmpSTR))
+  !
+  !
+  !      if(.not. allocated(domain.PumpingRate)) then 
+  !          allocate(domain.PumpingRate(domain.nCells),stat=ialloc)
+  !          call AllocChk(ialloc,'Cell pumping rate array')            
+  !          domain.PumpingRate(:)=-999.d0
+  !      end if
+  !      
+  !      call Msg(TAB//'    Cell    Pumping Rate')
+  !      do i=1,domain.nCells
+  !          if(bcheck(domain.Cell_is(i),chosen)) then
+  !              call set(domain.Cell_Is(i),Well)
+  !              domain.nWELCells=domain.nWELCells+1
+  !              domain.PumpingRate(i)=PumpRate
+  !              write(TmpSTR,'(i8,2x,g15.5,a)') i,domain.PumpingRate(i),'     '//TRIM(UnitsOfLength)//'^(3)     '//TRIM(UnitsOfTime)
+  !              call Msg(TAB//trim(TmpSTR))
+  !          end if
+  !      end do
+  !      
+  !      if(modflow.iWEL == 0) then ! Initialize WEL file and write data to NAM
+  !          Modflow.FNameWEL=trim(Modflow.Prefix)//'.WEL'
+  !          call OpenAscii(Modflow.iWEL,Modflow.FNameWEL)
+  !          call Msg('  ')
+  !          call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameWEL))
+  !          write(Modflow.iNAM,'(a,i4,a)') 'WEL  ',Modflow.iWEL,' '//trim(Modflow.FNameWEL)
+  !          write(Modflow.iWEL,'(a,1pg10.1)') '# MODFLOW-USG WEL file written by Modflow-User-Tools version ',MUTVersion
+  !      else
+  !          pause 'next stress period?'
+  !      end if
+  !
+  !  end subroutine AssignWELtoDomain
+
     
     !----------------------------------------------------------------------
     subroutine CLN_AssignCircularRadius(FnumMUT,CLN)
@@ -1929,6 +2061,7 @@
                     
                     if(modflow.iCHD>0) call WriteCHDFile(Modflow)
                     if(modflow.iDRN>0) call WriteDRNFile(Modflow)
+                    !if(modflow.iWEL>0) call WriteWELFile(Modflow)
                     
                     ! Default boundary conditions for extra stress periods
                     if(Modflow.nPeriods>1) then
@@ -1936,6 +2069,7 @@
                             if(modflow.iCHD>0) write(modflow.iCHD,'(i10)') -1
                             if(modflow.iDRN>0) write(modflow.iDRN,'(i10)') -1
                             if(modflow.iRCH>0) write(modflow.iRCH,'(i10)') -1
+                            if(modflow.iWel>0) write(modflow.iWel,'(3(i10))') -1, 0 -1
                             if(modflow.iSWBC>0) write(modflow.iSWBC,'(i10)') -1
                         end do
                      end if   
@@ -2215,11 +2349,11 @@
                     !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
                     ! this will be done later
                 case (iGWF)
-                    call ChooseCellsByChosenZones(FnumMUT,modflow.GWF)
+                    call ChooseCellsByChosenZones(modflow.GWF)
                 case (iSWF)
-                    call ChooseCellsByChosenZones(FnumMUT,modflow.SWF)
+                    call ChooseCellsByChosenZones(modflow.SWF)
                 case (iCLN)
-                    call ChooseCellsByChosenZones(FnumMUT,modflow.CLN)
+                    call ChooseCellsByChosenZones(modflow.CLN)
                 end select
                 
              else if(index(instruction, ChooseAllZones_CMD)  /= 0) then
@@ -2335,16 +2469,24 @@
                 call AssignDRNtoDomain(FnumMUT,Modflow,Modflow.GWF)
             else if(index(instruction, AssignRCHtoGWF_CMD)  /= 0) then
                 call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
+            else if(index(instruction, AssignWELtoGWF_CMD)  /= 0) then
+                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.GWF)
 
             ! SWF boundary contitions
             else if(index(instruction, AssignCHDtoSWF_CMD)  /= 0) then
                 call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
             else if(index(instruction, AssignRCHtoSWF_CMD)  /= 0) then
                 call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            else if(index(instruction, AssignWELtoSWF_CMD)  /= 0) then
+                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.SWF)
             else if(index(instruction, AssignCriticalDepthtoSWF_CMD)  /= 0) then
                 call AssignCriticalDepthtoDomain(Modflow,Modflow.SWF)
             else if(index(instruction, AssignCriticalDepthtoCellsSide1_CMD)  /= 0) then
                 call AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
+            
+            ! CLN boundary contitions
+            else if(index(instruction, AssignWELtoCLN_CMD)  /= 0) then
+                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.CLN)
             
             
             else if(index(instruction, GenOCFile_CMD)  /= 0) then
@@ -3383,17 +3525,14 @@
     end subroutine ChooseCellsFromFile
 
     !----------------------------------------------------------------------
-    subroutine ChooseCellsByChosenZones(FNumMUT,domain) 
+    subroutine ChooseCellsByChosenZones(domain) 
         implicit none
 
-        integer :: FNumMUT
         type (ModflowDomain) Domain
 
         integer :: i, j
-	    integer :: ncount, iCell,status2
+	    integer :: ncount
 
-        character*80 fname
-        logical togon(domain.nCells)
 
        
         ncount=0
@@ -4405,7 +4544,7 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       USE CLN1MODULE
-      USE GLOBAL, ONLY: IUNIT,IOUT,NEQS,NODES,NROW,NCOL,IFREFM,IUNSTR,&
+      USE GLOBAL, ONLY: IOUT,IFREFM,&
                        INCLN
         implicit none
       DOUBLE PRECISION PERIF,AREAF
@@ -4414,7 +4553,7 @@
         type (ModflowProject) Modflow
         
         integer :: i, ifno, lloc
-        real :: conduitk, frad, tcond, tcoef, tcfuid, R
+        real :: conduitk, frad, tcond, tcoef, R
         integer :: istop, istart
         real :: tthk, tcfluid, fsrad
         
@@ -4496,7 +4635,7 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       USE CLN1MODULE
-      USE GLOBAL, ONLY: IUNIT,IOUT,NEQS,NODES,NROW,NCOL,IFREFM,IUNSTR,&
+      USE GLOBAL, ONLY: IOUT,IFREFM,&
                        INCLN
         implicit none
       DOUBLE PRECISION PERIF,AREAF
@@ -6696,6 +6835,10 @@
             VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to RECHARGE",'
             nVar=nVar+1
         end if
+        if(allocated(domain.cbb_WELLS)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to WELLS",'
+            nVar=nVar+1
+        end if
         if(allocated(domain.cbb_DRAINS)) then
             VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to DRAINS",'
             nVar=nVar+1
@@ -6785,6 +6928,10 @@
             write(FNum,'(a)') '# cbb_RECHARGE'
             write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,1),i=1,domain.nCells)
         end if
+        if(allocated(domain.cbb_WELLS)) then
+            write(FNum,'(a)') '# cbb_WELLS'
+            write(FNum,'(5e20.12)') (domain.cbb_WELLS(i,1),i=1,domain.nCells)
+        end if
         if(allocated(domain.cbb_DRAINS)) then
             write(FNum,'(a)') '# cbb_DRAINS'
             write(FNum,'(5e20.12)') (domain.cbb_DRAINS(i,1),i=1,domain.nCells)
@@ -6870,6 +7017,10 @@
             if(allocated(domain.cbb_RECHARGE)) then
                 write(FNum,'(a)') '# cbb_RECHARGE'
                 write(FNum,'(5e20.12)') (domain.cbb_RECHARGE(i,j),i=1,domain.nCells)
+            end if
+            if(allocated(domain.cbb_WELLS)) then
+                write(FNum,'(a)') '# cbb_WELLS'
+                write(FNum,'(5e20.12)') (domain.cbb_WELLS(i,j),i=1,domain.nCells)
             end if
             if(allocated(domain.cbb_DRAINS)) then
                 write(FNum,'(a)') '# cbb_DRAINS'
@@ -8731,6 +8882,43 @@
             end if
         end do 
     end subroutine WriteVolumeBudgetToTecplot
+    
+    !!-------------------------------------------------------------
+    !subroutine WriteWELFile(Modflow)
+    !    implicit none
+    !    
+    !    type (ModflowProject) Modflow
+    !    
+    !    integer :: i
+ 	  !
+    !    !------------------- WEL file
+    !    write(modflow.iWEL,*) modflow.GWF.nWELCells+modflow.CLN.nWELCells+modflow.SWF.nWELCells, modflow.iCBB    ! maximum number of WEL cells in any stress period 
+    !        
+    !    if(allocated(modflow.GWF.PumpingRate)) then
+    !        do i=1,modflow.GWF.nCells
+    !            if(bcheck(Modflow.GWF.Cell_Is(i),Well)) then
+    !                write(modflow.iWEL,'(i8,2x,g15.5)') i,modflow.GWF.PumpingRate(i),0
+    !            end if
+    !        end do
+    !    end if
+    !        
+    !    if(allocated(modflow.CLN.PumpingRate)) then
+    !        do i=1,modflow.CLN.nCells
+    !            if(bcheck(Modflow.CLN.Cell_Is(i),Well)) then
+    !                write(modflow.iWEL,'(i8,2x,g15.5)') Modflow.GWF.nCells+i,modflow.CLN.PumpingRate(i),0
+    !            end if
+    !        end do
+    !    end if
+    !    
+    !    if(allocated(modflow.SWF.PumpingRate)) then
+    !        do i=1,modflow.SWF.nCells
+    !            if(bcheck(Modflow.SWF.Cell_Is(i),Well)) then
+    !                write(modflow.iWEL,'(i8,2x,2g15.5)') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.PumpingRate(i),0
+    !            end if
+    !        end do
+    !    end if
+    !    
+    !end subroutine WriteWELFile
     
 
     
@@ -14262,6 +14450,13 @@
                             domain.cbb_RECHARGE=0
                         end if
                         read(FNum,err=9400,end=9400) (domain.cbb_RECHARGE(I,j),I=1,NVAL)
+                            
+                    else if(index(text,'WELLS') .ne.0) then
+                        if(j==1) THEN
+	                        allocate(domain.cbb_WELLS(NVAL,Modflow.ntime))
+                            domain.cbb_WELLS=0
+                        end if
+                        read(FNum,err=9400,end=9400) (domain.cbb_WELLS(I,j),I=1,NVAL)
                             
                     else if(index(text,'DRAINS') .ne.0) then
                         if(j==1) THEN

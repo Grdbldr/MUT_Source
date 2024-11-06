@@ -61,6 +61,7 @@ module GeneralRoutines    !### bit setting routines
     integer :: CriticalDepth=4
     integer :: BoundaryNode=5
     integer :: Inactive=6
+    integer :: Well=7
     
     
 
@@ -109,7 +110,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.32'
+    character(5) :: MUTVersion=' 1.33'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 

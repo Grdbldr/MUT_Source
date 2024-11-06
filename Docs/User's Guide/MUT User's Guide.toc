@@ -46,4 +46,5 @@
 \contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{91}{section.5.1}
 \contentsline {section}{\numberline {5.2}2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{93}{section.5.2}
 \contentsline {section}{\numberline {5.3}3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{94}{section.5.3}
-\contentsline {chapter}{\numberline {A}\textsc {Microsoft Excel}\ Database Files}{96}{appendix.A}
+\contentsline {chapter}{\numberline {6}Illustrative Example}{96}{chapter.6}
+\contentsline {chapter}{\numberline {A}\textsc {Microsoft Excel}\ Database Files}{97}{appendix.A}

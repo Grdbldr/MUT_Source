@@ -5,9 +5,9 @@ The steps in our model build workflow are:
 \begin{enumerate}
     \item Create a new working folder or copy an existing \mut\ project folder. \label{step:copy}
     \item Modify the \mut\ input file (and other input files if necessary) to reflect the new Modflow project.\label{step:modify}
-    \item Run \mut\ to build the new Modflow project, which also produces \tecplot\ output files for the various Modflow domains (i.e. \gwf,\swf\ and/or \cln ) created during the build process. \label{step:mut1}
+    \item Run \mut\ to build the new Modflow project, which also produces \tecplot\ output files for the various Modflow domains (i.e. \gwf, \swf\ and/or \cln ) created during the build process. \label{step:mut1}
     \item Run \tecplot\ and examine the build output files.   \label{step:Tecplot1}
-    \item Repeat steps~\ref{step:modify}-\ref{step:Tecplot1} until the new project is defined correctly.
+    \item Repeat steps~\ref{step:modify}-\ref{step:Tecplot1} until the new project is defined to your satisfaction.
 \end{enumerate}
 
 A \mut\ input file is a plain ascii text file that you can edit with your preferred editor (e.g. Windows Notepad\footnote{Our personal favourite editor is WinEdt (\url{https://www.winedt.com/snap.html}), which also provides a nice \LaTeX\ document development environment when coupled with the \TeX\ software package MiKTeX.  This manual was produced using these word processing tools.}).
@@ -17,7 +17,7 @@ To illustrate our model build workflow, we will refer to the various conceptual 
 
     \includegraphics[width=0.4\textwidth]{3_1_vsf_column_folderinit}
 
-In this example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{chapter:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
+In the \texttt{1\_VSF\_Column} example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{chapter:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
 
 
  In our preferred workflow we would first start a command prompt in the folder which contains the \mut\ input file by:
@@ -46,13 +46,16 @@ When you run \mut\, it will try to obtain a prefix in the following order:
     mut Good
 \end{verbatim}
         would cause \mut\ to process the input file \texttt{Good.mut}.
-    \item \textbf{From a prefix file:} If there is no command line argument, \mut\ checks for the presence of the file \texttt{\_mut.pfx} in the folder.  If present, \mut\ will read the prefix from it. For example, if the mut file was called \texttt{Good.mut} then the file \texttt{mut.pfx} would contain a single line
+    \item \textbf{From a prefix file:} If there is no command line argument, \mut\ checks for the presence of the file \texttt{\_mut.pfx} in the folder.  If present, \mut\ will read the prefix from it. For example, if the mut file was called \texttt{Good.mut} then the file \texttt{mut.pfx} would contain the single line:
+\begin{verbatim}
+    good
+\end{verbatim}
     \item \textbf{From the default input file:} If there is no command line argument or prefix file in the folder, \mut\ checks for the presence of the file \texttt{a.mut}.  If present in the folder, \mut\ will process it.
     \item \textbf{From the keyboard:} If none of these methods are successful, \mut\ will prompt for a prefix as shown here:
 
         \includegraphics[width=0.6\textwidth]{3_2_mut_no_prefix}
 
-        The user would type the prefix e.g.: \texttt{Good} and press Enter.
+        The user would type the prefix e.g.: \texttt{good} and press Enter.
 
 \end{enumerate}
 
@@ -63,7 +66,7 @@ To build the \texttt{1\_VSF\_Column} example, we would  run \mut\ using the inpu
 which uses the first method to supply the prefix.
 
 
-If you open the file \texttt{\_build.mut} in a text editor you will see the first couple of lines are comments (which begin with an exclamation point character: '!') describing the problem:
+If you open the file \texttt{\_build.mut} in a text editor you will see the first couple of lines are comments (which begin with an exclamation point character: '{\tt !}') describing the problem:
 \squish
 \begin{verbatim}
     ! Examples\1_VSF_Column:
@@ -93,7 +96,7 @@ The first instruction in the cleaned input file begins the model build:
     {\Large \sf end build modflow usg}
     }
 
-We will use the formatting convention shown above when documenting new instructions:
+This manual usessthe following formatting conventions when documenting new instructions:
 \begin{itemize}
   \item Heavy upper and lower lines frame the instruction documentation.
   \item The instruction name is presented in a large sans-serif font.
