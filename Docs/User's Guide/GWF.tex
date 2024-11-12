@@ -158,7 +158,7 @@ By default, \mut\ will stop and issue a warning message if the computed layer ba
 \ins{Minimum layer thickness}
     {\squish
     \begin{enumerate}
-    \item \rnum{MinThick} Minumum thickness value[L].
+    \item \rnum{MinThick} Minimum thickness [L] value.
     \end{enumerate}
     This instruction causes \mut\ to enforce a minimum thickness constraint for the current layer. At nodes where the computed layer base elevation is greater than or equal to the current top elevation, \rnum{MinThick} will
     be subtracted from the current top elevation to get the base elevation.
@@ -183,7 +183,7 @@ This instruction creates a non-uniform subdivision:
     {\squish
     \begin{enumerate}
         \item \inum{nsublayer}  Number of proportional sublayers.
-        \item \rnum{sub\_thick(i),i=1,\inum{nsublayer}} Proportional thicknesses in order from top to bottom.
+        \item \rnum{sub\_thick(i)},i=1,\inum{nsublayer} Proportional thicknesses in order from top to bottom.
     \end{enumerate}
     This instruction can be used if you want to refine the \gwf\ domain mesh vertically,
     for example, in the active zone with the \swf\ domain the ground surface in the .
@@ -248,7 +248,7 @@ This instruction is most often used to define a layer of uniform thickness relat
 
 %\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
-\subsubsection{Cell Connection Properties}  
+\subsubsection{Cell Connection Properties}
 \label{section:GWFCellConnections}
 \index{\gwf\ Domain ! cell connection properties}
 

@@ -1,37 +1,41 @@
 \label{section:Units}
-By default, \mut\ uses meters and seconds as the units of length and time respectively.
+The input files written by \mut\ define the units of length and time that are applied during the \mfus\ model simulation.
 
-The instruction \textsf{units of length} is used to change the default value:
+By default, \mut\ assigns meters as the units of length and seconds as the units of time. If desired, these instructions can be used to define a different unit system:
 
 \ins{units of length}
     {
         \squish
         \begin{enumerate}
-        \item \str{units}  The desired units of length: feet, meters or centimeters.
+        \item \str{units}  The desired units of length.  
         \end{enumerate}
-
-        So, for example, to use units of centimeters instead of meters, we would put the string \textsf{centimeters} in the input file, which would then be assigned to the string variable \str{units}. }
-
-This instruction requires one line of input, which in this case is a variable named \str{units}.  When naming input variables in the command description, the following conventions will be used:
-\begin{itemize}
-    \item Alphanumeric string variable names will begin with
-    the string '\str{}'
-    \item Real number (i.e. containing a decimal point) variable names will begin with
-    the string '\rnum{}'
-    \item Integer number (i.e. {\em not}a  containing decimal point) variable names will begin with
-    the string '\inum{}'
-\end{itemize}
-
-The instruction \textsf{units of time} is used to change the default value:
+        \mfus\ currently supports units of feet, meters or centimeters.
+        }
 
 \ins{units of time}
     {
         \squish
         \begin{enumerate}
-        \item \str{units}  The desired unit of time: seconds, minutes, hours, days or years.
+        \item \str{units}  The desired unit of time. \mfus\ currently supports units of seconds, minutes, hours, days or years.
         \end{enumerate}
 
-        So, for example, to use units of days instead of seconds, we would put the string \textsf{days} in the input file, which would then be assigned to the string variable \str{units}.
+        So, for example, to use units of days instead of seconds, we would put the string \textsf{days} in the input file,
+          which would then be assigned to the string variable \str{units}.
+        \squish
     }
+    
+So, for example, to use units of centimeters and days instead of meters and seconds, we could use the following instructions:
+ \begin{verbatim}
+    units of length
+    centimeters
 
+    units of time
+    days
+ \end{verbatim}
+
+ \begin{verbatim}
+    units of time
+    days
+ \end{verbatim}
+ 
 \mut\ converts the string variable \str{units} to its numeric equivalent and passes that to \mfus\ through the variables \textsf{ITMUNI} and \textsf{LENUNI}.
