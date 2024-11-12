@@ -92,6 +92,7 @@
     character(MAX_INST) :: AssignWELtoSWF_CMD		    =   'swf well'
     character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	        =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
+    character(MAX_INST) :: AssignCHDtoCLN_CMD           =   'cln constant head'
     character(MAX_INST) :: AssignWELtoCLN_CMD		    =   'cln well'
     
     !---------------------------------------------------GWF Properties
@@ -2485,6 +2486,8 @@
                 call AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
             
             ! CLN boundary contitions
+            else if(index(instruction, AssignCHDtoCLN_CMD)  /= 0) then
+                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.CLN)
             else if(index(instruction, AssignWELtoCLN_CMD)  /= 0) then
                 call AssignWELtoDomain(FnumMUT,Modflow,Modflow.CLN)
             
