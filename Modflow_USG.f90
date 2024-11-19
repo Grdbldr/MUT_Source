@@ -8149,7 +8149,7 @@
             modflow.CLN.StartingHeads(:)=modflow.CLN.zcell(:)+1.0e-4
         end if
         write(Modflow.iCLN,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iCLN,'(5(1pg15.5))') (modflow.CLN.StartingHeads(i),i=1,modflow.CLN.nCells)
+        write(Modflow.iCLN,'(5(1ES20.8))') (modflow.CLN.StartingHeads(i),i=1,modflow.CLN.nCells)
         
         !------------------- write CLN_GSF file
         write(Modflow.iCLN_GSF,'(a)') trim(TMPLT_CLN.meshtype)
@@ -8236,7 +8236,7 @@
             nStrt=nEnd+1
         end do
         
-        write(Modflow.iBAS6,'(10G12.5)') modflow.GWF.StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
+        write(Modflow.iBAS6,'(10ES20.8)') modflow.GWF.StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
 
         if(.not. allocated(modflow.GWF.StartingHeads)) then ! Assume 2.78 m for abdul for now'
             allocate(modflow.GWF.StartingHeads(modflow.GWF.nCells),stat=ialloc)
@@ -8625,7 +8625,7 @@
             modflow.SWF.StartingHeads(:)=modflow.SWF.zcell(:)+1.0e-4
         end if
         write(Modflow.iSWF,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iSWF,'(5(1pg15.5))') (modflow.SWF.StartingHeads(i),i=1,modflow.SWF.nCells)
+        write(Modflow.iSWF,'(5(1ES20.8))') (modflow.SWF.StartingHeads(i),i=1,modflow.SWF.nCells)
        
 
         
