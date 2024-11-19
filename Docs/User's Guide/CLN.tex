@@ -8,11 +8,10 @@ within the process as well as with cells of other processes.
 The current version of \mut\ has the following limitations for the definition of the \cln\ domain:
 \begin{enumerate}
     \item General \cln\ domains, where the cell geometry is independent of the \gwf\ mesh and  cell-to-cell connection can be one-to-many or many-to-one are not yet implemented. \mut\ assumes a 1-to-1 connection exists between \cln\ cells and \gwf\ layer 1 cells (i.e. top layer).
-    \item \cln\ flows to the \swf\ domain are not yet implemented, just \cln\ flows to the \gwf\ domain.
-    \item No \cln\ domain boundary conditions have been implemented.
+    \item \cln\ flows to the \gwf\ domain are implemented, but not  \cln\ flows to the \swf\ domain.
 \end{enumerate}
 
-This is sufficient for the short-term purpose of solving the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, which compares the use of a \cln\ versus an \swf\ domain for simulating flow in a surface water domain coupled to a \gwf\ domain, but not for solving more general problems of interest.
+This is sufficient for the short-term purpose of solving the example \texttt{3\_1\_CLN\_for\_SWF}, which compares the use of a \cln\ versus an \swf\ domain for simulating flow in a surface water domain coupled to a \gwf\ domain, but not for solving more general problems of interest.
 
 \subsection{Generating a \cln\ Domain}
 A \cln\ domain can be added to the \mfus\ model using this instruction:
@@ -20,8 +19,8 @@ A \cln\ domain can be added to the \mfus\ model using this instruction:
 \ins{generate cln domain}
     {This subtask is currently limited to defining the \cln\ domain from a single pair of $xyz$ coordinates and a specified number of cells.
 
-    It reads instructions until an \textsf{end} instruction is found e.g.\:
-
+    An end instruction is required to stop the subtask e.g.:
+    
     {\Large \sf end generate cln domain}
     }
 
@@ -31,56 +30,71 @@ This instruction can be used to define a simple \cln\ domain:
     {
         \squish
         \begin{enumerate}
-        \item \rnum{x1}, \rnum{y1}, \rnum{z1}  First $xyz$ coordinate triplet.
-        \item \rnum{x2}, \rnum{y2}, \rnum{z2}  Second $xyz$ coordinate triplet.
+        \item \rnum{x1} [$L$], \rnum{y1} [$L$], \rnum{z1} [$L$]  First $xyz$ coordinate triplet.
+        \item \rnum{x2} [$L$], \rnum{y2} [$L$], \rnum{z2} [$L$]  Second $xyz$ coordinate triplet.
         \item \inum{nCells}  Number of cells in the \cln.
         \end{enumerate}
         The 2 given $xyz$ coordinates define the endpoints of a line defining the \cln.  The \cln\ is subdivided into \inum{nCells} individual cells.
     }
 
-In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, the inputs are defined so the \cln\ cells coincide exactly with the top layer of \gwf\ cells as shown below:
+In the example \texttt{3\_1\_CLN\_for\_SWF}, the inputs are defined so the \cln\ cells coincide exactly with the top layer of \gwf\ cells as shown below:
 \begin{verbatim}
     generate uniform rectangles
-    101.0, 101   !  Mesh length in X-direction and number of rectangular elements
-    1.0, 1   !  Mesh length in Y-direction and number of rectangular elements
+    101.0, 101, -0.5   !  Mesh length in X, nRectElements in X, X Offset
+    1.0, 1, -0.5   !  Mesh length in Y, nRectElements in Y, Y Offset
 
 
     generate layered gwf domain
 
         top elevation
             elevation from xz pairs
-                   0.0, 2.0
-                 101.0, 1.0
+                 -100.0,  3.0
+                  200.0,  0.0
             end elevation from xz pairs
         end top elevation
 
-        ...
+        new layer
+            layer name
+            Top layer
 
-     generate cln domain
+            uniform sublayering
+            1
+
+            elevation from xz pairs
+                 -100.0,  2.0
+                  200.0, -1.0
+            end elevation from xz pairs
+        end new layer
+
+    end generate layered gwf domain
+
+    generate cln domain
         cln from xyz pair
-              0.0    0.5     2.0
-            101.0    0.5     1.0
+              -.5    0.0     2.005
+            100.5    0.0     0.995
             101  ! number of new CLN cells
 
     end generate cln domain
+
 \end{verbatim}
 
 Some key features of this example are:
 \begin{itemize}
     \item A template mesh of length 101.0 and with 101 elements is used to define the \gwf\ domain.
-    \item The top of the \gwf\ domain slopes from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$.
-    \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that also slope from $z=2.0$ at $x=0.0$ to $z=1.0$ at $x=101.0$
+    \item The mesh is offset in $x$ by -0.5 m so that \gwf\ and \cln\ cell locations start at $x=0.0$ and end at $x=100$ m.
+    \item The top of the \gwf\ domain slopes from $z=3.0$ at $x=-100.0$ to $z=0.0$ at $x=200.0$.  These are extended beyond the limits of the mesh so that the correct elevations are generated at the limits of the domain. Recall that the $x$-range must cover the entire template mesh.
+    \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that slope from $z=2.005$ at $x=-.5$ to $z=0.995$ at $x=100.5$
 \end{itemize}
 
 \subsubsection{Cell Connection Properties}  \index{\cln\ Domain ! cell connection properties}
 
-\cln\ domain cells are currently limited to have a direct one-to-one correspondence with cells in the top layer of the \gwf\ domain, as is the case for the simple verification example \texttt{3\_1\_CLN\_for\_SWF}.  A more general approach, in which \cln\ cells do not have to conform to the \gwf\ or \swf\ meshes will be developed in subsequent version of \mut.
+\cln\ domain cells are currently limited to have a direct one-to-one correspondence with cells in the top layer of the \gwf\ domain, as is the case for the simple example \texttt{3\_1\_CLN\_for\_SWF}.  A more general approach, in which \cln\ cells do not have to conform to the \gwf\ or \swf\ meshes will be developed in a subsequent version of \mut.
 
-\cln-\cln\ cells are connected through neighbouring nodes and connection properties are defined by the channel geometry inputs. 
+\cln-\cln\ cells are connected through neighbouring nodes and connection properties are defined by the channel geometry inputs.
 
 \cln-\gwf\ cell vertical connections are defined by element areas.
 
-\subsubsection{Assigning Material Properties}  \index{\cln\ Domain ! material properties}
+\subsubsection{Material Properties}  \index{\cln\ Domain ! material properties}
 \cln\ domain material properties vary on a zone-by-zone basis.  In the current version of \mut\, the assignment of \cln\ material properties is very rudimentary.
 
 Prior to assigning properties, we need to activate the \cln\ domain using these instructions:
@@ -89,7 +103,7 @@ Prior to assigning properties, we need to activate the \cln\ domain using these 
     cln
 \end{verbatim}
 
-A lookup table of \cln\ material properties  is provided in the file \texttt{qryCLNMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+A lookup table of \cln\ material properties  is provided in the file \texttt{CLN.csv}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
 
 In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
 
@@ -97,9 +111,9 @@ In order for \mut\ to access the lookup table, you first need to provide a link 
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  \cln\ material properties lookup table file name.
+        \item \str{FName}  \cln\ material properties lookup table file name.
         \end{enumerate}
-          \mut\ uses the file \str{file} to look up \cln\ material properties.
+          \mut\ uses the file \str{FName} to look up \cln\ material properties.
     }
 
 Zone selections must first be made using the instructions described on page~\pageref{page:zoneSelect} for the \gwf\ domain.
@@ -110,24 +124,23 @@ You can now assign a full set of \cln\ material properties to the current zone s
     {
         \squish
         \begin{enumerate}
-        \item \inum{val}  \cln\ material ID number.
+        \item \inum{MaterialID}  \cln\ material ID number.
         \end{enumerate}
-          A unique set of \cln\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen zones.
-    }
+        The unique set of \cln\ material properties with ID number \inum{MaterialID} is retrieved from the lookup table and assigned to the chosen cells.    }
 
 The assigned \cln\ material properties are written to the screen and \texttt{.eco} file:
 \begin{verbatim}
     chosen zones use cln material number
-    	Assigning all chosen CLN zones properties of material               3, CLN_for_SWF
+    	Assigning all chosen CLN zones properties of material 1, 2D Hillslope 100 m length
     	Geometry:           Rectangular
-    	Rectangular Width:       1.0000
-    	Rectangular Height:      1.0000
+    	Rectangular Width:       1.0000         METERS
+    	Rectangular Height:      1.0000         METERS
     	Direction:          Horizontal
     	Flow Treatment:     Unconfined/Mannings
-    	Longitudinal K:         5.48000E-02
+    	Longitudinal K:         5.48000E-02     METERS   SECONDS^(-1)
 \end{verbatim}
 
-You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
+You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{Appendix:ExcelUseage}.
 
 \subsubsection{Initial Conditions}  \index{\cln\ Domain ! initial condition ! initial (starting) depth}
 An initial (or starting) head should be assigned to each cell in the \cln\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
@@ -138,14 +151,34 @@ To assign an initial head to the \cln\ model domain, you must first make a cell 
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Initial depth [$L$].
+        \item \rnum{Depth} [$L$]  Initial depth.
         \end{enumerate}
-          An initial depth of \rnum{value} is used to calculate an initial head at each of the chosen cells.
+          An initial depth of \rnum{Depth} is used to calculate an initial head at each of the chosen cells.
     }
 
 \subsubsection{Boundary Conditions}  \index{\cln\ Domain ! boundary conditions}
-No \cln\ domain boundary conditions have been implemented in the current version of \mut.
+To assign boundary conditions  to the \cln\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
 
-In the verification example \texttt{MUT\_Examples$\backslash$3\_1\_CLN\_for\_SWF}, all boundary conditions are applied to the \gwf\ domain.
+A constant head boundary condition fixes the head at a \cln\ cell at a given value, allowing water to flow into or out of the \cln\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \cln\ model domain use this instruction:
+
+\ins{cln constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{CHead} [$L$]  Constant hydraulic head.
+        \end{enumerate}
+          An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
+    }
+
+A well boundary condition forces  water to flow in or out of the \cln\ model domain at a specified rate.   To add a well  to the \cln\ model domain use this instruction:
+
+\ins{cln well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping  rate of \rnum{PumpRate} is assigned to the chosen cells. Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
+    }
 
 

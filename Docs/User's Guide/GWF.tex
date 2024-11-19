@@ -8,19 +8,21 @@ A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template us
     {This subtask has instructions that are used to define:
      \begin{itemize}
         \item Element zone numbering scheme
-        \item Top elevation (i.e. $z$-coordinate)
-        \item Mesh layers and vertical discretization
+        \item Top elevation of domain (e.g.\ ground surface)
+        \item New mesh layers, vertical discretization (sublayering) and base elevation
     \end{itemize}
 
-    Subtask instructions will be read and processed until an \textsf{end} instruction is encountered.  We suggest appending the subtask name to the \textsf{end} instruction:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate layered gwf domain}
     }
 
-The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time until we reach the base of the domain. By default, element zone numbers will be assigned by layer number.  If the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh using this instruction\footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.}:
+    {\em NOTE: The term layers used here should not be confused with the \mf\ term of the same name. A \mf\ layer is one cell thick, while a \mut\ layer can be one or more elements thick.}
+
+The construction of the 3D \gwf\ finite-element mesh proceeds from top to bottom.  First, we define the top elevation, then add layers one at a time, defining the base elevation and vertical discretization of each new layer,  until we reach the base of the domain. By default, element zone numbering  corresponds with layer numbering.  Alternatively, if the template mesh is divided into horizontal patches with unique zone numbers, these can be assigned instead to the 3D GWF mesh using this instruction\footnote{The example \texttt{6\_Abdul\_Prism\_Cell} uses this option to define \swf\ domain zones.}:
 
 \ins{Zone by template}
-    {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.
+    {Causes \mut\ to assign the template mesh element zone number to the corresponding 3D \gwf\ element.  This results in zones that are vertical columns of elements from the top to the bottom of the \gwf\ domain.
 
     {\em This instruction should appear in the input file at the beginning of the \textsf{generate layered gwf domain} subtask before new layers are added.}
     }
@@ -33,9 +35,10 @@ To assign an elevation to the top layer of template nodes use this instruction:
      \begin{itemize}
         \item By assigning a given elevation to all nodes
         \item By reading variable elevation data from a file
-        \item By interpolating elevation data from a function $z(x)$ where the elevation $z$ varies by the nodes $x$ coordinate.
+        \item By interpolating elevation data from a function $z(x)$ where the elevation $z$ varies by the nodal $x$ coordinate.
      \end{itemize}
-     Once the elevation is defined, an \textsf{end} instruction is required to stop the subtask e.g.\:
+
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end top elevation}
     }
@@ -45,7 +48,7 @@ To assign an elevation to the top layer of template nodes use this instruction:
  \ins{elevation constant}
     {\squish
     \begin{enumerate}
-    \item \rnum{elev}\  The elevation \rnum{elev}\ will be assigned to all top layer nodes.
+    \item \rnum{Elev} [$L$]  The elevation \rnum{Elev} will be assigned to all top layer nodes.
     \end{enumerate}
     \squish
     }
@@ -53,7 +56,7 @@ To assign an elevation to the top layer of template nodes use this instruction:
  \ins{elevation from gb file}
     {\squish
     \begin{enumerate}
-    \item \str{file}\  The elevation data in the \gb\ nodal property file named \str{file}\ will be assigned to the top layer nodes.
+    \item \str{FName}  The elevation data in the \gb\ nodal property file \str{FName} will be assigned to the top layer nodes.
     \end{enumerate}
     \squish
     }
@@ -63,12 +66,12 @@ The \gb\ nodal property file uses a legacy binary file format. You can develop y
  \ins{elevation from list file}
     {\squish
     \begin{enumerate}
-    \item \str{file}\  The elevation data in the ascii file named  \str{file}\ will be assigned to the top layer nodes.
+    \item \str{FName}  The elevation data in the ascii file \str{FName} will be assigned to the top layer nodes.
     \end{enumerate}
     \squish
     }
 
-Part of a sample list file \footnote{The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_MODHMS} uses an ascii file input to define nodal elevations.} is shown here:
+Part of a sample list file\footnote{The example \texttt{6\_Abdul\_MODHMS} uses an ascii file input to define nodal elevations.} is shown here:
     \begin{verbatim}
     Kriged cell top elevation for layer 1
      4.414571762E+000
@@ -91,22 +94,22 @@ To define the top elevation as a function of $x$ (usually used for cross-section
     {
     \squish
     \begin{enumerate}
-    \item \rnum{x(1)}, \rnum{y(1)}  First $x, z$ coordinate pair.
-    \item \textbf{...}
-    \item \rnum{x(n)}, \rnum{y(n)}  nth $x, z$ coordinate pair.
+    \item \rnum{x(1)} [$L$], \rnum{z(1)} [$L$]  First $x, z$ coordinate pair.
+    \item \textbf{...} \\
+     \hspace*{-.27in}\rule{0.in}{.24in}  n. \rnum{x(n)} [$L$], \rnum{z(n)} [$L$]  nth $x, z$ coordinate pair.
     \end{enumerate}
 
      An elevation is calculated for each chosen cell, based on it's $x$-coordinate location, by interpolating an elevation from the given list of  $xz$-coordinate pairs.
 
-     This subtask reads a list of $xz$-coordinate pairs until an \textsf{end} instruction is encountered e.g.\:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end elevation from xz pairs}
     }
 
-Here is an example showing the use of this instruction \footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Hillslope} uses the \textsf{elevation from xz pairs} pairs instruction to define the top elevation of the cross-sectional domain.}:
+Here is an example showing the use of this instruction\footnote{The example \texttt{1\_VSF\_Hillslope} uses the \textsf{elevation from xz pairs} pairs instruction to define the top elevation of the cross-sectional domain.}:
     \begin{verbatim}
     elevation from xz pairs
-           0.0, 0.0
+           0.0,   0.0
         1000.0, 100.0
     end elevation from xz pairs
      \end{verbatim}
@@ -119,9 +122,8 @@ Some key features of this example are:
   \item For each node in the template mesh, the $x$ coordinate is used to interpolate an elevation (i.e. $z$ value) using the appropriate $xz$ pair.
 \end{itemize}
 
+\pagebreak
 \subsubsection{Adding Layers} \index{\gwf\ Domain ! layering}
-    {\em NOTE: The term layers used here should not be confused with the \mf\ term of the same name. A \mf\ layer is one cell thick, while a \mut\ layer can be one or more elements thick.}
-
 A \mfus\ model must contain at least 1 layer, and each layer is defined using this instruction:     {\index{Grid generation ! \gwf\ Domain ! New layer}
 
 \ins{new layer}
@@ -131,12 +133,24 @@ A \mfus\ model must contain at least 1 layer, and each layer is defined using th
        \item Vertical discretization
      \end{itemize}
 
-     It reads instructions until an \textsf{end} instruction is found e.g.\:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end new layer}
     }
 
 The base elevation is defined using the elevation instructions  described on page~\pageref{'Page:TopElev'} that are given for the \textsf{top elevation} instruction.
+
+By default, \mut\ will stop and issue a warning message if the computed layer base elevation is greater than or equal to the current layer top elevation.  This instruction forces the base to be below the top by a set amount:
+
+\ins{Minimum layer thickness}
+    {\squish
+    \begin{enumerate}
+    \item \rnum{MinThick}[L]  Minimum thickness value.
+    \end{enumerate}
+    This instruction causes \mut\ to enforce a minimum thickness constraint for the current layer. At nodes where the computed layer base elevation is greater than or equal to the current top elevation, \rnum{MinThick} will
+    be subtracted from the current top elevation to get the base elevation.
+    }
+
 
 By default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where {\em n} is the current layer number.  If you want to assign your own layer name use this instruction:
 
@@ -144,26 +158,13 @@ By default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where
     {
     \squish
     \begin{enumerate}
-    \item \str{layer\_name} Layer name.
+    \item \str{LayerName} Layer name.
     \end{enumerate}
     \squish
     }
 
 %\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
-
-
-
-By default, \mut\ will stop and issue a warning message if the computed layer base elevation is greater than or equal to the current layer top elevation.  This instruction forces the base to be below the top by a set amount:
-
-\ins{Minimum layer thickness}
-    {\squish
-    \begin{enumerate}
-    \item \rnum{MinThick} Minimum thickness [L] value.
-    \end{enumerate}
-    This instruction causes \mut\ to enforce a minimum thickness constraint for the current layer. At nodes where the computed layer base elevation is greater than or equal to the current top elevation, \rnum{MinThick} will
-    be subtracted from the current top elevation to get the base elevation.
-    }
-
+ 
 By default, a new layer will not be subdivided vertically unless one the following two instructions is issued.
 The first creates a uniform subdivision:
 
@@ -177,22 +178,21 @@ The first creates a uniform subdivision:
     minus the current base elevation divided by \inum{nsublayer}.
     }
 
-This instruction creates a non-uniform subdivision:
+This instruction creates a non-uniform subdivision\footnote{The example \texttt{6\_Abdul\_MODHMS} uses the \textsf{Proportional sublayering}  instruction to match the cell top elevations of the original {\sc MODHMS} mesh.}:
 
 \ins{Proportional sublayering}
     {\squish
     \begin{enumerate}
-        \item \inum{nsublayer}  Number of proportional sublayers.
-        \item \rnum{sub\_thick(i)},i=1,\inum{nsublayer} Proportional thicknesses in order from top to bottom.
+        \item \inum{nSublayer}  Number of proportional sublayers.
+        \item \rnum{SubThick(i)}, i=1,\inum{nSublayer} Proportional thicknesses in order from top to bottom.
     \end{enumerate}
     This instruction can be used if you want to refine the \gwf\ domain mesh vertically,
-    for example, in the active zone with the \swf\ domain the ground surface in the .
+    for example, in the active zone near the \swf\ domain at ground surface.
 
-    It is important to understand that the variable \rnum{sub\_thick} is not
-    a true thickness, but is instead a relative thickness, which is used along
+    It is important to understand that the variable \rnum{SubThick} is not
+    a true thickness, but is instead a dimensionless relative thickness, which is used along
     with the layer thickness to determine the element heights in the current
     column.
-
 }
 
     For example, these instructions:
@@ -209,21 +209,20 @@ This instruction creates a non-uniform subdivision:
     }
     \squish
 would subdivide the current layer vertically into three elements, between
-    the current base and top elevation, with element height proportions of .1,
-    1 and 10 from top to bottom.
+    the current base and top elevation, with the middle element being ten times as thick as the top element, and 1/10th as thick as the bottom element.
 
-This instruction is most often used to define a layer of uniform thickness relative to an uneven top elevation:
+This instruction can be used to create a basal layer surface a given distance below, and parallel to, it's top surface:
 
 \ins{Offset base}
     {\squish
     \begin{enumerate}
-    \item \rnum{value} Thickness value (L) by which to offset the layer base elevation.
+        \item \rnum{Offset} [$L$] Height of offset.
     \end{enumerate}
-    This instruction causes the elevation of the base of the layer to be offset vertically by the given value.  This
-    can be used to create a surface a given distance below another surface.
+    This instruction causes the elevation of layer base to be offset below the  top by the  value \rnum{Offset}.
 }
 
-    For example, these instructions:
+\pagebreak    
+For example, these instructions:
 \begin{verbatim}
         top elevation
             elevation from list file
@@ -244,7 +243,7 @@ This instruction is most often used to define a layer of uniform thickness relat
 
     end generate layered gwf domain
 \end{verbatim}
- create a layer with a top elevation 1 metre below the elevation defined in the raster file \texttt{elev.list}:
+ create a layer with a top elevation 1 length unit (e.g.\ 1 meter) below the elevation defined in the raster file \texttt{elev.list}:
 
 %\includegraphics[width=.15\textwidth]{UnderConstruction} \textit{Need to check sign on \textsf{offset base} input}
 
@@ -262,7 +261,7 @@ Consider the mesh-centred case, where cell control volumes are defined at the tr
 
 The yellow triangle shows the footprint of a \mfus\ cell.
 
-Cell B is a lateral neighbour of Cell A and shares side 1-2.  The lateral connection length between A and B is the sum of the lengths of the inner circle radii for each cell: A-a' + B-b'.  The lateral connection area is the product of the length of the shared side 1-2 and the cell thickness.
+Cell B is a lateral neighbour of cell A and shares side 1-2.  The lateral connection length between A and B is the sum of the lengths of the inner circle radii for each cell: A-a' + B-b'.  The lateral connection area is the product of the length of the shared side 1-2 and the cell thickness.
 
 In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area equals the area of the template mesh element (yellow triangle).
 
@@ -272,22 +271,22 @@ Here is the node-centred case, where cell control volumes are defined at the tri
 
 The yellow polygon shows the footprint of a \mfus\ cell.
 
-Cell B is a lateral neighbour of Cell A.  The lateral connection length between A and B is the distance from node A to node B. The lateral connection area is defined by the product of the sum of the inner circle radii for each triangle: C-c' + D-d' and the cell thickness.
+Cell B is a lateral neighbour of cell A.  The lateral connection length between A and B is the distance from node A to node B. The lateral connection area is defined by the sum of the inner circle radii for each neighbouring triangle: C-c' + D-d' and the cell thickness.
 
-In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area is the area of the polygon formed by joining the inner circle centres of the common template mesh elements (yellow polygon).
+In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area is the area of the polygon formed by joining the inner circle centres of the template mesh elements common to cell A (yellow polygon).
 
 Cell connection data are define in a similar fashion for model domains that are generated from a rectangular element template mesh.  In this case, element side lengths are used to define connection lengths and areas instead of inner circle radii.
 
 
-\subsubsection{Assigning Material Properties}  \index{\gwf\ Domain ! material properties} \label{section:matprops}
+\subsubsection{Material Properties}  \index{\gwf\ Domain ! material properties} \label{section:matprops}
 
-\gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ has instructions for selecting subsets of cells. A cell is selected when a true/false attribute (referred to as  the cells \textsf{Chosen} attribute) is set to true. Selected cells can be assigned material property values.  This instruction:
+\gwf\ domain material properties may vary on a cell-by-cell  basis.  \mut\ has instructions for selecting subsets of cells. A cell is selected when a true/false attribute (referred to as  the cells \textsf{Chosen} attribute) is set to true. Selected cells can be assigned material property values.  This instruction selects all cells in the {\em active} model domain:
 
 \ins{choose all cells}
     {Select all cells in the active model domain.
      }
 
-selects all cells in the {\em active} model domain.  This is an example of what we refer to as a {\em generic} instruction, which means it will be applied to the currently active model domain: \gwf, \swf\ or \cln.  To choose all cells in the \gwf\ domain, we first need to activate it using this instruction:
+  This is an example of what we refer to as a {\em generic} instruction, which means it will be applied to the currently active model domain: \gwf, \swf\ or \cln.  To choose all cells in the \gwf\ domain, we first need to activate it using this instruction:
 
 \ins{active domain}
     {
@@ -304,13 +303,13 @@ So to activate the \gwf\ domain, we would insert these instructions in the input
     gwf
 \end{verbatim}
 
-These instructions can be used to choose cells in various ways\label{page:cellSelect}:
+These instructions can now be used to choose \gwf\ cells in various ways\label{page:cellSelect}:
 
 \ins{choose cell at xyz}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{x1}, \rnum{y1}, \rnum{z1}  An $xyz$ coordinate triplet.
+        \item \rnum{x1} [$L$], \rnum{y1} [$L$], \rnum{z1} [$L$]  An $xyz$ coordinate triplet.
         \end{enumerate}
         The cell closest to the given $xyz$ coordinate triplet will be chosen.
     }
@@ -319,41 +318,41 @@ These instructions can be used to choose cells in various ways\label{page:cellSe
     {
         \squish
         \begin{enumerate}
-        \item \inum{layer}  The number of the layer to be chosen.
+        \item \inum{Layer}  The number of the layer to be chosen.
         \end{enumerate}
-        The cells in Modflow layer number \inum{Layer} will be chosen.  Remember that Modflow layers are one cell high and are numbered from the top to the bottom of the model domain.\footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} which uses the previous two instructions to define a constant head at  the base  and a recharge boundary condition at the top of the 1D column.}
+        The cells in Modflow layer number \inum{Layer} will be chosen.  Remember that Modflow layers are one cell high and are numbered from the top to the bottom of the model domain.\footnote{ See the example \texttt{1\_VSF\_Column} which uses the previous two instructions to define a constant head at  the base  and a recharge boundary condition at the top of the 1D column.}
     }
 
 \ins{choose cells from file}
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  The file \str{file} containing a list of cell numbers.
+        \item \str{FName}  The file \str{FName} containing a list of cell numbers.
         \end{enumerate}
-        The cells listed in the file \str{file} will be chosen.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_MODHMS} which uses this instruction to assign some cells as inactive.}
+        The cells listed in the file \str{FName} will be chosen.\footnote{ See the example \texttt{1\_Abdul\_MODHMS} which uses this instruction to assign some cells as inactive.}
     }
 
-\pagebreak
 \ins{choose cells from gb elements}
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  The \gb\ chosen element file \str{file} containing information concerning the status, chosen or not chosen, of each element in the \gb\ model domain.
+        \item \str{FName}  The \gb\ chosen element file \str{FName} containing information concerning the status, chosen or not chosen, of each element in the \gb\ model domain.
         \end{enumerate}
-          If an element is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_Prism\_Cell} which uses this instruction to assign some cells as inactive.}
+          If an element is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.\footnote{ See the  example \texttt{1\_Abdul\_Prism\_Cell} which uses this instruction to assign some cells as inactive.}
     }
 
 \ins{choose cells from gb nodes}
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  The \gb\ chosen node \str{file} containing information concerning the status, chosen or not chosen, of each node in the \gb\ model domain.
+        \item \str{FName}  The \gb\ chosen node file \str{FName} containing information concerning the status, chosen or not chosen, of each node in the \gb\ model domain.
         \end{enumerate}
-          If a node is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.  \footnote{ See the verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_Prism\_Cell\_nc} which uses this instruction to assign some cells as inactive.}
+          If a node is flagged as chosen in the \gb\ model domain then the corresponding cell will be chosen in the \mfus\ model domain.\footnote{ See the  example \texttt{1\_Abdul\_Prism\_Cell\_nc} which uses this instruction to assign some cells as inactive.}
     }
 
 The previous two instructions are used to choose cells for the mesh-centered and node-centered approaches respectively.
 
+\pagebreak
 Cell selection instructions are cumulative.  For example, you can modify the current selection by repeating instructions like  \textsf{choose cell at xyz} or \textsf{choose cells by layer} with different inputs and then assign properties to the current selection.  This instruction clears the selection before beginning new cell selection(s):
 
 \ins{clear chosen cells}
@@ -368,9 +367,12 @@ It is good practice to clear the selection before starting a new selection. \mut
     choose all cells
     	GWF Cells chosen:      39765
 \end{verbatim}
-If a cell selection instruction has unexpected results these are good places to check.
+If a cell selection instruction has unexpected results it is good practice to check the \texttt{.eco} file for these outputs.
 
-The recommended way to assign domain material properties is through the use of a lookup table.  Lookup tables are provided for the each domain in the \bin\ directory, as outlined on page~\pageref{page:userbin}. In this case, the file \texttt{GWF.csv} contains the lookup table for the \gwf\ domain.
+The recommended way to assign domain material properties is through the use of a lookup table. 
+\label{page:LookupTable} 
+\phantomsection\label{page:LookupTable}
+Lookup tables are provided for each domain in the \bin\ directory, as outlined on page~\pageref{page:userbin}. In this case, the file \texttt{GWF.csv} contains the lookup table for the \gwf\ domain.
 
 In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
 
@@ -378,9 +380,9 @@ In order for \mut\ to access the lookup table, you first need to provide a link 
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  \gwf\ material properties lookup table file name.
+        \item \str{FName}  \gwf\ material properties lookup table file name.
         \end{enumerate}
-          \mut\ uses the file \str{file} to look up \gwf\ material properties.
+          \mut\ uses the file \str{FName} to look up \gwf\ material properties.
     }
 
 In the case of the \gwf\ domain, the instructions:
@@ -390,18 +392,18 @@ In the case of the \gwf\ domain, the instructions:
 \end{verbatim}
 would be used to link to the lookup table.
 
-You can now assign a set of \gwf\ material properties to the current cell selection using this instruction:
+You can now assign a set of \gwf\ material properties to the current cell selection using this instruction:  
 
 \ins{chosen cells use gwf material number}
     {
         \squish
         \begin{enumerate}
-        \item \inum{val}  \gwf\ material ID number.
+        \item \inum{MaterialID}  \gwf\ material ID number.
         \end{enumerate}
-          A unique set of \gwf\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen cells.
+          The unique set of \gwf\ material properties with ID number \inum{MaterialID} is retrieved from the lookup table and assigned to the chosen cells.
     }
 
-The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses these instructions to assign units of length and time for the \mfus\ model and properties for material number 1 as shown here:
+The example \texttt{1\_VSF\_Column} uses the following instructions to assign units of length and time for the \mfus\ model and the properties of the material with ID number 1 as shown here:
 \begin{verbatim}
     build modflow usg
         units of length
@@ -433,10 +435,10 @@ Some key features to note are:
     \item CSV files can be loaded and examined using \excel.
     \item The first line is a header with contains field (i.e. column) names.
     \item The first column contains the material ID number, followed by the material parameters (one per column), unit definitions and notes.
-    \item Material 1 defines length units of centimeters and time units of days.  These are the same as the defined \mfus\ units so no unit conversion is required in this case.
+    \item Material 1 defines length units of centimeters and time units of days.  If these are the same as the defined \mfus\ unit system then no unit conversion is required, otherwise parameter values will be converted into the defined \mfus\ unit system according to their dimensionality.
 \end{itemize}
 
-Shown below is the output echoed to the screen and \texttt{\_buildo.eco} file for the verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column}: \begin{verbatim}
+Shown below is the output echoed to the screen and \texttt{\_buildo.eco} file for the example \texttt{1\_VSF\_Column}: \begin{verbatim}
     gwf materials database
         Materials file C:\MUT\MUT_Examples-main\_MUT_USERBIN\GWF.csv
 
@@ -465,7 +467,7 @@ Some key features to note are:
     \item The units defined in the database for each property are given. For example, property  \texttt{Kh\_Kx} has units of \verb+CENTIMETERS DAYS^(-1)+, where the string \verb+^(-1)+ means 'raised to the power of minus 1', giving units of \verb+CENTIMETERS/DAYS+.
 \end{itemize}
 
-Editing the \texttt{csv} files directly is not recommended. To modify or define database files, please refer to the quidelines given in Appendix~\ref{Appendix:ExcelUseage}.
+Editing the \texttt{csv} files directly is not recommended. To modify existing or define new database files, please refer to the guidelines given in Appendix~\ref{Appendix:ExcelUseage}.
 
 The following section describes instructions used to assign values to individual materials properties for the current cell selection.  When using these instruction, {\em you must be careful to supply the values in the unit system defined for the model}. This first instruction is used to define the horizontal hydraulic conductivity, \texttt{Kh}:
 
@@ -473,74 +475,78 @@ The following section describes instructions used to assign values to individual
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Horizontal hydraulic conductivity [$L$   $T^{-1}$].
+        \item \rnum{Kh} [$L$   $T^{-1}$]  Horizontal hydraulic conductivity.
         \end{enumerate}
-          A horizontal hydraulic conductivity of \rnum{val} is assigned to the chosen cells.
+          A horizontal hydraulic conductivity of \rnum{Kh} is assigned to the chosen cells.
     }
 
-As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file.
+As a reminder to be aware of units, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file e.g.:
+\begin{verbatim}
+    gwf kh
+    	Assigning all chosen GWF cells a Kh of 0.10000E-04 CENTIMETERS DAYS^(-1)
+\end{verbatim}
 
 \ins{gwf kv}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Vertical hydraulic conductivity [$L$   $T^{-1}$].
+        \item \rnum{Kv} [$L$   $T^{-1}$]  Vertical hydraulic conductivity.
         \end{enumerate}
-          A vertical hydraulic conductivity of \rnum{val} is assigned to the chosen cells.
+          A vertical hydraulic conductivity of \rnum{Kv} is assigned to the chosen cells.
     }
 
 \ins{gwf ss}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Specific storage [$L^{-1}$].
+        \item \rnum{Ss} [$L^{-1}$]  Specific storage.
         \end{enumerate}
-          A specific storage of \rnum{val} is assigned to the chosen cells.
+          A specific storage of \rnum{Ss} is assigned to the chosen cells.
     }
 
 \ins{gwf sy}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Specific yield (-).
+        \item \rnum{Sy}  Specific yield.
         \end{enumerate}
-          A specific yield of  \rnum{val} is assigned to the chosen cells.
+          A specific yield of  \rnum{Sy} is assigned to the chosen cells.
     }
 
 \ins{gwf alpha}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Van Genuchten/Brooks-Corey Alpha [$L^{-1}$].
+        \item \rnum{Alpha} [$L^{-1}$]  Van Genuchten/Brooks-Corey Alpha.
         \end{enumerate}
-          A Van Genuchten/Brooks-Corey Alpha of \rnum{val} is assigned to the chosen cells.
+          A Van Genuchten/Brooks-Corey Alpha of \rnum{Alpha} is assigned to the chosen cells.
     }
 
 \ins{gwf beta}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Specific yield (-).
+        \item \rnum{Beta}  Van Genuchten/Brooks-Corey Beta.
         \end{enumerate}
-          A specific yield of \rnum{val} is assigned to the chosen cells.
+          A Van Genuchten/Brooks-Corey Beta of \rnum{Beta} is assigned to the chosen cells.
     }
 
 \ins{gwf sr}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Residual saturation [-].
+        \item \rnum{Sr}  Residual saturation.
         \end{enumerate}
-          A residual saturation of \rnum{val} is assigned to the chosen cells.
+          A residual saturation of \rnum{Sr} is assigned to the chosen cells.
     }
 
 \ins{gwf brooks}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{val}  Brooks-Corey exponent.
+        \item \rnum{Brooks}  Brooks-Corey exponent.
         \end{enumerate}
-          A Brooks-Corey exponent of \rnum{val} is assigned to the chosen cells.
+          A Brooks-Corey exponent of \rnum{Brooks} is assigned to the chosen cells.
     }
 
 During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions\label{page:zoneSelect}:
@@ -570,7 +576,7 @@ The zone selection can be converted into a cell selection using this instruction
 
 This cell selection can now be used to assign material properties.
 
-Below is an example\footnote{See verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell}} of a case in which the element zone numbers have been assigned by layer number for a 3-layer case:
+Below is an example\footnote{See example \texttt{6\_Abdul\_Prism\_Cell}} of a case in which the element zone numbers have been assigned by layer number for a 3-layer case:
 
 \includegraphics[width=.86\textwidth]{3_10_GWFZones}
 
@@ -650,9 +656,9 @@ To assign a uniform hydraulic head to the \gwf\ model domain, you must first mak
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Initial (or starting) hydraulic head [L].
+        \item \rnum{IHead} [$L$]  Initial (or starting) hydraulic head.
         \end{enumerate}
-          An initial hydraulic head  of \rnum{value} is assigned to the chosen cells.
+          An initial hydraulic head  of \rnum{IHead} is assigned to the chosen cells.
     }
 
 As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file:
@@ -668,26 +674,27 @@ To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elev
     {
     \squish
     \begin{enumerate}
-    \item \rnum{z(1)}, \rnum{head(1)}  First $z, head$ pair.
-    \item \rnum{z(2)}, \rnum{head(2)}  Second $z, head$ pair.
-    \item \textbf{...}
-    \item \rnum{z(n)}, \rnum{head(n)}  nth $z, head$  pair.
+    \item \rnum{z(1)} [$L$], \rnum{Head(1)} [$L$]  First $z, head$ pair.
+    \item \rnum{z(2)} [$L$], \rnum{Head(2)} [$L$]  Second $z, head$ pair.
+    \item \textbf{...}\\
+     \hspace*{-.27in}\rule{0.in}{.24in} n. \rnum{z(n)} [$L$], \rnum{Head(n)}  [$L$]  nth $z, head$  pair.
     \end{enumerate}
 
      An initial head is calculated for each chosen cell, based on it's $z$-coordinate location, by interpolating a head from the given list of  $z, head$ pairs.
 
-     This subtask reads a list of $z, head$ pairs until an \textsf{end} instruction is encountered e.g.\:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end gwf initial head function of z}
     }
 
-This is commonly used to generate an initial head for a simple column model\footnote{The verification example \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain} as shown here: :
+This is commonly used to generate an initial head for a simple column model\footnote{The example \texttt{1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain.} as shown here: 
 \begin{verbatim}
     gwf initial head function of z
     !  z    head
       0.0  -100.0
     100.0     0.0
 \end{verbatim}
+\pagebreak
 Some key features of this example are:
 \begin{itemize}
   \item The two given $z,head$ pairs define an initial head  that varies from $head=-100.0$ at $z=0$ to $head=0.0$ at $z=100.0$.  You may supply as many pairs as needed to define the initial head.
@@ -697,15 +704,17 @@ Some key features of this example are:
 \end{itemize}
 
 \subsubsection{Boundary Conditions}  \index{\gwf\ Domain ! boundary conditions}
+To assign boundary conditions  to the \gwf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
+
 A constant head boundary condition fixes the head at a \gwf\ cell at a given value, allowing water to flow into or out of the \gwf\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \gwf\ model domain use this instruction:
 
 \ins{gwf constant head}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Constant hydraulic head [L].
+        \item \rnum{CHead} [$L$]   Constant hydraulic head.
         \end{enumerate}
-          An constant hydraulic head  of \rnum{value} is assigned to the chosen cells.
+          An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
     }
 
 A drain boundary condition allows water to flow out of the \gwf\ model domain if the hydraulic head of the cell is higher than the drain elevation.   To add a drain to the \gwf\ model domain use this instruction:
@@ -714,25 +723,25 @@ A drain boundary condition allows water to flow out of the \gwf\ model domain if
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Drain conductance [L/T].
+        \item \rnum{DrainK}  [$L$ $T^{-1}$]  Drain conductance.
         \end{enumerate}
-          A drain conductance of \rnum{value} is assigned to the chosen cells.  The top elevation of the cell is assigned automatically as the drain elevation
+          A drain conductance of \rnum{DrainK} is assigned to the chosen cells.  The top elevation of the cell is assigned automatically as the drain elevation
     }
 
 %\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Should we add an instruction where the drain elevation is specified?  }
 
-A recharge boundary condition forces  water to flow in to the \gwf\ model domain at a specified rate.   To add a recharge  to the \gwf\ model domain use this instruction:
+A recharge boundary condition forces  water to flow in to the \gwf\ model domain at a specified rate.   To add recharge  to the \gwf\ model domain use this instruction:
 
 \ins{gwf recharge}
     {
         \squish
         \begin{enumerate}
-            \item \rnum{value}  Recharge rate [L/T].
-            \item \inum{option}  Recharge option.
+            \item \rnum{RechRate} [$L$ $T^{-1}$]  Recharge rate.
+            \item \inum{RechOpt}  Recharge option.
         \end{enumerate}
-        A recharge rate of \rnum{value} is assigned to the chosen cells.
+        A recharge rate of \rnum{RechRate} is assigned to the chosen cells.
 
-        The recharge option \inum{option}is used to define where the recharge  is to be applied and can have one of the following values:
+        The recharge option \inum{RechOpt} is used to define where the recharge  is to be applied and can have one of the following values:
         \begin{enumerate}
             \item To top layer
             \item To one specified node in each vertical column
@@ -740,6 +749,18 @@ A recharge boundary condition forces  water to flow in to the \gwf\ model domain
             \item To the swf domain on top of each vertical column
         \end{enumerate}
         \squish
+    }
+
+
+A well boundary condition forces  water to flow in or out of the \gwf\ model domain at a specified rate.   To add a well  to the \gwf\ model domain use this instruction:
+
+\ins{gwf well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping  rate of \rnum{PumpRate} is assigned to the chosen cells. Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
     }
 
 

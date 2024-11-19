@@ -1,30 +1,27 @@
 \label{section:Units}
 The input files written by \mut\ define the units of length and time that are applied during the \mfus\ model simulation.
 
-By default, \mut\ assigns meters as the units of length and seconds as the units of time. If desired, these instructions can be used to define a different unit system:
+By default, \mut\ assigns meters as the units of length and seconds as the units of time. If desired, the following instructions can be used to define a different unit system:
 
 \ins{units of length}
     {
         \squish
         \begin{enumerate}
-        \item \str{units}  The desired units of length.  
+        \item \str{LengthUnits}  The desired units of length.
         \end{enumerate}
-        \mfus\ currently supports units of feet, meters or centimeters.
+        \mfus\ currently supports length units of feet, meters or centimeters.
         }
 
 \ins{units of time}
     {
         \squish
         \begin{enumerate}
-        \item \str{units}  The desired unit of time. \mfus\ currently supports units of seconds, minutes, hours, days or years.
+        \item \str{TimeUnits}  The desired units of time.
         \end{enumerate}
-
-        So, for example, to use units of days instead of seconds, we would put the string \textsf{days} in the input file,
-          which would then be assigned to the string variable \str{units}.
-        \squish
+        \mfus\ currently supports time units of seconds, minutes, hours, days or years.
     }
-    
-So, for example, to use units of centimeters and days instead of meters and seconds, we could use the following instructions:
+
+These instructions would define units of centimeters and days instead of meters and seconds:
  \begin{verbatim}
     units of length
     centimeters
@@ -33,9 +30,4 @@ So, for example, to use units of centimeters and days instead of meters and seco
     days
  \end{verbatim}
 
- \begin{verbatim}
-    units of time
-    days
- \end{verbatim}
- 
-\mut\ converts the string variable \str{units} to its numeric equivalent and passes that to \mfus\ through the variables \textsf{ITMUNI} and \textsf{LENUNI}.
+\mut\ converts the string variables \str{LengthUnits} and \str{StringUnits} to their numeric equivalents and passes that to \mfus\ through the variables \textsf{LENUNI} and \textsf{ITMUNI} respectively.

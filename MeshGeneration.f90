@@ -649,6 +649,7 @@ Module MeshGeneration
         integer :: i, j, k
 	    integer :: nbx, nby, nn2d, ne2d
         real(dr) :: xl, yl, delx, dely
+        real(dr) :: xOffset, yOffset
         
         real, allocatable :: xi(:)
         real, allocatable :: yi(:)
@@ -661,17 +662,22 @@ Module MeshGeneration
 
 
         !     xl, yl are grid lengths in x- and y-directions
-        read(FNum,*) xl, nbx
+        read(FNum,*) xl, nbx, xOffset
         write(TMPStr,'(a,g15.5,a)') TAB//'Mesh length in X        ',xl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
-        write(TMPStr,'(a,i9)')    TAB//'Number of elements in X ',nbx
+        write(TMPStr,'(a,i9)')      TAB//'Number of elements in X ',nbx
+        call Msg(TMPStr)
+        write(TMPStr,'(a,g15.5,a)') TAB//'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
-        read(FNum,*) yl, nby
+        read(FNum,*) yl, nby,yOffset
         write(TMPStr,'(a,g15.5,a)') TAB//'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
-        write(TMPStr,'(a,i9)')    TAB//'Number of elements in Y ',nby
+        write(TMPStr,'(a,i9)')      TAB//'Number of elements in Y ',nby
         call Msg(TMPStr)
+        write(TMPStr,'(a,g15.5,a)') TAB//'Y Offset                ',yOffset,'     '//TRIM(UnitsOfLength)
+        call Msg(TMPStr)
+
 
         nx=nbx+1
         ny=nby+1
@@ -684,10 +690,10 @@ Module MeshGeneration
         delx=xl/float(nx-1)
         dely=yl/float(ny-1)
         do i=1,nx
-            xi(i)=float(i-1)*delx
+            xi(i)=float(i-1)*delx+xOffset
         end do
         do i=1,ny
-            yi(i)=float(i-1)*dely
+            yi(i)=float(i-1)*dely+yOffset
         end do
 
         !     generate 2D slice first
@@ -768,7 +774,180 @@ Module MeshGeneration
 
         return
     end subroutine GenerateUniformRectangles
-    
+    !!----------------------------------------------------------------------
+    !subroutine GenerateRectanglesInteractive(FNum,TMPLT)
+    !    implicit none
+    !    integer :: FNum
+    !    type(TecplotDomain) TMPLT
+    !
+    !    integer :: i, j, k
+	   ! real(dr) :: xmin, xmax, x1, x2, dxstart, xfac, dxmax, xcur
+	   ! real(dr) :: ymin, ymax, y1, y2, dystart, yfac, dymax, ycur
+    !    logical :: reverse
+    !
+    !    real, allocatable :: xi(:)
+    !    real, allocatable :: yi(:)
+    !    TMPLT.name='TMPLT'
+    !
+    !    !     generate uniform rectangles
+    !    TMPLT.nNodesPerElement=4
+    !    TMPLT.ElementType='fequadrilateral'
+    !
+    !
+    !    allocate(xi(user_maxnx),yi(user_maxny),stat=ialloc)
+    !    call check_alloc(ialloc,'gen_rect_i xi,yi arrays')
+    !
+	   ! xi(: ) =0.0d0
+	   ! yi(: ) =0.0d0
+    !
+    !
+    !    blockel=.true.
+    !    kgrid=1
+    !
+    !    process_instructions: do
+    !        read(igrok,'(a40)') instruction
+    !        write(ieco,'(a)') ' '
+    !        write(ieco,'(a,a)') '      GEN_RECTANGLES:    ',instruction
+    !        write(*,'(a,a)')  '      GEN_RECTANGLES:    ',instruction
+    !        call lcase(instruction)
+    !
+    !        ! Overall grid constraints
+    !        if(instruction .eq. extents) then
+    !            read(igrok,*) xmin,xmax
+    !            call update_x(small,xmin)
+    !            call update_x(small,xmax)
+    !            read(igrok,*) ymin,ymax
+    !            call update_y(small,ymin)
+    !            call update_y(small,ymax)
+    !            write(ieco,*) 'Overall grid extents'
+    !            call rfm(ieco,'X',xmin,xmax)
+    !            read(igrok,*) dxmax
+    !            write(ieco,*) 'Maximum element size in X ',dxmax
+    !            write(ieco,*)
+    !
+    !            ! generate graded x coordinates
+    !        else if(instruction .eq. xgrade) then
+    !            read(igrok,*) x1,x2,dxstart,xfac,dxmax
+    !            write(ieco,*) 'Grade X coordinates from ',x1,' to ',x2
+    !            write(ieco,*) 'Start element size ',dxstart
+    !            write(ieco,*) 'Stretch factor ',xfac
+    !            write(ieco,*) 'Max element size ',dxmax
+    !            call update_x(small,x1)
+    !            call update_x(small,x2)
+    !            if(x1.gt.x2) then
+    !                dxstart=-dxstart
+    !                dxmax=-dxmax
+    !                reverse=.true.
+    !            else
+    !                reverse=.false.
+    !            end if
+    !            xcur=x1
+    !            91			xcur=xcur+dxstart
+    !            if(.not.reverse .and. xcur.lt.x2) then
+    !                if((xcur-x2).lt.abs(dxstart*1.5)) then
+    !                    call update_x(small,xcur)
+    !                    dxstart=min(dxstart*xfac,dxmax)
+    !                    goto 91
+    !                endif
+    !            elseif(reverse .and. xcur.gt.x2) then
+    !                if((x2-xcur).lt.abs(dxstart*1.5)) then
+    !                    call update_x(small,xcur)
+    !                    dxstart=max(dxstart*xfac,dxmax)
+    !                    goto 91
+    !                endif
+    !            end if
+    !
+    !            !       generate y coordinates
+    !        elseif(instruction .eq. ygrade) then
+    !            read(igrok,*) y1,y2,dystart,yfac,dymax
+    !            write(ieco,*) 'Grade Y coordinates from ',y1,' to ',y2
+    !            write(ieco,*) 'Start element size ',dystart
+    !            write(ieco,*) 'Stretch factor ',yfac
+    !            write(ieco,*) 'Max element size ',dymax
+    !            call update_y(small,y1)
+    !            call update_y(small,y2)
+    !            if(y1.gt.y2) then
+    !                dystart=-dystart
+    !                dymax=-dymax
+    !                reverse=.true.
+    !            else
+    !                reverse=.false.
+    !            end if
+    !            ycur=y1
+    !            92          ycur=ycur+dystart
+    !            if(.not.reverse .and. ycur.lt.y2) then
+    !                if((ycur-y2).lt.abs(dystart*1.5)) then
+    !                    call update_y(small,ycur)
+    !                    dystart=min(dystart*yfac,dymax)
+    !                    goto 92
+    !                endif
+    !            elseif(reverse .and. ycur.gt.y2) then
+    !                if((y2-ycur).lt.abs(dystart*1.5)) then
+    !                    call update_y(small,ycur)
+    !                    dystart=max(dystart*yfac,dymax)
+    !                    goto 92
+    !                endif
+    !            end if
+    !
+    !
+    !        elseif(instruction(1:3) .eq. end_cmd) then
+			 !   call end_instruction('GENERATE RECTANGLES INTERACTIVE')
+    !            exit process_instructions
+    !        else
+			 !   call input_error('GENERATE RECTANGLES INTERACTIVE: Unrecognized instruction')
+    !        endif
+    !    end do process_instructions
+    !
+    !
+    !    call rqcksrt(nx,xi,user_maxnx)
+    !    write(ieco,*) 'NX ',nx
+    !    write(ieco,'(5g25.13)') (xi(i),i=1,nx)
+    !
+    !    call rqcksrt(ny,yi,user_maxny)
+    !    write(ieco,*) 'NY ',ny
+    !    write(ieco,'(5g25.13)') (yi(i),i=1,ny)
+    !
+    !
+    !    ! generate 2D slice first
+    !    nn2d=nx*ny
+    !    ne2d=(nx-1)*(ny-1)
+    !    allocate(x2d(nn2d),y2d(nn2d),el_area2d(ne2d),in2d(ne2d,4),stat=ialloc)
+    !    call check_alloc(ialloc,'Gen_rectangles_interactive 2d slice arrays')
+    !    x2d = 0 ! automatic initialization
+    !    y2d = 0 ! automatic initialization
+    !    el_area2d = 0 ! automatic initialization
+    !    in2d = 0 ! automatic initialization
+    !
+    !
+    !    !     generate 2D node coordinates
+    !    nn2d=0
+    !    do i=1,ny
+    !        do j=1,nx
+    !            nn2d=nn2d+1
+    !            x2d(nn2d)=xi(j)
+    !            y2d(nn2d)=yi(i)
+    !        end do
+    !    end do
+    !
+    !    !     generate 2D rectangular element incidences
+    !    ne2d=0
+    !    do i=1,ny-1
+    !        k=1+(i-1)*nx
+    !        do j=1,nx-1
+    !            ne2d=ne2d+1
+    !            in2d(ne2d,1)=k
+    !            in2d(ne2d,2)=k+1
+    !            in2d(ne2d,3)=k+nx+1
+    !            in2d(ne2d,4)=k+nx
+    !            !rt aug15.2001
+    !            el_area2d(ne2d) = 1
+    !            k=k+1
+    !        end do
+    !    end do
+    !
+    !
+    !    return
+    !end subroutine GenerateRectanglesInteractive
 
     !----------------------------------------------------------------------
     subroutine CLNFromXYZPair(FNum,TMPLT_CLN)

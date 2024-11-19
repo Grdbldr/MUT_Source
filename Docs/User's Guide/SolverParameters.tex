@@ -1,15 +1,16 @@
 \label{section:SolverParameters}
-A lookup table of \mfus\ solver parameters is provided in the file \texttt{qrySMS.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+A lookup table of \mfus\ solver parameters is provided in the file \texttt{SMS.csv}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
 
+\pagebreak
 In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
 
 \ins{sms database}
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  Solver parameters lookup table file name.
+        \item \str{FName}  Solver parameters lookup table file name.
         \end{enumerate}
-          \mut\ uses the file \str{file} to look up the solver parameter values.
+          \mut\ uses the file \str{FName} to look up the solver parameter values.
     }
 
 You can now assign the full set of solver parameters using this instruction:
@@ -18,48 +19,48 @@ You can now assign the full set of solver parameters using this instruction:
     {
         \squish
         \begin{enumerate}
-        \item \inum{val}  Solver parameter set ID number.
+        \item \inum{ParameterSetID}  Solver parameter set ID number.
         \end{enumerate}
-          A unique set of solver parameter values is retrieved from a lookup table, using the given parameter set ID number \inum{val}.
+          The unique set of solver parameter values with ID number \inum{ParameterSetID} is retrieved from a lookup table.
     }
 
-You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{tecfile:DbaseUseage}.
+You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{Appendix:ExcelUseage}.
 
-Currently, all of the verification examples use default solver parameters, which are defined in the input file as shown in this example:
+Currently, all of the examples use default solver parameters, which are defined in the input file as shown in this example:
 \begin{verbatim}
     sms database
-    qrySMS.txt
+    SMS.csv
     sms parameter set number
     1
 \end{verbatim}
 
 The solver parameter values are written to the screen and \texttt{.eco} file:
 \begin{verbatim}
-    sms parameter set number
-    	Using SMS parameter set    1, Default
-    	OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)            1.00000E-03
-    	INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)           1.00000E-05
-    	MAXIMUM NUMBER OF OUTER ITERATIONS     (MXITER)                    250
-    	MAXIMUM NUMBER OF INNER ITERATIONS     (ITER1)                     600
-    	SOLVER PRINTOUT INDEX                  (IPRSMS)                      1
-    	NONLINEAR ITERATION METHOD             (NONLINMETH)                  1
-    	LINEAR SOLUTION METHOD                 (LINMETH)                     1
-    	D-B-D WEIGHT REDUCTION FACTOR          (THETA)             0.70000
-    	D-B-D WEIGHT INCREASE INCREMENT        (KAPPA)             0.10000
-    	D-B-D PREVIOUS HISTORY FACTOR          (GAMMA)             0.10000
-    	MOMENTUM TERM                          (AMOMENTUM)          0.0000
-    	MAXIMUM NUMBER OF BACKTRACKS           (NUMTRACK)                  200
-    	BACKTRACKING TOLERANCE FACTOR          (BTOL)               1.0000
-    	BACKTRACKING REDUCTION FACTOR          (BREDUC)            0.20000
-    	BACKTRACKING RESIDUAL LIMIT            (RES_LIM)            1.0000
-    	TRUNCATED NEWTON FLAG                  (ITRUNCNEWTON)                0
-    	Options                                                SOLVEACTIVE      DAMPBOT
-    	ACCELERATION METHOD                    (IACL)                        1
-    	EQUATION ORDERING FLAG                 (NORDER)                      0
-    	LEVEL OF FILL                          (LEVEL)                       7
-    	MAXIMUM NUMBER OF ORTHOGONALIZATIONS   (NORTH)                      14
-    	INDEX FOR USING REDUCED SYSTEM         (IREDSYS)                     0
-    	RESIDUAL REDUCTION CONVERGE CRITERION  (RRCTOL)             0.0000
-    	INDEX FOR USING DROP TOLERANCE         (IDROPTOL)                    1
-    	DROP TOLERANCE VALUE                   (EPSRN)             1.00000E-03
+sms parameter set number
+	Using SMS parameter set    1, Default
+	OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)            1.00000E-03     METERS
+	INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)           1.00000E-05     METERS
+	MAXIMUM NUMBER OF OUTER ITERATIONS     (MXITER)                    250
+	MAXIMUM NUMBER OF INNER ITERATIONS     (ITER1)                     600
+	SOLVER PRINTOUT INDEX                  (IPRSMS)                      1
+	NONLINEAR ITERATION METHOD             (NONLINMETH)                  1
+	LINEAR SOLUTION METHOD                 (LINMETH)                     1
+	D-B-D WEIGHT REDUCTION FACTOR          (THETA)             0.70000
+	D-B-D WEIGHT INCREASE INCREMENT        (KAPPA)             0.10000
+	D-B-D PREVIOUS HISTORY FACTOR          (GAMMA)             0.10000
+	MOMENTUM TERM                          (AMOMENTUM)          0.0000
+	MAXIMUM NUMBER OF BACKTRACKS           (NUMTRACK)                  200
+	BACKTRACKING TOLERANCE FACTOR          (BTOL)               1.0000
+	BACKTRACKING REDUCTION FACTOR          (BREDUC)            0.20000
+	BACKTRACKING RESIDUAL LIMIT            (RES_LIM)            1.0000
+	TRUNCATED NEWTON FLAG                  (ITRUNCNEWTON)                0
+	Options                                                SOLVEACTIVE      DAMPBOT
+	ACCELERATION METHOD                    (IACL)                        1
+	EQUATION ORDERING FLAG                 (NORDER)                      0
+	LEVEL OF FILL                          (LEVEL)                       7
+	MAXIMUM NUMBER OF ORTHOGONALIZATIONS   (NORTH)                      14
+	INDEX FOR USING REDUCED SYSTEM         (IREDSYS)                     0
+	RESIDUAL REDUCTION CONVERGE CRITERION  (RRCTOL)             0.0000
+	INDEX FOR USING DROP TOLERANCE         (IDROPTOL)                    1
+	DROP TOLERANCE VALUE                   (EPSRN)             1.00000E-03
 \end{verbatim}

@@ -20,11 +20,10 @@ The \swf\ domain is generated using this instruction:
 \ins{generate swf domain}
     {This subtask currently has only one instruction that is used to define:
      \begin{itemize}
-        \item Top elevation (i.e. $z$-coordinate, ground surface elevation)
+        \item Top elevation (e.g.\ ground surface elevation)
     \end{itemize}
 
-    It reads instructions until an \textsf{end} instruction is found e.g.\:
-
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate swf domain}
     }
@@ -49,18 +48,18 @@ The \swf-\swf\ lateral cell connection lengths and areas are defined in the same
      \item The vertical \swf-\gwf\ connection area is defined in the same way as it is for vertical \gwf-\gwf\ cell connections (see Section~\ref{section:GWFCellConnections}).
 \end{itemize}
 
-You can use this instruction to change the \swf-\gwf\ vertical cell connection length after making a cell selection (see the instructions described on page~\pageref{page:cellSelect} for the \gwf\ domain):
+You can use this instruction to change the \swf-\gwf\ cell connection length after making a cell selection (see the instructions described on page~\pageref{page:cellSelect} for the \gwf\ domain):
 
 \ins{swf to gwf connection length}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  \swf\ cell to \gwf\ cell connection length [$L$].
+        \item \rnum{Sgcl} [$L$] \swf\ cell to \gwf\ cell connection length.
         \end{enumerate}
-          A \swf\ cell to \gwf\ cell connection length \rnum{value} is assigned to the chosen cells.
+          A \swf\ cell to \gwf\ cell connection length \rnum{Sgcl} is assigned to the chosen cells.
     }
 
-\subsubsection{Assigning Material Properties}  \index{\swf\ Domain ! material properties}
+\subsubsection{Material Properties}  \index{\swf\ Domain ! material properties}
 Unlike the \gwf\ domain, \swf\ domain material properties vary on a zone-by-zone basis, which means assigning material property values are done using zone selections instead of cell selections.
 
 %\swf\ material properties that vary on a zone-by-zone basis are:
@@ -71,7 +70,7 @@ Unlike the \gwf\ domain, \swf\ domain material properties vary on a zone-by-zone
 %     \item \swf\ depth for smoothing (h1 and h2)
 %\end{itemize}
 %
-Prior to making cell or zone selections and assigning properties, we need to activate the \swf\ domain using these instructions:
+Prior to making zone selections and assigning properties, we need to activate the \swf\ domain using these instructions:
 \begin{verbatim}
     active domain
     swf
@@ -83,40 +82,40 @@ Zone selections must first be made using the instructions described on page~\pag
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Manning's coefficient of friction [$L^{-1/3} T$].
+        \item \rnum{Manning} [$L^{-1/3}$  $T$].  Manning's coefficient of friction
         \end{enumerate}
-          A Manning's coefficient of \rnum{value} is assigned to the chosen cells.
+          A Manning's coefficient of \rnum{Manning} is assigned to the chosen cells.
     }
 
 \ins{swf depression storage height}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Depression storage height [$L$].
+        \item \rnum{DHeight} [$L$]  Depression storage height.
         \end{enumerate}
-          A depression storage height of \rnum{value} is assigned to the chosen zones.
+          A depression storage height of \rnum{DHeight} is assigned to the chosen zones.
     }
 
 \ins{swf obstruction storage height}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Obstruction storage height [$L$].
+        \item \rnum{OHeight} [$L$]  Obstruction storage height.
         \end{enumerate}
-          An obstruction storage height of \rnum{value} is assigned to the chosen zones.
+          An obstruction storage height of \rnum{OHeight} is assigned to the chosen zones.
     }
 
 \ins{swf depth for smoothing}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value1}  Depth for smoothing height 1 [$L$].
-        \item \rnum{value2}  Depth for smoothing height 2 [$L$].
+        \item \rnum{Depth1} [$L$]  Depth for smoothing height 1.
+        \item \rnum{Depth2} [$L$]  Depth for smoothing height 2.
         \end{enumerate}
-          Two depth for smoothing heights are read in \rnum{value1} and \rnum{value2} and assigned to the chosen zones.
+          Two depth for smoothing heights are read in \rnum{Depth1} and \rnum{Depth2} and assigned to the chosen zones.
     }
 
-A lookup table of \swf\ material properties  is provided in the file \texttt{qrySWFMaterials.txt}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
+A lookup table of \swf\ material properties  is provided in the file \texttt{SWF.csv}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
 
 In order for \mut\ to access the lookup table, you first need to provide a link to this file using the instruction:
 
@@ -124,9 +123,9 @@ In order for \mut\ to access the lookup table, you first need to provide a link 
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  \swf\ material properties lookup table file name.
+        \item \str{FName}  \swf\ material properties lookup table file name.
         \end{enumerate}
-          \mut\ uses the file \str{file} to look up \swf\ material properties.
+          \mut\ uses the file \str{FName} to look up \swf\ material properties.
     }
 
 You can now assign a full set of \swf\ material properties to the current zone selection, as described on page~\pageref{page:zoneSelect}, using this instruction:
@@ -135,20 +134,19 @@ You can now assign a full set of \swf\ material properties to the current zone s
     {
         \squish
         \begin{enumerate}
-        \item \inum{val}  \swf\ material ID number.
+        \item \inum{MaterialID}  \swf\ material ID number.
         \end{enumerate}
-          A unique set of \swf\ material properties is retrieved from a lookup table, using the given  material ID number \inum{val}, and assigned to the chosen zones.
-    }
+        The unique set of \swf\ material properties with ID number \inum{MaterialID} is retrieved from the lookup table and assigned to the chosen cells.    }
 
-The assigned \swf\ material properties are written to the screen and \texttt{.eco} file:
+The assigned \swf\ material properties are written to the screen and \texttt{.eco} file e.g.:
 \begin{verbatim}
     chosen zones use swf material number
-    	Assigning all chosen SWF zones properties of material 1.0000, Streambed
-    	Manning's Coefficient:          3.00000E-02
-    	Depression Storage Height:      0.10000
-    	Obstruction Storage Height:      0.0000
-    	SWF Smoothing Depth 1:          1.00000E-06
-    	SWF Smoothing Depth 2:          1.00000E-06
+    	Assigning all chosen SWF zones properties of material     4, Grass
+    	Manning's Coefficient:          0.30000         METERS^(-1/3)  SECONDS
+    	Depression Storage Height:      0.10000         METERS
+    	Obstruction Storage Height:      0.0000         METERS
+    	SWF Smoothing Depth 1:          1.00000E-06     METERS
+    	SWF Smoothing Depth 2:          1.00000E-06     METERS
 \end{verbatim}
 
 You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUseage}.
@@ -162,21 +160,23 @@ To assign an initial head to the \swf\ model domain, you must first make a cell 
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Initial depth [$L$].
+        \item \rnum{IDepth} [$L$]  Initial depth.
         \end{enumerate}
-          An initial depth of \rnum{value} is used to calculate an initial head at each of the chosen cells.
+          An initial depth of \rnum{IDepth} is used to calculate an initial head at each of the chosen cells.
     }
 
 \subsubsection{Boundary Conditions}  \index{\swf\ Domain ! boundary conditions}
+To assign boundary conditions  to the \swf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
+
 A constant head boundary condition fixes the head at a \swf\ cell at a given value, allowing water to flow into or out of the \swf\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \swf\ model domain use this instruction:
 
 \ins{swf constant head}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Constant hydraulic head [L].
+        \item \rnum{CHead} [$L$]  Constant hydraulic head.
         \end{enumerate}
-          An constant hydraulic head  of \rnum{value} is assigned to the chosen cells.
+          An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
     }
 
 A recharge boundary condition forces  water to flow in to the \swf\ model domain at a specified rate.   To add recharge  to the \swf\ model domain use this instruction:
@@ -185,23 +185,35 @@ A recharge boundary condition forces  water to flow in to the \swf\ model domain
     {
         \squish
         \begin{enumerate}
-            \item \rnum{value}  Recharge rate [L/T].
-            \item \inum{option}  Recharge option.
+            \item \rnum{RechRate} [$L$ $T^{-1}$] Recharge rate.
+            \item \inum{RechOpt}  Recharge option.
         \end{enumerate}
-        A recharge rate of \rnum{value} is assigned to the chosen cells.
+        A recharge rate of \rnum{RechRate} is assigned to the chosen cells.
 
-        The recharge option \inum{option} is used to define where the recharge is to be applied and in this case should be set to a value of 4, which applies the recharge to the \swf\ domain.
+        The recharge option \inum{RechOpt} is used to define where the recharge is to be applied and in this case should be set to a value of 4, which applies the recharge to the \swf\ domain.
+    }
+
+A well boundary condition forces  water to flow in or out of the \swf\ model domain at a specified rate.   To add a well  to the \swf\ model domain use this instruction:
+
+\ins{swf well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping  rate of \rnum{PumpRate} is assigned to the chosen cells.  Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
     }
 
 A critical depth boundary condition assigned to a \swf\ cell allows water to flow out of the \swf\ model domain at a rate that depends on the surface water depth and a contributing length (i.e.\ representing the length of the cell side over which the outflow occurs).
 
-Cell selections must first be made then one of the following two  instructions can be used to assign a critical depth outflow boundary condition to the \swf\ model domain:
+\pagebreak
+One of the following two  instructions can be used to assign a critical depth outflow boundary condition to the \swf\ model domain:
 
 \ins{swf critical depth with sidelength1}
     {
           A critical depth outflow boundary condition is assigned to the chosen cells.
 
-          It is assumed that an accurate estimate of the contributing length of a cell can be based on a template element side length. In this case we have arbitrarily used side 1.
+          It is assumed that an accurate estimate of the contributing length of a cell can be based on the square root of the cells horizontal area.
     }
 
 
@@ -214,7 +226,7 @@ Cell selections must first be made then one of the following two  instructions c
 
 Although \textsf{swf critical depth} is less convenient than \textsf{swf critical depth with sidelength1}, it does calculate a contributing length that matches the actual length along the \swf\ mesh outer boundary.
 
-The verification example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell} uses the second approach to define the critical depth outflow boundary condition:
+The example \texttt{6\_Abdul\_Prism\_Cell} uses the second approach to define the critical depth outflow boundary condition:
 \begin{verbatim}
         clear chosen nodes
         choose gb nodes
@@ -233,7 +245,7 @@ Some key features of this example are:
     \item \swf\ {\em nodes} are chosen and flagged to be on the outer boundary with the instruction \textsf{flag chosen nodes as outer boundary}.
     \item \swf\ {\em cells} are chosen using a \gb\ chosen {\em elements} file with the instruction \textsf{choose cells from gb elements}.  Because this example was generated using the mesh-centred control volume approach, there is a 1-to-1 correspondence between template mesh elements and \swf\ cells.
 
-        In the example \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell\_nc}, the node-centred control volume approach is used and the instruction \textsf{choose cells from gb nodes} is used instead, because in this case there is a 1-to-1 correspondence between template mesh {\em nodes} and \swf\ cells.
+        In the example \texttt{6\_Abdul\_Prism\_Cell\_nc}, the node-centred control volume approach is used and the instruction \textsf{choose cells from gb nodes} is used instead, because in this case there is a 1-to-1 correspondence between template mesh {\em nodes} and \swf\ cells.
 \end{itemize}
 
 The \swf\ and \gwf\ meshes that \mut\ generates inherit node and element information from the template mesh.  Currently, you can define node selections using these instructions: \label{page:nodeSelect}
@@ -246,7 +258,7 @@ The \swf\ and \gwf\ meshes that \mut\ generates inherit node and element informa
     {
         \squish
         \begin{enumerate}
-        \item \rnum{x1}, \rnum{y1}, \rnum{z1}  An $xyz$ coordinate triplet.
+        \item \rnum{x1} [$L$], \rnum{y1} [$L$], \rnum{z1} [$L$]  An $xyz$ coordinate triplet.
         \end{enumerate}
         The node closest to the given $xyz$ coordinate triplet will be chosen.
     }
@@ -255,7 +267,7 @@ The \swf\ and \gwf\ meshes that \mut\ generates inherit node and element informa
     {
         \squish
         \begin{enumerate}
-        \item \str{file}  The \gb\ chosen node \str{file} containing information concerning the status, chosen or not chosen, of each node in the \gb\ model domain.
+        \item \str{FName}  The \gb\ chosen node \str{FName} containing information concerning the status, chosen or not chosen, of each node in the \gb\ model domain.
         \end{enumerate}
           If a node is flagged as chosen in the \gb\ model domain then the corresponding node will be chosen in the \mfus\ model domain.
     }

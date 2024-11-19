@@ -42,7 +42,7 @@
 
 \graphicspath{{Imagery/}} %Setting the graphicspath
 
-%\includeonly{Poultry}
+%\includeonly{VisualizeBuild}
 
 % Software names small caps
 \newcommand{\windows}{\textsc{Microsoft Windows}}
@@ -85,9 +85,9 @@
 
 \newcommand{\squish} {\vspace*{-.2in}}
 
-\newcommand{\str} [1] {$\overline {S\_#1}$}
-\newcommand{\rnum} [1] {$\overline {R\_#1}$}
-\newcommand{\inum} [1] {$\overline {I\_#1}$}
+\newcommand{\str}  [1] {\underline {\textbf {#1$_{str}$}}}
+\newcommand{\rnum} [1] {\underline {\textbf {#1$_{real}$}}}
+\newcommand{\inum} [1] {\underline {\textbf {#1$_{int}$}}}
 
 
 
@@ -108,7 +108,7 @@
     \centering
     \vfill
     {\bfseries\Huge
-        Modflow User Tools (MUT) Version 1.33\\
+        Modflow User Tools (MUT) Version 1.34\\
          User's Guide\\
     }
     \vspace{.3in}
@@ -144,14 +144,15 @@
     \section{Solver Parameters} \input{SolverParameters}
     \section{3D Model Build Visualization} \input{VisualizeBuild}
 
-\chapter{\mfus\ Execution and Post-Processing}\input{ModelExecution}
+\chapter{Model Simulation and Post-Processing}\input{ModelExecution}
 
-\chapter{Model Verification}\input{ModelVerification}
+\chapter{Demonstration Models}\input{ModelVerification}
     \section{1D Variably-saturated Flow in a Column} \input{1D_Column}
-    \section{2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow} \input{2D_Hillslope}
-    \section{3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}\input{3D_Abduls_Problem}
+    \section{1D Surface Flow} \input{1D_Hillslope}
+    \section{2D Surface/subsurface Flow} \input{2D_Hillslope}
+    \section{3D Surface/subsurface Flow: Field Study of Abdul}\input{3D_Abduls_Problem}
 
-\chapter{Illustrative Example} \input{IllustrativeExample}
+\chapter{References}\input{References}
 
 \appendix
 

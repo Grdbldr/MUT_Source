@@ -5,17 +5,17 @@ This instruction can be used to generate a \mfus\ output control file:
     {
     \squish
     \begin{enumerate}
-    \item \rnum{t(1)}  First output time [T].
-    \item \textbf{...}
-    \item \rnum{t(n)}  nth output time [T].
+    \item \rnum{t(1)} [$T$].  First output time.
+    \item \textbf{...} \\
+     \hspace*{-.27in}\rule{0.in}{.24in}  n. \rnum{t(n)} [$T$].  nth output time.
     \end{enumerate}
 
-          This subtask reads a list of output times \rnum{t()} until an \textsf{end} instruction is encountered e.g.\:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate output control file}
     }
-    
-The verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_prism\_cell} generates an output control file with 10 output times using these instructions:
+
+The  example \texttt{1\_Abdul\_prism\_cell} generates an output control file with 10 output times using these instructions:
 \begin{verbatim}
     ! -----------------------------------Output Control
     generate output control file
@@ -31,7 +31,7 @@ The verification example \texttt{MUT\_Examples$\backslash$1\_Abdul\_prism\_cell}
         6000.0
     end generate output control file
 \end{verbatim}
-    
+
 The output control file looks like this:
 \begin{verbatim}
     # MODFLOW-USG OC file written by Modflow-User-Tools version 1.28

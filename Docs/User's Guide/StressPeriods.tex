@@ -6,7 +6,7 @@ At least one stress period must be defined using this instruction:
 \ins{stress period}
     {This subtask has several instructions that can be used to define the duration, type and timestepping parameters of the stress period.
 
-    It reads instructions until an \textsf{end} instruction is found e.g.\:
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end stress period}
     }
@@ -31,51 +31,51 @@ These instructions can be used to define the stress period parameters:
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Stress period duration [T].
+        \item \rnum{Duration} [$T$].  Stress period duration.
         \end{enumerate}
-        The stress period duration, is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+        The stress period duration, is defined by the string \rnum{Duration}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
     }
 
 \ins{number of timesteps}
     {
         \squish
         \begin{enumerate}
-        \item \inum{value}  Number of timesteps to be used for this stress period.
+        \item \inum{nSteps}  Number of timesteps to be used for this stress period.
         \end{enumerate}
         \squish
     }
 
-You can change the default  starting time step size of  $1\times10^{-3}$ seconds with this instruction:
+You can change the default  starting time step size of  $1\times10^{-3}$ time units with this instruction:
 
 \ins{deltat}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Starting time step size [T].
+        \item \rnum{StartTStep} [$T$].  Starting time step size.
         \end{enumerate}
-        The  starting time step size used for the stress period  is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+        The  starting time step size used for the stress period  is defined by the string \rnum{StartTStep}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
     }
 
-You can change the default  minimum time step size of  $1\times10^{-5}$ seconds with this instruction:
+You can change the default  minimum time step size of  $1\times10^{-5}$ time units with this instruction:
 
 \ins{tminat}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Minimum time step size [T].
+        \item \rnum{MinTStep} [$T$].  Minimum time step size.
         \end{enumerate}
-        The minimum time step size to allow for the stress period is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+        The minimum time step size to allow for the stress period is defined by the string \rnum{MinTStep}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
     }
 
-You can change the default  maximum time step size of  $60.0$ seconds with this instruction:
+You can change the default  maximum time step size of  $60.0$ time units with this instruction:
 
 \ins{tmaxat}
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Maximum time step size [T].
+        \item \rnum{MaxTStep} [$T$]. Maximum time step size.
         \end{enumerate}
-        The maximum time step size to allow for the stress period is defined by the string \rnum{value}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
+        The maximum time step size to allow for the stress period is defined by the string \rnum{MaxTStep}.  It should be entered using the correct units of time as outlined in Section~\ref{section:Units}.
     }
 
 
@@ -85,9 +85,9 @@ You can change the default multiplier for time step size of  $1.1$  with this in
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Multiplier for time step size [T].
+        \item \rnum{TStepMult}.  Multiplier for time step size.
         \end{enumerate}
-        The multiplier for adjusting time step size when using adaptive time-stepping is defined by the string \rnum{value}.
+        The multiplier for adjusting time step size when using adaptive time-stepping is defined by \rnum{TStepMult}.
     }
 
 You can change the default divider for time step size of  $2.0$  with this instruction:
@@ -96,9 +96,9 @@ You can change the default divider for time step size of  $2.0$  with this instr
     {
         \squish
         \begin{enumerate}
-        \item \rnum{value}  Divider for time step size [T].
+        \item \rnum{TstepCut}.  Divider for time step size.
         \end{enumerate}
-        The divider for adjusting time step size when using adaptive time-stepping is defined by the string \rnum{value}.
+        The divider for adjusting time step size when using adaptive time-stepping is defined by \rnum{TstepCut}.
     }
 
 To add more stress periods, repeat the \textsf{stress period} subtask instructions and boundary condition definitions as many times as required.  Stress periods are numbered automatically as they are added.
@@ -146,12 +146,12 @@ Here is an example which could be used to define two stress periods:
 
 Some key features of this example are:
 \begin{itemize}
-    \item Both stress periods are transient (type TR) with a duration of 3000.
+    \item Both stress periods are transient (type TR) with a duration of 3000 time units.
     \item The recharge applied to the \swf\ domain (recharge option 4) is 5.5e-6 for the first stress period, then is reduced to 0.0 in the second stress period.
     \item The constant head applied to the \swf\ domain in stress period 1 is maintained for the entire simulation.  By default, a boundary condition is maintained through subsequent stress periods unless it is redefined.
     \item Any boundary conditions given after an \textsf{end stress period} instruction apply to that stress period until another \textsf{stress period} instruction is encountered.
 \end{itemize}
 
 
-    
+
 

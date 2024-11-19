@@ -1,5 +1,5 @@
 \label{chapter:ModelBuild}
-The first step in any model build is to develop a conceptual model, which defines the extent, inflows and outflows, material distributions and physical properties of a hydrogeologic flow system, real or imaginary. The intent of \mut\ is then to facilitate the production of a set of \mfus\ input files by minimizing the amount of time we spend building and testing it.  This chapter describes our current model build workflow, which can provide a sound basis for developing your own personal workflow.
+The first step in any model build is to develop a conceptual model, which defines the extent, inflows and outflows, material distributions and physical properties of a hydrogeologic flow system, real or imaginary. The intent of \mut\ is to then facilitate the production of a set of \mfus\ input files by minimizing the amount of time we spend building and testing it.  This chapter describes our current model build workflow, which can provide a sound basis for developing your own personal workflow.
 
 The steps in our model build workflow are:
 \begin{enumerate}
@@ -13,13 +13,14 @@ The steps in our model build workflow are:
 A \mut\ input file is a plain ascii text file that you can edit with your preferred editor (e.g. Windows Notepad\footnote{Our personal favourite editor is WinEdt (\url{https://www.winedt.com/snap.html}), which also provides a nice \LaTeX\ document development environment when coupled with the \TeX\ software package MiKTeX.  This manual was produced using these word processing tools.}).
 The \mut\ input file name can have a prefix of your choice, followed by the extension \texttt{.mut}. Examples of valid \mut\ input file names are \texttt{\_build.mut} or \texttt{good.mut}. Most often, the easiest approach is to copy an existing input file and modify it as required.  This helps reduce set-up time and avoid potential errors that are introduced when creating input files from scratch.
 
-To illustrate our model build workflow, we will refer to the various conceptual models developed for our existing suite of verification examples described in  Chapter~\ref{chapter:ModelVerification}.  As you read along, we urge you to carry out the steps we describe as we move through the workflow.  We recommend copying the contents of an existing model to a new location (e.g.\ copy the folder \texttt{MUT\_Examples$\backslash$1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}).  If you did so, your working directory would look something like this:
+To illustrate our model build workflow, we will refer to the various conceptual models developed for our existing suite of examples described in  Chapter~\ref{chapter:ModelVerification}.  As you read along, we urge you to carry out the steps we describe as we move through the workflow.  We recommend copying the contents of an existing model to a new location (e.g.\ copy the folder \texttt{1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}).
+\pagebreak 
+If you did so, your working directory would look something like this:
 
-    \includegraphics[width=0.4\textwidth]{3_1_vsf_column_folderinit}
+    \includegraphics[width=\textwidth]{3_1_vsf_column_folderinit}
 
-In the \texttt{1\_VSF\_Column} example, there are two \mut\ input files, one for the model build called \texttt{\_build.mut}, one for post-processing called \texttt{\_post.mut} (discussed later in chapter~\ref{chapter:ModelExecution}) and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.
-
-
+In the \texttt{1\_VSF\_Column} example, there is a \mut\ input file for the model build called \texttt{\_build.mut} and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.  The rest of the files are related to post-processing \mfus\ model results and will be discussed later in chapter~\ref{chapter:ModelExecution}.
+ 
  In our preferred workflow we would first start a command prompt in the folder which contains the \mut\ input file by:
 \begin{enumerate}
    \item  Navigating to the folder in File Explorer (e.g.\ \texttt{C:$\backslash$SandBox$\backslash$1\_VSF\_Column}).
@@ -27,7 +28,7 @@ In the \texttt{1\_VSF\_Column} example, there are two \mut\ input files, one for
 
         \includegraphics[width=0.3\textwidth]{3_3_HighlightPath}
 
-    \item  Replacing the existing path with the string 'cmd':
+    \item  Replacing the existing path with the string {\sf cmd}:
 
         \includegraphics[width=0.5\textwidth]{3_4_cmd}
 
@@ -91,7 +92,8 @@ The first instruction in the cleaned input file begins the model build:
         \item Time-stepping, stress period and output control parameters.
         \item Solver parameters.
     \end{itemize}
-    Subtasks have their own unique set of instructions, which are read and processed until an \textsf{end} instruction is encountered.  We suggest appending the subtask name to the \textsf{end} instruction, which makes debugging easier, especially if subtasks are nested:
+
+    An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end build modflow usg}
     }
@@ -102,12 +104,10 @@ After \mut\ finishes, the working folder should look something like this:
 
 Several new output files have been created, of which it may be noted:
 \begin{itemize}
-    \item Build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name.
+    \item Build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name. \mut\ deletes previously generated build output files and writes a fresh set each time it is run.  This can prevent confusion that might arise if out-of-date output files were present.\footnote{For example, if we define a recharge boundary condition, \mut\ will create the file \texttt{\textit{prefix}o.Modflow.SWF\_RCH.Tecplot.dat} which shows the locations and recharge values assigned to Modflow cells.  If we then removed the recharge condition from the input file, but did not delete this output file, we may assume the recharge condition still applies.}
     \item \tecplot\ output files are indicated by the suffix \texttt{.tecplot.dat}.
     \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired but there are advantages to keeping this 'generic' one, such as portability of post-processing scripts or \tecplot\ layout files that follow this generic naming convention.
     \item Several scratch files (with prefix \texttt{scratcho}) are written. These are used for debugging during code development and can be ignored in most cases.
-    \item \mut\ deletes previously generated output files and writes a fresh set each time it is run.  This can prevent confusion that might arise if out-of-date output files were present.
-        \footnote{For example, if we define a recharge boundary condition, \mut\ will create the file \texttt{\textit{prefix}o.Modflow.SWF\_RCH.Tecplot.dat} which shows the locations and recharge values assigned to Modflow cells.  If we then removed the recharge condition from the input file, but did not delete this output file, we may assume the recharge condition still applies.}
     \item If the run is successful the last line written will be \texttt{Normal exit}, otherwise an error message will be given.
 \end{itemize}
 

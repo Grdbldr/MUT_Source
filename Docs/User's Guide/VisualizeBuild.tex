@@ -7,23 +7,23 @@ The current version of \mut\ writes Tecplot-compatible output files that can be 
   \item Boundary conditions (if specified)
 \end{itemize}
 
-A \tecplot\ layout file, \texttt{\_build.lay}, has been created for each verification example and  provides a quick way to view the results of the model build.
-We will demonstrate some basic concepts using the verification example \texttt{1\_VSF\_Column}, which has a \gwf\ domain defined by a simple 1D column mesh with boundary conditions assigned to the  top and bottom cells.
+A \tecplot\ layout file, \texttt{\_build.lay}, has been created for each example and  provides a quick way to view the results of the model build.
+We will demonstrate some basic concepts using the example \texttt{1\_VSF\_Column}, which has a \gwf\ domain defined by a simple 1D column mesh with boundary conditions assigned to the  top and bottom cells.
 
-To load \texttt{\_build.lay} in \tecplot\ first navigate to the folder in File Explorer (e.g.\ \texttt{C:$\backslash$Work$\backslash$Examples$\backslash$\-1\_VSF\_Column}) then highlight the path in File Explorer:
+To load \texttt{\_build.lay} in \tecplot\ first navigate to the folder in File Explorer (e.g.\ \texttt{C:$\backslash$Sandbox$\backslash$1\_VSF\_Column}) then highlight the path in File Explorer:
 
-        \includegraphics[width=0.4\textwidth]{3_12_HighlightPath}
+        \includegraphics[width=0.3\textwidth]{3_12_HighlightPath}
 
-Replace the existing path with the string 'cmd':
+Replace the existing path with the string {\tt cmd}:
 
-        \includegraphics[width=0.5\textwidth]{3_4_cmd}
+        \includegraphics[width=0.4\textwidth]{3_4_cmd}
 
-Press Enter/Return. A command prompt window rooted at the input folder should appear. To start \tecplot\, type:
+Press {\tt Enter/Return}. A command prompt window rooted at the input folder should appear. To start \tecplot\, type:
         \begin{verbatim}
             tec360
         \end{verbatim}
 
-Choose 'Open Layout' to open a file selection dialogue:
+Choose {\sf Open Layout} to open a file selection dialogue:
 
         \includegraphics[width=\textwidth]{3_12_OpenLayout}
 
@@ -35,7 +35,7 @@ You should now see the following 3D visualization of the example:
 
         \includegraphics[width=\textwidth]{3_14_BuildLay1DColumn}
 
-\index{\tecplot\ ! frame order}There are 4 Tecplot 'frames' that make up this image.  Each frame can house it's own data for plotting, and have unique settings for visualization.  The 'Frames' window at the bottom left corner shows the frame names and plotting order:
+\index{\tecplot\ ! frame order}There are 4 Tecplot {\sf Frames} that make up this image.  Each frame can house it's own data for plotting, and have unique settings for visualization.  The {\sf Frames} window at the bottom left corner shows the frame names and plotting order:
 
         \includegraphics[width=.3\textwidth]{3_15_Frames}
 
@@ -59,7 +59,7 @@ The {\sf GWF} frame has the following contents:
 \begin{itemize}
   \item The finite-element mesh is shown by the translucent blue-shaded volume and wireframe block elements.
   \item The names of the data files loaded into the frame are shown at the bottom left corner.
-  \item The data set title and current date (on the day the file was loaded) are shown at the top left corner.  The data set title 'TMPLT\_GWF' indicates that this is the \gwf\ domain mesh that was created from the template mesh.
+  \item The data set title and current date (on the day the file was loaded) are shown at the top left corner.  The data set title {\sf TMPLT\_GWF} indicates that this is the \gwf\ domain mesh that was created from the template mesh.
   \item The contouring legend, showing there is one \gwf\ zone, is shown at the middle right side.
   \item The 3D orientation axis is shown at the top right corner.
 \end{itemize}
@@ -72,7 +72,7 @@ Some of the contents of the {\sf GWF} frame are still visible but the finite-ele
 
         \includegraphics[width=.76\textwidth]{3_18_GWFBeforeAxes}
 
-  The menu option {\sf Data$\backslash$Data Set Info...}(shown below left), brings up the {\sf Data Set Information} dialogue(shown below right): 
+  The menu option {\sf Data$\backslash$Data Set Info...}(shown below left), brings up the {\sf Data Set Information} dialogue(shown below right):
 
         \includegraphics[width=.75\textwidth]{3_19_DataSetInfo}
 
@@ -86,7 +86,7 @@ Shown below are the results of probing the top cell of the \gwf\ domain:
 
         \includegraphics[width=.9\textwidth]{3_20_ProbeTool}
 
-The probe location is indicated by the small '+' sign in the top cell (left orange circle).  This opens the {\sf Probe} dialogue which shows the zone probed ({\sf Zone 1: GWF}), and a table of  Variable names and values.
+The probe location is indicated by the small '+' sign in the top cell (upper left orange circle).  This opens the {\sf Probe} dialogue which shows the zone probed ({\sf Zone 1: GWF}), and a table of  Variable names and values.
 
 It is important to understand that in \tecplot\ nomenclature, the {\sf Variable Values} tab refers to values assigned to {\sf TMPLT\_GWF} mesh nodes, while the {\sf Cell Centred Values} tab ({\em Not to be confused with \mf\ cells!}) refers to values assigned to {\sf TMPLT\_GWF} mesh elements.
 
@@ -94,17 +94,17 @@ If the mesh-centred control volume approach is used, as is the case for this exa
 
 If we select the {\sf Cell Centred Values} tab, the {\sf Probe} output looks like this:
 
-        \includegraphics[width=.5\textwidth]{3_20_ProbeToolCellCentred}
+        \includegraphics[width=.45\textwidth]{3_20_ProbeToolCellCentred}
 
 Now the $XYZ$ coordinates are interpolated and show the approximate {\sf TMPLT\_GWF} mesh element centroid location, while for all other variables, exact values (i.e.\ what was input) are shown.
 
-If the node-centred control volume approach is used, as is the case for the \texttt{6\_Abdul\_Prism\_Cell\_nc} example, then \mf\ cell locations align with {\sf TMPLT\_GWF} mesh nodes, and no variable values are interpolated when the {\sf Cell Centred Values} tab is selected.
+If the node-centred control volume approach is used, as is the case for the \texttt{6\_Abdul\_Prism\_Cell\_nc} example, then \mf\ cell locations align with {\sf TMPLT\_GWF} mesh nodes, and no variable values are interpolated when the {\sf Cell Centred Values} tab is selected:
 
-        \includegraphics[width=.5\textwidth]{3_21_ProbeToolAbdul_nc}
+        \includegraphics[width=.45\textwidth]{3_21_ProbeToolAbdul_nc}
 
 Bring the {\sf GWF Cells} frame to the front, and send the {\sf GWF} frame to the back.
 
-        \includegraphics[width=\textwidth]{3_22_GWF_Cells}
+        \includegraphics[width=.8\textwidth]{3_22_GWF_Cells}
 
 
 \index{\gwf\ Domain ! {\tt \_build.lay} ! {\sf GWF Cells} frame}
@@ -116,9 +116,9 @@ The {\sf GWF Cells} frame has the following contents:
    \item The cell assigned a constant head is shown by the large green sphere.
 \end{itemize}
 
-If boundary conditions are assigned to the \gwf\ domain, as they are in this case, then Tecplot output files will be produced for each type.  The {\tt \_build.lay} file has been configured to load these files.
+If boundary conditions are assigned to the \gwf\ domain, as they are in this case, then Tecplot output files will be produced for each type.  The {\tt \_build.lay} file has been configured to load these files:
 
-       \includegraphics[width=.75\textwidth]{3_23_GWF_CellsDataInfo}
+       \includegraphics[width=.7\textwidth]{3_23_GWF_CellsDataInfo}
 
 In the {\sf Zone/Var Info} tab, there are 3 zones, and 5 variables.  In the {\sf data Set} tab, we can see that 3 files have been loaded.
 
@@ -126,7 +126,7 @@ Try to probe the blue sphere, and you will likely get the following warning:
 
        \includegraphics[width=.25\textwidth]{3_24_GWF_CellsPointOutside}
 
-This is because the cell is located at an exact $XYZ$ point, and the chance of clicking the mouse right there is very small.  In this case, to obtain {\it exact} values for the data point nearest the specified location, hold down the {\sf Control} key while clicking the mouse at the desired location.
+This is because the cell is located at an exact $XYZ$ point, and the chance of clicking the mouse right there is very small.  In this case, to obtain {\it exact} values for the data point nearest the specified location, hold down the {\sf ctrl} key while clicking the mouse at the desired location.
 
        \includegraphics[width=.5\textwidth]{3_25_GWF_CellsControlClick}
 
@@ -137,7 +137,7 @@ You must make sure to have the {\sf Variable Values} tab selected to see values.
 Now the constant head ({\sf CHD}) value -100 is shown while the {\sf RCH}) value is 0, because this is not an assigned recharge cell.
 
 \subsection{\swf\ Domain}
-The verification example \texttt{6\_Abdul\_Prism\_Cell} has a \swf\ domain defined by an irregular 2D surface with a recharge boundary condition assigned to the entire domain and a critical depth outflow boundary condition assigned at the downstream outlet. Since it also has a \gwf\ domain the {\sf \_build.lay} file is a bit more complicated, but has many of the previous example.
+The  example \texttt{6\_Abdul\_Prism\_Cell} has a \swf\ domain defined by an irregular 2D surface with a recharge boundary condition assigned to the entire domain and a critical depth outflow boundary condition assigned at the downstream outlet. Since it also has a \gwf\ domain the {\sf \_build.lay} file is a bit more complicated, but has many similarities to  the previous example.
 
 Start a new command prompt, run \tecplot\ and load the {\sf \_build.lay} file.
 
@@ -159,7 +159,7 @@ The {\sf SWF} frame has very similar contents to the {\sf GWF} frame described e
   \item The contouring legend, showing there are two \swf\ zones called {\sf Grass} and {\sf Streambed} is a bit more descriptive than a list of zone numbers.   These are referred to a custom labels in \tecplot.
 \end{itemize}
 
-\index{\tecplot\ ! Custom labels} To define custom labels as shown for the \swf\ legend, you must define a tecplot file that contains the custom label set.  This is in fact the {\tt CustomLabels\_SWF.dat} file loaded in the \swf\ frame, which has the following contents:
+\index{\tecplot\ ! Custom labels} To define custom labels as shown for the \swf\ legend, you must create a tecplot file that contains the custom label set.  This is in fact the {\tt CustomLabels\_SWF.dat} file loaded in the \swf\ frame, which has the following contents:
 \begin{verbatim}
     CUSTOMLABELS
     "Streambed",
@@ -177,11 +177,12 @@ As shown above, the use of custom labels is configured by first choosing the con
 
 Custom labels can also be defined for the \gwf\ and \cln\ domains if desired.
 
+\pagebreak
 {\sf Data Set Information} defined for the \swf\ domain is shown below:
 
         \includegraphics[width=.5\textwidth]{3_29_SWFDataSetInfo}
 
-The currently active frame title \swf\ is shown in the {\sf Zone(s)} field, while the data set variables are listed in the {\sf Variable(s)} field. The variables include the $xyz$ coordinates of the {\sf TMPLT\_SWF} mesh nodes, followed by the Zone numbers assigned to the {\sf TMPLT\_SWF} mesh elements.  The remainder of the list shows the \mfus\ cell properties that were defined during the model build. The {\sf Var--Range Selected Zone:} area shows the variable {\sf Min:} and {\sf Max:} values for the currently chosen (highlighted) zone and variable (currently \swf\ and {\sf SWF Cell Area} respectively).
+The currently active frame title \swf\ is shown in the {\sf Zone(s)} field, while the data set variables are listed in the {\sf Variable(s)} field. The variables include the $xyz$ coordinates of the {\sf TMPLT\_SWF} mesh nodes, followed by the {\sf SWF Zone} numbers assigned to the {\sf TMPLT\_SWF} mesh elements.  The remainder of the list shows the \mfus\ cell properties that were defined during the model build. The {\sf Var--Range Selected Zone:} area shows the variable {\sf Min:} and {\sf Max:} values for the currently chosen (highlighted) zone and variable (currently \swf\ and {\sf SWF Cell Area} respectively).
 
 For zoned variables, the {\sf SWF Zone} number can be used to check the assigned properties by referring back to the {\tt \_buildo.eco file} output.  For the {\tt 6\_Abdul\_Prism\_Cell} example, the properties of the first zone are shown as being for the material {\sf Streambed}:
 \begin{verbatim}
@@ -215,7 +216,7 @@ The region within the view box will be resized to fit into the frame.
 
 Using the {\sf Probe Tool}, hold down the {\sf Control} key and click the mouse on one of the orange spheres.
 
-        \includegraphics[width=\textwidth]{3_33_ProbeSWFRecharge}
+        \includegraphics[width=.6\textwidth]{3_33_ProbeSWFRecharge}
 
 Although the critical depth boundary condition does not require any input, it does use a contributing length over which it is applied, which is the value shown above for {\sf SWBC}.  The presence of the variable {\sf RCH} indicates it has been defined for the \swf\ domain.  To show the {\sf RCH} cells:
 
@@ -228,22 +229,22 @@ Click the {\sf Zone Style...} button, which opens the {\sf Zone Style} dialogue.
 If you probe the recharge cells, you will see values of zero everywhere.  This is because the values shown are for the last defined stress period, which for this example is the second one, where the recharge (rainfall) was stopped (i.e.\ set to zero).
 
 \subsection{\cln\ Domain}
-The verification example \texttt{3\_1\_CLN\_for\_SWF} has a \cln\ domain defined by the end coordinates of a sloping straight line  with constant head boundary conditions defined at each end of the \gwf\ domain.
+The example \texttt{3\_1\_CLN\_for\_SWF} has a \cln\ domain defined by the end coordinates of a sloping straight line  with constant head boundary conditions defined at each end of the \gwf\ domain.
 
 Start a new command prompt, run \tecplot\ and load the {\sf \_build.lay} file.
 
         \includegraphics[width=\textwidth]{3_36_CLN}
 
-Here we can see the {\sf CLN,  GWF} and {\sf Axes} frames are visible (i.e. placed above the {\sf background} frame in the list).  The {\sf SWF} is currently active (i.e. the name is bolded) and placed at the front of the image (i.e. at the top of the list). It uses a different colormap to make it easier to distinguish the \gwf\ domain below.
+Here we can see the {\sf CLN,  GWF} and {\sf Axes} frames are visible (i.e. placed above the {\sf background} frame in the list).  The {\sf CLN} frame is currently active (i.e. the name is bolded) and placed at the front of the image (i.e. at the top of the list). It uses a different colormap to make it easier to distinguish the \gwf\ domain below.
 
 \index{\cln\ Domain ! {\tt \_build.lay} ! {\sf CLN} frame}
 The {\sf CLN} frame has very similar contents to the {\sf GWF} frame described earlier, but note that:
 \begin{itemize}
-  \item The names of the data files loaded into the frame are for the \swf\ domain.
-  \item   The data set title {\sf TMPLT\_CLN} indicates that this is the \swf\ domain mesh that was created from the template mesh.
+  \item The names of the data files loaded into the frame are for the \cln\ domain.
+  \item   The data set title {\sf TMPLT\_CLN} indicates that this is the \cln\ domain mesh (which was created from the {\sf cln from xyz pair} instruction).
   \item The contouring legend, showing there is one \cln\ zone. \end{itemize}
 
-\cln\ domain meshes cannot be contoured like \gwf\ or \swf meshes because the \cln\ element is a 1D straight line and contouring can only be shown for 2D or 3D elements.  In this case, the finite-element mesh has been coloured by the {\sf CLN Zone} number.
+\cln\ domain meshes cannot be contoured like \gwf\ or \swf\ meshes because the \cln\ element is a 1D straight line and contouring can only be shown for 2D or 3D elements.  In this case, the finite-element mesh has been coloured by the {\sf CLN Zone} number.
 
         \includegraphics[width=\textwidth]{3_37_CLNZoneColour}
 
@@ -265,6 +266,6 @@ For zoned variables, the {\sf CLN Zone} number can be used to check the assigned
 
         \includegraphics[width=\textwidth]{3_38_CLN_GWF_Cells}
 
-The \cln\ cells (red spheres) show that it is located along the top surface of the \gwf\ domain.  The \gwf\ cells (black spheres) are located at the centroid of the \gwf\ elements (i.e.\ mesh-centred control volumes), and constant head cells (light green spheres) are located at each end of the \gwf\ domain.
+The \cln\ cells (red spheres) show that it is located along the top surface of the \gwf\ domain, and the constant head cell (light green sphere) is located at the downstream end of the \cln\ domain.  The \gwf\ cells (black spheres) are located at the centroid of the \gwf\ elements (i.e.\ mesh-centred control volumes).
 
 

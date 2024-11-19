@@ -1,51 +1,54 @@
-\contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}
-\contentsline {section}{\numberline {1.1}Conventions Used in this Manual}{4}{section.1.1}
-\contentsline {chapter}{\numberline {2}Software Installation and Useage}{6}{chapter.2}
-\contentsline {chapter}{\numberline {3}Model Build}{15}{chapter.3}
-\contentsline {section}{\numberline {3.1}Defining the Units of Length and Time}{19}{section.3.1}
-\contentsline {section}{\numberline {3.2}Defining the Template Mesh}{20}{section.3.2}
-\contentsline {section}{\numberline {3.3}Groundwater Flow(\textsf {GWF}) Domain}{23}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}Generating a Layered \textsf {GWF}\ Domain}{24}{subsection.3.3.1}
-\contentsline {subsubsection}{\numberline {3.3.1.1}Defining the Top Elevation}{24}{subsubsection.3.3.1.1}
-\contentsline {subsubsection}{\numberline {3.3.1.2}Adding Layers}{26}{subsubsection.3.3.1.2}
-\contentsline {subsubsection}{\numberline {3.3.1.3}Cell Connection Properties}{29}{subsubsection.3.3.1.3}
-\contentsline {subsubsection}{\numberline {3.3.1.4}Assigning Material Properties}{30}{subsubsection.3.3.1.4}
-\contentsline {subsubsection}{\numberline {3.3.1.5}Initial Conditions}{39}{subsubsection.3.3.1.5}
-\contentsline {subsubsection}{\numberline {3.3.1.6}Boundary Conditions}{40}{subsubsection.3.3.1.6}
-\contentsline {section}{\numberline {3.4}Surface Water Flow(\textsf {SWF}) Domain}{41}{section.3.4}
-\contentsline {subsection}{\numberline {3.4.1}Generating a \textsf {SWF}\ Domain}{41}{subsection.3.4.1}
-\contentsline {subsubsection}{\numberline {3.4.1.1}Cell Connection Properties}{42}{subsubsection.3.4.1.1}
-\contentsline {subsubsection}{\numberline {3.4.1.2}Assigning Material Properties}{42}{subsubsection.3.4.1.2}
-\contentsline {subsubsection}{\numberline {3.4.1.3}Initial Conditions}{44}{subsubsection.3.4.1.3}
-\contentsline {subsubsection}{\numberline {3.4.1.4}Boundary Conditions}{45}{subsubsection.3.4.1.4}
-\contentsline {section}{\numberline {3.5}Connected Linear Network(\textsf {CLN}) Domain}{47}{section.3.5}
-\contentsline {subsection}{\numberline {3.5.1}Generating a \textsf {CLN}\ Domain}{47}{subsection.3.5.1}
-\contentsline {subsubsection}{\numberline {3.5.1.1}Cell Connection Properties}{49}{subsubsection.3.5.1.1}
-\contentsline {subsubsection}{\numberline {3.5.1.2}Assigning Material Properties}{49}{subsubsection.3.5.1.2}
-\contentsline {subsubsection}{\numberline {3.5.1.3}Initial Conditions}{50}{subsubsection.3.5.1.3}
-\contentsline {subsubsection}{\numberline {3.5.1.4}Boundary Conditions}{50}{subsubsection.3.5.1.4}
-\contentsline {section}{\numberline {3.6}Stress Periods}{50}{section.3.6}
-\contentsline {section}{\numberline {3.7}Output Control}{54}{section.3.7}
-\contentsline {section}{\numberline {3.8}Solver Parameters}{55}{section.3.8}
-\contentsline {section}{\numberline {3.9}3D Model Build Visualization}{57}{section.3.9}
-\contentsline {subsection}{\numberline {3.9.1}\textsf {GWF}\ Domain}{59}{subsection.3.9.1}
-\contentsline {subsection}{\numberline {3.9.2}\textsf {SWF}\ Domain}{66}{subsection.3.9.2}
-\contentsline {subsection}{\numberline {3.9.3}\textsf {CLN}\ Domain}{73}{subsection.3.9.3}
-\contentsline {chapter}{\numberline {4}\textsc {Modflow-Usg$^{Swf}$}\ Execution and Post-Processing}{76}{chapter.4}
-\contentsline {section}{\numberline {4.1}\textsc {Modflow-Usg$^{Swf}$}\ Execution}{76}{section.4.1}
-\contentsline {section}{\numberline {4.2}\textsc {Mut}\ Post-processing}{78}{section.4.2}
-\contentsline {section}{\numberline {4.3}Volumetric Water Budget Plots}{78}{section.4.3}
-\contentsline {section}{\numberline {4.4}3D Visualization of Model Results}{81}{section.4.4}
-\contentsline {subsection}{\numberline {4.4.1}Solution Times and Animation}{82}{subsection.4.4.1}
-\contentsline {subsection}{\numberline {4.4.2}Data Set Infomation}{83}{subsection.4.4.2}
-\contentsline {subsection}{\numberline {4.4.3}Inactive Cells and Value Blanking }{84}{subsection.4.4.3}
-\contentsline {subsection}{\numberline {4.4.4}Slices and Fence Diagrams}{85}{subsection.4.4.4}
-\contentsline {subsection}{\numberline {4.4.5}Defining New Variables}{86}{subsection.4.4.5}
-\contentsline {subsection}{\numberline {4.4.6}Water Table Isosurface Plot}{88}{subsection.4.4.6}
-\contentsline {subsection}{\numberline {4.4.7}Infiltration Plot}{89}{subsection.4.4.7}
-\contentsline {chapter}{\numberline {5}Model Verification}{92}{chapter.5}
-\contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{92}{section.5.1}
-\contentsline {section}{\numberline {5.2}2D Variably-saturated Flow in a Hillslope: Drains vs Surfacewater Flow}{94}{section.5.2}
-\contentsline {section}{\numberline {5.3}3D Fully-coupled Groundwater-Surface Water Flow: Abdul's Experiment}{95}{section.5.3}
-\contentsline {chapter}{\numberline {6}Illustrative Example}{97}{chapter.6}
-\contentsline {chapter}{\numberline {A}\textsc {Microsoft Excel}\ Database Files}{98}{appendix.A}
+\contentsline {chapter}{\numberline {1}Introduction}{4}{chapter.1}
+\contentsline {section}{\numberline {1.1}Conventions Used in this Manual}{5}{section.1.1}
+\contentsline {chapter}{\numberline {2}Software Installation and Useage}{8}{chapter.2}
+\contentsline {section}{\numberline {2.1}Model End User}{8}{section.2.1}
+\contentsline {section}{\numberline {2.2}Model Developer}{13}{section.2.2}
+\contentsline {chapter}{\numberline {3}Model Build}{17}{chapter.3}
+\contentsline {section}{\numberline {3.1}Defining the Units of Length and Time}{21}{section.3.1}
+\contentsline {section}{\numberline {3.2}Defining the Template Mesh}{22}{section.3.2}
+\contentsline {section}{\numberline {3.3}Groundwater Flow(\textsf {GWF}) Domain}{25}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}Generating a Layered \textsf {GWF}\ Domain}{26}{subsection.3.3.1}
+\contentsline {subsubsection}{\numberline {3.3.1.1}Defining the Top Elevation}{26}{subsubsection.3.3.1.1}
+\contentsline {subsubsection}{\numberline {3.3.1.2}Adding Layers}{29}{subsubsection.3.3.1.2}
+\contentsline {subsubsection}{\numberline {3.3.1.3}Cell Connection Properties}{31}{subsubsection.3.3.1.3}
+\contentsline {subsubsection}{\numberline {3.3.1.4}Material Properties}{33}{subsubsection.3.3.1.4}
+\contentsline {subsubsection}{\numberline {3.3.1.5}Initial Conditions}{42}{subsubsection.3.3.1.5}
+\contentsline {subsubsection}{\numberline {3.3.1.6}Boundary Conditions}{43}{subsubsection.3.3.1.6}
+\contentsline {section}{\numberline {3.4}Surface Water Flow(\textsf {SWF}) Domain}{44}{section.3.4}
+\contentsline {subsection}{\numberline {3.4.1}Generating a \textsf {SWF}\ Domain}{44}{subsection.3.4.1}
+\contentsline {subsubsection}{\numberline {3.4.1.1}Cell Connection Properties}{45}{subsubsection.3.4.1.1}
+\contentsline {subsubsection}{\numberline {3.4.1.2}Material Properties}{45}{subsubsection.3.4.1.2}
+\contentsline {subsubsection}{\numberline {3.4.1.3}Initial Conditions}{47}{subsubsection.3.4.1.3}
+\contentsline {subsubsection}{\numberline {3.4.1.4}Boundary Conditions}{48}{subsubsection.3.4.1.4}
+\contentsline {section}{\numberline {3.5}Connected Linear Network(\textsf {CLN}) Domain}{50}{section.3.5}
+\contentsline {subsection}{\numberline {3.5.1}Generating a \textsf {CLN}\ Domain}{51}{subsection.3.5.1}
+\contentsline {subsubsection}{\numberline {3.5.1.1}Cell Connection Properties}{52}{subsubsection.3.5.1.1}
+\contentsline {subsubsection}{\numberline {3.5.1.2}Material Properties}{53}{subsubsection.3.5.1.2}
+\contentsline {subsubsection}{\numberline {3.5.1.3}Initial Conditions}{54}{subsubsection.3.5.1.3}
+\contentsline {subsubsection}{\numberline {3.5.1.4}Boundary Conditions}{54}{subsubsection.3.5.1.4}
+\contentsline {section}{\numberline {3.6}Stress Periods}{55}{section.3.6}
+\contentsline {section}{\numberline {3.7}Output Control}{58}{section.3.7}
+\contentsline {section}{\numberline {3.8}Solver Parameters}{59}{section.3.8}
+\contentsline {section}{\numberline {3.9}3D Model Build Visualization}{61}{section.3.9}
+\contentsline {subsection}{\numberline {3.9.1}\textsf {GWF}\ Domain}{63}{subsection.3.9.1}
+\contentsline {subsection}{\numberline {3.9.2}\textsf {SWF}\ Domain}{70}{subsection.3.9.2}
+\contentsline {subsection}{\numberline {3.9.3}\textsf {CLN}\ Domain}{77}{subsection.3.9.3}
+\contentsline {chapter}{\numberline {4}Model Simulation and Post-Processing}{80}{chapter.4}
+\contentsline {section}{\numberline {4.1}\textsc {Modflow-Usg$^{Swf}$}\ Simulation}{80}{section.4.1}
+\contentsline {section}{\numberline {4.2}\textsc {Mut}\ Post-processing}{81}{section.4.2}
+\contentsline {section}{\numberline {4.3}Volumetric Water Budget Plots}{82}{section.4.3}
+\contentsline {section}{\numberline {4.4}3D Visualization of Model Results}{85}{section.4.4}
+\contentsline {subsection}{\numberline {4.4.1}Solution Times and Animation}{85}{subsection.4.4.1}
+\contentsline {subsection}{\numberline {4.4.2}Data Set Infomation}{86}{subsection.4.4.2}
+\contentsline {subsection}{\numberline {4.4.3}Inactive Cells and Value Blanking }{87}{subsection.4.4.3}
+\contentsline {subsection}{\numberline {4.4.4}Slices and Fence Diagrams}{88}{subsection.4.4.4}
+\contentsline {subsection}{\numberline {4.4.5}Defining New Variables}{89}{subsection.4.4.5}
+\contentsline {subsection}{\numberline {4.4.6}Water Table Isosurface Plot}{91}{subsection.4.4.6}
+\contentsline {subsection}{\numberline {4.4.7}Infiltration Plot}{92}{subsection.4.4.7}
+\contentsline {chapter}{\numberline {5}Demonstration Models}{95}{chapter.5}
+\contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{95}{section.5.1}
+\contentsline {section}{\numberline {5.2}1D Surface Flow}{98}{section.5.2}
+\contentsline {section}{\numberline {5.3}2D Surface/subsurface Flow}{101}{section.5.3}
+\contentsline {section}{\numberline {5.4}3D Surface/subsurface Flow: Field Study of Abdul}{104}{section.5.4}
+\contentsline {chapter}{\numberline {6}References}{107}{chapter.6}
+\contentsline {chapter}{\numberline {A}\textsc {Microsoft Excel}\ Database Files}{108}{appendix.A}

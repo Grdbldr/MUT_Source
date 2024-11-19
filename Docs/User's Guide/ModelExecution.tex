@@ -2,11 +2,11 @@
 The steps in our model excution  workflow are:
 \begin{enumerate}
     \item Run \mfus to create the new project output files (e.g.\ time-varying hydraulic head, drawdown etc).\label{step:modflow}
-    \item Run \mut\ to post-process the Modflow project, which produces \tecplot\ output files for the various Modflow domains (i.e.\ \gwf, \swf\ and/or \cln ) created during the Modflow simulation.\label{step:mut2}
-    \item Run \tecplot\ and examine the Modflow output files.   \label{step:Tecplot2}
+    \item Run \mut\ to post-process the \mfus\ simulation, which produces \tecplot\ output files for the various model domains (i.e.\ \gwf, \swf\ and/or \cln ) created during the simulation.\label{step:mut2}
+    \item Run \tecplot\ and examine the \mfus\ output files.   \label{step:Tecplot2}
 \end{enumerate}
 
-\section{\mfus\ Execution}
+\section{\mfus\ Simulation}
 To run \mfus\ on the \texttt{1\_VSF\_Column} example, and assuming we have a command prompt open at the appropriate directory, we can type:
 \begin{verbatim}
     usgs_1 modflow
@@ -52,18 +52,19 @@ The instruction to post-process the \mfus\ model after execution is:
         \end{enumerate}
         Given \str{Prefix}, this instruction:
          \begin{itemize}
-            \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.dat}
-            \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat}
+            \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.dat}.
+            \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat}.
          \end{itemize}
         \squish
     }
 
 \section{Volumetric Water Budget Plots}
 \index{Volumetric water budget}
-Volumetric water budget data is useful for checking the fluid mass balance of the model run.  The example {\tt 4\_SWF\_RCH\_CRD} has a \tecplot\ layout file {\tt VolumetricBudget.lay} which you can load directly into \tecplot\ from the command prompt by typing:
+Volumetric water budget data is useful for checking the fluid mass balance of the model run.  The example {\tt 4\_SWF\_RCH\_CRD} has a \tecplot\ layout file {\tt \_post\_WaterBudget.lay} which you can load directly into \tecplot\ from the command prompt by typing:
     \begin{verbatim}
         tec360 VolumetricBudget.lay
     \end{verbatim}
+You should see the following \tecplot\ window:    
 
         \includegraphics[width=\textwidth]{4_2_Budget}
 
@@ -71,7 +72,7 @@ This \tecplot\ frame has the following features and contents:
 \begin{itemize}
   \item It is an {\sf XY Line} plot showing the volumetric flowrate versus time for selected components of the model.
   \item The name of the data file loaded into the frame is shown at the bottom left corner.
-  \item The plot title, current date (on the day the file was loaded) and data set title ({\sf 4\_SWF\_RCH\_CRD}) are shown centred above the plot.
+  \item The plot title and current date (on the day the file was loaded) are shown centred above the plot.
   \item The line legend is shown on the right side of the plot.
   \item The X-axis uses a log time scale.
 \end{itemize}
@@ -105,16 +106,16 @@ Variable names are derived from the {\tt modflow.lst} file:
 \end{verbatim}
 
 
-This example has a uniform recharge rate of 0.5 $meters/year$ which results in a total recharge of 500 $meters^{3}/year$ when multiplied by the 1000 $meter$ length of the cross-section. Initially, water comes out of storage then but this declines to zero at equilibrium.  Water exiting the surface water outflow critical depth boundary  {\sf OUT\_SWBC} is initially zero then rises to equal the toal recharge at equilibrium.  Fluid balance error {\sf IN-OUT} is essentially zero throughout the simulation.
+This example has a uniform recharge rate of 0.5 $meters/year$ which results in a total recharge of 500 $meters^{3}/year$ when multiplied by the 1000 $meter$ length of the cross-section. Initially, water comes out of storage then but this declines to zero at equilibrium.  Water exiting the surface water outflow critical depth boundary  {\sf OUT\_SWBC} is initially zero then rises to equal the total recharge at equilibrium.  Fluid balance error {\sf IN-OUT} is essentially zero throughout the simulation.
 
 The probe tool can be used in {\sf XY Line} plots to get exact variable values at a chosen location along the X or Y axis.  The cursor is shown as a vertical line if probing values on the X-axis (i.e.\ over time):
 
         \includegraphics[width=\textwidth]{4_4_Probe}
 
-Here, the location of the probe is shown by small vertical lines placed where the probe crossed the plotted lines.  The exact coordinate is given as {\sf X1: 0.2967...}  years.  At this early time, the {\sf OUT\_STORAGE} value is still near its initial value of 500 and the {\sf OUT\_SWBC} has just started rising.
+Here, the location of the probe is shown by small vertical lines placed where the probe crossed the plotted lines (lower left orange circle).  The exact coordinate is given as {\sf X1: 0.2967...}  years.  At this early time, the {\sf OUT\_STORAGE} value is still near its initial value of 500 and the {\sf OUT\_SWBC} has just started rising.
 
 \section{3D Visualization of Model Results}
-A \tecplot\ layout file, \texttt{\_post.lay}, has been created for each verification example and  provides a quick way to view \mfus\ model solution results.  This result is from the example {\tt 6\_Abdul\_Prism\_Cell}:
+A \tecplot\ layout file, \texttt{\_post.lay}, has been created for each example and  provides a quick way to view \mfus\ model solution results.  This result is from the example {\tt 6\_Abdul\_Prism\_Cell}:
 
         \includegraphics[width=\textwidth]{4_5_Post_Abdul}
 
@@ -137,7 +138,7 @@ These are similar to those shown earlier during the model build except there are
 Included are these cell properties:
 \begin{itemize}
     \item Elevation {\sf SWF z Cell} and {\sf GWF z Cell}.
-    \item \mf\ layer number  {\sf SWF layer}and {\sf GWF layer}.
+    \item \mf\ layer number  {\sf SWF layer} and {\sf GWF layer}.
     \item \mf\ boundary number {\sf SWF Ibound} and {\sf GWF Ibound}.
     \item Initial head.
     \item Hydraulic head result.
@@ -146,7 +147,7 @@ Included are these cell properties:
 \end{itemize}
 
 \subsection{Inactive Cells and Value Blanking }
-The verification example {\tt 6\_Abdul\_MODHMS} was generated from a 2D rectangular template mesh.  To make it conform to the shape of the original triangular mesh used in example  {\tt 6\_Abdul\_Prism\_Cell}, a region of inactive cells was assigned around the outside of the domain.  The layout file {\sf \_plot.lay} has been configured to show only active cells:
+The example {\tt 6\_Abdul\_MODHMS} was generated from a 2D rectangular template mesh.  To make it conform to the shape of the original triangular mesh used in example  {\tt 6\_Abdul\_Prism\_Cell}, a region of inactive cells was assigned around the outside of the domain.  The layout file {\sf \_plot.lay} has been configured to show only active cells:
 
         \includegraphics[width=.8\textwidth]{4_7a_MODHMS}
 
@@ -157,7 +158,7 @@ The verification example {\tt 6\_Abdul\_MODHMS} was generated from a 2D rectangu
 Shown here are the dialogues for both the \swf\ and \gwf\ domains, where value blanking constraints are set to prevent \swf\ and \gwf\ domain cells from being shown if the {\sf SWF Ibound} or {\sf GWF Ibound} value is less than or equal to zero.
 
 \subsection{Slices and Fence Diagrams}
-The layout file {\tt \_GWF\_Saturation\_Slices.lay} has been configured to show a series of cross-sections in the \gwf\ domain:\index{\tecplot\ ! Slices and Fence diagrams}
+The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_GWF\_Saturation\_Slices.lay} has been configured to show a series of cross-sections in the \gwf\ domain:\index{\tecplot\ ! Slices and Fence diagrams}
 
         \includegraphics[width=.8\textwidth]{4_8_Slices}
 
@@ -177,7 +178,11 @@ New variables can be defined in \tecplot\ using the {\sf Data$\backslash$Alter$\
 
         \includegraphics[width=.8\textwidth]{4_10_Equations}
 
-This dialogue has an {\sf Equation(s)} window where we have defined a new variable, in this case {\sf Pressure Head},  that is set equal to two existing variables according to the  mathematical expression {\sf GWF Head - GWF z Cell}.  In equation syntax, variable names must be placed within curly brackets: {\sf \{\}}.
+This dialogue has an {\sf Equation(s)} window where we have defined a new variable, in this case {\sf Pressure Head},  that is calculated from two existing variables according to the  mathematical expression: 
+
+{\sf \{Pressure Head\} = \{GWF Head\}  -\{GWF z Cell\}}  
+
+In equation syntax, variable names must be placed within curly brackets: {\sf \{\}}.
 
 The {\sf Data Set Info...} tab leads to the {\sf Data Set Information} dialogue where variable names can be cut and pasted into the equation window.  Here the {\sf GWF z Cell} variable has been selected.
 
@@ -217,20 +222,20 @@ Here we can see the infiltration at 3 times:
 \begin{description}
 \item [1 second] The application of water to the \swf\ domain has just started.  The entire \swf\ domain is shaded red, showing that water is infiltrating everywhere, with the highest rate of infiltration occurring at the highest elevations in the domain (i.e.\ at hilltops)
 \item [3000 seconds] Application of water stops.  Infiltration is still occurring on the hills but discharge is occurring along most of the length of the swale, as shown by the blue shaded region.
-\item [6000 seconds] End of simulation.  The stream has drained and water again infiltrating over the entire  domain.
+\item [6000 seconds] End of simulation.  The stream has drained and water is again infiltrating over the entire  domain.
 \end{description}
 
-Here, the new  variable {\sf Infiltration [mm/hour]} is calculated by the following equation in \tecplot\:
+The new  variable {\sf Infiltration [mm/hour]} is calculated by the following equation in \tecplot:
 
         \includegraphics[width=.8\textwidth]{4_17_Infiltration_eqn}
 
-The variable {\sf SFW to GWF} contains the cell-by-cell flows from the \swf\ domain to the \gwf\ domain, with negative values indicating a loss relative to the \swf\ domain (i.e.\ infiltration).  We want infiltration to be shown as a positive value in this case so we add a negative sign at the beginning of the equation.  The final part of the equation {\sf *1000*60*60} converts the value from units of meters per second to millimetres per hour.  
+The variable {\sf SFW to GWF} contains the cell-by-cell flows from the \swf\ domain to the \gwf\ domain, with negative values indicating a loss relative to the \swf\ domain (i.e.\ infiltration).  We want infiltration to be shown as a positive value in this case so we add a negative sign at the beginning of the equation.  The final part of the equation {\sf *1000*60*60} converts the value from units of meters per second to millimetres per hour.
 
 The contour levels were set up as shown here:
 
         \includegraphics[width=.6\textwidth]{4_18_Infiltration_contour}
 
-The levels were entered manually using the {\sf Add Level} and {\sf Remove selected} buttons.  The value zero is defined at the boundary between blue and red colours by using an equal number of positive and negative values with the same absolute range.
+The levels were entered manually using the {\sf Add Level} and {\sf Remove selected} buttons.  The value zero is defined at the boundary between blue and red colours by using an equal number of positive and negative values with the same absolute ranges.
 
 The color map is set to {\sf Diverging - Blue/Red} using the drop-down menu.
 

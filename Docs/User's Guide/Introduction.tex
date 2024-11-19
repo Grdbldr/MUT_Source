@@ -2,80 +2,105 @@
 \begin{itemize}
     \item We refer to it as Modflow User Tools, or \mut\ for short.
     \item \mut\ is designed to work with a modified version of \mfu,  where a new surface water flow package, called \swf, has been added. Like the Connected Linear Network (\cln) package, the \swf\ package represents a new domain type that is fully-coupled to the 3D groundwater flow (\gwf) domain. There can also be cell-to-cell flows between the \swf\ and \cln\ domains.  The \swf\ domain uses the diffusion-wave approach to simulate 2D surface-water flow. We will refer to this new version of \mfu\ as \mfus\ in this manual.
-    \item We currently develop and run it on a \windows\ 10-based computing platform, writing software using the \ifort\ compiler running inside the \vstudio\ interactive development environment, which includes software version control tools through \github.
+    \item We currently develop and run it on a \windows\ 10-based computing platform, writing the software using the \ifort\ compiler running inside the \vstudio\ interactive development environment, which includes software version control tools through \github.
     \item A text-based approach is used for the \mut\ interface, in which we first develop an input file of instructions that define our \mfus\ project,  then run \mut\ to read it and write a complete \mfus\ data set. \mut\ also writes output files for \tecplot, a third-party visualization software package, which provides a 3D graphical visualization tool to review the model numerical mesh and material properties in the data set. In future, \mut\ could be extended to support other third-party visualization packages, for example the open source program Paraview.
     \item \mut\ can post-process a \mfus\ simulation to provide a \tecplot\ visualization of temporal model results, including hydraulic heads, saturations, water depths and flow budget data.  \textit{If applied to output files which were produced by an earlier version of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superceded.}
 \end{itemize}
 
-        
+
 \section{Conventions Used in this Manual} \label{section:AboutManual}
 
-Software names are rendered using a small-caps font, e.g.: \mut, \mfus, \tecplot\ and \windows.
+A small-caps font is used when referring to software names e.g.: \mut, \mfus, \tecplot\ and \windows.
 
-A sans-serif font is used to render references to model domain types (e.g.\ \gwf\ for the groundwater flow domain), menu and dialogue box options (e.g.\ the \tecplot\ option {\sf Specify equations}) and variables presented on-screen (e.g. \mut\ variables  {\sf GWF Head} and {\sf GWF z Cell} in \tecplot).
+A sans-serif font is used when referring to model domain types (e.g.\ \gwf\ for the groundwater flow domain), menu and dialogue box options (e.g.\ the \tecplot\ option {\sf Specify equations}) and variables presented during on-screen visualization (e.g. \mut\ variables  {\sf GWF Head} and {\sf GWF z Cell} in \tecplot).
 
-Typed input, input file contents and filenames are rendered in a typewriter font, e.g.: {\tt ctrl-C, c:$\backslash$MUT$\backslash$\-MUT\_Examples}.
+A typewriter font is used when referring to typed input, file contents and names  and path names e.g.: {\tt ctrl-C, c:$\backslash$MUT$\backslash$\-MUT\_Examples}.
 
-Blue-highlighted items are active hyper-links.  If you right-mouse-click on these you can navigate to another relevant part of the manual.  These include:
+Blue-highlighted items are active hyper-links.  If you {\tt left-click} on these you can navigate to other relevant parts of the manual.  These include:
 \begin{itemize}
-    \item Table of contents entries
-    \item Page and section numbers in the text and index
-    \item Active links to internet web sites (i.e.\ URL's) e.g.:  \url{https://www.gsienv.com/software/modflow-usg/modflow-usg/}.  If you mouse-click on this it will open a browser window at the site.
+    \item Table of contents entries.
+    \item Page and section numbers in the text and index.
+    \item Active links to internet web sites (i.e.\ URL's) e.g.:  \url{https://www.gsienv.com/software/modflow-usg/modflow-usg/}.  If you {\tt left-click} on this it will open a browser window at the site.
+    \item Footnote numbers in the text.
 \end{itemize}
 Your PDF reader should have a way to quickly jump back through previously viewed pages e.g.:  the {\tt backspace} key ({\sc Sumatra} PDF Reader) or the {\tt alt-left arrow} key combination ({\sc Adobe Acrobat Reader}).
 
-This manual uses the following formatting conventions when introducing new \mut\ instructions:
-\begin{itemize}
-  \item A bold upper corner line: 
+This manual uses the following formatting conventions when introducing new \mut\ instructions. Documentation for an instruction begins with a bold upper corner line:
 
   \includegraphics[width=0.3\textwidth]{BeginInstruction}
-  
-  indicates the documentation for a specific instruction is about to begin.
+\squish
+\begin{itemize}
 
   \item The instruction name is presented in a large sans-serif font e.g.:
-  
-  {\Large \sf units of length }
-  
-  \item Data inputs, if required, are presented  in a numbered list consisting of a variable name, units in square brackets (if applicable) and a short description e.g.\:
-    
+
+  {\Large \sf read some data }
+
+  \item Data inputs, if required, are presented  in a numbered list consisting of a variable name, dimensions (unless dimensionless) and description e.g.:
+
         \begin{enumerate}
-        \item \str{units}[L]  The desired units of length.
+        \item \rnum{A}[$L$], \inum{B}, \str{C}  This input line requires a real number \rnum{A} with dimensions of length [$L$], an integer number \inum{B} and a text string \str{C}.
         \end{enumerate}
 
-        Variable names are rendered in a math font with an overline e.g. \str{units}.
-
-         If the variable requires an alphanumeric string as input, it will be indicated by using the prefix '\str{}'.
-
-         If the variable requires a real number as input, it will be indicated by using the prefix  '\rnum{}'.
-
-         If the variable requires an integer number as input, it will be indicated by using the prefix  '\inum{}'.
-         
-         So in this example, the variable named \str{units} requires an alphanumeric string as input, e.g. {\tt centimeters}.
+        Variable names are rendered in an underlined bold font, followed by one of the following data type requirement subscripts:
+        \begin{description}
+            \item [\rnum{}] A real number, e.g.\ {\tt "24.32"} or {\tt "1.5E-08"}.  
+            \item [\inum{}] An integer number, e.g.\ {\tt "25"}.
+            \item [\str{}] A text string, e.g.\ {\tt "centimeters"}.
+       \end{description}
+       
+       Variable dimension indicators are $L$ for length and  $T$ for time (future implementations of \mut\ that support mass  transport will use $M$ for mass). Some examples of variables with more complex dimensionality are:
+        \begin{description}
+            \item [Hydraulic conductivity] [$L$   $T^{-1}$], length over time.
+            \item [Manning's coefficient of friction] [ $T$ $L^{-1/3}$], time over the cube root of length.
+            \item [Concentration] [$M$  $L^{-3}$], mass per unit volume.
+        \end{description}
 
 
 
   \item General notes about instruction usage are presented if necessary, e.g.:
-      
-         \mfus\ currently supports units of feet, meters or centimeters.
-      
-  \item A bold lower corner line: 
 
-  \includegraphics[width=0.3\textwidth]{EndInstruction}
+         \mfus\ currently supports units of feet, meters or centimeters.
+
+  \item Some instructions are subtasks, which are procedures that process a local set of instructions until an \textsf{end} instruction is encountered.  Documentation for a subtask suggests appending the subtask name to the {\sf end} instruction, e.g.:
   
-   indicates the documentation for a specific instruction has ended.
+      {\Large \sf end read some data }
+
+      This makes the input file more readable, and debugging easier if subtasks are nested.
 
 \end{itemize}
+Documentation for an instruction ends with a bold lower corner line:
 
-In the case of a subtask instruction, a suggested \textsf{end} instruction is presented.  The first three non-blank characters must be the string \textsf{end}, but the rest is optional.
+  \includegraphics[width=0.3\textwidth]{EndInstruction}
+
+Here is an example of an instruction which requires two lines of input, with each line requiring two input variables:
+
+\ins{generate uniform rectangles}
+    {\index{generate uniform rectangles}
+    \squish
+    \begin{enumerate}
+    \item \rnum{LengthX}[$L$], \inum{nRectX}  Domain length and number of rectangles in the $x$-direction
+    \item \rnum{LengthY}[$L$], \inum{nRectY}  Domain length and number of rectangles in the $y$-direction
+    \end{enumerate}
+    \squish
+    }
+
+In this case the first line of input consists of the real variable \rnum{LengthX} of dimension length [$L$], and a second integer variable \inum{nRectX} which is dimensionless.  A second line of input requires similar variables but for the $y$-direction.
+
+Here is an example showing possible input file contents for this instruction:
+\begin{verbatim}
+    generate uniform rectangles
+    1000.0, 1000
+    1.0, 1
+\end{verbatim}
+This input would generate a strip of 1000 rectangular elements with a total length of 1000 length units in the $x$-direction and 1 element with a width of 1 length unit in the $y$-direction.
+
 
 This rest of this document is subivided into these sections:
 \begin{description}
-    \item[Chapter~\ref{chapter:Installation}]\textbf{Installation and Setup:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
-     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{\mut\ Execution and Pre-processing} How to build a \mut\ input file, produce a \mfus\ compatible data set and \tecplot\ compatible output files with \mut, then review the results of the model build with \tecplot.
-    \item[Chapter~\ref{chapter:ModelExecution}]\textbf{\mfus\ Execution and Post-Processing} How to run \mfus, convert the output to \tecplot-compatible files with \mut, then visualize them with \tecplot.
-    \item[Chapter~\ref{chapter:ModelVerification}]\textbf{Model Verification} Examples used to verify the accuracy of \mfus\ models built using \mut.
-    \item[Chapter~\ref{chapter:IllustrativeExample}]\textbf{Illustrative Example} An example which illustrates the use of \mut\ and \mfus\ to simulate variably-saturated, fully-coupled   \gwf-\swf\ flow in a small watershed.
+    \item[Chapter~\ref{chapter:Installation}]\textbf{Software Installation and Useage:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
+     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{Model Build} How to build a \mut\ input file, produce a \mfus\ compatible data set and \tecplot\ compatible output files with \mut, then review the results of the model build with \tecplot.
+    \item[Chapter~\ref{chapter:ModelExecution}]\textbf{Model Simulation and Post-Processing} How to run \mfus, convert the output to \tecplot-compatible files with \mut, then visualize them with \tecplot.
+    \item[Chapter~\ref{chapter:ModelVerification}]\textbf{Demonstration Models} These models verify the accuracy of \mfus\ models built using \mut\ and demonstrate it's ability to capture a range of conceptual situations, from simple to complex.
     \item[Appendix~\ref{Appendix:ExcelUseage}]\textbf{\excel\ Database Files} Details about using the provided \excel\ database files, which are currently used to store \mfus\ model material property and solver parameter data sets.
-%    \item[Appendix~\ref{Appendix:TecplotUseage}]\textbf{\tecplot\ Useage} Details about using \tecplot\ to visualize output files generated by \mut\ during model build and execution.
         \end{description}
 
