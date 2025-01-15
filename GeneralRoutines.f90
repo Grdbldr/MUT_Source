@@ -16,8 +16,9 @@ module GeneralRoutines    !### bit setting routines
     integer, parameter :: mi=selected_int_kind(4)
 
     !-----------------------------------------------Constants
-    real(dr), parameter :: PI=3.14159265359
-    real(dr), parameter :: Third=1.0d0/3.0d0
+    real(dr), parameter :: PI = 3.14159265359
+    real(dr), parameter :: Third = 1.0d0/3.0d0
+    real(dr), parameter :: small		=	1.0d-6
 	
     !---------------------------------------------- String declarations
     integer, parameter :: MAX_STR=1000
@@ -110,7 +111,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.34'
+    character(5) :: MUTVersion=' 1.35'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
@@ -4265,6 +4266,32 @@ module GeneralRoutines    !### bit setting routines
     
     subroutine GrowRealArray(rArray,nSizeIn,nSizeout)
         implicit none
+        real, allocatable :: rArray(:)
+        real, allocatable :: rTMP(:)
+        integer :: nSizeIn, nSizeOut
+        
+        allocate(rTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'rTMP array')
+        rTMP (1:nSizeIn) = rArray
+        call move_alloc (rTMP, rArray)
+        
+    end subroutine GrowRealArray
+    
+    subroutine GrowReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
+        implicit none
+        real, allocatable :: rArray(:,:)
+        real, allocatable :: rTMP(:,:)
+        integer :: nSize1, nSizeIn, nSizeOut
+        
+        allocate(rTMP(nSize1,nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'rTMP array')
+        rTMP (:,1:nSizeIn) = rArray
+        call move_alloc (rTMP, rArray)
+        
+    end subroutine GrowReal2dArray
+
+    subroutine GrowDRealArray(rArray,nSizeIn,nSizeout)
+        implicit none
         real(dr), allocatable :: rArray(:)
         real(dr), allocatable :: rTMP(:)
         integer :: nSizeIn, nSizeOut
@@ -4274,9 +4301,10 @@ module GeneralRoutines    !### bit setting routines
         rTMP (1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
-    end subroutine GrowRealArray
+    end subroutine GrowDRealArray
+    
 
-    subroutine GrowReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
+    subroutine GrowDReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
         implicit none
         real(dr), allocatable :: rArray(:,:)
         real(dr), allocatable :: rTMP(:,:)
@@ -4287,7 +4315,7 @@ module GeneralRoutines    !### bit setting routines
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
-    end subroutine GrowReal2dArray
+    end subroutine GrowDReal2dArray
 
 
     !---------------------------------------------- FileIO routines

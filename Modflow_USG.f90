@@ -58,11 +58,13 @@
     character(MAX_INST) :: ClearAllCells_CMD	                =   'clear chosen cells'
     character(MAX_INST) :: ChooseCellsByLayer_CMD  	            =   'choose cells by layer'
     character(MAX_INST) :: ChooseCellAtXYZ_CMD                  =   'choose cell at xyz'
+    character(MAX_INST) :: ChooseCellbyXYZ_LayerRange_CMD       =   'choose cells by xyz layer range'
     character(MAX_INST) :: ChooseCellsFromGBElements_CMD        =   'choose cells from gb elements'
     character(MAX_INST) :: ChooseCellsFromGBNodes_CMD	        =   'choose cells from gb nodes'
     character(MAX_INST) :: ChooseCellsFromFile_CMD              =   'choose cells from file'
     character(MAX_INST) :: ChooseCellsByChosenZones_CMD         =   'choose cells by chosen zones'
 
+    character(MAX_INST) :: NewZone_CMD  	                    =   'new zone'
     character(MAX_INST) :: ChooseAllZones_CMD  	                =   'choose all zones'
     character(MAX_INST) :: ClearAllZones_CMD	                =   'clear chosen zones'
     character(MAX_INST) :: ChooseZoneNumber_CMD	                =   'choose zone number'
@@ -2281,6 +2283,18 @@
                     call ChooseCellAtXYZ(FnumMUT,modflow.CLN)
                 end select
                 
+             else if(index(instruction, ChooseCellbyXYZ_LayerRange_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
+                case (iGWF)
+                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.CLN)
+                end select
+                
             
             else if(index(instruction, ClearAllCells_CMD)  /= 0) then
                 select case(ActiveDomain)
@@ -2393,6 +2407,19 @@
                     call ChooseZoneNumber(FnumMUT,modflow.CLN)
                 end select
                 
+            else if(index(instruction, NewZone_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                    ! this will be done later
+                case (iGWF)
+                    call NewZoneFromChosenCells(modflow.GWF)
+                case (iSWF)
+                    call NewZoneFromChosenCells(modflow.SWF)
+                case (iCLN)
+                    call NewZoneFromChosenCells(modflow.CLN)
+                end select
+
             else if(index(instruction, FlagChosenNodesAsOuterBoundary_CMD)  /= 0) then
                 select case(ActiveDomain)
                 case (iTMPLT)
@@ -2988,8 +3015,11 @@
                 
         if(Modflow.NodalControlVolume) then
             Modflow.SWF.nCells=TMPLT_SWF.nNodes
+            Modflow.SWF.nodelay=TMPLT_SWF.nNodes
+
         else
             Modflow.SWF.nCells=TMPLT_SWF.nElements
+            Modflow.SWF.nodelay=TMPLT_SWF.nElements
         end if            
         
         Modflow.SWF.nNodesPerCell=TMPLT_SWF.nNodesPerElement
@@ -3122,7 +3152,15 @@
             ncount=ncount+1
         end do
 
-        write(ieco,*) 'Zones chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' zone numbers currently chosen: '
+        call Msg(trim(TmpSTR))
+        do i=1,domain.nZones
+            if(bcheck(domain.Zone_Is(i),chosen)) then
+                write(TmpSTR,'(a,i5)') TAB,i
+                call Msg(trim(TmpSTR))
+            endif
+        end do
+
 	    if(ncount == 0) call ErrMsg('No Zones chosen')
 	    
     end subroutine ChooseAllZones
@@ -3484,6 +3522,66 @@
         call Msg(tmpSTR)
 
     end subroutine ChooseCellAtXYZ
+    !----------------------------------------------------------------------
+    subroutine ChooseCellbyXYZ_LayerRange(FNumMut,Domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type(ModflowDomain) Domain
+
+	    integer :: i,iCell
+	    real(dr) :: x1,x2
+	    real(dr) :: y1,y2
+	    real(dr) :: z1,z2
+	    integer :: ltop,lbot,ntemp,ielmin,ielmax
+
+        call Msg('Find cells whose centroids are in the range defined by: ')
+        read(FNumMut,*) x1,x2
+        write(TMPStr,*) TAB//'X range: ',x1, x2
+        call Msg(TMPStr)
+
+        read(FNumMut,*) y1,y2
+        write(TMPStr,*) TAB//'Y range: ',y1, y2
+        call Msg(TMPStr)
+
+        read(FNumMut,*) z1,z2
+        write(TMPStr,*) TAB//'Z range: ',z1, z2
+        call Msg(TMPStr)
+
+        read(FNumMut,*) ltop,lbot
+        write(TMPStr,*) TAB//'Layer range: ',ltop, lbot
+        call Msg(TMPStr)
+
+        if(ltop.gt.lbot) then
+            ntemp=ltop
+            ltop=lbot
+            lbot=ntemp
+        end if
+        ielmin=(ltop-1)*domain.nodelay
+        ielmax=lbot*domain.nodelay + 1
+
+        x1=x1-small
+        x2=x2+small
+        y1=y1-small
+        y2=y2+small
+        z1=z1-small
+        z2=z2+small
+
+        ncount=0
+        do i=1,domain.nCells
+            if(domain.xCell(i).ge.x1 .and. domain.xCell(i).le.x2 .and. domain.yCell(i).ge.y1 .and. domain.yCell(i).le.y2 .and. domain.zCell(i).ge.z1 .and. domain.zCell(i).le.z2) then
+                if(i .gt. ielmin .and. i .lt. ielmax) then
+                    call set(domain.Cell_Is(i),chosen)
+                    ncount=ncount+1
+                end if
+            end if
+        end do
+    
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    
+    end subroutine ChooseCellbyXYZ_LayerRange
 
     !----------------------------------------------------------------------
     subroutine ChooseCellsFromFile(FNumMUT,domain) 
@@ -7127,7 +7225,64 @@
     
     end subroutine ModflowTMPLTScatterToTecplot
     
-    !----------------------------------------------------------------------
+     !----------------------------------------------------------------------
+    subroutine NewZoneFromChosenCells(domain) 
+        implicit none
+
+        type (ModflowDomain) Domain
+
+        integer :: i, j
+	    integer :: ncount
+
+
+        
+        if(.not. allocated(domain.Zone_Is)) then 
+            domain.nZones = 1
+            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
+            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
+            domain.Zone_Is(:)=0
+        else if(allocated(domain.Zone_Is)) then 
+            call growIntegerArray(domain.Zone_Is,domain.nZones,domain.nZones+1)
+            
+            select case(ActiveDomain)
+            case (iGWF)
+                ! no zoned properties
+            case (iSWF)
+                call growRealArray(domain.Manning,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.DepressionStorageHeight,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.ObstructionStorageHeight,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.H1DepthForSmoothing,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.H2DepthForSmoothing,domain.nZones,domain.nZones+1)
+            case (iCLN)
+                call growIntegerArray(domain.Geometry,domain.nZones,domain.nZones+1)
+                call growIntegerArray(domain.Direction,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.CircularRadius,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.RectangularWidth,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.RectangularHeight,domain.nZones,domain.nZones+1)
+                call growRealArray(domain.LongitudinalK,domain.nZones,domain.nZones+1)
+                call growIntegerArray(domain.FlowTreatment,domain.nZones,domain.nZones+1)
+            end select
+            
+            domain.nZones = domain.nZones + 1
+            domain.Zone_Is(:)=0 ! not chosen
+        end if
+
+        ncount=0
+        do i=1,domain.nCells
+            if(bcheck(domain.Cell_is(i),chosen)) then
+                domain.iZone(i) = domain.nZones
+                ncount=ncount+1
+            end if
+        end do
+
+        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' new zone number: ',domain.nZones
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,i10)') TAB//'Cells added to new zone: ',ncount
+        call Msg(trim(TmpSTR))
+	    if(ncount == 0) call ErrMsg('No Cells chosen')
+
+    end subroutine NewZoneFromChosenCells
+   !----------------------------------------------------------------------
     subroutine NodeCentredSWFCellGeometry(Modflow, TMPLT_SWF,TMPLT)
         implicit none
     
@@ -8577,13 +8732,13 @@
         
         write(Modflow.iSWF,'(a)') '# IFNO IFTYP   FAREA          FELEV      ISSWADI'
         do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(2i5,2(1pG15.5),i5)') i, 1, modflow.SWF.CellArea(i), modflow.SWF.zCell(i),0
+            write(Modflow.iSWF,'(2i9,2(1pG15.5),i9)') i, 1, modflow.SWF.CellArea(i), modflow.SWF.zCell(i),0
         end do
 
         write(Modflow.iSWF,'(a)') '# IFNO IFGWNO  IFCON     SGCL        SGCAREA      ISGWADI'
         do i=1,modflow.SWF.nCells
 !            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
-            write(Modflow.iSWF,'(2i5,3x,i5,2(1pG15.5),i5)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
+            write(Modflow.iSWF,'(2i9,3x,i9,2(1pG15.5),i9)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
         end do
 
         write(Modflow.iSWF,'(a)') '# ISWFTYP      SMANN          SWFH1          SWFH2'

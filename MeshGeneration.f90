@@ -27,7 +27,6 @@ Module MeshGeneration
     logical :: zone_by_template=.false.
 
     contains
-
     !----------------------------------------------------------------------
     subroutine MeshFromGb(FNumMUT,TMPLT)
         implicit none
@@ -1090,13 +1089,13 @@ Module MeshGeneration
             call growInteger2dArray(TMPLT_CLN.iNode,2,nSizeInit,TMPLT_CLN.nElements)
             call growIntegerArray(TMPLT_CLN.iZone,nSizeInit,TMPLT_CLN.nElements)
             call growIntegerArray(TMPLT_CLN.iLayer,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.xElement,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.yElement,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.zElement,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.ElementArea,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.Length,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.LowestElevation,nSizeInit,TMPLT_CLN.nElements)
-            call growRealArray(TMPLT_CLN.SlopeAngle,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.xElement,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.yElement,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.zElement,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.ElementArea,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.Length,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.LowestElevation,nSizeInit,TMPLT_CLN.nElements)
+            call growDRealArray(TMPLT_CLN.SlopeAngle,nSizeInit,TMPLT_CLN.nElements)
         end if
 
         ! generate line element incidences
@@ -1144,7 +1143,7 @@ Module MeshGeneration
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
         !character(MAX_INST) :: gms_file_elevation_cmd		    =   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
-        !character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
+        character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
         !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
         !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
@@ -1276,8 +1275,8 @@ Module MeshGeneration
 			    !write(ieco,*) 'Layer top elevation from gb file  ',topfile
        !         call read_raster_to_mesh_elev(topfile,top_elev)
        !     
-       !     elseif(index(instruction,bilinear_function_elevation_cmd) /=0) then
-       !         call bilinear_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
+            elseif(index(instruction,bilinear_function_elevation_cmd) /=0) then
+                call bilinear_function_in_xy(FNumMUT,base_elev,TMPLT)
        !     
        !     elseif(index(instruction,sine_function_elevation_cmd) /=0) then
        !         call sine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
@@ -1433,7 +1432,7 @@ Module MeshGeneration
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
         !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
-        !character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
+        character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
         !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
         !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
@@ -1496,8 +1495,8 @@ Module MeshGeneration
 			    !write(ieco,*) 'System top from file ',topfile
        !         call read_raster_to_mesh_elev(topfile,top_elev)
 
-       !     elseif(index(instruction, bilinear_function_elevation_cmd) /=0) then
-       !         call bilinear_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
+            elseif(index(instruction, bilinear_function_elevation_cmd) /=0) then
+                call bilinear_function_in_xy(FNumMUT,top_elev,TMPLT)
        !
        !     elseif(index(instruction, sine_function_elevation_cmd) /=0) then
        !         call sine_function_in_xy(x2d,y2d,top_elev,nn2d,FNumMUT,ieco)
@@ -1591,6 +1590,44 @@ Module MeshGeneration
         continue
 
     end subroutine xyzFromListFile
+
+    !----------------------------------------------------------------------
+    subroutine bilinear_function_in_xy(FNumMUT,nprop,TMPLT)
+        implicit none
+        
+        integer :: FNumMUT
+        type (TecplotDomain) TMPLT
+
+        integer :: i
+	    real(dr) :: xf2d, xt2d, yf2d, yt2d, a1, a2, a3, a4, a5
+
+        real(dr) :: nprop(TMPLT.nNodes)
+
+	    read(FNumMUT,*) xf2d, xt2d, yf2d, yt2d
+	    call Msg(TAB//'Bilinear function for the following range:')
+	    write(TMPSTR,'(a,g15.5,a,g15.5,a)') 'X from ',xf2d,' to ',xt2d,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    write(TMPSTR,'(a,g15.5,a,g15.5,a)') 'Y from ',yf2d,' to ',yt2d,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    call Msg(TAB//'z = z1 + slope_x*(x-xfrom) + curve_x*(x-xfrom)**2 + slope_y*(y-yfrom) + curve_y*(y-yfrom)**2 ')
+	    read(FNumMUT,*) a1,a2,a3,a4,a5
+	    write(TMPSTR,'(a,g15.5,a)') 'Where:     z1 = ',a1,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    write(TMPSTR,'(a,g15.5,a)') '      slope_x = ',a2,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    write(TMPSTR,'(a,g15.5,a)') '      curve_x = ',a3,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    write(TMPSTR,'(a,g15.5,a)') '      slope_y = ',a4,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+	    write(TMPSTR,'(a,g15.5,a)') '      curve_y = ',a5,'     '//TRIM(UnitsOfLength)
+        call Msg(TAB//trim(TmpSTR))
+        do i=1,TMPLT.nNodes
+		    if( TMPLT.x(i).ge.xf2d .and. TMPLT.x(i).le.xt2d .and. TMPLT.y(i).ge.yf2d .and. TMPLT.y(i).le.yt2d) then
+			    nprop(i)=a1 + a2*(TMPLT.x(i)-xf2d) + a3*(TMPLT.x(i)-xf2d)**2 + a4*(TMPLT.y(i)-yf2d) + a5*(TMPLT.y(i)-yf2d)**2
+		    end if
+	    end do
+
+    end subroutine bilinear_function_in_xy
 
     !----------------------------------------------------------------------
     subroutine xz_pairs_elevation(FNum,nprop,TMPLT)
