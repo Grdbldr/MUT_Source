@@ -88,7 +88,7 @@ Some key features of this example are:
   \item Only the start and end of the file are shown here, with the string '\texttt{...}' replacing the middle portion.
 \end{itemize}
 
-To define the top elevation as a function of $x$ (usually used for cross-sectional models) use this instruction:
+To define the top elevation as a function of $x$ (usually used for 2D cross-sectional models) use this instruction:
 
  \ins{elevation from xz pairs}
     {
@@ -106,7 +106,7 @@ To define the top elevation as a function of $x$ (usually used for cross-section
     {\Large \sf end elevation from xz pairs}
     }
 
-Here is an example showing the use of this instruction\footnote{The example \texttt{1\_VSF\_Hillslope} uses the \textsf{elevation from xz pairs} pairs instruction to define the top elevation of the cross-sectional domain.}:
+Here is an example showing the use of this instruction\footnote{The example \texttt{1\_VSF\_Hillslope} uses the \textsf{elevation from xz pairs} instruction to define the top elevation of the cross-sectional domain.}:
     \begin{verbatim}
     elevation from xz pairs
            0.0,   0.0
@@ -121,6 +121,46 @@ Some key features of this example are:
   \item the $x$-range of the supplied pairs should cover the entire $x$-range of the template mesh.
   \item For each node in the template mesh, the $x$ coordinate is used to interpolate an elevation (i.e. $z$ value) using the appropriate $xz$ pair.
 \end{itemize}
+
+To define the top elevation as a function of $x$ and $y$ (for 3D models) use this instruction:
+
+ \ins{elevation from bilinear function in xy}
+    {
+    \squish
+    \begin{enumerate}
+    \item \rnum{xfrom} [$L$], \rnum{xto} [$L$], \rnum{yfrom} [$L$], \rnum{yto} [$L$]  $x$ and $y$ coordinates ranges.
+    \item \rnum{a1}, \rnum{a2}, \rnum{a3}, \rnum{a4}, \rnum{a5}  Constants for the bilinear function.
+    \end{enumerate}
+    For nodes falling within the given $x$ and $y$ range, the z-coordinate is
+    computed according to the following function:
+    \begin{displaymath}
+        z = \textbf{a1} + \textbf{a2} (x-\textbf{xfrom}) + \textbf{a3}*(x-\textbf{xfrom})^2
+            + \textbf{a4}(y-\textbf{yfrom}) + \textbf{a5}(y-\textbf{yfrom})^2
+    \end{displaymath}
+    }
+
+Here is an example showing the use of this instruction\footnote{The example \texttt{8\_V\_catchment} uses the \textsf{elevation from bilinear function in xy} instruction to define the top elevation of a portion of the 3D domain.}:
+    \begin{verbatim}
+        elevation from bilinear function in xy
+        0.0 800.0 0.0 1000.0
+        41.0 -0.05 0.0 0.02 0.0
+
+        elevation from bilinear function in xy
+        800.01 819.99 0.0 1000.0
+        1.0 0.0 0.0 0.02 0.0
+
+        elevation from bilinear function in xy
+        820.0  1620.01 0.0 1000.0
+        1.0 0.05 0.0 0.02 0.0
+     \end{verbatim}
+     \squish
+Some key features of this example are:
+\begin{itemize}
+  \item Three sets of \textsf{elevation from bilinear function in xy} instructions define a tilted catchment with 3 sections.
+  \item If a node in the template mesh falls within a bilinear function $xy$-range, then that function is used to interpolate an elevation (i.e. $z$ value) for the node.
+  \item The $xy$-ranges supplied should cover the entire top of the template mesh.
+\end{itemize}
+
 
 \pagebreak
 \subsubsection{Adding Layers} \index{\gwf\ Domain ! layering}
@@ -164,7 +204,7 @@ By default, a new layer will be assigned the name '\texttt{Layer {\em n}}' where
     }
 
 %\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{These names are not currently used in Tecplot output but could/should? be used to create the customlables for zone naming.}
- 
+
 By default, a new layer will not be subdivided vertically unless one the following two instructions is issued.
 The first creates a uniform subdivision:
 
@@ -221,7 +261,7 @@ This instruction can be used to create a basal layer surface a given distance be
     This instruction causes the elevation of layer base to be offset below the  top by the  value \rnum{Offset}.
 }
 
-\pagebreak    
+\pagebreak
 For example, these instructions:
 \begin{verbatim}
         top elevation
@@ -369,8 +409,8 @@ It is good practice to clear the selection before starting a new selection. \mut
 \end{verbatim}
 If a cell selection instruction has unexpected results it is good practice to check the \texttt{.eco} file for these outputs.
 
-The recommended way to assign domain material properties is through the use of a lookup table. 
-\label{page:LookupTable} 
+The recommended way to assign domain material properties is through the use of a lookup table.
+\label{page:LookupTable}
 \phantomsection\label{page:LookupTable}
 Lookup tables are provided for each domain in the \bin\ directory, as outlined on page~\pageref{page:userbin}. In this case, the file \texttt{GWF.csv} contains the lookup table for the \gwf\ domain.
 
@@ -392,7 +432,7 @@ In the case of the \gwf\ domain, the instructions:
 \end{verbatim}
 would be used to link to the lookup table.
 
-You can now assign a set of \gwf\ material properties to the current cell selection using this instruction:  
+You can now assign a set of \gwf\ material properties to the current cell selection using this instruction:
 
 \ins{chosen cells use gwf material number}
     {
@@ -549,6 +589,8 @@ As a reminder to be aware of units, \mut\ will echo the assumed units to the scr
           A Brooks-Corey exponent of \rnum{Brooks} is assigned to the chosen cells.
     }
 
+
+\subsubsection{Material Zones}  \index{\gwf\ Domain ! material zones}
 During the model build, each \gwf\ cell is assigned a zone number from either the layer number or 2D template zone number. Just like individual cells, zones can be selected using these instructions\label{page:zoneSelect}:
 
 \ins{choose all zones}
@@ -647,6 +689,89 @@ Some key features to note are:
 \end{itemize}
 Since we are assigning uniform properties to the entire model domain, this example could be simplified by simply choosing all cells then assigning properties.  However, if you wanted to assign different material properties to each zone, you can easily do so by modifying the example to assign properties to one zone at a time, being careful to clear the zone and cell selections for each layer.
 
+In some cases, we may want to assign material properties to selected subregions of the model domain.  In such situations, we first select a subset of cells, then assign them a unique zone number using the instruction:
+
+\ins{new zone}
+    {Increments the total number of zones in the currently active domain by 1 and assigns that as the zone number of each selected cell.
+     }
+
+Below is an example\footnote{See example \texttt{7\_SuperSlab}} in which a \gwf\ model domain which initially had a single zone called {\sf Soil} has had two new zones added called {\sf Slab1} and {\sf Slab2}:
+
+\includegraphics[width=\textwidth]{3_10b_NewZones}
+
+In this example, we introduce the following instruction for selecting arbitrary ranges of cells:
+
+ \ins{choose cells by xyz layer range}
+    {
+    \squish
+    \begin{enumerate}
+    \item \rnum{xfrom} [$L$], \rnum{xto}[$L$]  $x$ coordinate range.
+    \item \rnum{yfrom} [$L$], \rnum{yto}[$L$]  $y$ coordinate range.
+    \item \rnum{zfrom} [$L$], \rnum{zto}[$L$]  $z$ coordinate range.
+    \item \inum{LayerFrom}, \inum{LayerTo}  Layer range.
+    \end{enumerate}
+    Cells whose centroid falls within the given $x$, $y$, $z$ and layer ranges are selected.
+    }
+
+\pagebreak
+The model zones were defined using these instructions:
+\begin{verbatim}
+    active domain
+    gwf
+
+        choose all cells
+
+        chosen cells use gwf material number
+        11
+
+        clear chosen zones
+        clear chosen cells
+        choose cells by xyz layer range
+        40.0  60.0
+        -1e30 1e30
+        -1e30 1e30
+        1   5
+
+        new zone
+
+        choose zone number
+        2
+
+        chosen cells use gwf material number
+        12
+
+        clear chosen zones
+        clear chosen cells
+        choose cells by xyz layer range
+        8.0  50.0
+        -1e30 1e30
+        5.8 6.2
+        0 1000
+
+        new zone
+
+        choose zone number
+        3
+
+        chosen cells use gwf material number
+        13
+\end{verbatim}
+
+
+Some key features to note are:
+\begin{itemize}
+    \item The model has only one zone initially, which is first assigned properties of material 11 (Soil) after choosing all cells in the model domain.
+    \item Cells in the range from $x$=40 to $x$=60 and from layers 1 to 5 (inclusive) are chosen and assigned properties of material 12 (Slab1).  Specifying a range between -1e30 and 1e30 means that no restrictions will be applied based on the $y$ and $z$ cell coordinates. Recall that the \mfus\ mesh is generated from the top down, so layers 1 to 5 are the top 5 layers of the model domain.
+    \item The first {\sf new zone} instruction increments the total number of zones from 1 to 2 and assigns zone number 2 to the chosen cells.    
+    \item Cells in the range from $x$=8 to $x$=50 and from $z$=5.8 to $z$=6.2 are chosen and assigned properties of material 13 (Slab2).  Specifying a range between -1e30 and 1e30 for means that no restrictions will be applied based on the $y$ cell coordinates, while a range of 0 to 1000 means that no layer restrictions are being applied.
+    \item Because of the sloping nature of the mesh layers, the cells chosen for zone 3 (Slab2) are depicted by \tecplot\ as a 'jagged' boundary, as shown here: 
+
+        \includegraphics[width=\textwidth]{3_10c_NewZonesJagged}
+
+    \item The second {\sf new zone} instruction increments the total number of zones from 2 to 3 and assigns zone number 3 to the chosen cells.
+    \item In this example, zone and cell selections are cleared before defining new zones and assigning material properties, but note that multiple cell selections can be made without clearing to define more complex zones.
+\end{itemize}
+
 \subsubsection{Initial Conditions}  \index{\gwf\ Domain ! initial condition ! initial (starting) head}
 An initial (or starting) head should be assigned to each cell in the \gwf\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
 
@@ -687,7 +812,7 @@ To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elev
     {\Large \sf end gwf initial head function of z}
     }
 
-This is commonly used to generate an initial head for a simple column model\footnote{The example \texttt{1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain.} as shown here: 
+This is commonly used to generate an initial head for a simple column model\footnote{The example \texttt{1\_VSF\_Column} uses the \texttt{gwf initial head function of z} instruction to define the initial head of the model domain.} as shown here:
 \begin{verbatim}
     gwf initial head function of z
     !  z    head

@@ -15,107 +15,111 @@
 \indexentry{Input instructions ! elevation from gb file|hyperpage}{27}
 \indexentry{Input instructions ! elevation from list file|hyperpage}{27}
 \indexentry{Input instructions ! elevation from xz pairs|hyperpage}{28}
-\indexentry{\gwf\ Domain ! layering|hyperpage}{29}
-\indexentry{Grid generation ! \gwf\ Domain ! New layer|hyperpage}{29}
-\indexentry{Input instructions ! new layer|hyperpage}{29}
-\indexentry{Input instructions ! Minimum layer thickness|hyperpage}{29}
-\indexentry{Input instructions ! Layer name|hyperpage}{29}
-\indexentry{Input instructions ! Uniform sublayering|hyperpage}{30}
-\indexentry{Input instructions ! Proportional sublayering|hyperpage}{30}
-\indexentry{Input instructions ! Offset base|hyperpage}{30}
-\indexentry{\gwf\ Domain ! cell connection properties|hyperpage}{31}
-\indexentry{\gwf\ Domain ! material properties|hyperpage}{33}
-\indexentry{Input instructions ! choose all cells|hyperpage}{33}
-\indexentry{Input instructions ! active domain|hyperpage}{33}
-\indexentry{Input instructions ! choose cell at xyz|hyperpage}{34}
-\indexentry{Input instructions ! choose cells by layer|hyperpage}{34}
-\indexentry{Input instructions ! choose cells from file|hyperpage}{34}
-\indexentry{Input instructions ! choose cells from gb elements|hyperpage}{34}
-\indexentry{Input instructions ! choose cells from gb nodes|hyperpage}{34}
-\indexentry{Input instructions ! clear chosen cells|hyperpage}{35}
-\indexentry{Input instructions ! gwf materials database|hyperpage}{35}
-\indexentry{Input instructions ! chosen cells use gwf material number|hyperpage}{36}
-\indexentry{Input instructions ! gwf kh|hyperpage}{38}
-\indexentry{Input instructions ! gwf kv|hyperpage}{38}
-\indexentry{Input instructions ! gwf ss|hyperpage}{38}
-\indexentry{Input instructions ! gwf sy|hyperpage}{38}
-\indexentry{Input instructions ! gwf alpha|hyperpage}{38}
-\indexentry{Input instructions ! gwf beta|hyperpage}{38}
-\indexentry{Input instructions ! gwf sr|hyperpage}{39}
-\indexentry{Input instructions ! gwf brooks|hyperpage}{39}
-\indexentry{Input instructions ! choose all zones|hyperpage}{39}
-\indexentry{Input instructions ! choose zone number|hyperpage}{39}
-\indexentry{Input instructions ! clear chosen zones|hyperpage}{39}
-\indexentry{Input instructions ! choose cells by chosen zones|hyperpage}{39}
-\indexentry{\gwf\ Domain ! initial condition ! initial (starting) head|hyperpage}{42}
-\indexentry{Input instructions ! gwf initial head|hyperpage}{42}
-\indexentry{Input instructions ! gwf initial head function of z|hyperpage}{42}
-\indexentry{\gwf\ Domain ! boundary conditions|hyperpage}{43}
-\indexentry{Input instructions ! gwf constant head|hyperpage}{43}
-\indexentry{Input instructions ! gwf drain|hyperpage}{43}
-\indexentry{Input instructions ! gwf recharge|hyperpage}{44}
-\indexentry{Input instructions ! gwf well|hyperpage}{44}
-\indexentry{Input instructions ! generate swf domain|hyperpage}{45}
-\indexentry{\swf\ Domain ! cell connection properties|hyperpage}{45}
-\indexentry{Input instructions ! swf to gwf connection length|hyperpage}{45}
-\indexentry{\swf\ Domain ! material properties|hyperpage}{45}
-\indexentry{Input instructions ! swf manning|hyperpage}{46}
-\indexentry{Input instructions ! swf depression storage height|hyperpage}{46}
-\indexentry{Input instructions ! swf obstruction storage height|hyperpage}{46}
-\indexentry{Input instructions ! swf depth for smoothing|hyperpage}{46}
-\indexentry{Input instructions ! swf materials database|hyperpage}{47}
-\indexentry{Input instructions ! chosen zones use swf material number|hyperpage}{47}
-\indexentry{\swf\ Domain ! initial condition ! initial (starting) depth|hyperpage}{47}
-\indexentry{Input instructions ! swf initial depth|hyperpage}{47}
-\indexentry{\swf\ Domain ! boundary conditions|hyperpage}{48}
-\indexentry{Input instructions ! swf constant head|hyperpage}{48}
-\indexentry{Input instructions ! swf recharge|hyperpage}{48}
-\indexentry{Input instructions ! swf well|hyperpage}{48}
-\indexentry{Input instructions ! swf critical depth with sidelength1|hyperpage}{49}
-\indexentry{Input instructions ! swf critical depth|hyperpage}{49}
-\indexentry{Input instructions ! choose all nodes|hyperpage}{50}
-\indexentry{Input instructions ! choose node at xyz|hyperpage}{50}
-\indexentry{Input instructions ! choose gb nodes|hyperpage}{50}
-\indexentry{Input instructions ! clear chosen nodes|hyperpage}{50}
-\indexentry{Input instructions ! generate cln domain|hyperpage}{51}
-\indexentry{Input instructions ! cln from xyz pair|hyperpage}{51}
-\indexentry{\cln\ Domain ! cell connection properties|hyperpage}{52}
-\indexentry{\cln\ Domain ! material properties|hyperpage}{53}
-\indexentry{Input instructions ! cln materials database|hyperpage}{53}
-\indexentry{Input instructions ! chosen zones use cln material number|hyperpage}{53}
-\indexentry{\cln\ Domain ! initial condition ! initial (starting) depth|hyperpage}{54}
-\indexentry{Input instructions ! cln initial depth|hyperpage}{54}
-\indexentry{\cln\ Domain ! boundary conditions|hyperpage}{54}
-\indexentry{Input instructions ! cln constant head|hyperpage}{54}
-\indexentry{Input instructions ! cln well|hyperpage}{54}
-\indexentry{Input instructions ! stress period|hyperpage}{55}
-\indexentry{Input instructions ! type|hyperpage}{55}
-\indexentry{Input instructions ! duration|hyperpage}{55}
-\indexentry{Input instructions ! number of timesteps|hyperpage}{55}
-\indexentry{Input instructions ! deltat|hyperpage}{56}
-\indexentry{Input instructions ! tminat|hyperpage}{56}
-\indexentry{Input instructions ! tmaxat|hyperpage}{56}
-\indexentry{Input instructions ! tadjat|hyperpage}{56}
-\indexentry{Input instructions ! tcutat|hyperpage}{57}
-\indexentry{Input instructions ! generate output control file|hyperpage}{58}
-\indexentry{Input instructions ! sms database|hyperpage}{60}
-\indexentry{Input instructions ! sms parameter set number|hyperpage}{60}
-\indexentry{Model Build ! visualization|hyperpage}{61}
-\indexentry{\tecplot\ ! frame order|hyperpage}{62}
-\indexentry{\gwf\ Domain ! {\tt \_build.lay} ! {\sf GWF} frame|hyperpage}{64}
-\indexentry{\tecplot\ ! data set information|hyperpage}{66}
-\indexentry{\tecplot\ ! probe tool|hyperpage}{66}
-\indexentry{\gwf\ Domain ! {\tt \_build.lay} ! {\sf GWF Cells} frame|hyperpage}{68}
-\indexentry{\swf\ Domain ! {\tt \_build.lay} ! {\sf SWF} frame|hyperpage}{71}
-\indexentry{\tecplot\ ! Custom labels|hyperpage}{71}
-\indexentry{\tecplot\ ! Zoom Tool|hyperpage}{74}
-\indexentry{\cln\ Domain ! {\tt \_build.lay} ! {\sf CLN} frame|hyperpage}{77}
-\indexentry{Input instructions ! postprocess existing modflow model|hyperpage}{82}
-\indexentry{Volumetric water budget|hyperpage}{82}
-\indexentry{\tecplot\ ! value blanking|hyperpage}{87}
-\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{88}
-\indexentry{\tecplot\ ! Equations and defining new variables|hyperpage}{89}
-\indexentry{\tecplot\ ! Isosurfaces, Water Table Plot|hyperpage}{91}
-\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{91}
-\indexentry{\tecplot\ ! Infiltration Plot|hyperpage}{92}
-\indexentry{Excel ! cell protection|hyperpage}{109}
+\indexentry{Input instructions ! elevation from bilinear function in xy|hyperpage}{29}
+\indexentry{\gwf\ Domain ! layering|hyperpage}{30}
+\indexentry{Grid generation ! \gwf\ Domain ! New layer|hyperpage}{30}
+\indexentry{Input instructions ! new layer|hyperpage}{30}
+\indexentry{Input instructions ! Minimum layer thickness|hyperpage}{30}
+\indexentry{Input instructions ! Layer name|hyperpage}{30}
+\indexentry{Input instructions ! Uniform sublayering|hyperpage}{31}
+\indexentry{Input instructions ! Proportional sublayering|hyperpage}{31}
+\indexentry{Input instructions ! Offset base|hyperpage}{31}
+\indexentry{\gwf\ Domain ! cell connection properties|hyperpage}{32}
+\indexentry{\gwf\ Domain ! material properties|hyperpage}{34}
+\indexentry{Input instructions ! choose all cells|hyperpage}{34}
+\indexentry{Input instructions ! active domain|hyperpage}{34}
+\indexentry{Input instructions ! choose cell at xyz|hyperpage}{35}
+\indexentry{Input instructions ! choose cells by layer|hyperpage}{35}
+\indexentry{Input instructions ! choose cells from file|hyperpage}{35}
+\indexentry{Input instructions ! choose cells from gb elements|hyperpage}{35}
+\indexentry{Input instructions ! choose cells from gb nodes|hyperpage}{35}
+\indexentry{Input instructions ! clear chosen cells|hyperpage}{36}
+\indexentry{Input instructions ! gwf materials database|hyperpage}{36}
+\indexentry{Input instructions ! chosen cells use gwf material number|hyperpage}{37}
+\indexentry{Input instructions ! gwf kh|hyperpage}{39}
+\indexentry{Input instructions ! gwf kv|hyperpage}{39}
+\indexentry{Input instructions ! gwf ss|hyperpage}{39}
+\indexentry{Input instructions ! gwf sy|hyperpage}{39}
+\indexentry{Input instructions ! gwf alpha|hyperpage}{39}
+\indexentry{Input instructions ! gwf beta|hyperpage}{39}
+\indexentry{Input instructions ! gwf sr|hyperpage}{40}
+\indexentry{Input instructions ! gwf brooks|hyperpage}{40}
+\indexentry{\gwf\ Domain ! material zones|hyperpage}{40}
+\indexentry{Input instructions ! choose all zones|hyperpage}{40}
+\indexentry{Input instructions ! choose zone number|hyperpage}{40}
+\indexentry{Input instructions ! clear chosen zones|hyperpage}{40}
+\indexentry{Input instructions ! choose cells by chosen zones|hyperpage}{40}
+\indexentry{Input instructions ! new zone|hyperpage}{43}
+\indexentry{Input instructions ! choose cells by xyz layer range|hyperpage}{43}
+\indexentry{\gwf\ Domain ! initial condition ! initial (starting) head|hyperpage}{45}
+\indexentry{Input instructions ! gwf initial head|hyperpage}{46}
+\indexentry{Input instructions ! gwf initial head function of z|hyperpage}{46}
+\indexentry{\gwf\ Domain ! boundary conditions|hyperpage}{47}
+\indexentry{Input instructions ! gwf constant head|hyperpage}{47}
+\indexentry{Input instructions ! gwf drain|hyperpage}{47}
+\indexentry{Input instructions ! gwf recharge|hyperpage}{48}
+\indexentry{Input instructions ! gwf well|hyperpage}{48}
+\indexentry{Input instructions ! generate swf domain|hyperpage}{49}
+\indexentry{\swf\ Domain ! cell connection properties|hyperpage}{49}
+\indexentry{Input instructions ! swf to gwf connection length|hyperpage}{49}
+\indexentry{\swf\ Domain ! material properties|hyperpage}{49}
+\indexentry{Input instructions ! swf manning|hyperpage}{50}
+\indexentry{Input instructions ! swf depression storage height|hyperpage}{50}
+\indexentry{Input instructions ! swf obstruction storage height|hyperpage}{50}
+\indexentry{Input instructions ! swf depth for smoothing|hyperpage}{50}
+\indexentry{Input instructions ! swf materials database|hyperpage}{51}
+\indexentry{Input instructions ! chosen zones use swf material number|hyperpage}{51}
+\indexentry{\swf\ Domain ! initial condition ! initial (starting) depth|hyperpage}{51}
+\indexentry{Input instructions ! swf initial depth|hyperpage}{51}
+\indexentry{\swf\ Domain ! boundary conditions|hyperpage}{52}
+\indexentry{Input instructions ! swf constant head|hyperpage}{52}
+\indexentry{Input instructions ! swf recharge|hyperpage}{52}
+\indexentry{Input instructions ! swf well|hyperpage}{52}
+\indexentry{Input instructions ! swf critical depth with sidelength1|hyperpage}{53}
+\indexentry{Input instructions ! swf critical depth|hyperpage}{53}
+\indexentry{Input instructions ! choose all nodes|hyperpage}{54}
+\indexentry{Input instructions ! choose node at xyz|hyperpage}{54}
+\indexentry{Input instructions ! choose gb nodes|hyperpage}{54}
+\indexentry{Input instructions ! clear chosen nodes|hyperpage}{54}
+\indexentry{Input instructions ! generate cln domain|hyperpage}{55}
+\indexentry{Input instructions ! cln from xyz pair|hyperpage}{55}
+\indexentry{\cln\ Domain ! cell connection properties|hyperpage}{56}
+\indexentry{\cln\ Domain ! material properties|hyperpage}{57}
+\indexentry{Input instructions ! cln materials database|hyperpage}{57}
+\indexentry{Input instructions ! chosen zones use cln material number|hyperpage}{57}
+\indexentry{\cln\ Domain ! initial condition ! initial (starting) depth|hyperpage}{58}
+\indexentry{Input instructions ! cln initial depth|hyperpage}{58}
+\indexentry{\cln\ Domain ! boundary conditions|hyperpage}{58}
+\indexentry{Input instructions ! cln constant head|hyperpage}{58}
+\indexentry{Input instructions ! cln well|hyperpage}{58}
+\indexentry{Input instructions ! stress period|hyperpage}{59}
+\indexentry{Input instructions ! type|hyperpage}{59}
+\indexentry{Input instructions ! duration|hyperpage}{59}
+\indexentry{Input instructions ! number of timesteps|hyperpage}{59}
+\indexentry{Input instructions ! deltat|hyperpage}{60}
+\indexentry{Input instructions ! tminat|hyperpage}{60}
+\indexentry{Input instructions ! tmaxat|hyperpage}{60}
+\indexentry{Input instructions ! tadjat|hyperpage}{60}
+\indexentry{Input instructions ! tcutat|hyperpage}{61}
+\indexentry{Input instructions ! generate output control file|hyperpage}{62}
+\indexentry{Input instructions ! sms database|hyperpage}{64}
+\indexentry{Input instructions ! sms parameter set number|hyperpage}{64}
+\indexentry{Model Build ! visualization|hyperpage}{65}
+\indexentry{\tecplot\ ! frame order|hyperpage}{66}
+\indexentry{\gwf\ Domain ! {\tt \_build.lay} ! {\sf GWF} frame|hyperpage}{68}
+\indexentry{\tecplot\ ! data set information|hyperpage}{70}
+\indexentry{\tecplot\ ! probe tool|hyperpage}{70}
+\indexentry{\gwf\ Domain ! {\tt \_build.lay} ! {\sf GWF Cells} frame|hyperpage}{72}
+\indexentry{\swf\ Domain ! {\tt \_build.lay} ! {\sf SWF} frame|hyperpage}{75}
+\indexentry{\tecplot\ ! Custom labels|hyperpage}{75}
+\indexentry{\tecplot\ ! Zoom Tool|hyperpage}{78}
+\indexentry{\cln\ Domain ! {\tt \_build.lay} ! {\sf CLN} frame|hyperpage}{81}
+\indexentry{Input instructions ! postprocess existing modflow model|hyperpage}{86}
+\indexentry{Volumetric water budget|hyperpage}{86}
+\indexentry{\tecplot\ ! value blanking|hyperpage}{91}
+\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{92}
+\indexentry{\tecplot\ ! Equations and defining new variables|hyperpage}{93}
+\indexentry{\tecplot\ ! Isosurfaces, Water Table Plot|hyperpage}{95}
+\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{95}
+\indexentry{\tecplot\ ! Infiltration Plot|hyperpage}{96}
+\indexentry{Excel ! cell protection|hyperpage}{113}
