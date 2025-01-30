@@ -39,8 +39,8 @@
     character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'
     character(MAX_INST) :: QuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
     character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
+    character(MAX_INST) :: GenerateVariableRectangles_CMD  =   'generate variable rectangles'
     ! There are many other possible 2d mesh definition options e.g.
-    !character(MAX_INST), parameter :: gv_rects            =   'generate variable rectangles'
     !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
     
     character(MAX_INST) :: GenerateSWFDomain_CMD		=   'generate swf domain'
@@ -1732,6 +1732,7 @@
         if(domain.name == 'GWF') then
             do i=1,domain.nCells
                 if(bcheck(domain.Cell_is(i),chosen)) then
+                    domain.nWELCells=domain.nWELCells+1
                     call set(domain.Cell_Is(i),Well)
                     domain.PumpingRate(i)=PumpRate
                     itmp=itmp+1
@@ -1740,6 +1741,7 @@
         else if(domain.name == 'CLN') then
             do i=1,domain.nCells
                 if(bcheck(domain.Cell_is(i),chosen)) then
+                    domain.nWELCells=domain.nWELCells+1
                     call set(domain.Cell_Is(i),Well)
                     domain.PumpingRate(i)=PumpRate
                     itmpcln=itmpcln+1
@@ -2148,8 +2150,15 @@
                 call IaJa_FromTecplot(TMPLT)
 
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
-                ! Build the 2D template mesh from a simple 2D rectangular mesh
+                ! Build the 2D template mesh from a uniform 2D rectangular mesh
                 call GenerateUniformRectangles(FnumMUT,TMPLT)
+                call TemplateToTecplot(Modflow,TMPLT)
+                call IaJa_FromTecplot(TMPLT)
+                JustBuilt=.true.
+            
+            else if(index(instruction, GenerateVariableRectangles_CMD)  /= 0) then
+                ! Build the 2D template mesh from a variable 2D rectangular mesh
+                call GenerateVariableRectangles(FnumMUT,TMPLT)
                 call TemplateToTecplot(Modflow,TMPLT)
                 call IaJa_FromTecplot(TMPLT)
                 JustBuilt=.true.
@@ -6405,6 +6414,34 @@
             
                 call FreeUnit(FNum)
             end if
+
+            if(domain.nWELCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_WEL.tecplot.dat'
+            
+                call OpenAscii(FNum,FName)
+                call Msg('  ')
+                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' WEL"'
+
+                VarSTR='variables="X","Y","Z","WEL"'
+                nVar=3
+            
+                write(FNum,'(a)') trim(VarSTR)
+            
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nWELCells,', t="'//trim(domain.name)//' WEL", datapacking=point'
+        
+                write(FNum,'(a)') trim(ZoneSTR)
+                    !', AUXDATA TimeUnits = "'//trim(Modflow.STR_TimeUnit)//'"'//&
+                    !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
+           
+                do i=1,domain.nCells
+                    if(bcheck(domain.Cell_is(i),Well)) write(FNum,'(4(1pg20.9))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
+                        domain.PumpingRate(i)
+                end do
+            
+                call FreeUnit(FNum)
+            end if
+
         end if
     end subroutine ModflowDomainScatterToTecplot
 
