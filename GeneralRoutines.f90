@@ -24,6 +24,9 @@ module GeneralRoutines    !### bit setting routines
     integer, parameter :: MAX_STR=1000
     integer, parameter :: MAX_LBL=200
     integer, parameter :: MAX_INST=200
+    
+    integer, Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
+
 
     character(MAX_STR) :: USERBIN
     
@@ -4238,6 +4241,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine AllocChk
     
     !---------------------------------------------- Increase array sizes at run-time 
+
     subroutine GrowIntegerArray(iArray,nSizeIn,nSizeout)
         implicit none
         integer, allocatable :: iArray(:)

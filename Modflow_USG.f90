@@ -51,7 +51,7 @@
     ! Generate a layered 3D modflow mesh from a 2D mesh
     character(MAX_INST) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
         
-    !---------------------------------------------------Selection and assignment options
+    !---------------------------------------------------Selection options
     character(MAX_INST) :: ActiveDomain_CMD	                    =   'active domain'
 
     character(MAX_INST) :: ChooseAllCells_CMD  	                =   'choose all cells'
@@ -78,9 +78,10 @@
     character(MAX_INST) :: FlagChosenNodesAsOuterBoundary_CMD   =   'flag chosen nodes as outer boundary'
     
 
-    !---------------------------------------------------Initial conditions
+    !---------------------------------------------------Assign initial conditions
     character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	    =   'gwf initial head'
     character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD  =   'gwf initial head function of z' 
+    character(MAX_INST) :: InitialHeadFromDepthSatToGWF_CMD  =   'gwf initial head from depth-saturation table' 
     character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	    =   'swf initial depth'
     character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	    =   'cln initial depth'
     
@@ -119,6 +120,9 @@
     character(MAX_INST) :: AssignDepressiontoSWF_CMD		=   'swf depression storage height'
     character(MAX_INST) :: AssignObstructiontoSWF_CMD		=   'swf obstruction storage height'
     character(MAX_INST) :: AssignDepthForSmoothingtoSWF_CMD	=   'swf depth for smoothing'
+
+    !---------------------------------------------------Observation points 
+    character(MAX_INST) :: ObservationPoint_CMD		            =   'observation point'
         
     !---------------------------------------------------SMS Dataset
     character(MAX_INST) :: SMSParamterSetNumber_CMD		    =   'sms parameter set number'
@@ -314,6 +318,15 @@
         real, allocatable :: ObstructionStorageHeight(:)
         real, allocatable :: H1DepthForSmoothing(:)   ! SWF depth smoothing parameter
         real, allocatable :: H2DepthForSmoothing(:)   ! SWF depth smoothing parameter
+        
+        ! Observation Points
+        ! .OBS file
+        character(128) :: FNameOBS
+        integer :: iOBS
+
+        integer :: nObsPnt=0
+        character(MAX_LBL) :: ObsPntName(MAX_OBS)
+        integer :: ObsPntCell(MAX_OBS)
             
     end type ModflowDomain
  
@@ -473,12 +486,10 @@
         character(128) :: FNameLAK
         integer :: iLAK=0
 
-
-        
-        ! DATA(BINARY) files
-        ! HDS file
-        
-
+        ! OBPT file
+        character(128) :: FNameOBPT
+        integer :: iOBPT
+       
         ! CBCCLN file
         character(128) :: FNameCBCCLN
         integer :: iCBCCLN
@@ -657,6 +668,7 @@
         Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
         call getunit(Modflow.CLN.iDDN)
         write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
+
     end subroutine AddCLNFiles
     
     !-------------------------------------------------------------
@@ -686,6 +698,7 @@
         Modflow.SWF.FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
         call getunit(Modflow.SWF.iDDN)
         write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iDDN,' '//trim(Modflow.SWF.FNameDDN)
+        
     end subroutine AddSWFFiles
     
     !-------------------------------------------------------------
@@ -2043,7 +2056,9 @@
     
             if(index(instruction, 'end')  /= 0) then
                 if(JustBuilt) then ! Modflow project file creation
-                    call ModflowTMPLTScatterToTecplot(Modflow,TMPLT)                
+                    call ModflowTMPLTScatterToTecplot(Modflow,TMPLT) 
+
+                    call ModflowObservationPointsFile(Modflow) 
 
                     if(modflow.GWF.nCells >0) then
                         call WriteGWFFiles(Modflow,TMPLT_GWF)
@@ -2476,6 +2491,8 @@
                 call AssignStartingHeadtoDomain(FnumMUT,modflow.GWF)
             else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
                 call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
+            else if(index(instruction, InitialHeadFromDepthSatToGWF_CMD)  /= 0) then
+                call InitialHeadFromDepthSatToGWF(FnumMUT,modflow.GWF)
 
             ! CLN properties assignment
             else if(index(instruction, AssignMaterialtoCLN_CMD)  /= 0) then
@@ -2527,6 +2544,19 @@
             else if(index(instruction, AssignWELtoCLN_CMD)  /= 0) then
                 call AssignWELtoDomain(FnumMUT,Modflow,Modflow.CLN)
             
+            ! Observation points
+            else if(index(instruction, ObservationPoint_CMD)  /= 0) then
+
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ObservationPoint(FnumMUT,Modflow,Modflow.CLN)
+                case (iGWF)
+                    call ObservationPoint(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ObservationPoint(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ObservationPoint(FnumMUT,modflow.CLN)
+                end select
             
             else if(index(instruction, GenOCFile_CMD)  /= 0) then
                 call GenOCFile(FNumMUT,Modflow)
@@ -5906,9 +5936,9 @@
         character(256) :: instruction
 
 	    real(dr) :: zp(1000)
-	    real(dr) :: hp(1000)
+	    real(dr) :: InitHead(1000)
 	    zp(:) = 0
-	    hp(:) = 0
+	    InitHead(:) = 0
 
 
         call Msg(TAB//'                Z              Head')
@@ -5926,7 +5956,7 @@
                 exit read_zhead_pairs
 		    else
 			    npairs=npairs+1
-			    read(instruction,*,iostat=status) zp(npairs),hp(npairs)
+			    read(instruction,*,iostat=status) zp(npairs),InitHead(npairs)
 
 			    if(npairs > 1) then
 			        if(zp(npairs) <= zp(npairs-1)) then
@@ -5938,7 +5968,7 @@
 				    call ErrMsg('Bad z-head pair')
                 endif
                 
-                write(TmpSTR,'(i8,2x,2g15.5)') npairs,zp(npairs),hp(npairs)
+                write(TmpSTR,'(i8,2x,2g15.5)') npairs,zp(npairs),InitHead(npairs)
                 call Msg(TAB//trim(TmpSTR))
 
 		    endif
@@ -5948,7 +5978,7 @@
 		    do j=1,npairs-1
 			    if(domain.zCell(i) >= zp(j) .and. domain.zCell(i) <= zp(j+1)) then  ! interpolate
 	                t=(domain.zCell(i)-zp(j))/(zp(j+1)-zp(j))
-				    domain.StartingHeads(i)=(1.0-t)*hp(j)+t*hp(j+1)
+				    domain.StartingHeads(i)=(1.0-t)*InitHead(j)+t*InitHead(j+1)
 			    end if
 		    end do
         end do
@@ -5957,8 +5987,218 @@
 
 
     end subroutine InitialHeadFunctionOfZtoGWF
-   
-    !-------------------------------------------------------------
+
+       
+     !----------------------------------------------------------------------
+    subroutine InitialHeadFromDepthSatToGWF(FNumMUT,domain)
+        implicit none
+        integer :: FNumMUT
+        type(ModflowDomain) domain
+
+        integer :: i, j
+	    integer :: npairs
+	    real(dr) :: t
+        
+        integer :: iCell
+        real(dr) :: depth
+        real(dr) :: sw
+                
+        character(256) :: instruction
+
+	    real(dr) :: dpth(1000)
+	    real(dr) :: satn(1000)
+	    dpth(:) = 0
+	    satn(:) = 0
+
+
+        call Msg(TAB//'                Depth               Sat')
+
+	    npairs=0
+	    read_DepthSaturation_pairs:do
+		    read(FNumMUT,'(a)',iostat=status) instruction
+		    if(status /= 0) exit
+
+		    len=len_trim(instruction)
+            call LwrCse(instruction)
+
+            if(index(instruction,'end') /= 0) then
+                call Msg(TAB//'end gwf initial head function of z')
+                exit read_DepthSaturation_pairs
+		    else
+			    npairs=npairs+1
+			    read(instruction,*,iostat=status) dpth(npairs),satn(npairs)
+
+			    if(npairs > 1) then
+			        if(dpth(npairs) <= dpth(npairs-1)) then
+				        call ErrMsg('Depth values must be entered in ascending order')
+				    endif
+			    endif
+
+			    if(status /= 0) then
+				    call ErrMsg('Bad z-saturation pair')
+                endif
+                
+                write(TmpSTR,'(i8,2x,2g15.5)') npairs,dpth(npairs),satn(npairs)
+                call Msg(TAB//trim(TmpSTR))
+
+		    endif
+        end do read_DepthSaturation_pairs
+        
+        
+        do i=1,domain.nCells
+            
+            !find the cell number on the surface that corresponds to cell i
+            iCell = myMOD(i,domain.nodelay)
+			depth=domain.Top(iCell)-domain.zCell(i)
+
+			call interpol_table(npairs,dpth,satn,depth,sw)
+            if(i==2001) then
+            continue
+            endif
+            
+			domain.StartingHeads(i)=pw_from_sw(i,sw,domain)
+
+        end do
+        
+        continue
+        
+!crgm This code snippet converts head hd to saturated thickness thck then this gets set to saturation on return
+!       Uses the van genuchten or brooks-corey function 
+!     ELSEIF(METHOD.EQ.4)THEN
+!C6---------vanG FUNCTION WITH MODIFICATIONS FOR BUBBLEPT AND FULLYDRY
+        !bpn = 0.0 
+        !if(ibpn.eq.1)then
+        !  bpn = bp(N)
+        !endif
+        !TTOP = BBOT + TOTTHICK
+        !pc = 0.5*(ttop+bbot) - (hd-bpn)
+        !if(pc.le.0)then
+        !  thck = 1.0
+        !else
+        !  gamma = 1.-1./beta(n)
+        !  Seff = (1. + (alpha(n)*pc)**beta(n))**gamma
+        !  Seff = 1.0 / Seff
+        !  if(idry.eq.0) then
+        !    thck = seff * (1-sr(n)) + sr(n)
+        !  else
+        !    thck = seff
+        !  endif  
+        !endif
+
+
+      !  do i=1,domain.nCells
+		    !do j=1,npairs-1
+			   ! if(domain.zCell(i) >= dpth(j) .and. domain.zCell(i) <= dpth(j+1)) then  ! interpolate
+	     !           t=(domain.zCell(i)-dpth(j))/(dpth(j+1)-dpth(j))
+				  !  domain.StartingHeads(i)=(1.0-t)*satn(j)+t*satn(j+1)
+			   ! end if
+		    !end do
+      !  end do
+      !  
+      !  call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+
+
+    end subroutine InitialHeadFromDepthSatToGWF
+    !----------------------------------------------------------------------
+    subroutine interpol_table(nsize,xtable,ytable,xval,yval)
+        implicit none
+
+        integer(di) :: j,jlower,jupper,jmid,nsize
+        real(dr) :: xval,yval
+        real(dr) :: xtable(100)
+        real(dr) :: ytable(100)
+
+        jlower=0
+        jupper=nsize+1
+        10    if(jupper-jlower.gt.1)then
+            jmid=(jupper+jlower)/2
+            if((xtable(nsize).gt.xtable(1)).eqv.(xval.gt.xtable(jmid)))then
+                jlower=jmid
+            else
+                jupper=jmid
+            endif
+            go to 10
+        endif
+        j=jlower
+
+
+        if(j==0) then
+            yval=ytable(1)
+        else if (j==nsize) then
+            yval=ytable(nsize)
+        else
+            yval = ytable(j) + (xval-xtable(j))*(ytable(j+1)-ytable(j)) / (xtable(j+1)-xtable(j))
+        endif
+
+        return
+    end subroutine interpol_table
+    !----------------------------------------------------------------------
+    function pw_from_sw(iCell,sw,domain)
+        !
+        !  ...Compute the pressure for water saturation, sw
+        !     Written by Kerry MacQuarrie, Nov. 1995
+        !
+        ! rgm 2025  modfied for Modflow unsat functions
+    
+        ! *** only implemented for van Genuchten or Brooks-Corey functions (method 4 in modflow)
+
+        !
+        implicit none
+        type(ModflowDomain) domain
+
+        integer(di) :: iCell   ! cell number
+        real(dr) :: pw_from_sw
+        !
+        real(dr) :: c1, eps_conv, aconstant, sw, se
+        real(dr) :: v_gamma, v_beta, v_alpha, gamma
+        real(dr) :: sat_1, sat_2, sat_shift, pres_1, pres_2, dp_ds
+
+        parameter (c1 = 1.0d0, eps_conv = 1.0d-4)
+        parameter (sat_shift = 1.0d-6)
+        parameter (aconstant = c1-eps_conv)
+
+
+        ! Compute effective saturation
+        se = (sw - domain.Sr(iCell)) / (c1 - domain.Sr(iCell))
+        ! Compute some constants
+        gamma = 1.-1./domain.Beta(iCell)
+        v_gamma = c1/gamma
+        v_beta  = c1/domain.Beta(iCell)
+        v_alpha = c1/domain.Alpha(iCell)
+
+        if (se .gt. aconstant) then ! use linear interpolation
+
+            sat_1  = aconstant
+            pres_1 = v_alpha * ( (sat_1)**(-v_gamma) - c1 )**(v_beta)
+            sat_2  = c1 ! note that the pressure at sat=1.0 is 0.0
+            dp_ds  = pres_1/eps_conv
+            pw_from_sw = dp_ds*(se-sat_1) + pres_1
+
+        else if(se .lt. eps_conv) then ! use linear interpolation
+
+            sat_1  = eps_conv
+            pres_1 = v_alpha * ( (sat_1)**(-v_gamma) - c1 )**(v_beta)
+            sat_2  = eps_conv + sat_shift
+            pres_2 = v_alpha * ( (sat_2)**(-v_gamma) - c1 )**(v_beta)
+            dp_ds  = (pres_2 - pres_1)/sat_shift
+            pw_from_sw = dp_ds*(se-sat_1) + pres_1
+
+        else ! invert van Genuchten relation directly
+            pw_from_sw = v_alpha * ( (se)**(-v_gamma) - c1 )**(v_beta)
+
+        end if
+
+        ! Substract air entry pressure (which is actually "-") and change sign
+
+       	if(UnsaturatedFunctionType(domain.iZone(iCell)) == 'Van Genuchten') then
+			pw_from_sw = -pw_from_sw
+		else if(UnsaturatedFunctionType(domain.iZone(iCell)) == 'Brooks-Corey') then
+			pw_from_sw = -(pw_from_sw - domain.Brooks(iCell))
+		endif
+
+    end function pw_from_sw
+
+   !-------------------------------------------------------------
     subroutine InitializeModflowFiles(Modflow)
         implicit none
         
@@ -6444,7 +6684,62 @@
 
         end if
     end subroutine ModflowDomainScatterToTecplot
+    
+    subroutine ModflowObservationPointsFile(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+        
+        integer :: i
+        
+        Modflow.FNameOBPT=trim(Modflow.Prefix)//'.OBPT'
+        call OpenAscii(Modflow.iOBPT,Modflow.FNameOBPT)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOBPT))
+        write(Modflow.iNAM,'(a,i4,a)') 'OBPT  ',Modflow.iOBPT,' '//trim(Modflow.FNameOBPT)
+        write(Modflow.iOBPT,'(a,1pg10.1)') '# MODFLOW-USG OBPT file written by Modflow-User-Tools version ',MUTVersion
+        write(Modflow.iOBPT,'(a)') '#      nGWFObsPnt  nSWFObsPnt  nCLNObsPnt   iGWFOBS     iSWFOBS     iCLNOBS'
 
+        ! Observation points
+        if(modflow.GWF.nObsPnt>0) then
+            Modflow.GWF.FNameOBS=trim(Modflow.Prefix)//'.GWF.OBS.tecplot.dat'
+            call getunit(Modflow.GWF.iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.GWF.iOBS,' '//trim(Modflow.GWF.FNameOBS)
+        endif
+        
+        if(modflow.SWF.nObsPnt>0) then
+            Modflow.SWF.FNameOBS=trim(Modflow.Prefix)//'.SWF.OBS.tecplot.dat'
+            call getunit(Modflow.SWF.iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.SWF.iOBS,' '//trim(Modflow.SWF.FNameOBS)
+        endif
+        
+        if(modflow.CLN.nObsPnt>0) then
+            Modflow.CLN.FNameOBS=trim(Modflow.Prefix)//'.CLN.OBS.tecplot.dat'
+            call getunit(Modflow.CLN.iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.CLN.iOBS,' '//trim(Modflow.CLN.FNameOBS)
+        endif
+        
+        write(Modflow.iOBPT,*) modflow.GWF.nObsPnt, modflow.SWF.nObsPnt, modflow.CLN.nObsPnt,Modflow.GWF.iOBS, Modflow.SWF.iOBS, Modflow.CLN.iOBS
+
+        ! Observation points
+        if(modflow.GWF.nObsPnt>0) then
+            do i=1,modflow.GWF.nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') modflow.GWF.ObsPntCell(i), trim(modflow.GWF.ObsPntName(i))
+            end do
+        endif
+        
+        if(modflow.SWF.nObsPnt>0) then
+            do i=1,modflow.SWF.nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') modflow.SWF.ObsPntCell(i), trim(modflow.SWF.ObsPntName(i))
+            end do
+        endif
+        
+        if(modflow.CLN.nObsPnt>0) then
+            do i=1,modflow.CLN.nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') modflow.CLN.ObsPntCell(i), trim(modflow.CLN.ObsPntName(i))
+            end do
+        endif
+        
+    end subroutine ModflowObservationPointsFile
     !-------------------------------------------------------------
     subroutine ModflowOutputToModflowStructure(FNumMUT, Modflow)
         implicit none
@@ -6470,8 +6765,7 @@
                 'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
                 'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
                 'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
-                'TVM ', 'SWF ', 'SWBC', 34*'    '/
-
+                'TVM ', 'SWF ', 'SWBC', 'OBPT', 33*'    '/
         integer :: maxunit, nc 
 
         INCLUDE 'openspec.inc'
@@ -7333,6 +7627,9 @@
         real(dr) :: TriangleArea
 
         ! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
+        if(TMPLT_SWF.ElementType /= 'fetriangle') then
+            call ErrMsg('Nodal control volume option currently only works with TMPLT_MESH defined by triangular elements') 
+        endif
         call NodeListToIaJaStructure(TMPLT_SWF,TMPLT)
             
         Modflow.SWF.njag=TMPLT_SWF.njag
@@ -7703,7 +8000,46 @@
            
         return
     end subroutine NodeListToIaJaStructure
-    
+
+    !----------------------------------------------------------------------
+    subroutine ObservationPoint(FNumMUT,domain)
+        implicit none
+        
+        integer :: FNumMUT
+        type (ModflowDomain) domain
+
+	    ! Assign the cell containing XYZ input coordinate as named obervation point and output head, sat, depth, conc ... 
+
+        integer :: i, j
+	    integer :: iCell
+	    real(dr) :: x1,y1,z1,dist_min,f1
+        
+        domain.nObsPnt=domain.nObsPnt+1
+
+        read(FNumMUT,'(a)') domain.ObsPntName(domain.nObsPnt)
+        call Msg(TAB//TAB//trim(domain.name)//' observation point name: '//trim(domain.ObsPntName(domain.nObsPnt)))
+
+        read(FNumMut,*) x1,y1,z1
+        write(TMPStr,*) TAB//TAB//'Find cell closest to user XYZ: ',x1, y1, z1
+        call Msg(TMPStr)
+
+        dist_min=1.0e20
+	    do i=1,domain.nCells
+		    f1=sqrt((x1-domain.xCell(i))**2+((y1-domain.yCell(i)))**2+((z1-domain.zCell(i)))**2)
+		    if(f1.lt.dist_min) then
+			    iCell=i
+			    dist_min=f1
+		    endif
+        end do
+        
+        domain.ObsPntCell(domain.nObsPnt)=iCell
+        write(TMPStr,'(a,i10,a)') TAB//TAB//' Observation point cell: ',domain.ObsPntCell(domain.nObsPnt)
+        call Msg(TMPStr)
+        write(TMPStr,'(a,g15.5,a)') TAB//TAB//' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
+        call Msg(TMPStr)
+        
+
+    end subroutine ObservationPoint
     !-------------------------------------------------------------
     subroutine openBinaryMUSGFile(FileType,line,prefix,iUnit,FName)
         implicit none
@@ -8818,10 +9154,6 @@
         end if
         write(Modflow.iSWF,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
         write(Modflow.iSWF,'(5(1ES20.8))') (modflow.SWF.StartingHeads(i),i=1,modflow.SWF.nCells)
-       
-
-        
-
         
         !------------------- SWBC file
         if(allocated(modflow.SWF.CriticalDepthLength)) then
@@ -8857,7 +9189,7 @@
                 write(Modflow.iSWF_GSF,'(i10,2x,3(1pg15.5),2x,2i10,10i10)') i,Modflow.SWF.xCell(i),Modflow.SWF.yCell(i),Modflow.SWF.zCell(i),Modflow.SWF.iLayer(i),Modflow.SWF.nNodesPerCell,(Modflow.SWF.iNode(j,i),j=1,Modflow.SWF.nNodesPerCell)
             end do
         end if
-
+        
 
         return
     end subroutine WriteSWFFiles
@@ -10219,7 +10551,6 @@
                  IBPN=1
                  WRITE(IOUT,31)
            31    FORMAT(1X,'BUBBLEPT  OPTION:',/,1X,&
-                 'For Richards equation the bubble point head is also ',&
                      'input at all cells')
                  allocate(bp(nodes))
                  DO N=1,NODES
