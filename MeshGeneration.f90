@@ -25,7 +25,11 @@ Module MeshGeneration
         
     logical :: layer_defined=.false.
     logical :: zone_by_template=.false.
+    
+    integer, allocatable :: seg_node(:,:)
+    integer :: nSeg        
 
+    
     contains
     !----------------------------------------------------------------------
     subroutine MeshFromGb(FNumMUT,TMPLT)
@@ -217,41 +221,33 @@ Module MeshGeneration
         allocate(TMPLT.ElementArea(TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'TMPLT ElementArea array')
         
-        !allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'GB SideLlength array')
+        allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
+        call AllocChk(ialloc,'GB SideLlength array')
         
         do i=1,TMPLT.nElements
             ! xc and yc quadtree element side lengths
             TMPLT.ElementArea(i)=(TMPLT.x(TMPLT.iNode(4,i))-TMPLT.x(TMPLT.iNode(1,i))) * &
                                  (TMPLT.y(TMPLT.iNode(2,i))-TMPLT.y(TMPLT.iNode(1,i)))
-            !do j=1,TMPLT.nNodesPerElement
-            !    x(j)=TMPLT.x(TMPLT.iNode(j,i))
-            !    y(j)=TMPLT.y(TMPLT.iNode(j,i))
-            !end do
-            !call InnerCircle(x,y,TMPLT.ElementArea(i),xc,yc,TMPLT.rCircle(i),lseg,aseg,dseg)
-            !
-            !TMPLT.SideLength(1,i)=lseg(1,2)
-            !TMPLT.SideLength(2,i)=lseg(2,3)
-            !TMPLT.SideLength(3,i)=lseg(3,1)
-            !
-            !TMPLT.xCircle(i)=xc
-            !TMPLT.yCircle(i)=yc
-            !    
-            !    
-            !! zc from centroid of the iNode array coordinates
-            !zc=0.0
-            !do j=1,3
-            !    zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-            !end do
-            !    
-            !TMPLT.xElement(i)=xc
-            !TMPLT.yElement(i)=yc
-            !TMPLT.zElement(i)=zc/3
-            !
+            
+            TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
+            TMPLT.SideLength(2,i)=abs(TMPLT.y(TMPLT.iNode(3,i)) - TMPLT.y(TMPLT.iNode(2,i)))
+            TMPLT.SideLength(3,i)=abs(TMPLT.x(TMPLT.iNode(4,i)) - TMPLT.x(TMPLT.iNode(3,i)))
+            TMPLT.SideLength(4,i)=abs(TMPLT.y(TMPLT.iNode(1,i)) - TMPLT.y(TMPLT.iNode(4,i)))
+
+            
+            ! zc from centroid of the iNode array coordinates
+            zc=0.0
+            do j=1,4
+                zc=zc+TMPLT.z(TMPLT.iNode(j,i))
+            end do
+                
+            TMPLT.xElement(i)=(TMPLT.x(TMPLT.iNode(4,i))+TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
+            TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(2,i))-TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
+            TMPLT.zElement(i)=zc/4
+            
         end do
                     
         
-        !TMPLT.InnerCircles=.true.
         TMPLT.IsDefined=.true.
     
         write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT.nNodes
@@ -361,7 +357,7 @@ Module MeshGeneration
 
 	    ! Given a 2D mesh, define top elevation, layer bottoms and sublayering interactively.
 
-        integer :: i, j
+        integer :: i, j, k, iElement
         
         if(TMPLT.nNodes < 1000) then
             user_nz=1000
@@ -489,6 +485,18 @@ Module MeshGeneration
             end do
         end do
         
+        ! Element side lengths
+        allocate(TMPLT_GWF.SideLength(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element SideLength array')
+        do i=1,TMPLT.nElements
+            do j=1,TMPLT.nNodesPerElement
+                do k=1,TMPLT_GWF.nLayers
+                    iElement=TMPLT.nElements*(k-1)+i
+                    TMPLT_GWF.SideLength(j,iElement) = TMPLT.SideLength(j,i)
+                end do
+            end do
+        end do
+        
         ! Element layer number
         allocate(TMPLT_GWF.iLayer(TMPLT_GWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element layer number array')
@@ -523,7 +531,7 @@ Module MeshGeneration
     end subroutine GenerateLayeredGWFDomain
     
     !----------------------------------------------------------------------
-    subroutine GenerateSWFDomain(FNumMUT,TMPLT,TMPLT_SWF)
+    subroutine GenerateTMPLT_SWF(FNumMUT,TMPLT,TMPLT_SWF)
         implicit none
         
         character(MAX_INST) :: instruction
@@ -627,7 +635,7 @@ Module MeshGeneration
         call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
         do i=1,TMPLT_SWF.nElements
             TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
-            if(TMPLT.iZone(j).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(j)
+            if(TMPLT.iZone(i).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(i)
         end do
 
         TMPLT_SWF.IsDefined=.true.
@@ -635,8 +643,15 @@ Module MeshGeneration
         allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
         TMPLT_SWF.Element_Is(:)=0
+        TMPLT_SWF.Element_Is(:)=TMPLT.Element_Is(:)
+
+        allocate(TMPLT_SWF.Node_Is(TMPLT_SWF.nNodes),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Node_Is array')            
+        TMPLT_SWF.Node_Is(:)=0
+        TMPLT_SWF.Node_Is(:)=TMPLT.Node_Is(:)
+
     
-    end subroutine GenerateSWFDomain
+    end subroutine GenerateTMPLT_SWF
 
     !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
@@ -1247,7 +1262,100 @@ Module MeshGeneration
         continue 
     end subroutine CLNFromXYZPair
     
+    !----------------------------------------------------------------------
+    subroutine FlagOuterBoundaryNodes(TMPLT)
+        implicit none
 
+        type (TecplotDomain)  TMPLT
+
+        integer :: i, in1, in2, in3, in4 
+        
+        allocate(seg_node(TMPLT.nElements*4,2))
+        
+        if(.not. allocated(TMPLT.Node_Is)) then 
+            allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
+            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
+            TMPLT.Node_Is(:)=0
+        end if
+     
+        !     construct the array of boundary segment nodes
+        call Msg('Find outer boundary segments...') 
+        seg_node(1,1)=TMPLT.iNode(1,1) 
+        seg_node(1,2)=TMPLT.iNode(2,1) 
+        seg_node(2,1)=TMPLT.iNode(2,1) 
+        seg_node(2,2)=TMPLT.iNode(3,1) 
+        seg_node(3,1)=TMPLT.iNode(3,1) 
+        seg_node(3,2)=TMPLT.iNode(1,1) 
+        nseg=3 
+        do  i=2,TMPLT.nElements
+            if(TMPLT.nNodesPerElement==3) then
+                in1=TMPLT.iNode(1,i) 
+                in2=TMPLT.iNode(2,i) 
+                in3=TMPLT.iNode(3,i) 
+                call check_seg(in1,in2) 
+                call check_seg(in2,in3) 
+                call check_seg(in3,in1) 
+            else 
+                in1=TMPLT.iNode(1,i) 
+                in2=TMPLT.iNode(2,i) 
+                in3=TMPLT.iNode(3,i) 
+                in4=TMPLT.iNode(4,i) 
+                call check_seg(in1,in2) 
+                call check_seg(in2,in3) 
+                call check_seg(in3,in4) 
+                call check_seg(in1,in1) 
+            endif
+        end do 
+     
+        !     form array of bnodes
+        !do  i=1,TMPLT.nNodes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+        !    call clear(TMPLT.Node_Is(i),BoundaryNode) 
+        !end do 
+        do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+            call set(TMPLT.Node_Is(seg_node(i,1)),BoundaryNode) 
+            call set(TMPLT.Node_Is(seg_node(i,2)),BoundaryNode) 
+        end do 
+     
+    end subroutine FlagOuterBoundaryNodes
+   
+    !----------------------------------------------------------------------
+    subroutine check_seg(i1,i2) 
+	    implicit none
+     
+        integer :: j, k, i1, i2
+	    logical :: seg
+	 
+        seg=.true. 
+        do j=1,nseg 
+		    if (i1.eq.seg_node(j,2) .and. i2.eq.seg_node(j,1) .or. i1.eq.seg_node(j,1) .and. i2.eq.seg_node(j,2)) then
+			    seg=.false. 
+			    do  k=j,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+				    seg_node(k,1)=seg_node(k+1,1) 
+				    seg_node(k,2)=seg_node(k+1,2) 
+			    end do 
+			    nseg=nseg-1 
+			    exit
+		    endif 
+	    end do
+
+        if (seg) then 
+            call new_segment(i1,i2) 
+        endif 
+
+    end subroutine check_seg                                                            
+    
+    !----------------------------------------------------------------------
+    subroutine new_segment(n1,n2)
+	    implicit none
+
+	    integer :: n1, n2
+
+	    nseg=nseg+1
+
+	    seg_node(nseg,1)=n1
+	    seg_node(nseg,2)=n2
+
+    end subroutine new_segment
 
     !----------------------------------------------------------------------
     subroutine new_layer(FNumMUT,TMPLT,zone_by_template)
@@ -1841,6 +1949,5 @@ Module MeshGeneration
 
         return
     end function zelev_proportional
-
 
 end Module MeshGeneration

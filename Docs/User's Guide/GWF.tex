@@ -315,7 +315,7 @@ Cell B is a lateral neighbour of cell A.  The lateral connection length between 
 
 In the vertical direction, cells above and below cell A are its neighbours.  The vertical connection length is the sum of the two half-cell thicknesses. The vertical connection area is the area of the polygon formed by joining the inner circle centres of the template mesh elements common to cell A (yellow polygon).
 
-Cell connection data are define in a similar fashion for model domains that are generated from a rectangular element template mesh.  In this case, element side lengths are used to define connection lengths and areas instead of inner circle radii.
+Cell connection data are defined in a similar fashion for model domains that are generated from a rectangular element template mesh.  In this case, element side lengths are used to define connection lengths and areas instead of inner circle radii.
 
 
 \subsubsection{Material Properties}  \index{\gwf\ Domain ! material properties} \label{section:matprops}
@@ -762,9 +762,9 @@ Some key features to note are:
 \begin{itemize}
     \item The model has only one zone initially, which is first assigned properties of material 11 (Soil) after choosing all cells in the model domain.
     \item Cells in the range from $x$=40 to $x$=60 and from layers 1 to 5 (inclusive) are chosen and assigned properties of material 12 (Slab1).  Specifying a range between -1e30 and 1e30 means that no restrictions will be applied based on the $y$ and $z$ cell coordinates. Recall that the \mfus\ mesh is generated from the top down, so layers 1 to 5 are the top 5 layers of the model domain.
-    \item The first {\sf new zone} instruction increments the total number of zones from 1 to 2 and assigns zone number 2 to the chosen cells.    
+    \item The first {\sf new zone} instruction increments the total number of zones from 1 to 2 and assigns zone number 2 to the chosen cells.
     \item Cells in the range from $x$=8 to $x$=50 and from $z$=5.8 to $z$=6.2 are chosen and assigned properties of material 13 (Slab2).  Specifying a range between -1e30 and 1e30 for means that no restrictions will be applied based on the $y$ cell coordinates, while a range of 0 to 1000 means that no layer restrictions are being applied.
-    \item Because of the sloping nature of the mesh layers, the cells chosen for zone 3 (Slab2) are depicted by \tecplot\ as a 'jagged' boundary, as shown here: 
+    \item Because of the sloping nature of the mesh layers, the cells chosen for zone 3 (Slab2) are depicted by \tecplot\ as a 'jagged' boundary, as shown here:
 
         \includegraphics[width=\textwidth]{3_10c_NewZonesJagged}
 
