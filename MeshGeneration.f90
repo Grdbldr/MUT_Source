@@ -193,9 +193,10 @@ Module MeshGeneration
         ! determine the number of nodes per Element (TMPLT.nNodesPerElement)
         read(itmp,*) i1,r1,r2,r3,i2,TMPLT.nNodesPerElement
         backspace(itmp)
-        allocate(TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        allocate(TMPLT.xElement(TMPLT.nElements),TMPLT.yElement(TMPLT.nElements),TMPLT.zElement(TMPLT.nElements),TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
-        call AllocChk(ialloc,'SWF iNode, xyzElement arrays')
+        allocate(TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements), &
+            TMPLT.xElement(TMPLT.nElements),TMPLT.yElement(TMPLT.nElements),TMPLT.zElement(TMPLT.nElements), &
+            TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
+        call AllocChk(ialloc,'SWF iNode, xyzElement, iLayer arrays')
         
         TMPLT.iNode = 0 ! automatic initialization
         do i=1,TMPLT.nElements
@@ -342,7 +343,7 @@ Module MeshGeneration
         
     end subroutine GenerateCLNDomain
     !----------------------------------------------------------------------
-    subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,TMPLT_GWF)
+    subroutine GenerateLayeredTMPLT_GWF(FNumMUT,TMPLT,TMPLT_GWF)
         implicit none
 
         integer :: FNumMUT
@@ -476,7 +477,7 @@ Module MeshGeneration
         !TMPLT_GWF.ic=0
         
         
-        ! Cell node list
+        ! Element node list
         allocate(TMPLT_GWF.iNode(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element node list array')
         do i=1,TMPLT_GWF.nElements
@@ -484,6 +485,24 @@ Module MeshGeneration
                 TMPLT_GWF.iNode(j,i) = in(j,i) 
             end do
         end do
+        
+        ! Element Innercircle arrays if triangles
+        if(TMPLT.InnerCircles) then !triangles 
+            allocate(TMPLT_GWF.rCircle(TMPLT_GWF.nElements), &
+                TMPLT_GWF.xCircle(TMPLT_GWF.nElements), &
+                TMPLT_GWF.yCircle(TMPLT_GWF.nElements),stat=ialloc)
+            call AllocChk(ialloc,'TMPLT_GWF rxyCircle')
+            do i=1,TMPLT.nElements
+                do j=1,TMPLT_GWF.nLayers
+                    iElement=TMPLT.nElements*(j-1)+i
+                    TMPLT_GWF.rCircle(iElement) = TMPLT.rCircle(i)
+                    TMPLT_GWF.xCircle(iElement) = TMPLT.xCircle(i)
+                    TMPLT_GWF.yCircle(iElement) = TMPLT.yCircle(i)
+                end do
+            end do
+        endif
+
+        
         
         ! Element side lengths
         allocate(TMPLT_GWF.SideLength(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
@@ -527,132 +546,160 @@ Module MeshGeneration
         allocate(TMPLT_GWF.Element_Is(TMPLT_GWF.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element_Is array')            
         TMPLT_GWF.Element_Is(:)=0
+        
+    end subroutine GenerateLayeredTMPLT_GWF
     
-    end subroutine GenerateLayeredGWFDomain
-    
-    !----------------------------------------------------------------------
-    subroutine GenerateTMPLT_SWF(FNumMUT,TMPLT,TMPLT_SWF)
-        implicit none
-        
-        character(MAX_INST) :: instruction
-        character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
-    
-        integer :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_SWF
-
-	    ! Given the template (i.e. a 2D mesh), define SWF TMPLT_SWF 
-
-        integer :: i, j
-        
-        ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
-
-        ! Copy the template data to the Modflow SWF data structure
-        TMPLT_SWF.name='TMPLT_SWF'
-        TMPLT_SWF.meshtype='UNSTRUCTURED'
-        
-        TMPLT_SWF.nNodes=TMPLT.nNodes
-        allocate(TMPLT_SWF.x(TMPLT_SWF.nNodes),TMPLT_SWF.y(TMPLT_SWF.nNodes),TMPLT_SWF.z(TMPLT_SWF.nNodes), stat=ialloc)
-        call AllocChk(ialloc,'SWF node coordinate arrays')
-        TMPLT_SWF.x(:)= TMPLT.x(:)
-        TMPLT_SWF.y(:)= TMPLT.y(:)
-
-        ! Define elevation (z coordinate) of SWF TMPLT_SWF
-        allocate(top_elev(TMPLT.nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Template top elevation arrays')
-
-	    ! Process slice to layer instructions
-        read_slice2lyr: do
-            read(FNumMUT,'(a60)',iostat=status) instruction
-            if(status /= 0) exit
-
-            call LwrCse(instruction)
-
-            if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end generate swf domain instructions')
-                exit read_slice2lyr
-            else
-                call Msg('')
-                call Msg(TAB//instruction)
-            end if
-                
-
-            if(index(instruction, top_elevation_cmd)  /= 0) then
-                call top_elevation(FNumMUT,TMPLT)
-			    do j=1,TMPLT.nNodes
-				    TMPLT_SWF.z(j)=top_elev(j)
-			    end do
-
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
-            end if
-
-        end do read_slice2lyr
-        
-        
-        
-        TMPLT_SWF.nLayers=1
-        !TMPLT_SWF.iz=0
-        !TMPLT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
-
-        
-        TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-        TMPLT_SWF.ElementType=TMPLT.ElementType
-        TMPLT_SWF.nElements=TMPLT.nElements
-        
-        ! Just define these for now
-        !TMPLT_SWF.ic=0
-        
-        ! Element node list
-        allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element node list array')
-        do i=1,TMPLT_SWF.nElements
-            do j=1,TMPLT_SWF.nNodesPerElement
-                TMPLT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
-            end do
-        end do
-        
-        ! Element side lengths
-        allocate(TMPLT_SWF.SideLength(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element SideLength array')
-        do i=1,TMPLT_SWF.nElements
-            do j=1,TMPLT_SWF.nNodesPerElement
-                TMPLT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
-            end do
-        end do
-        
-        ! Element layer number
-        allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element layer number array')
-        do i=1,TMPLT_SWF.nElements
-            TMPLT_SWF.iLayer(i) = 1
-        end do
-        
-
-        ! Element zone number
-        allocate(TMPLT_SWF.iZone(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
-        do i=1,TMPLT_SWF.nElements
-            TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
-            if(TMPLT.iZone(i).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(i)
-        end do
-
-        TMPLT_SWF.IsDefined=.true.
-        
-        allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
-        TMPLT_SWF.Element_Is(:)=0
-        TMPLT_SWF.Element_Is(:)=TMPLT.Element_Is(:)
-
-        allocate(TMPLT_SWF.Node_Is(TMPLT_SWF.nNodes),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Node_Is array')            
-        TMPLT_SWF.Node_Is(:)=0
-        TMPLT_SWF.Node_Is(:)=TMPLT.Node_Is(:)
-
-    
-    end subroutine GenerateTMPLT_SWF
-
+    !    !----------------------------------------------------------------------
+    !subroutine GenerateTMPLT_SWF_ForGWF(FNumMUT,TMPLT,SWF_l)
+	   ! ! Given the 2D TMPLT mesh this subroutine: 
+    !    !   - defines the 2D TMPLT_SWF mesh 
+    !    !   - calls Tecplot to generate and save face neighbour information
+    !    !   - uses the Tecplot face neighbour information to define mesh-centred IA JA arrays for TMPLT_SWF
+    !
+    !    implicit none
+    !    
+    !    character(MAX_INST) :: instruction
+    !    character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
+    !
+    !    integer :: FNumMUT
+    !    type (TecplotDomain) TMPLT
+    !    type (TecplotDomain) SWF_l
+    !
+    !    integer :: i, j
+    !    
+    !    ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
+    !
+    !    ! Copy the template data to the Modflow SWF data structure
+    !    TMPLT_SWF.name='TMPLT_SWF'
+    !    TMPLT_SWF.meshtype='UNSTRUCTURED'
+    !    
+    !    TMPLT_SWF.nNodes=TMPLT.nNodes
+    !    allocate(TMPLT_SWF.x(TMPLT_SWF.nNodes),TMPLT_SWF.y(TMPLT_SWF.nNodes),TMPLT_SWF.z(TMPLT_SWF.nNodes), stat=ialloc)
+    !    call AllocChk(ialloc,'SWF node coordinate arrays')
+    !    TMPLT_SWF.x(:)= TMPLT.x(:)
+    !    TMPLT_SWF.y(:)= TMPLT.y(:)
+    !
+    !    ! Define elevation (z coordinate) of SWF TMPLT_SWF
+    !    allocate(top_elev(TMPLT.nNodes),stat=ialloc)
+    !    call AllocChk(ialloc,'Template top elevation arrays')
+    !
+	   ! ! Process slice to layer instructions
+    !    read_slice2lyr: do
+    !        read(FNumMUT,'(a60)',iostat=status) instruction
+    !        if(status /= 0) exit
+    !
+    !        call LwrCse(instruction)
+    !
+    !        if(index(instruction,'end') /= 0) then
+    !            call Msg(TAB//'end generate swf domain instructions')
+    !            exit read_slice2lyr
+    !        else
+    !            call Msg('')
+    !            call Msg(TAB//instruction)
+    !        end if
+    !            
+    !
+    !        if(index(instruction, top_elevation_cmd)  /= 0) then
+    !            call top_elevation(FNumMUT,TMPLT)
+			 !   do j=1,TMPLT.nNodes
+				!    TMPLT_SWF.z(j)=top_elev(j)
+			 !   end do
+    !
+    !
+    !        else
+			 !   call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
+    !        end if
+    !
+    !    end do read_slice2lyr
+    !    
+    !    
+    !    
+    !    TMPLT_SWF.nLayers=1
+    !    !TMPLT_SWF.iz=0
+    !    !TMPLT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
+    !
+    !    
+    !    TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
+    !    TMPLT_SWF.ElementType=TMPLT.ElementType
+    !    TMPLT_SWF.nElements=TMPLT.nElements
+    !    
+    !    ! Just define these for now
+    !    !TMPLT_SWF.ic=0
+    !    
+    !    ! Element node list
+    !    allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element node list array')
+    !    do i=1,TMPLT_SWF.nElements
+    !        do j=1,TMPLT_SWF.nNodesPerElement
+    !            TMPLT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
+    !        end do
+    !    end do
+    !    
+    !    ! Element centroid coordinates
+    !    allocate(TMPLT_SWF.xElement(TMPLT_SWF.nElements),TMPLT_SWF.yElement(TMPLT_SWF.nElements),TMPLT_SWF.zElement(TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,'TMPLT_SWF xyzElementarrays')
+    !    TMPLT_SWF.xElement(:)=TMPLT.xElement(:)
+    !    TMPLT_SWF.yElement(:)=TMPLT.yElement(:)
+    !    TMPLT_SWF.zElement(:)=TMPLT.zElement(:)
+    !    
+    !    ! Element area
+    !    allocate(TMPLT_SWF.ElementArea(TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,'TMPLT_SWF ElementArea')
+    !    TMPLT_SWF.ElementArea(:)=TMPLT.ElementArea(:)
+    !    
+    !    ! Innercircle arrays if triangles
+    !    if(TMPLT.InnerCircles) then
+    !        allocate(TMPLT_SWF.rCircle(TMPLT_SWF.nElements), &
+    !            TMPLT_SWF.xCircle(TMPLT_SWF.nElements), &
+    !            TMPLT_SWF.yCircle(TMPLT_SWF.nElements),stat=ialloc)
+    !        call AllocChk(ialloc,'TMPLT_SWF rxyCircle')
+    !        TMPLT_SWF.rCircle(:)=TMPLT.rCircle(:)
+    !        TMPLT_SWF.xCircle(:)=TMPLT.xCircle(:)
+    !        TMPLT_SWF.yCircle(:)=TMPLT.yCircle(:)
+    !    endif
+    !
+    !    ! Element side lengths
+    !    allocate(TMPLT_SWF.SideLength(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element SideLength array')
+    !    do i=1,TMPLT_SWF.nElements
+    !        do j=1,TMPLT_SWF.nNodesPerElement
+    !            TMPLT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
+    !        end do
+    !    end do
+    !    
+    !    ! Element layer number
+    !    allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element layer number array')
+    !    do i=1,TMPLT_SWF.nElements
+    !        TMPLT_SWF.iLayer(i) = 1
+    !    end do
+    !    
+    !
+    !    ! Element zone number
+    !    allocate(TMPLT_SWF.iZone(TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
+    !    do i=1,TMPLT_SWF.nElements
+    !        TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
+    !        if(TMPLT.iZone(i).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(i)
+    !    end do
+    !
+    !    TMPLT_SWF.IsDefined=.true.
+    !    
+    !    ! Element_Is
+    !    allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
+    !    TMPLT_SWF.Element_Is(:)=0
+    !    TMPLT_SWF.Element_Is(:)=TMPLT.Element_Is(:)
+    !
+    !    ! Node_Is
+    !    allocate(TMPLT_SWF.Node_Is(TMPLT_SWF.nNodes),stat=ialloc)
+    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Node_Is array')            
+    !    TMPLT_SWF.Node_Is(:)=0
+    !    TMPLT_SWF.Node_Is(:)=TMPLT.Node_Is(:)
+    !    
+    !end subroutine GenerateTMPLT_SWF_ForGWF
+    !
+    !
     !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
         implicit none
