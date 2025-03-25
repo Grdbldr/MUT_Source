@@ -172,6 +172,7 @@ module Tecplot !
         integer, allocatable :: ia(:)      ! size nElements, number of connections/Element
         integer, allocatable :: ja(:)      ! size total number of connections for mesh, Element connection lists
         !integer, allocatable :: jaElement(:)      ! size total number of connections for mesh, used for node-centred method only
+        integer, allocatable :: nFaceNeighborConnections      ! Tecplot variable
 
         ! of size nNodes
         real(dr), allocatable :: x(:) 
