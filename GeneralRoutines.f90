@@ -57,6 +57,11 @@ module GeneralRoutines    !### bit setting routines
     character(10) :: FileReadSTR   ='<--- Read '
     character(11) :: FileStripSTR  ='<--- Strip '
     
+    !---------------------------------------------- Formats
+    character(20), parameter :: FMT_R4='1x,1pg13.6,1x'
+    character(20), parameter :: FMT_R8='1x,1pg24.16,1x'
+    
+    
     !---------------------------------------------- Bit-setting constants
     integer :: Chosen=0
     integer :: ConstantHead=1
@@ -114,7 +119,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(5) :: MUTVersion=' 1.37'
+    character(37) :: MUTVersion=' 1.38 Beta'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 

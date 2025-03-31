@@ -549,157 +549,6 @@ Module MeshGeneration
         
     end subroutine GenerateLayeredTMPLT_GWF
     
-    !    !----------------------------------------------------------------------
-    !subroutine GenerateTMPLT_SWF_ForGWF(FNumMUT,TMPLT,SWF_l)
-	   ! ! Given the 2D TMPLT mesh this subroutine: 
-    !    !   - defines the 2D TMPLT_SWF mesh 
-    !    !   - calls Tecplot to generate and save face neighbour information
-    !    !   - uses the Tecplot face neighbour information to define mesh-centred IA JA arrays for TMPLT_SWF
-    !
-    !    implicit none
-    !    
-    !    character(MAX_INST) :: instruction
-    !    character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
-    !
-    !    integer :: FNumMUT
-    !    type (TecplotDomain) TMPLT
-    !    type (TecplotDomain) SWF_l
-    !
-    !    integer :: i, j
-    !    
-    !    ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
-    !
-    !    ! Copy the template data to the Modflow SWF data structure
-    !    TMPLT_SWF.name='TMPLT_SWF'
-    !    TMPLT_SWF.meshtype='UNSTRUCTURED'
-    !    
-    !    TMPLT_SWF.nNodes=TMPLT.nNodes
-    !    allocate(TMPLT_SWF.x(TMPLT_SWF.nNodes),TMPLT_SWF.y(TMPLT_SWF.nNodes),TMPLT_SWF.z(TMPLT_SWF.nNodes), stat=ialloc)
-    !    call AllocChk(ialloc,'SWF node coordinate arrays')
-    !    TMPLT_SWF.x(:)= TMPLT.x(:)
-    !    TMPLT_SWF.y(:)= TMPLT.y(:)
-    !
-    !    ! Define elevation (z coordinate) of SWF TMPLT_SWF
-    !    allocate(top_elev(TMPLT.nNodes),stat=ialloc)
-    !    call AllocChk(ialloc,'Template top elevation arrays')
-    !
-	   ! ! Process slice to layer instructions
-    !    read_slice2lyr: do
-    !        read(FNumMUT,'(a60)',iostat=status) instruction
-    !        if(status /= 0) exit
-    !
-    !        call LwrCse(instruction)
-    !
-    !        if(index(instruction,'end') /= 0) then
-    !            call Msg(TAB//'end generate swf domain instructions')
-    !            exit read_slice2lyr
-    !        else
-    !            call Msg('')
-    !            call Msg(TAB//instruction)
-    !        end if
-    !            
-    !
-    !        if(index(instruction, top_elevation_cmd)  /= 0) then
-    !            call top_elevation(FNumMUT,TMPLT)
-			 !   do j=1,TMPLT.nNodes
-				!    TMPLT_SWF.z(j)=top_elev(j)
-			 !   end do
-    !
-    !
-    !        else
-			 !   call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
-    !        end if
-    !
-    !    end do read_slice2lyr
-    !    
-    !    
-    !    
-    !    TMPLT_SWF.nLayers=1
-    !    !TMPLT_SWF.iz=0
-    !    !TMPLT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
-    !
-    !    
-    !    TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-    !    TMPLT_SWF.ElementType=TMPLT.ElementType
-    !    TMPLT_SWF.nElements=TMPLT.nElements
-    !    
-    !    ! Just define these for now
-    !    !TMPLT_SWF.ic=0
-    !    
-    !    ! Element node list
-    !    allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element node list array')
-    !    do i=1,TMPLT_SWF.nElements
-    !        do j=1,TMPLT_SWF.nNodesPerElement
-    !            TMPLT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
-    !        end do
-    !    end do
-    !    
-    !    ! Element centroid coordinates
-    !    allocate(TMPLT_SWF.xElement(TMPLT_SWF.nElements),TMPLT_SWF.yElement(TMPLT_SWF.nElements),TMPLT_SWF.zElement(TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'TMPLT_SWF xyzElementarrays')
-    !    TMPLT_SWF.xElement(:)=TMPLT.xElement(:)
-    !    TMPLT_SWF.yElement(:)=TMPLT.yElement(:)
-    !    TMPLT_SWF.zElement(:)=TMPLT.zElement(:)
-    !    
-    !    ! Element area
-    !    allocate(TMPLT_SWF.ElementArea(TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'TMPLT_SWF ElementArea')
-    !    TMPLT_SWF.ElementArea(:)=TMPLT.ElementArea(:)
-    !    
-    !    ! Innercircle arrays if triangles
-    !    if(TMPLT.InnerCircles) then
-    !        allocate(TMPLT_SWF.rCircle(TMPLT_SWF.nElements), &
-    !            TMPLT_SWF.xCircle(TMPLT_SWF.nElements), &
-    !            TMPLT_SWF.yCircle(TMPLT_SWF.nElements),stat=ialloc)
-    !        call AllocChk(ialloc,'TMPLT_SWF rxyCircle')
-    !        TMPLT_SWF.rCircle(:)=TMPLT.rCircle(:)
-    !        TMPLT_SWF.xCircle(:)=TMPLT.xCircle(:)
-    !        TMPLT_SWF.yCircle(:)=TMPLT.yCircle(:)
-    !    endif
-    !
-    !    ! Element side lengths
-    !    allocate(TMPLT_SWF.SideLength(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element SideLength array')
-    !    do i=1,TMPLT_SWF.nElements
-    !        do j=1,TMPLT_SWF.nNodesPerElement
-    !            TMPLT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
-    !        end do
-    !    end do
-    !    
-    !    ! Element layer number
-    !    allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element layer number array')
-    !    do i=1,TMPLT_SWF.nElements
-    !        TMPLT_SWF.iLayer(i) = 1
-    !    end do
-    !    
-    !
-    !    ! Element zone number
-    !    allocate(TMPLT_SWF.iZone(TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
-    !    do i=1,TMPLT_SWF.nElements
-    !        TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
-    !        if(TMPLT.iZone(i).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(i)
-    !    end do
-    !
-    !    TMPLT_SWF.IsDefined=.true.
-    !    
-    !    ! Element_Is
-    !    allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
-    !    TMPLT_SWF.Element_Is(:)=0
-    !    TMPLT_SWF.Element_Is(:)=TMPLT.Element_Is(:)
-    !
-    !    ! Node_Is
-    !    allocate(TMPLT_SWF.Node_Is(TMPLT_SWF.nNodes),stat=ialloc)
-    !    call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Node_Is array')            
-    !    TMPLT_SWF.Node_Is(:)=0
-    !    TMPLT_SWF.Node_Is(:)=TMPLT.Node_Is(:)
-    !    
-    !end subroutine GenerateTMPLT_SWF_ForGWF
-    !
-    !
     !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
         implicit none
@@ -724,19 +573,19 @@ Module MeshGeneration
 
         !     xl, yl are grid lengths in x- and y-directions
         read(FNum,*) xl, nbx, xOffset
-        write(TMPStr,'(a,g15.5,a)') TAB//'Mesh length in X        ',xl,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Mesh length in X        ',xl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
         write(TMPStr,'(a,i9)')      TAB//'Number of elements in X ',nbx
         call Msg(TMPStr)
-        write(TMPStr,'(a,g15.5,a)') TAB//'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
         read(FNum,*) yl, nby,yOffset
-        write(TMPStr,'(a,g15.5,a)') TAB//'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
         write(TMPStr,'(a,i9)')      TAB//'Number of elements in Y ',nby
         call Msg(TMPStr)
-        write(TMPStr,'(a,g15.5,a)') TAB//'Y Offset                ',yOffset,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Y Offset                ',yOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
 
@@ -828,6 +677,10 @@ Module MeshGeneration
         TMPLT.iZone(:) = 1 ! automatic initialization
 
         TMPLT.IsDefined=.true.
+        
+        allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
+        call AllocChk(ialloc,'TMPLT Element_Is array')            
+        TMPLT.Element_Is(:)=0
     
         call Msg(' ')
         write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
@@ -946,8 +799,12 @@ Module MeshGeneration
         TMPLT.nZones=1
         TMPLT.iZone(:) = 1 ! automatic initialization
 
-        TMPLT.IsDefined=.true.
+        allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
+        call AllocChk(ialloc,'TMPLT Element_Is array')            
+        TMPLT.Element_Is(:)=0
     
+        TMPLT.IsDefined=.true.
+
         call Msg(' ')
         write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
         call Msg(TmpSTR)
@@ -1178,7 +1035,7 @@ Module MeshGeneration
 
 	    do i=1,2
 			read(FNum,*) xp(i),yp(i),zp(i)
-            write(TmpSTR,'(i8,2x,3g15.5,a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
             call Msg(TAB//trim(TmpSTR))
         end do 
         
@@ -1187,7 +1044,7 @@ Module MeshGeneration
         call Msg(TAB//trim(TmpSTR))
         
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
-        write(TmpSTR,'(a, g15.5)') 'Total Length of new CLN: ',TotalLength 
+        write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
         call Msg(TAB//trim(TmpSTR))
         if(TotalLength < 0.0001) then
             call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
@@ -1309,61 +1166,6 @@ Module MeshGeneration
         continue 
     end subroutine CLNFromXYZPair
     
-    !----------------------------------------------------------------------
-    subroutine FlagOuterBoundaryNodes(TMPLT)
-        implicit none
-
-        type (TecplotDomain)  TMPLT
-
-        integer :: i, in1, in2, in3, in4 
-        
-        allocate(seg_node(TMPLT.nElements*4,2))
-        
-        if(.not. allocated(TMPLT.Node_Is)) then 
-            allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
-            TMPLT.Node_Is(:)=0
-        end if
-     
-        !     construct the array of boundary segment nodes
-        call Msg('Find outer boundary segments...') 
-        seg_node(1,1)=TMPLT.iNode(1,1) 
-        seg_node(1,2)=TMPLT.iNode(2,1) 
-        seg_node(2,1)=TMPLT.iNode(2,1) 
-        seg_node(2,2)=TMPLT.iNode(3,1) 
-        seg_node(3,1)=TMPLT.iNode(3,1) 
-        seg_node(3,2)=TMPLT.iNode(1,1) 
-        nseg=3 
-        do  i=2,TMPLT.nElements
-            if(TMPLT.nNodesPerElement==3) then
-                in1=TMPLT.iNode(1,i) 
-                in2=TMPLT.iNode(2,i) 
-                in3=TMPLT.iNode(3,i) 
-                call check_seg(in1,in2) 
-                call check_seg(in2,in3) 
-                call check_seg(in3,in1) 
-            else 
-                in1=TMPLT.iNode(1,i) 
-                in2=TMPLT.iNode(2,i) 
-                in3=TMPLT.iNode(3,i) 
-                in4=TMPLT.iNode(4,i) 
-                call check_seg(in1,in2) 
-                call check_seg(in2,in3) 
-                call check_seg(in3,in4) 
-                call check_seg(in1,in1) 
-            endif
-        end do 
-     
-        !     form array of bnodes
-        !do  i=1,TMPLT.nNodes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
-        !    call clear(TMPLT.Node_Is(i),BoundaryNode) 
-        !end do 
-        do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-            call set(TMPLT.Node_Is(seg_node(i,1)),BoundaryNode) 
-            call set(TMPLT.Node_Is(seg_node(i,2)),BoundaryNode) 
-        end do 
-     
-    end subroutine FlagOuterBoundaryNodes
    
     !----------------------------------------------------------------------
     subroutine check_seg(i1,i2) 
@@ -1481,13 +1283,13 @@ Module MeshGeneration
             elseif(index(instruction,minimum_layer_thickness_cmd) /=0) then
 			    minimum_layer_thickness = .true.
 			    read(FNumMUT,*) z_added
-			    write(TmpSTR,'(g15.5,a)') z_added,'     '//TRIM(UnitsOfLength)
+			    write(TmpSTR,'('//FMT_R8//',a)') z_added,'     '//TRIM(UnitsOfLength)
 			    call Msg(TAB//TAB//'Enforce minimum layer thickness of '//trim(TmpSTR))
 
             elseif(index(instruction,offset_base_cmd) /=0) then
 			    offset_base = .true.
 			    read(FNumMUT,*) base_offset
-			    write(TmpSTR,'(g15.5,a)') base_offset,'     '//TRIM(UnitsOfLength)
+			    write(TmpSTR,'('//FMT_R8//',a)') base_offset,'     '//TRIM(UnitsOfLength)
 			    call Msg(TAB//TAB//'Offset layer base by '//trim(TmpSTR))
 
             elseif(index(instruction,uniform_sublayers_cmd) /=0) then
@@ -1517,13 +1319,13 @@ Module MeshGeneration
 
                 do j=1,nsublayer(nlayers)
                     sub_thick(j)=sub_thick(j)/tot_thick
-			        write(TmpSTR,'(i4,2g15.5)') j,sub_thick(j)*tot_thick,sub_thick(j)
+			        write(TmpSTR,'(i4,2('//FMT_R8//'))') j,sub_thick(j)*tot_thick,sub_thick(j)
                     call Msg(TAB//TAB//trim(TmpSTR))
                 end do
 
             elseif(index(instruction,constant_elevation_cmd) /=0) then
 			    read(FNumMUT,*) base_elev(1)
-			    write(TmpSTR,'(g15.5,a)') base_elev(1),'     '//TRIM(UnitsOfLength)
+			    write(TmpSTR,'('//FMT_R8//',a)') base_elev(1),'     '//TRIM(UnitsOfLength)
                 call Msg(TAB//TAB//'Layer base elevation '//TRIM(TmpSTR))
 			    do j=2,TMPLT.nNodes
 				    base_elev(j)=base_elev(1)
@@ -1741,7 +1543,7 @@ Module MeshGeneration
 
             if(index(instruction,constant_elevation_cmd) /=0) then
                 read(FNumMUT,*) top_elev(1)
-                write(TmpSTR,'(2g15.5,a)') top_elev(1),'     '//UnitsOfLength
+                write(TmpSTR,'(2('//FMT_R8//'),a)') top_elev(1),'     '//UnitsOfLength
                 call Msg(TAB//trim(TmpSTR))
                 do j=2,TMPLT.nNodes
 	                top_elev(j)=top_elev(1)
@@ -1750,7 +1552,7 @@ Module MeshGeneration
             elseif(index(instruction, offset_top_cmd) /=0) then
                 offset_top = .true.
                 read(FNumMUT,*) top_offset
-			    write(TmpSTR,'(2g15.5)') top_offset
+			    write(TmpSTR,'(2('//FMT_R8//'))') top_offset
                 call Msg(TAB//trim(TmpSTR))
 
             elseif(index(instruction, gb_file_elevation_cmd) /=0) then
@@ -1858,7 +1660,7 @@ Module MeshGeneration
 				    call ErrMsg('Bad xyz triple')
                 endif
                 
-                write(TmpSTR,'(i8,2x,3g15.5,a)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints),'     '//TRIM(UnitsOfLength)
+                write(TmpSTR,'(i8,2x,3('//FMT_R8//'),a)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints),'     '//TRIM(UnitsOfLength)
                 call Msg(TAB//trim(TmpSTR))
 
 		    endif
@@ -1883,21 +1685,21 @@ Module MeshGeneration
 
 	    read(FNumMUT,*) xf2d, xt2d, yf2d, yt2d
 	    call Msg(TAB//'Bilinear function for the following range:')
-	    write(TMPSTR,'(a,g15.5,a,g15.5,a)') 'X from ',xf2d,' to ',xt2d,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a,'//FMT_R8//',a)') 'X from ',xf2d,' to ',xt2d,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-	    write(TMPSTR,'(a,g15.5,a,g15.5,a)') 'Y from ',yf2d,' to ',yt2d,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a,'//FMT_R8//',a)') 'Y from ',yf2d,' to ',yt2d,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
 	    call Msg(TAB//'z = z1 + slope_x*(x-xfrom) + curve_x*(x-xfrom)**2 + slope_y*(y-yfrom) + curve_y*(y-yfrom)**2 ')
 	    read(FNumMUT,*) a1,a2,a3,a4,a5
-	    write(TMPSTR,'(a,g15.5,a)') 'Where:     z1 = ',a1,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a)') 'Where:     z1 = ',a1,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-	    write(TMPSTR,'(a,g15.5,a)') '      slope_x = ',a2,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      slope_x = ',a2,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-	    write(TMPSTR,'(a,g15.5,a)') '      curve_x = ',a3,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      curve_x = ',a3,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-	    write(TMPSTR,'(a,g15.5,a)') '      slope_y = ',a4,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      slope_y = ',a4,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-	    write(TMPSTR,'(a,g15.5,a)') '      curve_y = ',a5,'     '//TRIM(UnitsOfLength)
+	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      curve_y = ',a5,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
         do i=1,TMPLT.nNodes
 		    if( TMPLT.x(i).ge.xf2d .and. TMPLT.x(i).le.xt2d .and. TMPLT.y(i).ge.yf2d .and. TMPLT.y(i).le.yt2d) then
@@ -1953,7 +1755,7 @@ Module MeshGeneration
 				    call ErrMsg('Bad xz pair')
                 endif
                 
-                write(TmpSTR,'(i8,2x,2g15.5,a)') npairs,xp(npairs),zp(npairs),'     '//TRIM(UnitsOfLength)
+                write(TmpSTR,'(i8,2x,2('//FMT_R8//'),a)') npairs,xp(npairs),zp(npairs),'     '//TRIM(UnitsOfLength)
                 call Msg(TAB//trim(TmpSTR))
 
 		    endif
