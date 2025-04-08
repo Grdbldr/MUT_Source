@@ -119,7 +119,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(37) :: MUTVersion=' 1.38 Beta'
+    character(37) :: MUTVersion=' 1.39 Beta'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
