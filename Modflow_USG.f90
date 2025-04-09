@@ -7772,20 +7772,30 @@
         
         integer , allocatable :: ia_TMP(:)
         integer , allocatable :: ja_TMP(:,:)
-        integer , allocatable :: ja_TMP2(:,:)
         real(dr) , allocatable :: ConnectionLength_TMP(:,:)
         real(dr) , allocatable :: PerpendicularArea_TMP(:,:)
+        integer , allocatable :: ja_TMP2(:,:)
+        real(dr) , allocatable :: ConnectionLength_TMP2(:,:)
+        real(dr) , allocatable :: PerpendicularArea_TMP2(:,:)
         
         
         integer :: iSort(MAXCONNECTIONS)
 
         integer :: iNjag
         
+        integer :: iDown, iUp
+        
         nCellsGWF=TMPLT.nNodes*(TMPLT_GWF.nLayers+1)
         
-        allocate(ia_TMP(nCellsGWF), ja_TMP(MAXCONNECTIONS,nCellsGWF), ja_TMP2(MAXCONNECTIONS,nCellsGWF), &
-            ConnectionLength_TMP(MAXCONNECTIONS,nCellsGWF),PerpendicularArea_TMP(MAXCONNECTIONS,nCellsGWF), stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' cell build arrays')
+        allocate(ia_TMP(nCellsGWF), &
+            ja_TMP(MAXCONNECTIONS,nCellsGWF), &
+            ConnectionLength_TMP(MAXCONNECTIONS,nCellsGWF),&
+            PerpendicularArea_TMP(MAXCONNECTIONS,nCellsGWF), &
+            ja_TMP2(MAXCONNECTIONS,nCellsGWF), &
+            ConnectionLength_TMP2(MAXCONNECTIONS,nCellsGWF),&
+            PerpendicularArea_TMP2(MAXCONNECTIONS,nCellsGWF), &
+        stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' GWF cell build arrays')
         
 
         
@@ -7796,6 +7806,7 @@
         
         ia_TMP(:)=0
         ja_TMP(:,:)=0
+        ja_TMP2(:,:)=0
         ConnectionLength_TMP(:,:)=0
         PerpendicularArea_TMP(:,:)=0
         
@@ -7817,18 +7828,16 @@
                     continue
                 end do
                     
-                !if(j < TMPLT_GWF.nLayers+1) then ! downward connection
-                !    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                !    iDown=iGWF_Cell+TMPLT.nNodes
-                !    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iDown
-                !    ConnectionLength_TMP(ia_TMP(iGWF_Cell),iDown)=ConnectionLength_TMP(ia_TMP(iGWF_Cell),iDown)+TMPLT.Top(iNjag)-TMPLT.Bot(iNjag)
-                !end if
-                !if(j > 1) then ! upward connection
-                !    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
-                !    iUp=iGWF_Cell-TMPLT.nNodes
-                !    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iUp
-                !    ConnectionLength_TMP(ia_TMP(iGWF_Cell),iUp)=ConnectionLength_TMP(ia_TMP(iGWF_Cell),iUp)+TMPLT.ConnectionLength(iNjag)
-                !end if
+                if(j < TMPLT_GWF.nLayers+1) then ! downward connection
+                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
+                    iDown=iGWF_Cell+TMPLT.nNodes
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iDown
+                end if
+                if(j > 1) then ! upward connection
+                    ia_TMP(iGWF_Cell)=ia_TMP(iGWF_Cell)+1
+                    iUp=iGWF_Cell-TMPLT.nNodes
+                    ja_TMP(ia_TMP(iGWF_Cell),iGWF_Cell)=iUp
+                end if
             end do
         end do
                         
@@ -7846,20 +7855,31 @@
             
             !do j=1,MAXCONNECTIONS 
             !    if(ja_TMP(isort(j),i) /= 0) then
-            !        write(TMPStr,'(i4,2(1pg20.5))') ja_TMP(isort(j),i) ,ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
+            !        write(TMPStr,'(i8,2(1pg20.5))') ja_TMP(isort(j),i) ,ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
             !        call Msg(trim(TMPStr))
             !    end if
             !end do
             
-            TMPLT_GWF.ia(i)=0
-            !ja_TMP2(1,i)=i
-            do j=1,MAXCONNECTIONS
+            TMPLT_GWF.ia(i)=1
+            ja_TMP2(1,i)=i
+            ConnectionLength_TMP2(1,i)=0.0d0
+            PerpendicularArea_TMP2(1,i)=0.0d0
+            do j=2,MAXCONNECTIONS
                 if(ja_TMP(isort(j),i) == 0) cycle
-                !if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
+                if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
                 TMPLT_GWF.ia(i)=TMPLT_GWF.ia(i)+1
                 ja_TMP2(TMPLT_GWF.ia(i),i)=ja_TMP(isort(j),i)
+                ConnectionLength_TMP2(TMPLT_GWF.ia(i),i)=ConnectionLength_TMP(isort(j),i)
+                PerpendicularArea_TMP2(TMPLT_GWF.ia(i),i)=PerpendicularArea_TMP(isort(j),i)
             end do
-!write(*,'(a,20i4)') 'final   ', (ja_TMP2(j,i),j=1,TMPLT_GWF.ia(i))
+        
+            !do j=1,MAXCONNECTIONS 
+            !    if(ja_TMP2(j,i) /= 0) then
+            !        write(TMPStr,'(a6,i8,2(1pg20.5))') 'final ',ja_TMP2(j,i) ,ConnectionLength_TMP(j,i),PerpendicularArea_TMP(j,i)
+            !        call Msg(trim(TMPStr))
+            !    end if
+            !end do
+
         end do
         
         ! Determine size of ja (njag) and copy ja_TMP to ja 
@@ -7882,8 +7902,8 @@
                 iNjag=iNjag+1
                 TMPLT_GWF.ja(iNJag)=abs(ja_TMP2(j,i))  ! restore first entry to positive number
                 !TMPLT_GWF.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                TMPLT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                TMPLT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
+                TMPLT_GWF.ConnectionLength(iNjag)=ConnectionLength_TMP2(j,i)
+                TMPLT_GWF.PerpendicularArea(iNjag)=PerpendicularArea_TMP2(j,i)
             end do
         end do
            
@@ -8563,6 +8583,8 @@
         ja_TMP2(:,:)=0
         ConnectionLength_TMP(:,:)=0
         PerpendicularArea_TMP(:,:)=0
+        ConnectionLength_TMP2(:,:)=0
+        PerpendicularArea_TMP2(:,:)=0
         
         do i=1,TMPLT.nNodes
             ia_TMP(i)=1
@@ -8624,20 +8646,18 @@
         deallocate(TMPLT.ia)
         allocate(TMPLT.ia(TMPLT.nNodes),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT.name)//' node-centred ia arrays')
-        write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
-        call Msg(trim(TMPStr))
+        !write(TMPStr,'(a)') ' Cell   ConnectionLength   PerendicularArea'
+        !call Msg(trim(TMPStr))
         do i=1,TMPLT.nNodes
             call indexx_int(MAXCONNECTIONS,ja_TMP(:,i),iSort)
-            do j=1,MAXCONNECTIONS 
-                if(ja_TMP(isort(j),i) /= 0) then
-                    write(TMPStr,'(i8,2(1pg20.5))') ja_TMP(isort(j),i),ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
-                    call Msg(trim(TMPStr))
-                end if
-            end do
+            !do j=1,MAXCONNECTIONS 
+            !    if(ja_TMP(isort(j),i) /= 0) then
+            !        write(TMPStr,'(i8,2(1pg20.5))') ja_TMP(isort(j),i),ConnectionLength_TMP(isort(j),i),PerpendicularArea_TMP(isort(j),i)
+            !        call Msg(trim(TMPStr))
+            !    end if
+            !end do
             TMPLT.ia(i)=1
             ja_TMP2(1,i)=i
-            ConnectionLength_TMP2(1,i)=0.0d0
-            PerpendicularArea_TMP2(1,i)=0.0d0
             do j=2,MAXCONNECTIONS
                 if(ja_TMP(isort(j),i) == 0) cycle
                 if(ja_TMP(isort(j),i) == abs(ja_TMP(isort(j-1),i)) ) cycle  
@@ -8648,8 +8668,8 @@
 
             end do
 
-            write(tmpstr,'(a,20i8)') 'final   ', (ja_TMP2(j,i),j=1,TMPLT.ia(i))
-            call Msg(trim(TMPStr))
+            !write(tmpstr,'(a,20i8)') 'final   ', (ja_TMP2(j,i),j=1,TMPLT.ia(i))
+            !call Msg(trim(TMPStr))
             
         end do
         
