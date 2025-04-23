@@ -7582,6 +7582,15 @@
         real(dr) :: RectangleArea
         integer :: iConn, iNbor
         
+        integer :: FnumTecplot
+        character(MAX_STR) :: FNameTecplot
+
+        FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.CellGeometry.tecplot.dat'
+        call OpenAscii(FNumTecplot,FNameTecplot)
+        call Msg( 'To File: '//trim(FNameTecplot))
+
+        write(FNumTecplot,*) 'Title = "Modflow GWF Cell Geometry"'
+        
         !! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
         !if(TMPLT_GWF.nNodesPerElement /= 6) then
         !    call ErrMsg('Node-centred control volume option currently only works with TMPLT_GWF defined by 6-node prism elements') 
@@ -7610,12 +7619,21 @@
                             &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
                             &          TriangleArea)
                     Modflow.GWF.CellArea(j1)=Modflow.GWF.CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1),TMPLT.xCircle(i),TMPLT.yCircle(i),TMPLT_GWF.z(j1))
+                    if(bcheck(TMPLT.Node_is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j1),TMPLT.y(j1),TMPLT_GWF.z(j1),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1))
+                    endif
         
                     call area_triangle(TMPLT.x(j2),TMPLT.y(j2),0.0d0, &
                             &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
                             &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
                             &          TriangleArea)
                     Modflow.GWF.CellArea(j2)=Modflow.GWF.CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0,TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0)
+                    if(bcheck(TMPLT.Node_is(j2),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j2),TMPLT.y(j2),TMPLT_GWF.z(j2),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j2))
+                    endif
+                    
                 
                 else if(TMPLT.nNodesPerElement == 4) then
                     call area_triangle(TMPLT_GWF.x(j1),TMPLT_GWF.y(j1),0.0d0, &
@@ -7623,16 +7641,27 @@
                             &          TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0, &
                             &          TriangleArea)
                     Modflow.GWF.CellArea(j1)=Modflow.GWF.CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0,TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0)
+                    if(bcheck(TMPLT.Node_is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j1),TMPLT.y(j1),TMPLT_GWF.z(j1),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1))
+                    endif
         
                     call area_triangle(TMPLT_GWF.x(j2),TMPLT_GWF.y(j2),0.0d0, &
                             &          TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0, &
                             &          TMPLT_GWF.xSide(j,i),TMPLT_GWF.ySide(j,i),0.0d0, &
                             &          TriangleArea)
                     Modflow.GWF.CellArea(j2)=Modflow.GWF.CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0,TMPLT_GWF.xSide(j,i),TMPLT_GWF.ySide(j,i),0.0d0)
+                    if(bcheck(TMPLT.Node_is(j2),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j2),TMPLT.y(j2),TMPLT_GWF.z(j2),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j2))
+                    endif
                 end if
                 
             end do
         end do
+        
+        call freeunit(FNumTecplot)
+
                 
         ! copy through all layers
         do i=1,TMPLT.nNodes
@@ -7681,6 +7710,7 @@
         end do
 
     end subroutine NodeCentredGWFCellGeometry
+    
    !----------------------------------------------------------------------
     subroutine NodeCentredSWFCellGeometry(TMPLT_SWF, Modflow)
         implicit none
@@ -7693,10 +7723,16 @@
         integer :: j1, j2
         real(dr) :: TriangleArea
         real(dr) :: RectangleArea
-        !! Generate ia/ja, ConnectionLength and PerpendicularArea from element node lists 
-        !if(TMPLT_SWF.nNodesPerElement /= 3) then
-        !    call ErrMsg('Node-centred control volume option currently only works with TMPLT_SWF defined by 3-node triangular elements') 
-        !endif
+
+        integer :: FnumTecplot
+        character(MAX_STR) :: FNameTecplot
+        
+        FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.SWF.CellGeometry.tecplot.dat'
+        call OpenAscii(FNumTecplot,FNameTecplot)
+        call Msg( 'To File: '//trim(FNameTecplot))
+
+        write(FNumTecplot,*) 'Title = "Modflow SWF Cell Geometry"'
+        
             
         Modflow.SWF.njag=TMPLT_SWF.njag
         allocate(Modflow.SWF.ia(Modflow.SWF.nCells),Modflow.SWF.ja(TMPLT_SWF.njag),stat=ialloc)
@@ -7724,30 +7760,48 @@
                             &          TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),0.0d0, &
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1),TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),TMPLT_SWF.z(j1))
         
                     call area_triangle(TMPLT_SWF.x(j2),TMPLT_SWF.y(j2),0.0d0, &
                             &          TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),0.0d0, &
                             &          TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),0.0d0, &
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
+                    
+                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode) .AND. bcheck(TMPLT_SWF.Node_is(j2),BoundaryNode)) then 
+                        write(FNumTecplot,'(a,i5)') '# boundary j1',j1
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                        write(FNumTecplot,'(a,i5)') '# boundary j2',j2
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j2),TMPLT_SWF.y(j2),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
+                    endif
+
                 else if(TMPLT_SWF.nNodesPerElement == 4) then
                     call area_triangle(TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),0.0d0, &
                             &          TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),0.0d0, &
                             &          TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),0.0d0, &
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
-        
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1),TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),TMPLT_SWF.z(j1))
+                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                    endif
+       
                     call area_triangle(TMPLT_SWF.x(j2),TMPLT_SWF.y(j2),0.0d0, &
                             &          TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),0.0d0, &
                             &          TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),0.0d0, &
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
-                    !RectangleArea=(TMPLT_SWF.xElement(i)-TMPLT_SWF.x(j1))*(TMPLT_SWF.yElement(i)-TMPLT_SWF.y(j1))
-                    !Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+RectangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
+                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                    endif
+
                 end if
 
             end do
         end do
+        call freeunit(FNumTecplot)
         
         ! Generate connection data from TMPLT_SWF 
         allocate(Modflow.SWF.ConnectionLength(TMPLT_SWF.njag),Modflow.SWF.PerpendicularArea(TMPLT_SWF.njag),stat=ialloc)

@@ -52,27 +52,24 @@
 	</Configurations>
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd;h;inc">
-			<File RelativePath=".\gmodules.f">
-			</File>
+			<File RelativePath=".\gmodules.f"/>
 		</Filter>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 			<File RelativePath=".\fem.f90"/>
-			<File RelativePath=".\GeneralRoutines.f90">
+			<File RelativePath=".\GeneralRoutines.f90"/>
+			<File RelativePath=".\GenericList.f90">
 			</File>
-			<File RelativePath=".\HGS.f90"/>
+			<File RelativePath=".\HGS.f90">
+			</File>
 			<File RelativePath=".\Materials.f90"/>
-			<File RelativePath=".\MeshGeneration.f90">
-			</File>
-			<File RelativePath=".\Modflow_USG.f90">
-			</File>
+			<File RelativePath=".\MeshGeneration.f90"/>
+			<File RelativePath=".\Modflow_USG.f90"/>
 			<File RelativePath=".\openspec.inc"/>
 			<File RelativePath=".\pre.f90"/>
 			<File RelativePath=".\raster.f90"/>
-			<File RelativePath=".\Tecplot.f90">
-			</File>
-			<File RelativePath=".\TGModule.f90">
-			</File>
+			<File RelativePath=".\Tecplot.f90"/>
+			<File RelativePath=".\TGModule.f90"/>
 		</Filter>
 	</Files>
 	<Globals/>

@@ -6068,6 +6068,18 @@ end subroutine enter_prefix
         return
     end subroutine copyCharArrayToString
     
+    subroutine Line3DSegment_Tecplot(FNum,x1,y1,z1,x2,y2,z2)
+        implicit none
+        integer :: FNum
+        REAL(dr) :: x1, y1, z1
+        REAL(dr) :: x2, y2, z2
+        write(FNum,'(a)') 'GEOMETRY T=LINE3D' !, C=CUST3, LT=0.1'
+        write(FNum,'(i5)') 1
+        write(FNum,'(i5)') 2
+        write(FNum,'(3('//FMT_R8//'))')x1,y1,z1
+        write(FNum,'(3('//FMT_R8//'))')x2,y2,z2
+    end subroutine Line3DSegment_Tecplot
+    
 
 
 end module Tecplot !
