@@ -7782,10 +7782,10 @@
                             &          TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),0.0d0, &
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1),TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),TMPLT_SWF.z(j1))
-                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
-                    endif
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1),TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),TMPLT_SWF.z(j1))
+                    !if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
+                    !    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                    !endif
        
                     call area_triangle(TMPLT_SWF.x(j2),TMPLT_SWF.y(j2),0.0d0, &
                             &          TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),0.0d0, &
@@ -7793,8 +7793,14 @@
                             &          TriangleArea)
                     Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xElement(i),TMPLT_SWF.yElement(i),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
-                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
+                    !if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
+                    !    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                    !endif
+                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode) .AND. bcheck(TMPLT_SWF.Node_is(j2),BoundaryNode)) then 
+                        write(FNumTecplot,'(a,i5)') '# boundary j1',j1
                         call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
+                        write(FNumTecplot,'(a,i5)') '# boundary j2',j2
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j2),TMPLT_SWF.y(j2),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
                     endif
 
                 end if
