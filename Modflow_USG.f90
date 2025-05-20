@@ -2137,17 +2137,18 @@
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT iaja, cell connections (mc or nc), boundary nodes
            
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
-                call GenerateTMPLT_SWF(FnumMUT,TMPLT,TMPLT_SWF)
-                call BuildModflowSWFDomain(Modflow,TMPLT_SWF)   ! inherit iaja structure from TMPLT
+                call GenerateTMPLT_SWF(FnumMUT,TMPLT,TMPLT_SWF) ! inherit iaja structure from TMPLT
+                call BuildModflowSWFDomain(Modflow,TMPLT_SWF)   
                 call AddSWFFiles(Modflow)
 
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call GenerateLayeredTMPLT_GWF(FnumMUT,TMPLT,TMPLT_GWF)
+                call GenerateLayeredTMPLT_GWF(FnumMUT,TMPLT,TMPLT_GWF) ! inherit iaja structure from TMPLT and extend for GWF domain layers
                 
-                ! For GWF domain, we need to generate the mesh-centried IaJa using Tecplot
+                ! For GWF domain, we need to generate the mesh-centred IaJa using Tecplot
                 call IaJa_MeshCentredFromTecplot(TMPLT_GWF)
+                !call IaJa_MeshCentredGWFFromTMPLT(TMPLT,TMPLT_GWF)
                 call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,TMPLT_GWF)
                 
                 JustBuilt=.true.
@@ -3876,28 +3877,17 @@
         
         integer :: ia_TMP(TMPLT_CLN.nElements)
         integer :: ja_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
-        !integer :: ja_TMP2(MAXCONNECTIONS,TMPLT_CLN.nElements)
-        !integer :: ja_TMP2_element(MAXCONNECTIONS,TMPLT_CLN.nElements)
-        !real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
-        !real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,TMPLT_CLN.nElements)
 
         ! read and store cell connection information
         integer :: nFaceNeighborConnections
         integer :: nSizeInit
         
-        !integer,allocatable :: TMPLT_CLN.Element(:)
-        !integer,allocatable :: TMPLT_CLN.Face(:)
-        !integer,allocatable :: TMPLT_CLN.Neighbour(:)
-
         integer :: iNjag
         
         call Msg(' ')
         call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(TMPLT_CLN.name)//'...')
         
         ja_TMP(:,:)=0
-        !ja_TMP2(:,:)=0
-        !ConnectionLength_TMP(:,:)=0
-        !PerpendicularArea_TMP(:,:)=0
         
         do i=1,TMPLT_CLN.nElements   ! First element connection is to itself
             ia_TMP(i)=1
@@ -3963,10 +3953,6 @@
         end do
         allocate(TMPLT_CLN.ia(TMPLT_CLN.nElements),TMPLT_CLN.ja(TMPLT_CLN.njag),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_CLN.name)//'CLN ia, ja array')
-        !allocate(TMPLT_CLN.ConnectionLength(TMPLT_CLN.njag),TMPLT_CLN.PerpendicularArea(TMPLT_CLN.njag),stat=ialloc)
-        !call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        !TMPLT_CLN.ConnectionLength(:)=0.0d0
-        !TMPLT_CLN.PerpendicularArea(:)=0.0d0
         TMPLT_CLN.ia=ia_TMP
         
         
@@ -3975,9 +3961,6 @@
             do j=1,TMPLT_CLN.ia(i)
                 iNjag=iNjag+1
                 TMPLT_CLN.ja(iNJag)=ja_TMP(j,i)
-                !TMPLT_CLN.jaElement(iNJag)=ja_TMP2_Element(j,i)
-                !TMPLT_CLN.ConnectionLength(iNjag)=ConnectionLength_TMP(j,i)
-                !TMPLT_CLN.PerpendicularArea(iNjag)=PerpendicularArea_TMP(j,i)
             end do
         end do
            
@@ -5151,14 +5134,50 @@
         call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element_Is array')            
         TMPLT_GWF.Element_Is(:)=0
         
+        ! IaJa
+        ! TMPLT.njag is the total number of adjacent neighbours for the 2D TMPLT
+        TMPLT_GWF.njag=TMPLT.njag 
+        do i=2,TMPLT_GWF.nLayers
+            TMPLT_GWF.njag=TMPLT_GWF.njag+TMPLT.njag ! # of new adjacent connections for added layer 
+            if(NodalControlVolume) then 
+                TMPLT_GWF.njag=TMPLT_GWF.njag + TMPLT.nNodes*2 ! number of new vertical connections for added layer
+            else    
+                TMPLT_GWF.njag=TMPLT_GWF.njag + TMPLT.nElements*2 ! number of new vertical connections for added layer
+            endif
+        end do
+        allocate(TMPLT_GWF.ConnectionLength(TMPLT.njag),TMPLT_GWF.PerpendicularArea(TMPLT.njag),stat=ialloc)
+        call AllocChk(ialloc,'GWF Cell connection length, perpendicular area array')
+        
+        !TMPLT_GWF.ConnectionLength(:)=TMPLT.ConnectionLength(:)
+        !TMPLT_GWF.PerpendicularArea(:)=TMPLT.PerpendicularArea(:)
+
+        
+        !if(NodalControlVolume) then 
+        !    allocate(TMPLT_GWF.ia(TMPLT.nNodes*(TMPLT_GWF.nLayers+1)),TMPLT_GWF.ja(TMPLT.njag),stat=ialloc)
+        !    call AllocChk(ialloc,'GWF node-centred ia, ja arrays')
+        !else    
+        !    allocate(TMPLT_GWF.ia(TMPLT.nElements*TMPLT_GWF.nLayers),TMPLT_GWF.ja(TMPLT.njag),stat=ialloc)
+        !    call AllocChk(ialloc,'GWF mesh-centred ia, ja arrays')
+        !    iCell=0
+        !    do i=2,TMPLT_GWF.nLayers
+        !        do j=1,TMPLT.nElements
+        !            iCell=iCell+1
+        !            iElement = myMOD(j,TMPLT.nElements)
+        !            TMPLT_GWF.ia(iCell)=TMPLT.ia(j)
+        !            do k=1,TMPLT.ia(j)
+        !            TMPLT_GWF.ja(:)=TMPLT.ja
+        !            end do
+        !    end do
+        !endif
+
+        
     end subroutine GenerateLayeredTMPLT_GWF
     
     !----------------------------------------------------------------------
     subroutine GenerateTMPLT_SWF(FNumMUT,TMPLT,TMPLT_SWF)
 	    ! Given the 2D TMPLT mesh this subroutine: 
         !   - defines the 2D TMPLT_SWF mesh 
-        !   - calls Tecplot to generate and save face neighbour information
-        !   - uses the Tecplot face neighbour information to define mesh-centred IA JA arrays for TMPLT_SWF
+        !   - inherits face neighbour information from TMPLT
 
         implicit none
         integer :: FNumMUT
@@ -5646,6 +5665,134 @@
         
     end subroutine GWFToTecplot
 
+    !-------------------------------------------------------------
+    subroutine IaJa_MeshCentred(domain)
+        implicit none
+        type(TecplotDomain) domain
+        
+                integer, parameter :: MAXCONNECTIONS=20
+
+        integer :: i, j, k, l
+        integer :: iEl, jEl
+        integer :: iNd, jNd
+        integer :: j1, j2
+        
+        real(dr) :: SeparationDistance
+        
+        integer :: ia_TMP(domain.nElements)
+        integer :: ja_TMP(MAXCONNECTIONS,domain.nElements)
+
+        real(dr) :: xMidpoint(domain.nNodesPerElement,domain.nElements)
+        real(dr) :: yMidpoint(domain.nNodesPerElement,domain.nElements)
+        real(dr) :: zMidpoint(domain.nNodesPerElement,domain.nElements)
+
+        ! read and store cell connection information
+        !integer :: nFaceNeighborConnections
+        integer :: nSizeInit
+
+        integer :: iNjag
+
+        call Msg(' ')
+        call Msg('  Generating IA/JA and cell connection arrays for domain '//trim(domain.name)//'...')
+
+        ja_TMP(:,:)=0
+
+        do i=1,domain.nElements   ! First element connection is to itself
+            ia_TMP(i)=1
+            ja_TMP(ia_TMP(i),i)=-i     ! Negative entry shows start of element i list in ja
+        end do
+
+        nSizeInit=2
+        allocate(domain.Element(nSizeInit),&
+                domain.Face(nSizeInit),&
+                domain.Neighbour(nSizeInit),stat=ialloc)
+        call AllocChk(ialloc,'CLN element neighbour arrays')
+
+        ! Element side midpoints
+        do i=1,domain.nElements
+            do j=1,domain.nNodesPerElement
+                j1=domain.iNode(j,i)
+                if(j < domain.nNodesPerElement) then
+                    j2=domain.iNode(j+1,i)
+                else
+                    j2=domain.iNode(1,i)
+                end if
+
+                xMidpoint(j,i)=(domain.x(j1)+domain.x(j2))/2.0d0
+                yMidpoint(j,i)=(domain.y(j1)+domain.y(j2))/2.0d0
+                zMidpoint(j,i)=(domain.z(j1)+domain.z(j2))/2.0d0
+
+            end do
+        end do
+
+
+        ! Brute force search for domain neighbours using side midpoints
+        domain.nFaceNeighborConnections=0
+        do iEl=1,domain.nElements ! Loop over elements
+            do k=1,domain.nNodesPerElement ! Loop over nodes in element
+                iNd=domain.iNode(k,iEl)
+
+                do jEl=iEl+1,domain.nElements ! Loop over rest of elements
+                    do l=1,domain.nNodesPerElement ! Loop over nodes in next element
+                        jNd=domain.iNode(l,jEl)
+                        SeparationDistance=sqrt((xMidpoint(k,iEl) - xMidpoint(l,jEl))**2 + &
+                            (yMidpoint(k,iEl) - yMidpoint(l,jEl))**2 + &
+                            (zMidpoint(k,iEl) - zMidpoint(l,jEl))**2 )
+                        if(SeparationDistance < MinSeparationDistance) then
+                            ! iEl is neighbour of jEl
+                            ia_TMP(iEl)=ia_TMP(iEl)+1
+                            ja_TMP(ia_TMP(iEl),iEl)=jEl
+                            domain.nFaceNeighborConnections=domain.nFaceNeighborConnections+1
+                            if(domain.nFaceNeighborConnections > nSizeInit) then
+                                call growIntegerArray(domain.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(domain.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(domain.Neighbour,nSizeInit,nSizeInit*2)
+                                nSizeInit=nSizeInit*2
+                            end if
+                            domain.Element(domain.nFaceNeighborConnections)=iEl
+                            domain.Face(domain.nFaceNeighborConnections)=k
+                            domain.Neighbour(domain.nFaceNeighborConnections)=jEl
+                            
+                            ! jEl is neighbour of iEl
+                            ia_TMP(jEl)=ia_TMP(jEl)+1
+                            ja_TMP(ia_TMP(jEl),jEl)=iEl
+                            domain.nFaceNeighborConnections=domain.nFaceNeighborConnections+1
+                            if(domain.nFaceNeighborConnections > nSizeInit) then
+                                call growIntegerArray(domain.Element,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(domain.Face,nSizeInit,nSizeInit*2)
+                                call growIntegerArray(domain.Neighbour,nSizeInit,nSizeInit*2)
+                                nSizeInit=nSizeInit*2
+                            end if
+                            domain.Element(domain.nFaceNeighborConnections)=jEl
+                            domain.Face(domain.nFaceNeighborConnections)=l
+                            domain.Neighbour(domain.nFaceNeighborConnections)=iEl
+                        endif
+                    end do
+                end do
+            end do
+        end do
+
+        ! Determine size of ja (njag) and copy ja_TMP to ja 
+        domain.njag=0
+        do i=1,domain.nElements
+            domain.njag=domain.njag+ia_TMP(i)
+        end do
+        allocate(domain.ia(domain.nElements),domain.ja(domain.njag),stat=ialloc)
+        call AllocChk(ialloc,trim(domain.name)//'CLN ia, ja array')
+        domain.ia=ia_TMP
+        
+        
+        iNJag=0
+        do i=1,domain.nElements
+            do j=1,domain.ia(i)
+                iNjag=iNjag+1
+                domain.ja(iNJag)=ja_TMP(j,i)
+            end do
+        end do
+           
+        return
+
+    end subroutine IaJa_MeshCentred
  
     !-------------------------------------------------------------
     subroutine IaJa_MeshCentredFromTecplot(domain)
@@ -6245,10 +6392,14 @@
             do j=2,modflow.GWF.ia(i)
                 iConn=iConn+1
                 inBor=iNbor+1
-                if(myMOD(i,modflow.GWF.nodelay) == myMOD(modflow.GWF.ja(iconn),modflow.GWF.nodelay)) then ! GWF neighbour in same column
+                
+                ! GWF neighbour in same column (above or below)
+                if(myMOD(i,modflow.GWF.nodelay) == myMOD(modflow.GWF.ja(iconn),modflow.GWF.nodelay)) then 
                     modflow.GWF.ConnectionLength(iConn)=(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))/2.0d0
                     modflow.GWF.PerpendicularArea(iConn)=TMPLT.ElementArea(iCell)
-                else  ! SWF or GWF neighbour in adjacent column
+                
+                ! GWF neighbour in different column (adjacent)
+                else  
                     if(TMPLT.nNodesPerElement == 3) then
                         select case (TMPLT_GWF.face(iNbor))
                         case ( 1 )
@@ -6300,7 +6451,6 @@
         Modflow.SWF.PerpendicularArea(:)=0.0d0
 
         Modflow.SWF.njag=TMPLT_SWF.njag
-        
         allocate(Modflow.SWF.ia(TMPLT_SWF.nElements),Modflow.SWF.ja(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF ia, ja arrays')
         Modflow.SWF.ia(:)=TMPLT_SWF.ia
@@ -6323,7 +6473,7 @@
             do j=2,modflow.SWF.ia(i)
                 iConn=iConn+1
                 inBor=iNbor+1
-                ! SWF neighbours always in adjacent column
+                ! SWF neighbour always in different column (adjacent)
                 if(TMPLT_SWF.nNodesPerElement == 3) then
                     select case (TMPLT_SWF.face(iNbor))
                         case ( 1 )
@@ -7579,7 +7729,6 @@
         ! For modflow cell connection and area calculations
         integer :: j1, j2, iCell
         real(dr) :: TriangleArea
-        real(dr) :: RectangleArea
         integer :: iConn, iNbor
         
         integer :: FnumTecplot
@@ -7672,8 +7821,8 @@
         end do
         
            
+        ! Copy njag, ia and ja from TMPLT_GWF
         Modflow.GWF.njag=TMPLT_GWF.njag
-            
         allocate(Modflow.GWF.ia(Modflow.GWF.nCells),Modflow.GWF.ja(TMPLT_GWF.njag),stat=ialloc)
         call AllocChk(ialloc,'GWF ia, ja arrays')
         Modflow.GWF.ia(:)=TMPLT_GWF.ia
@@ -7722,7 +7871,6 @@
         ! For modflow cell connection and area calculations
         integer :: j1, j2
         real(dr) :: TriangleArea
-        real(dr) :: RectangleArea
 
         integer :: FnumTecplot
         character(MAX_STR) :: FNameTecplot
@@ -7734,6 +7882,7 @@
         write(FNumTecplot,*) 'Title = "Modflow SWF Cell Geometry"'
         
             
+        ! Copy njag, ia and ja from TMPLT_SWF
         Modflow.SWF.njag=TMPLT_SWF.njag
         allocate(Modflow.SWF.ia(Modflow.SWF.nCells),Modflow.SWF.ja(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF ia, ja arrays')
@@ -7809,7 +7958,7 @@
         end do
         call freeunit(FNumTecplot)
         
-        ! Generate connection data from TMPLT_SWF 
+        ! Copy ConnectionLength and PerpendicularArea from TMPLT_SWF 
         allocate(Modflow.SWF.ConnectionLength(TMPLT_SWF.njag),Modflow.SWF.PerpendicularArea(TMPLT_SWF.njag),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
         Modflow.SWF.ConnectionLength(:)=TMPLT_SWF.ConnectionLength(:)
@@ -8432,13 +8581,16 @@
         type (TecplotDomain) TMPLT
 
         call TemplateToTecplot(Modflow,TMPLT)
-        call IaJa_MeshCentredFromTecplot(TMPLT) ! Requires Tecplot for determination of neighbours 
-        call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
         
-        if(NodalControlVolume) then
-            call IaJa_ConvertToNodeCentred(TMPLT) ! Convert TMPLT IaJa and calculate ConnectionLength and PerpendicularArea for node-centred case
+        ! These routines required for both node- and mesh-centred control volume cases
+        call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
+        call IaJa_MeshCentred(TMPLT) 
+        
+        if(.not. NodalControlVolume) then
+            !call IaJa_MeshCentredFromTecplot(TMPLT) ! Requires Tecplot for determination of neighbours 
+            call CellGeometry_MeshCentred(TMPLT) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
         else
-            call TemplateGeometry(TMPLT) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
+            call IaJa_CellGeometry_NodeCentred(TMPLT) ! Convert mesh-centred TMPLT IaJa and calculate ConnectionLength and PerpendicularArea for node-centred case
         endif
         
         
@@ -8446,7 +8598,7 @@
     end subroutine TemplateBuild
     
     !-------------------------------------------------------------
-    subroutine TemplateGeometry(TMPLT)
+    subroutine CellGeometry_MeshCentred(TMPLT)
         implicit none
         type (TecplotDomain) TMPLT
 
@@ -8466,7 +8618,7 @@
             do j=2,TMPLT.ia(i)
                 iConn=iConn+1
                 inBor=iNbor+1
-                ! SWF neighbours always in adjacent column
+                ! 2D TMPLT neighbours are always in an adjacent column of the mesh so use sidelength
                 if(TMPLT.nNodesPerElement == 3) then
                     select case (TMPLT.face(iNbor))
                         case ( 1 )
@@ -8499,9 +8651,9 @@
                 end if
             end do
         end do
-    end subroutine TemplateGeometry
+    end subroutine CellGeometry_MeshCentred
     !-------------------------------------------------------------
-    subroutine IaJa_ConvertToNodeCentred(TMPLT)
+    subroutine IaJa_CellGeometry_NodeCentred(TMPLT)
         ! Convert TMPLT IaJa structure from mesh-centred to node-centred 
         ! Calculate node-centred cell ConnectionLength and PerpendicularArea arrays
         implicit none
@@ -8636,7 +8788,7 @@
 
         
         call Msg(' ')
-        call Msg('In routine IaJa_ConvertToNodeCentred ')
+        call Msg('In routine IaJa_CellGeometry_NodeCentred ')
         call Msg('  Generating IA/JA and cell connection arrays for TMPLT '//trim(TMPLT.name)//'...')
         
         ja_TMP(:,:)=0
@@ -8761,7 +8913,7 @@
         end do
            
         return
-    end subroutine IaJa_ConvertToNodeCentred
+    end subroutine IaJa_CellGeometry_NodeCentred
     
     integer function GetSideNeighbour(domain,iEl,iSide)
         implicit none
