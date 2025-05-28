@@ -26,7 +26,8 @@ module GeneralRoutines    !### bit setting routines
     integer, parameter :: MAX_INST=200
     
     integer, Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
-
+    
+    integer, parameter :: MAXCONNECTIONS=20
 
     character(MAX_STR) :: USERBIN
     
@@ -119,7 +120,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(37) :: MUTVersion=' 1.40 iaja'
+    character(37) :: MUTVersion=' 1.41 no tecplot'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 

@@ -154,25 +154,17 @@ module Tecplot !
         real(dr), allocatable :: xSide(:,:)         ! projected x coordinate of inner circle radius tangent to side
         real(dr), allocatable :: ySide(:,:)         ! projected y coordinate of inner circle radius tangent to side
         
-        real(dr), allocatable :: ConnectionLength(:)    ! varialbe CLN in modflow, not to be confused with CLN (Connected Linear Network)
-        real(dr), allocatable :: PerpendicularArea(:)   ! FAHL in modflow
-        
         real(dr), allocatable :: Length(:) ! length of CLN cell
         real(dr), allocatable :: LowestElevation(:) ! lowest point of CLN cell
         real(dr), allocatable :: SlopeAngle(:) ! angel of CLN cell with horizontal
         
-        !
-        ! face neighbours
-        integer, allocatable :: Element(:)
-        integer, allocatable :: face(:)
-        integer, allocatable :: neighbour(:)
-        
-        ! ia ja arrays for Element connections
+        ! Element connections
         integer, allocatable :: njag      ! total number of connections for mesh
         integer, allocatable :: ia(:)      ! size nElements, number of connections/Element
-        integer, allocatable :: ja(:)      ! size total number of connections for mesh, Element connection lists
-        !integer, allocatable :: jaElement(:)      ! size total number of connections for mesh, used for node-centred method only
-        integer, allocatable :: nFaceNeighborConnections      ! Tecplot variable
+        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (nCells, MAXCONNECTIONS)
+        integer, allocatable :: FaceList(:,:)  ! connected through face (nCells, MAXCONNECTIONS)
+        real(dr), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
+        real(dr), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
 
         ! of size nNodes
         real(dr), allocatable :: x(:) 
