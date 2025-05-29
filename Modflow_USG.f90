@@ -2116,34 +2116,34 @@
                 
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
                 call MeshFromGb(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT iaja, cell connections (mc or nc), boundary nodes
+                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
             
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
                 ! Build the 2D template mesh from a uniform 2D rectangular mesh
                 call GenerateUniformRectangles(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT iaja, cell connections (mc or nc), boundary nodes
+                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateVariableRectangles_CMD)  /= 0) then
                 ! Build the 2D template mesh from a variable 2D rectangular mesh
                 call GenerateVariableRectangles(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT iaja, cell connections (mc or nc), boundary nodes
+                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
                 JustBuilt=.true.
             
             else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
                 ! Build the 2D template mesh from a grdbldr 2D mesh
                 call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT iaja, cell connections (mc or nc), boundary nodes
+                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
            
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
-                call GenerateTMPLT_SWF(FnumMUT,TMPLT,TMPLT_SWF) ! inherit iaja structure from TMPLT
+                call GenerateTMPLT_SWF(FnumMUT,TMPLT,TMPLT_SWF) ! inherit cell connection from TMPLT
                 call BuildModflowSWFDomain(Modflow,TMPLT_SWF)   
                 call AddSWFFiles(Modflow)
 
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call GenerateLayeredTMPLT_GWF(FnumMUT,TMPLT,TMPLT_GWF) ! inherit iaja structure from TMPLT and extend for GWF domain layers
+                call GenerateLayeredTMPLT_GWF(FnumMUT,TMPLT,TMPLT_GWF) ! inherit cell connection from TMPLT and extend for GWF domain layers
                 call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,TMPLT_GWF)
                 
                 JustBuilt=.true.
@@ -6195,6 +6195,14 @@
                         end select
                         modflow.GWF.ConnectionLength(j,i)=TMPLT.rCircle(iCell)
                         modflow.GWF.PerpendicularArea(j,i)=modflow.GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                        if(i==5) then
+                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                            call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                            call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                            call msg(TMPStr)
+                        endif
                     else if(TMPLT.nNodesPerElement == 4) then
                         select case (TMPLT_GWF.FaceList(j,i))
                         case ( 1 )
@@ -6230,12 +6238,6 @@
         type (TecplotDomain) TMPLT_SWF
         integer :: i, j
 
-        allocate(Modflow.SWF.ConnectionLength(MAXCONNECTIONS,TMPLT_SWF.nElements), &
-                 Modflow.SWF.PerpendicularArea(MAXCONNECTIONS,TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:,:)=0.0d0
-        Modflow.SWF.PerpendicularArea(:,:)=0.0d0
-
         allocate(Modflow.SWF.ia(TMPLT_SWF.nElements), &
                  Modflow.SWF.ConnectionList(MAXCONNECTIONS,TMPLT_SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF cell connection arrays')
@@ -6251,42 +6253,11 @@
         end do
 
         ! Cell connection length and perpendicular area arrays
-        do i=1,modflow.SWF.nCells
-                    
-            do j=2,modflow.SWF.ia(i)
-                ! SWF neighbour always in different column (adjacent)
-                if(TMPLT_SWF.nNodesPerElement == 3) then
-                    select case (TMPLT_SWF.FaceList(j,i))
-                        case ( 1 )
-                            modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(1,i)   
-                        case ( 2 )
-                            modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(2,i)   
-                        case ( 3 )
-                            modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(3,i)   
-                        case ( 4 )  ! must be 8-node block
-                            call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
-                    end select
-                    modflow.SWF.ConnectionLength(j,i)=TMPLT_SWF.rCircle(i)
-                    modflow.SWF.PerpendicularArea(j,i)=modflow.SWF.PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
-                else if(TMPLT_SWF.nNodesPerElement == 4) then
-                    select case (TMPLT_SWF.FaceList(j,i))
-                    case ( 1 )
-                        modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(1,i)   
-                        modflow.SWF.ConnectionLength(j,i)=TMPLT_SWF.SideLength(1,i)/2.0d0
-                    case ( 2 )
-                        modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(2,i)   
-                        modflow.SWF.ConnectionLength(j,i)=TMPLT_SWF.SideLength(2,i)/2.0d0
-                    case ( 3 )
-                        modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(3,i)   
-                        modflow.SWF.ConnectionLength(j,i)=TMPLT_SWF.SideLength(3,i)/2.0d0
-                    case ( 4 )
-                        modflow.SWF.PerpendicularArea(j,i)=TMPLT_SWF.SideLength(4,i)   
-                        modflow.SWF.ConnectionLength(j,i)=TMPLT_SWF.SideLength(4,i)/2.0d0
-                    end select
-                    modflow.SWF.PerpendicularArea(j,i)=modflow.SWF.PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
-                end if
-            end do
-        end do
+        allocate(Modflow.SWF.ConnectionLength(MAXCONNECTIONS,TMPLT_SWF.nElements), &
+                 Modflow.SWF.PerpendicularArea(MAXCONNECTIONS,TMPLT_SWF.nElements),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
+        Modflow.SWF.ConnectionLength(:,:)= TMPLT_SWF.ConnectionLength(:,:)
+        Modflow.SWF.PerpendicularArea(:,:)=TMPLT_SWF.PerpendicularArea(:,:)
         
         Modflow.SWF.njag=0
         do i=1,Modflow.SWF.nCells
@@ -7620,9 +7591,36 @@
                 if(myMOD(i,modflow.GWF.nodelay) == myMOD(modflow.GWF.ConnectionList(j,i),modflow.GWF.nodelay)) then ! GWF neighbour in same column
                     modflow.GWF.ConnectionLength(j,i)=Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i)
                     modflow.GWF.PerpendicularArea(j,i)=Modflow.GWF.CellArea(i)
+                    
+                    !crgm temp debug outputs
+                    if(i==5) then
+                        write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                        call msg(TMPStr)
+                        !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                        !call msg(TMPStr)
+                        write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                        call msg(TMPStr)
+                    endif
                 else  ! SWF or GWF neighbour in adjacent column
                     modflow.GWF.ConnectionLength(j,i)=TMPLT_GWF.ConnectionLength(j,i)
                     modflow.GWF.PerpendicularArea(j,i)=TMPLT_GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                    
+                    !crgm temp debug outputs
+                    if(i==5) then
+                        write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                        call msg(TMPStr)
+                        !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                        !call msg(TMPStr)
+                        write(TMPStr,'(a,f15.5)') ' TMPLT_GWF.PerpendicularArea(j,i) ',TMPLT_GWF.PerpendicularArea(j,i)
+                        call msg(TMPStr)
+                        write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                        call msg(TMPStr)
+                        write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Top(i) ',Modflow.GWF.Top(i)
+                        call msg(TMPStr)                        
+                        write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Bottom(i) ',Modflow.GWF.Bottom(i)
+                        call msg(TMPStr)                        
+
+                    endif
                 end if
             end do
         end do
@@ -8217,10 +8215,9 @@
         call IaJa_MeshCentred(TMPLT) 
         
         if(.not. NodalControlVolume) then
-            !call IaJa_MeshCentredFromTecplot(TMPLT) ! Requires Tecplot for determination of neighbours 
             call CellGeometry_MeshCentred(TMPLT) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
         else
-            call IaJa_CellGeometry_NodeCentred(TMPLT) ! Convert mesh-centred TMPLT IaJa and calculate ConnectionLength and PerpendicularArea for node-centred case
+            call IaJa_CellGeometry_NodeCentred(TMPLT) ! Convert mesh-centred TMPLT cell connection data to node-centred
         endif
         
         
@@ -8248,11 +8245,11 @@
                 if(TMPLT.nNodesPerElement == 3) then
                     select case (TMPLT.FaceList(j,i))
                         case ( 1 )
-                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(3,i)   
+                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(1,i)   
                         case ( 2 )
                             TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(2,i)   
                         case ( 3 )
-                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(1,i)   
+                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(3,i)   
                         case ( 4 )  ! must be 8-node block
                             call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
                     end select
@@ -9136,12 +9133,12 @@
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CLN()'
         do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(6('//FMT_R8//'))') (modflow.SWF.ConnectionLength(j,i),j=1,modflow.SWF.ia(i))
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (modflow.SWF.ConnectionLength(j,i),j=1,modflow.SWF.ia(i))
         end do
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  PerpendicularArea FAHL()'
         do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(6('//FMT_R8//'))') (modflow.SWF.PerpendicularArea(j,i),j=1,modflow.SWF.ia(i))
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (modflow.SWF.PerpendicularArea(j,i),j=1,modflow.SWF.ia(i))
         end do
 
         ! fix here YJP
