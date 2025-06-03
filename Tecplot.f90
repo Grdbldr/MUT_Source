@@ -88,6 +88,7 @@ module Tecplot !
     type(c_ptr) :: stringCPtr = C_NULL_PTR
     type(c_ptr) :: nameCPtr = C_NULL_PTR, valueCPtr = C_NULL_PTR
 
+    integer :: nVar
     character(MAX_STR) :: VarSTR
     character(MAX_STR) :: ZoneSTR
     character(MAX_STR) :: CellCenteredSTR    
@@ -161,8 +162,8 @@ module Tecplot !
         ! Element connections
         integer, allocatable :: njag      ! total number of connections for mesh
         integer, allocatable :: ia(:)      ! size nElements, number of connections/Element
-        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (nCells, MAXCONNECTIONS)
-        integer, allocatable :: FaceList(:,:)  ! connected through face (nCells, MAXCONNECTIONS)
+        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (nCells, MAX_CNCTS)
+        integer, allocatable :: FaceList(:,:)  ! connected through face (nCells, MAX_CNCTS)
         real(dr), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dr), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
 
@@ -178,10 +179,16 @@ module Tecplot !
         integer,allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
         integer,allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
         
+        ! Faces
+        logical :: FacesCalculated = .false.
+        integer :: nFaces  = 0
+        integer, allocatable :: nFaceNodes(:)        ! number of faces/node in list
+	    integer, allocatable :: iFace(:,:) ! iFace(i,nFaceNodes(i)) is list of faces for node i
+        integer, allocatable :: FaceNode(:,:) ! nface,4)
+        integer, allocatable :: FaceNeighbourElement(:,:) ! nface,2)
+        integer, allocatable :: Face_Is(:)
             
     end type TecplotDomain
-
-    
 
     !*************************************************************old plot_data declarations 
     type HGSTecplotdomain

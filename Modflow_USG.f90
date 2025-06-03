@@ -1,14 +1,14 @@
 ﻿module MUSG !
     use GeneralRoutines
     !use ProcessCSV
-    use fem
+    !use fem
     use materials
     use MeshGeneration
     use tecplot
     use global
     use CLN1MODULE
     use SWF1MODULE
-    use hgs
+    !use hgs
     implicit none
     
     ! Pre/Post-processor for Modflow project files Fall 2023
@@ -197,8 +197,8 @@
         ! Cell connection 
         integer, allocatable :: njag      ! total number of connections for domain
         integer, allocatable :: ia(:)      ! size nCells, number of connections/cell
-        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (MAXCONNECTIONS,nCells)
-        integer, allocatable :: FaceList(:,:)  ! connected through face (MAXCONNECTIONS,nCells)
+        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
+        integer, allocatable :: FaceList(:,:)  ! connected through face (MAX_CNCTS,nCells)
         real(dr), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dr), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
         
@@ -3873,7 +3873,7 @@
         call Msg('  Generating cell connection arrays for domain '//trim(TMPLT_CLN.name)//'...')
         
         allocate(TMPLT_CLN.ia(TMPLT_CLN.nElements), &
-                 TMPLT_CLN.ConnectionLength(MAXCONNECTIONS,TMPLT_CLN.nElements),stat=ialloc)
+                 TMPLT_CLN.ConnectionLength(MAX_CNCTS,TMPLT_CLN.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_CLN.name)//'CLN iConnectionList arrays')
         TMPLT_CLN.ia(:)=0
         TMPLT_CLN.ConnectionLength(:,:)=0
@@ -4776,6 +4776,74 @@
     end subroutine FlagChosenCellsInactiveTMPLT
     
     !----------------------------------------------------------------------
+    subroutine FlagOuterBoundaryFaces(TMPLT)
+        implicit none
+
+        type (TecplotDomain)  TMPLT
+
+        integer :: i, in1, in2, in3, in4 
+        
+        !allocate(FaceNode(TMPLT.nElements*4,2))
+        !
+        !if(.not. allocated(TMPLT.Node_Is)) then 
+        !    allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
+        !    call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
+        !    TMPLT.Node_Is(:)=0
+        !end if
+        !
+        !!     construct the array of boundary segment nodes
+        !call Msg('Find outer boundary segments...') 
+        !if(TMPLT.nNodesPerElement==3) then
+        !    FaceNode(1,1)=TMPLT.iNode(1,1) 
+        !    FaceNode(1,2)=TMPLT.iNode(2,1) 
+        !    FaceNode(2,1)=TMPLT.iNode(2,1) 
+        !    FaceNode(2,2)=TMPLT.iNode(3,1) 
+        !    FaceNode(3,1)=TMPLT.iNode(3,1) 
+        !    FaceNode(3,2)=TMPLT.iNode(1,1) 
+        !    nseg=3 
+        !
+        !    do  i=2,TMPLT.nElements
+        !        in1=TMPLT.iNode(1,i) 
+        !        in2=TMPLT.iNode(2,i) 
+        !        in3=TMPLT.iNode(3,i) 
+        !        call check_seg(in1,in2) 
+        !        call check_seg(in2,in3) 
+        !        call check_seg(in3,in1) 
+        !    end do 
+        !else if(TMPLT.nNodesPerElement==4) then
+        !    FaceNode(1,1)=TMPLT.iNode(1,1) 
+        !    FaceNode(1,2)=TMPLT.iNode(2,1) 
+        !    FaceNode(2,1)=TMPLT.iNode(2,1) 
+        !    FaceNode(2,2)=TMPLT.iNode(3,1) 
+        !    FaceNode(3,1)=TMPLT.iNode(3,1) 
+        !    FaceNode(3,2)=TMPLT.iNode(4,1) 
+        !    FaceNode(4,1)=TMPLT.iNode(4,1) 
+        !    FaceNode(4,2)=TMPLT.iNode(1,1) 
+        !    nseg=4 
+        !
+        !    do  i=2,TMPLT.nElements
+        !        in1=TMPLT.iNode(1,i) 
+        !        in2=TMPLT.iNode(2,i) 
+        !        in3=TMPLT.iNode(3,i) 
+        !        in4=TMPLT.iNode(4,i) 
+        !        call check_seg(in1,in2) 
+        !        call check_seg(in2,in3) 
+        !        call check_seg(in3,in4) 
+        !        call check_seg(in4,in1) 
+        !    end do 
+        !end if
+        !
+        !
+        !do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+        !    call set(TMPLT.Node_Is(FaceNode(i,1)),BoundaryNode) 
+        !    call set(TMPLT.Node_Is(FaceNode(i,2)),BoundaryNode) 
+        !end do 
+        !
+        !continue
+     
+    end subroutine FlagOuterBoundaryFaces
+
+    !----------------------------------------------------------------------
     subroutine FlagOuterBoundaryNodes(TMPLT)
         implicit none
 
@@ -4843,19 +4911,19 @@
      
     end subroutine FlagOuterBoundaryNodes
 
-    !-------------------------------------------------------------
-    subroutine FlipHGSNumsBottomToTop(Hgs)
-        implicit none
-        type (HgsProject) Hgs
-        
-        integer :: i, nsheet
-        
-        ! Node number 
-        do i=1,1375
-            nSheet=int(i/hgs.nn2d)
-            write(*,*) i,nsheet
-        end do
-    end subroutine FlipHGSNumsBottomToTop
+    !!-------------------------------------------------------------
+    !subroutine FlipHGSNumsBottomToTop(Hgs)
+    !    implicit none
+    !    type (HgsProject) Hgs
+    !    
+    !    integer :: i, nsheet
+    !    
+    !    ! Node number 
+    !    do i=1,1375
+    !        nSheet=int(i/hgs.nn2d)
+    !        write(*,*) i,nsheet
+    !    end do
+    !end subroutine FlipHGSNumsBottomToTop
     
     !----------------------------------------------------------------------
     subroutine GenerateLayeredTMPLT_GWF(FNumMUT,TMPLT,TMPLT_GWF)
@@ -5079,16 +5147,16 @@
         ! TMPLT_GWF Connection data copied/generated here (GenerateLayeredTMPLT_GWF)
         if(NodalControlVolume) then 
             allocate(TMPLT_GWF.ia(TMPLT_GWF.nNodes), &
-                     TMPLT_GWF.ConnectionList(MAXCONNECTIONS,TMPLT_GWF.nNodes), &
-                     TMPLT_GWF.ConnectionLength(MAXCONNECTIONS,TMPLT_GWF.nNodes), &
-                     TMPLT_GWF.PerpendicularArea(MAXCONNECTIONS,TMPLT_GWF.nNodes),stat=ialloc)
+                     TMPLT_GWF.ConnectionList(MAX_CNCTS,TMPLT_GWF.nNodes), &
+                     TMPLT_GWF.ConnectionLength(MAX_CNCTS,TMPLT_GWF.nNodes), &
+                     TMPLT_GWF.PerpendicularArea(MAX_CNCTS,TMPLT_GWF.nNodes),stat=ialloc)
             call AllocChk(ialloc,'GWF CellsFromNodes connection arrays')
         else    
             allocate(TMPLT_GWF.ia(TMPLT_GWF.nElements), &
-                     TMPLT_GWF.ConnectionList(MAXCONNECTIONS,TMPLT_GWF.nElements),&
-                     TMPLT_GWF.ConnectionLength(MAXCONNECTIONS,TMPLT_GWF.nElements), &
-                     TMPLT_GWF.PerpendicularArea(MAXCONNECTIONS,TMPLT_GWF.nElements), &
-                     TMPLT_GWF.FaceList(MAXCONNECTIONS,TMPLT_GWF.nElements),stat=ialloc)
+                     TMPLT_GWF.ConnectionList(MAX_CNCTS,TMPLT_GWF.nElements),&
+                     TMPLT_GWF.ConnectionLength(MAX_CNCTS,TMPLT_GWF.nElements), &
+                     TMPLT_GWF.PerpendicularArea(MAX_CNCTS,TMPLT_GWF.nElements), &
+                     TMPLT_GWF.FaceList(MAX_CNCTS,TMPLT_GWF.nElements),stat=ialloc)
         endif
 
         ! GWF mesh is not the same size as TMPLT so the connection arrays are built here
@@ -5309,16 +5377,16 @@
         ! TMPLT_SWF Connection data copied here (GenerateTMPLT_SWF)
         if(NodalControlVolume) then 
             allocate(TMPLT_SWF.ia(TMPLT.nNodes), &
-                     TMPLT_SWF.ConnectionList(MAXCONNECTIONS,TMPLT.nNodes), &
-                     TMPLT_SWF.ConnectionLength(MAXCONNECTIONS,TMPLT.nNodes), &
-                     TMPLT_SWF.PerpendicularArea(MAXCONNECTIONS,TMPLT.nNodes),stat=ialloc)
+                     TMPLT_SWF.ConnectionList(MAX_CNCTS,TMPLT.nNodes), &
+                     TMPLT_SWF.ConnectionLength(MAX_CNCTS,TMPLT.nNodes), &
+                     TMPLT_SWF.PerpendicularArea(MAX_CNCTS,TMPLT.nNodes),stat=ialloc)
             call AllocChk(ialloc,'SWF CellsFromNodes connection arrays')
         else    
             allocate(TMPLT_SWF.ia(TMPLT.nElements), &
-                     TMPLT_SWF.ConnectionList(MAXCONNECTIONS,TMPLT.nElements),&
-                     TMPLT_SWF.ConnectionLength(MAXCONNECTIONS,TMPLT.nElements), &
-                     TMPLT_SWF.PerpendicularArea(MAXCONNECTIONS,TMPLT.nElements), &
-                     TMPLT_SWF.FaceList(MAXCONNECTIONS,TMPLT.nElements),stat=ialloc)
+                     TMPLT_SWF.ConnectionList(MAX_CNCTS,TMPLT.nElements),&
+                     TMPLT_SWF.ConnectionLength(MAX_CNCTS,TMPLT.nElements), &
+                     TMPLT_SWF.PerpendicularArea(MAX_CNCTS,TMPLT.nElements), &
+                     TMPLT_SWF.FaceList(MAX_CNCTS,TMPLT.nElements),stat=ialloc)
             call AllocChk(ialloc,'SWF CellsFromElements connection arrays')
         endif
         
@@ -5636,7 +5704,7 @@
         
         
         do i=1,TMPLT_GWF.nElements
-            if(TMPLT_GWF.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
+            if(TMPLT_GWF.nNodesPerElement==6) then ! 6-node fetriangle, repeat nodes 3 and 6 for 8-node tecplot type febrick
                 write(FNum,'(8i8)') (TMPLT_GWF.iNode(j,i),j=1,3), TMPLT_GWF.iNode(3,i),(TMPLT_GWF.iNode(j,i),j=4,6), TMPLT_GWF.iNode(6,i) 
             else if(TMPLT_GWF.nNodesPerElement==8) then ! 8-node brick 
                 write(FNum,'(8i8)') (TMPLT_GWF.iNode(j,i),j=1,8) 
@@ -5670,8 +5738,8 @@
         call Msg('  Generating cell connection arrays for domain '//trim(domain.name)//'...')
         
         allocate(domain.ia(domain.nElements), &
-                 domain.ConnectionList(MAXCONNECTIONS,domain.nElements), &
-                 domain.FaceList(MAXCONNECTIONS,domain.nElements), &
+                 domain.ConnectionList(MAX_CNCTS,domain.nElements), &
+                 domain.FaceList(MAX_CNCTS,domain.nElements), &
                  stat=ialloc)
         call AllocChk(ialloc,trim(domain.name)//' connection arrays')
 
@@ -6111,14 +6179,14 @@
         ! Generate cell connections manually
         call CLN_IaJaStructure(TMPLT_CLN)
 
-        allocate(Modflow.CLN.ConnectionLength(MAXCONNECTIONS,Modflow.CLN.nCells), &
-                 Modflow.CLN.PerpendicularArea(MAXCONNECTIONS,Modflow.CLN.nCells),stat=ialloc)
+        allocate(Modflow.CLN.ConnectionLength(MAX_CNCTS,Modflow.CLN.nCells), &
+                 Modflow.CLN.PerpendicularArea(MAX_CNCTS,Modflow.CLN.nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN Connection arrays')
         Modflow.CLN.ConnectionLength(:,:)=TMPLT_CLN.ConnectionLength(:,:)
         Modflow.CLN.PerpendicularArea(:,:)=TMPLT_CLN.PerpendicularArea(:,:)
         
         allocate(Modflow.CLN.ia(Modflow.CLN.nCells), &
-                 Modflow.CLN.ConnectionList(MAXCONNECTIONS,Modflow.CLN.nCells),stat=ialloc)
+                 Modflow.CLN.ConnectionList(MAX_CNCTS,Modflow.CLN.nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN Connection list arrays')
         Modflow.CLN.ia(:)=TMPLT_CLN.ia
         Modflow.CLN.ConnectionList(:,:)=TMPLT_CLN.ConnectionList(:,:)
@@ -6160,14 +6228,14 @@
             Modflow.GWF.CellArea(i)=TMPLT.ElementArea(iCell)
         end do
     
-        allocate(Modflow.GWF.ConnectionLength(MAXCONNECTIONS,Modflow.GWF.nCells), &
-                 Modflow.GWF.PerpendicularArea(MAXCONNECTIONS,Modflow.GWF.nCells),stat=ialloc)
+        allocate(Modflow.GWF.ConnectionLength(MAX_CNCTS,Modflow.GWF.nCells), &
+                 Modflow.GWF.PerpendicularArea(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF Cell connection arrays')
         Modflow.GWF.ConnectionLength(:,:)=0.0d0
         Modflow.GWF.PerpendicularArea(:,:)=0.0d0
         
         allocate(Modflow.GWF.ia(Modflow.GWF.nCells), &
-                 Modflow.GWF.ConnectionList(MAXCONNECTIONS,Modflow.GWF.nCells),stat=ialloc)
+                 Modflow.GWF.ConnectionList(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF cell connection arrays')
         Modflow.GWF.ia(:)=TMPLT_GWF.ia(:)
         Modflow.GWF.ConnectionList(:,:)=TMPLT_GWF.ConnectionList(:,:)
@@ -6236,10 +6304,10 @@
     
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT_SWF
-        integer :: i, j
+        integer :: i
 
         allocate(Modflow.SWF.ia(TMPLT_SWF.nElements), &
-                 Modflow.SWF.ConnectionList(MAXCONNECTIONS,TMPLT_SWF.nElements),stat=ialloc)
+                 Modflow.SWF.ConnectionList(MAX_CNCTS,TMPLT_SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF cell connection arrays')
         Modflow.SWF.ia(:)=TMPLT_SWF.ia
         Modflow.SWF.ConnectionList(:,:)=TMPLT_SWF.ConnectionList(:,:)
@@ -6253,8 +6321,8 @@
         end do
 
         ! Cell connection length and perpendicular area arrays
-        allocate(Modflow.SWF.ConnectionLength(MAXCONNECTIONS,TMPLT_SWF.nElements), &
-                 Modflow.SWF.PerpendicularArea(MAXCONNECTIONS,TMPLT_SWF.nElements),stat=ialloc)
+        allocate(Modflow.SWF.ConnectionLength(MAX_CNCTS,TMPLT_SWF.nElements), &
+                 Modflow.SWF.PerpendicularArea(MAX_CNCTS,TMPLT_SWF.nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
         Modflow.SWF.ConnectionLength(:,:)= TMPLT_SWF.ConnectionLength(:,:)
         Modflow.SWF.PerpendicularArea(:,:)=TMPLT_SWF.PerpendicularArea(:,:)
@@ -6294,7 +6362,7 @@
         
         do i=1,domain.nElements
             if(domain.name == 'TMPLT_GWF') then
-                if(domain.nNodesPerElement==6) then ! 6-node prism, repeat nodes 3 and 6 for 8-node tecplot type febrick
+                if(domain.nNodesPerElement==6) then ! 6-node fetriangle, repeat nodes 3 and 6 for 8-node tecplot type febrick
                     write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i) 
                 else if(domain.nNodesPerElement==8) then ! 8-node brick 
                     write(FNum,'(8i8)') (domain.iNode(j,i),j=1,8) 
@@ -7326,7 +7394,7 @@
         type (ModflowProject) Modflow
         type(TecplotDomain) TMPLT
         
-        integer :: i, j
+        integer :: i, j, nvar
         character(MAX_STR) :: FName
         
         if(TMPLT.nNodesPerElement==3) then
@@ -7571,14 +7639,14 @@
            
         ! Copy cell connection from TMPLT_GWF
         allocate(Modflow.GWF.ia(Modflow.GWF.nCells), &
-                 Modflow.GWF.ConnectionList(MAXCONNECTIONS,Modflow.GWF.nCells),stat=ialloc)
+                 Modflow.GWF.ConnectionList(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF ConnectionList arrays')
         Modflow.GWF.ia(:)=TMPLT_GWF.ia(:)
         Modflow.GWF.ConnectionList(:,:)=TMPLT_GWF.ConnectionList(:,:)
             
         ! Generate connection data from TMPLT_GWF 
-        allocate(Modflow.GWF.ConnectionLength(MAXCONNECTIONS,Modflow.GWF.nCells), &
-                 Modflow.GWF.PerpendicularArea(MAXCONNECTIONS,Modflow.GWF.nCells),stat=ialloc)
+        allocate(Modflow.GWF.ConnectionLength(MAX_CNCTS,Modflow.GWF.nCells), &
+                 Modflow.GWF.PerpendicularArea(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF Cell connection arrays')
         Modflow.GWF.ConnectionLength(:,:)=0.0d0
         Modflow.GWF.PerpendicularArea(:,:)=0.0d0
@@ -7657,7 +7725,7 @@
             
         ! Copy connection data from TMPLT_SWF
         allocate(Modflow.SWF.ia(Modflow.SWF.nCells), &
-                 Modflow.SWF.ConnectionList(MAXCONNECTIONS,Modflow.SWF.nCells),stat=ialloc)
+                 Modflow.SWF.ConnectionList(MAX_CNCTS,Modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF cell connection arrays')
         Modflow.SWF.ia(:)=TMPLT_SWF.ia(:)
         Modflow.SWF.ConnectionList(:,:)=TMPLT_SWF.ConnectionList(:,:)
@@ -7732,8 +7800,8 @@
         call freeunit(FNumTecplot)
         
         ! Copy ConnectionLength and PerpendicularArea from TMPLT_SWF 
-        allocate(Modflow.SWF.ConnectionLength(MAXCONNECTIONS,Modflow.SWF.nCells), &
-                 Modflow.SWF.PerpendicularArea(MAXCONNECTIONS,Modflow.SWF.nCells),stat=ialloc)
+        allocate(Modflow.SWF.ConnectionLength(MAX_CNCTS,Modflow.SWF.nCells), &
+                 Modflow.SWF.PerpendicularArea(MAX_CNCTS,Modflow.SWF.nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
         Modflow.SWF.ConnectionLength(:,:)=TMPLT_SWF.ConnectionLength(:,:)
         Modflow.SWF.PerpendicularArea(:,:)=TMPLT_SWF.PerpendicularArea(:,:)
@@ -8211,6 +8279,7 @@
         call TemplateToTecplot(Modflow,TMPLT)
         
         ! These routines required for both node- and mesh-centred control volume cases
+        call FlagOuterBoundaryFaces(TMPLT) ! From faces connected to only 1 element 
         call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
         call IaJa_MeshCentred(TMPLT) 
         
@@ -8232,8 +8301,8 @@
         integer :: i, j
 
         ! Cell connection length and perpendicular area arrays
-        allocate(TMPLT.ConnectionLength(MAXCONNECTIONS,TMPLT.nElements), &
-                 TMPLT.PerpendicularArea(MAXCONNECTIONS,TMPLT.nElements),stat=ialloc)
+        allocate(TMPLT.ConnectionLength(MAX_CNCTS,TMPLT.nElements), &
+                 TMPLT.PerpendicularArea(MAX_CNCTS,TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'TMPLT Cell ConnectionLength, PerpendicularArea arrays')
         TMPLT.ConnectionLength(:,:)=0.0
         TMPLT.PerpendicularArea(:,:)=0.0
@@ -8287,11 +8356,11 @@
         real(dr) :: FractionSide
         
         integer :: ia_TMP(TMPLT.nNodes)
-        integer :: ConnectionList_TMP(MAXCONNECTIONS,TMPLT.nNodes)
-        real(dr) :: ConnectionLength_TMP(MAXCONNECTIONS,TMPLT.nNodes)
-        real(dr) :: PerpendicularArea_TMP(MAXCONNECTIONS,TMPLT.nNodes)
+        integer :: ConnectionList_TMP(MAX_CNCTS,TMPLT.nNodes)
+        real(dr) :: ConnectionLength_TMP(MAX_CNCTS,TMPLT.nNodes)
+        real(dr) :: PerpendicularArea_TMP(MAX_CNCTS,TMPLT.nNodes)
         
-        integer :: iSort(MAXCONNECTIONS)
+        integer :: iSort(MAX_CNCTS)
 
         
         ! If TMPLT defined by triangles with inner circles then:
@@ -8326,7 +8395,7 @@
 			        yc2=TMPLT.y(TMPLT.iNode(1,i))
                 end if
                 
-                if(TMPLT.nNodesPerElement == 3) then ! prisms 
+                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
                     ! Coordinates of neighbour circle centres
 			        xs1=TMPLT.xCircle(i)
 			        ys1=TMPLT.yCircle(i)
@@ -8367,7 +8436,7 @@
                 end if
                 if(bcheck(TMPLT.Node_is(j1),BoundaryNode) .and. bcheck(TMPLT.Node_is(j2),BoundaryNode)) then ! boundary segment
                 
-                    if(TMPLT.nNodesPerElement == 3) then ! prisms 
+                    if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
                         ! xSide, ySide at circle tangent for boundary element sides
                         RC=TMPLT.rCircle(i)
                         DC=sqrt((TMPLT.xCircle(i)-TMPLT.x(j1))**2+(TMPLT.yCircle(i)-TMPLT.y(j1))**2)
@@ -8417,7 +8486,7 @@
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
                 FractionSide=sqrt((TMPLT.x(jNode)-TMPLT.xSide(j,i))**2+(TMPLT.y(jNode)-TMPLT.ySide(j,i))**2)/TMPLT.SideLength(j,i)
                 ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT.SideLength(j,i)
-                if(TMPLT.nNodesPerElement == 3) then ! prisms 
+                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
                     if(TMPLT.ConnectionList(j,i) > 0) then
                         PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xcircle(TMPLT.ConnectionList(j,i)))**2+(TMPLT.ycircle(i)-TMPLT.ycircle(TMPLT.ConnectionList(j,i)))**2)
                     else
@@ -8432,7 +8501,7 @@
                 ConnectionList_TMP(ia_TMP(kNode),kNode)=jNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
                 ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
-                if(TMPLT.nNodesPerElement == 3) then ! prisms 
+                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
                     if(TMPLT.ConnectionList(j,i) > 0) then
                         PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xcircle(TMPLT.ConnectionList(j,i)))**2+(TMPLT.ycircle(i)-TMPLT.ycircle(TMPLT.ConnectionList(j,i)))**2)
                     else
@@ -8447,9 +8516,9 @@
         ! Sort cell connection list, remove duplicates and determine ia
         deallocate(TMPLT.ia, TMPLT.ConnectionList)
         allocate(TMPLT.ia(TMPLT.nNodes), &
-                 TMPLT.ConnectionList(MAXCONNECTIONS,TMPLT.nNodes), &
-                 TMPLT.ConnectionLength(MAXCONNECTIONS,TMPLT.nNodes), &
-                 TMPLT.PerpendicularArea(MAXCONNECTIONS,TMPLT.nNodes), stat=ialloc)
+                 TMPLT.ConnectionList(MAX_CNCTS,TMPLT.nNodes), &
+                 TMPLT.ConnectionLength(MAX_CNCTS,TMPLT.nNodes), &
+                 TMPLT.PerpendicularArea(MAX_CNCTS,TMPLT.nNodes), stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT.name)//' node-centred ia arrays')
         TMPLT.ia(:)=0.
         TMPLT.ConnectionList(:,:)=0.
@@ -8458,10 +8527,10 @@
 
         
         do i=1,TMPLT.nNodes
-            call indexx_int(MAXCONNECTIONS,ConnectionList_TMP(:,i),iSort)
+            call indexx_int(MAX_CNCTS,ConnectionList_TMP(:,i),iSort)
             TMPLT.ia(i)=1
             TMPLT.ConnectionList(1,i)=i
-            do j=2,MAXCONNECTIONS
+            do j=2,MAX_CNCTS
                 if(ConnectionList_TMP(isort(j),i) == 0) cycle
                 if(ConnectionList_TMP(isort(j),i) == abs(ConnectionList_TMP(isort(j-1),i)) ) cycle  
                 TMPLT.ia(i)=TMPLT.ia(i)+1
@@ -8601,7 +8670,7 @@
         type (TecplotDomain) TMPLT_CLN
         
         
-        integer :: i, j, k, i1
+        integer :: i, j, k
         character(MAX_STR) :: OutputLine
         
         Modflow.CLN.NCLNGWC=Modflow.CLN.nCells  ! assume for now that all cln cells are connected to underlying gwf cells

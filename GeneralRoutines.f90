@@ -27,7 +27,7 @@ module GeneralRoutines    !### bit setting routines
     
     integer, Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
     
-    integer, parameter :: MAXCONNECTIONS=20
+    integer, parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
 
     character(MAX_STR) :: USERBIN
     
@@ -120,7 +120,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- General declarations
     integer :: ncount
-    character(37) :: MUTVersion=' 1.41 no tecplot'
+    character(37) :: MUTVersion=' 1.42 faces'
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
