@@ -39,7 +39,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="Release|x64" UseCompiler="ifxCompiler">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" HeapArrays="0" AdditionalIncludeDirectories="$(TEC360INCLUDE)" RuntimeLibrary="rtMultiThreadedDebug"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" HeapArrays="0" AdditionalIncludeDirectories="$(TEC360INCLUDE)" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
 			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(TEC360LIB)" SubSystem="subSystemConsole" AdditionalDependencies="tecio.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
