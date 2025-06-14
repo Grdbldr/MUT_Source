@@ -91,7 +91,7 @@ Module MeshGeneration
 	    call freeunit(itmp)
         
         allocate(TMPLT.ElementArea(TMPLT.nElements),TMPLT.rCircle(TMPLT.nElements),TMPLT.xCircle(TMPLT.nElements),&
-            TMPLT.yCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
+            TMPLT.yCircle(TMPLT.nElements),TMPLT.zCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
             TMPLT.zElement(TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'GB Inner circle arrays')
         
@@ -124,6 +124,7 @@ Module MeshGeneration
             TMPLT.xElement(i)=xc
             TMPLT.yElement(i)=yc
             TMPLT.zElement(i)=zc/3
+            TMPLT.zCircle(i)=zc/3
            
         end do
                     

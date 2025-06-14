@@ -198,23 +198,12 @@
         integer, allocatable :: njag      ! total number of connections for domain
         integer, allocatable :: ia(:)      ! size nCells, number of connections/cell
         integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
-        integer, allocatable :: FaceList(:,:)  ! connected through face (MAX_CNCTS,nCells)
         real(dr), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dr), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
         
         integer :: NCLNGWC      ! # of CLN to GWF connections
         integer :: NCONDUITYP   ! number of circular CLN's
         integer :: NRECTYP      ! number of rectangular CLN's
-        
-        
-        
-
-        !! Tecplot face neighbours
-        !integer, allocatable :: cell(:)
-        !integer, allocatable :: face(:)
-        !integer, allocatable :: neighbour(:)
-        
-
         
         real(dr), allocatable :: StartingHeads(:)   ! STRT in modflow i.e. initial heads
         integer :: nCHDCells=0        
@@ -622,12 +611,12 @@
         
         ! CLN file
         
-      !! URWORD        
-      !integer :: linlen
-      !integer :: ncode, icol, iout, in
-      !integer :: istart
-      !real :: r
-      !integer :: istop,n
+      !!! URWORD        
+      !!integer :: linlen
+      !!integer :: ncode, icol, iout, in
+      !!integer :: istart
+      !!real :: r
+      !!integer :: istop,n
 
         
 
@@ -3873,14 +3862,14 @@
         call Msg('  Generating cell connection arrays for domain '//trim(TMPLT_CLN.name)//'...')
         
         allocate(TMPLT_CLN.ia(TMPLT_CLN.nElements), &
-                 TMPLT_CLN.ConnectionLength(MAX_CNCTS,TMPLT_CLN.nElements),stat=ialloc)
+                 TMPLT_CLN.ConnectionList(MAX_CNCTS,TMPLT_CLN.nElements),stat=ialloc)
         call AllocChk(ialloc,trim(TMPLT_CLN.name)//'CLN iConnectionList arrays')
         TMPLT_CLN.ia(:)=0
         TMPLT_CLN.ConnectionLength(:,:)=0
         
         do i=1,TMPLT_CLN.nElements   ! First element connection is to itself
             TMPLT_CLN.ia(i)=1
-            TMPLT_CLN.ConnectionLength(TMPLT_CLN.ia(i),i)=-i     ! Negative entry shows start of element i list 
+            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(i),i)=-i     ! Negative entry shows start of element i list 
         end do
 
 
@@ -3898,11 +3887,11 @@
                         if(SeparationDistance < MinSeparationDistance) then
                             ! iEl is neighbour of jEl
                             TMPLT_CLN.ia(iEl)=TMPLT_CLN.ia(iEl)+1
-                            TMPLT_CLN.ConnectionLength(TMPLT_CLN.ia(iEl),iEl)=jEl
+                            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(iEl),iEl)=jEl
                             
                             ! jEl is neighbour of iEl
                             TMPLT_CLN.ia(jEl)=TMPLT_CLN.ia(jEl)+1
-                            TMPLT_CLN.ConnectionLength(TMPLT_CLN.ia(jEl),jEl)=iEl
+                            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(jEl),jEl)=iEl
                         endif
                     end do
                 end do
@@ -4776,72 +4765,126 @@
     end subroutine FlagChosenCellsInactiveTMPLT
     
     !----------------------------------------------------------------------
-    subroutine FlagOuterBoundaryFaces(TMPLT)
+    subroutine BuildFaceTopologyFromTecplotDomain(D)
         implicit none
 
-        type (TecplotDomain)  TMPLT
+        type (TecplotDomain)  D
 
-        integer :: i, in1, in2, in3, in4 
+        integer :: i, j, k, l
         
-        !allocate(FaceNode(TMPLT.nElements*4,2))
-        !
-        !if(.not. allocated(TMPLT.Node_Is)) then 
-        !    allocate(TMPLT.Node_Is(TMPLT.nNodes),stat=ialloc)
-        !    call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
-        !    TMPLT.Node_Is(:)=0
-        !end if
-        !
-        !!     construct the array of boundary segment nodes
-        !call Msg('Find outer boundary segments...') 
-        !if(TMPLT.nNodesPerElement==3) then
-        !    FaceNode(1,1)=TMPLT.iNode(1,1) 
-        !    FaceNode(1,2)=TMPLT.iNode(2,1) 
-        !    FaceNode(2,1)=TMPLT.iNode(2,1) 
-        !    FaceNode(2,2)=TMPLT.iNode(3,1) 
-        !    FaceNode(3,1)=TMPLT.iNode(3,1) 
-        !    FaceNode(3,2)=TMPLT.iNode(1,1) 
-        !    nseg=3 
-        !
-        !    do  i=2,TMPLT.nElements
-        !        in1=TMPLT.iNode(1,i) 
-        !        in2=TMPLT.iNode(2,i) 
-        !        in3=TMPLT.iNode(3,i) 
-        !        call check_seg(in1,in2) 
-        !        call check_seg(in2,in3) 
-        !        call check_seg(in3,in1) 
-        !    end do 
-        !else if(TMPLT.nNodesPerElement==4) then
-        !    FaceNode(1,1)=TMPLT.iNode(1,1) 
-        !    FaceNode(1,2)=TMPLT.iNode(2,1) 
-        !    FaceNode(2,1)=TMPLT.iNode(2,1) 
-        !    FaceNode(2,2)=TMPLT.iNode(3,1) 
-        !    FaceNode(3,1)=TMPLT.iNode(3,1) 
-        !    FaceNode(3,2)=TMPLT.iNode(4,1) 
-        !    FaceNode(4,1)=TMPLT.iNode(4,1) 
-        !    FaceNode(4,2)=TMPLT.iNode(1,1) 
-        !    nseg=4 
-        !
-        !    do  i=2,TMPLT.nElements
-        !        in1=TMPLT.iNode(1,i) 
-        !        in2=TMPLT.iNode(2,i) 
-        !        in3=TMPLT.iNode(3,i) 
-        !        in4=TMPLT.iNode(4,i) 
-        !        call check_seg(in1,in2) 
-        !        call check_seg(in2,in3) 
-        !        call check_seg(in3,in4) 
-        !        call check_seg(in4,in1) 
-        !    end do 
-        !end if
-        !
-        !
-        !do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-        !    call set(TMPLT.Node_Is(FaceNode(i,1)),BoundaryNode) 
-        !    call set(TMPLT.Node_Is(FaceNode(i,2)),BoundaryNode) 
-        !end do 
-        !
-        !continue
+        call StopWatch(1,'BuildFaceTopologyFromTecplotDomain')
+        call Msg('Building face topology from model domain...') 
+
+        
+        ! Local node numbers for 2D and 3D element faces 
+        select case (D.ElementType)
+        case ('fetriangle')
+                D.nNodesPerFace=2
+                D.nFacesPerElement=3
+                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'D.LocalFaceNodes  fetriangle')
+		                                 ! side1   side2   side3 
+	            !data D.LocalFaceNodes/    1,2,      2,3,    3,1   /
+	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
+                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
+                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=1    ! side3 
+            
+        case ('fequadrilateral')
+                D.nNodesPerFace=2
+                D.nFacesPerElement=4
+                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'D.LocalFaceNodes  fequadrilateral')
+		                                 ! side1     side2   side3   side4 
+	            !data D.LocalFaceNodes/    1,2,      2,3,    3,4,    4,1   /
+	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
+                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
+                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=4    ! side3 
+                D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=1    ! side3 
+                
+        case ('feprism')
+            D.nNodesPerFace=4
+            D.nFacesPerElement=5
+            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'D.LocalFaceNodes  feprism')
+                                        ! bottom      top         side1       side2       side3 
+	        !data D.LocalFaceNodes/    1,2,3,0,    4,5,6,0,    1,2,5,4,    1,3,6,4,    2,3,6,5   /
+	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=0    ! bottom
+	        D.LocalFaceNodes(1,2)=4; D.LocalFaceNodes(2,2)=5; D.LocalFaceNodes(3,2)=6; D.LocalFaceNodes(4,2)=0    ! top
+	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=5; D.LocalFaceNodes(4,3)=4    ! side1
+	        D.LocalFaceNodes(1,4)=1; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=6; D.LocalFaceNodes(4,4)=4    ! side2
+	        D.LocalFaceNodes(1,5)=2; D.LocalFaceNodes(2,5)=3; D.LocalFaceNodes(3,5)=6; D.LocalFaceNodes(4,5)=5    ! side3
+
+        case ('febrick')
+            D.nNodesPerFace=4
+            D.nFacesPerElement=6
+            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'D.LocalFaceNodes  febrick')
+                                        ! bottom      top         front       back        left        right 
+	        !data D.LocalFaceNodes/    1,2,3,4,    5,6,7,8,    1,2,6,5,    4,3,7,8,    1,5,8,4,    2,6,7,3   /
+	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=4    ! bottom
+	        D.LocalFaceNodes(1,2)=5; D.LocalFaceNodes(2,2)=6; D.LocalFaceNodes(3,2)=7; D.LocalFaceNodes(4,2)=8    ! top
+	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=6; D.LocalFaceNodes(4,3)=5    ! front
+	        D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=7; D.LocalFaceNodes(4,4)=8    ! back
+	        D.LocalFaceNodes(1,5)=1; D.LocalFaceNodes(2,5)=5; D.LocalFaceNodes(3,5)=8; D.LocalFaceNodes(4,5)=4    ! left
+	        D.LocalFaceNodes(1,6)=2; D.LocalFaceNodes(2,6)=6; D.LocalFaceNodes(3,6)=7; D.LocalFaceNodes(4,6)=3    ! right
+            
+        case default
+            call ErrMsg('ElementType '//trim(D.ElementType)//' not supported')
+        end select  
+  
+        ! *** ASSUMPTION: If two face centroids are coincident, then the faces are shared by neighbouring elements
+        allocate(D.FaceCentroidX(D.nFacesPerElement,D.nElements), &
+                 D.FaceCentroidY(D.nFacesPerElement,D.nElements), &
+                 D.FaceCentroidZ(D.nFacesPerElement,D.nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face Centroid arrays')
+        
+        allocate(D.FaceHost(D.nFacesPerElement,D.nElements), &
+                 D.FaceNeighbour(D.nFacesPerElement,D.nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face host/neighbour arrays')
+        D.FaceHost(:,:)=0
+               
+        D.nFaces=0
+        do i=1,D.nElements
+            do j=1,D.nFacesPerElement
+                D.FaceHost(j,i)=i
+                D.nFaces=D.nFaces+1
+                D.FaceCentroidX(j,i)=0.0d0
+                D.FaceCentroidY(j,i)=0.0d0
+                D.FaceCentroidZ(j,i)=0.0d0
+                do k=1,D.nNodesPerFace
+                    D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)+D.X(D.iNode(D.LocalFaceNodes(k,j),i))
+                    D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)+D.Y(D.iNode(D.LocalFaceNodes(k,j),i))
+                    D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)+D.Z(D.iNode(D.LocalFaceNodes(k,j),i))
+                end do
+                D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)/D.nNodesPerFace
+                D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)/D.nNodesPerFace
+                D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)/D.nNodesPerFace
+            end do
+        end do
+        
+        D.FaceNeighbour(:,:)=0
+        do i=1,D.nElements
+            do j=1,D.nFacesPerElement
+                SearchLoop:do k=i+1,D.nElements
+                    do l=1,D.nFacesPerElement
+                        if(abs(D.FaceCentroidX(j,i)-D.FaceCentroidX(l,k)) < MinSeparationDistance .AND. &
+                           abs(D.FaceCentroidY(j,i)-D.FaceCentroidY(l,k)) < MinSeparationDistance .AND. &
+                           abs(D.FaceCentroidZ(j,i)-D.FaceCentroidZ(l,k)) < MinSeparationDistance) then ! shared face
+                            D.FaceNeighbour(j,i)=k    
+                            D.FaceNeighbour(l,k)=i 
+                            exit SearchLoop
+                        endif
+                    end do
+                end do SearchLoop
+            end do
+        end do
+        
+        call ElapsedTime(1)
+        
+        continue
+                
      
-    end subroutine FlagOuterBoundaryFaces
+    end subroutine BuildFaceTopologyFromTecplotDomain
 
     !----------------------------------------------------------------------
     subroutine FlagOuterBoundaryNodes(TMPLT)
@@ -5329,6 +5372,24 @@
         call AllocChk(ialloc,'TMPLT_SWF ElementArea')
         TMPLT_SWF.ElementArea(:)=TMPLT.ElementArea(:)
         
+        ! Faces
+        TMPLT_SWF.nNodesPerFace=TMPLT.nNodesPerFace
+        TMPLT_SWF.nFacesPerElement=TMPLT.nFacesPerElement
+        allocate(TMPLT_SWF.FaceCentroidX(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
+                 TMPLT_SWF.FaceCentroidY(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
+                 TMPLT_SWF.FaceCentroidZ(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), & 
+                 TMPLT_SWF.FaceHost(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
+                 TMPLT_SWF.FaceNeighbour(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
+                 TMPLT_SWF.LocalFaceNodes(TMPLT_SWF.nNodesPerFace, TMPLT_SWF.nFacesPerElement), &
+            stat=ialloc)
+        call AllocChk(ialloc,'TMPLT_SWF Faces')
+        TMPLT_SWF.FaceCentroidX(:,:)=TMPLT.FaceCentroidX(:,:)
+        TMPLT_SWF.FaceCentroidY(:,:)=TMPLT.FaceCentroidY(:,:)
+        TMPLT_SWF.FaceCentroidZ(:,:)=TMPLT.FaceCentroidZ(:,:)
+        TMPLT_SWF.FaceHost(:,:)=TMPLT.FaceHost(:,:)
+        TMPLT_SWF.FaceNeighbour(:,:)=TMPLT.FaceNeighbour(:,:)
+        TMPLT_SWF.LocalFaceNodes(:,:)=TMPLT.LocalFaceNodes(:,:)
+        
         ! Innercircle arrays if triangles
         if(TMPLT.InnerCircles) then
             allocate(TMPLT_SWF.rCircle(TMPLT_SWF.nElements), &
@@ -5734,8 +5795,10 @@
         real(dr) :: yMidpoint(domain.nNodesPerElement,domain.nElements)
         real(dr) :: zMidpoint(domain.nNodesPerElement,domain.nElements)
 
+        call StopWatch(1,'IaJa_MeshCentred')
         call Msg(' ')
         call Msg('  Generating cell connection arrays for domain '//trim(domain.name)//'...')
+
         
         allocate(domain.ia(domain.nElements), &
                  domain.ConnectionList(MAX_CNCTS,domain.nElements), &
@@ -5797,6 +5860,8 @@
                 end do
             end do
         end do
+        
+        call ElapsedTime(1)
 
         return
 
@@ -6179,11 +6244,11 @@
         ! Generate cell connections manually
         call CLN_IaJaStructure(TMPLT_CLN)
 
-        allocate(Modflow.CLN.ConnectionLength(MAX_CNCTS,Modflow.CLN.nCells), &
-                 Modflow.CLN.PerpendicularArea(MAX_CNCTS,Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN Connection arrays')
-        Modflow.CLN.ConnectionLength(:,:)=TMPLT_CLN.ConnectionLength(:,:)
-        Modflow.CLN.PerpendicularArea(:,:)=TMPLT_CLN.PerpendicularArea(:,:)
+        !allocate(Modflow.CLN.ConnectionLength(MAX_CNCTS,Modflow.CLN.nCells), &
+        !         Modflow.CLN.PerpendicularArea(MAX_CNCTS,Modflow.CLN.nCells),stat=ialloc)
+        !call AllocChk(ialloc,'CLN Connection arrays')
+        !Modflow.CLN.ConnectionLength(:,:)=TMPLT_CLN.ConnectionLength(:,:)
+        !Modflow.CLN.PerpendicularArea(:,:)=TMPLT_CLN.PerpendicularArea(:,:)
         
         allocate(Modflow.CLN.ia(Modflow.CLN.nCells), &
                  Modflow.CLN.ConnectionList(MAX_CNCTS,Modflow.CLN.nCells),stat=ialloc)
@@ -6275,16 +6340,20 @@
                         select case (TMPLT_GWF.FaceList(j,i))
                         case ( 1 )
                             modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(1,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=TMPLT.SideLength(1,iCell)/2.0d0
+                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(1,iCell))**2 + &
+                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(1,iCell))**2)
                         case ( 2 )
                             modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(2,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=TMPLT.SideLength(2,iCell)/2.0d0
+                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(2,iCell))**2 + &
+                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(2,iCell))**2)
                         case ( 3 )
                             modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(3,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=TMPLT.SideLength(3,iCell)/2.0d0
+                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(3,iCell))**2 + &
+                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(3,iCell))**2)
                         case ( 4 )
                             modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(4,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=TMPLT.SideLength(4,iCell)/2.0d0
+                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(4,iCell))**2 + &
+                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(4,iCell))**2)
                         end select
                         modflow.GWF.PerpendicularArea(j,i)=modflow.GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
                     end if
@@ -7405,7 +7474,7 @@
             call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
             write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
 
-            VarSTR='variables="X","Y"'
+            VarSTR='variables="X","Y","Z"'
             nVar=3
             
             write(FNum,'(a)') trim(VarSTR)
@@ -7417,7 +7486,7 @@
             !', AUXDATA LengthUnits = "'//trim(Modflow.STR_LengthUnit)//'"'
            
             do i=1,TMPLT.nElements
-                    write(FNum,'(3('//FMT_R8//'))') TMPLT.xcircle(i),TMPLT.ycircle(i)
+                    write(FNum,'(3('//FMT_R8//'))') TMPLT.xcircle(i),TMPLT.ycircle(i),TMPLT.zcircle(i)
             end do
 
             call FreeUnit(FNum)
@@ -7660,35 +7729,35 @@
                     modflow.GWF.ConnectionLength(j,i)=Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i)
                     modflow.GWF.PerpendicularArea(j,i)=Modflow.GWF.CellArea(i)
                     
-                    !crgm temp debug outputs
-                    if(i==5) then
-                        write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
-                        call msg(TMPStr)
-                        !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
-                        !call msg(TMPStr)
-                        write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
-                        call msg(TMPStr)
-                    endif
+                    !!!crgm temp debug outputs
+                    !!if(i==5) then
+                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                    !!    call msg(TMPStr)
+                    !!    !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                    !!    !call msg(TMPStr)
+                    !!    write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                    !!    call msg(TMPStr)
+                    !!endif
                 else  ! SWF or GWF neighbour in adjacent column
                     modflow.GWF.ConnectionLength(j,i)=TMPLT_GWF.ConnectionLength(j,i)
                     modflow.GWF.PerpendicularArea(j,i)=TMPLT_GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
                     
-                    !crgm temp debug outputs
-                    if(i==5) then
-                        write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
-                        call msg(TMPStr)
-                        !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
-                        !call msg(TMPStr)
-                        write(TMPStr,'(a,f15.5)') ' TMPLT_GWF.PerpendicularArea(j,i) ',TMPLT_GWF.PerpendicularArea(j,i)
-                        call msg(TMPStr)
-                        write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
-                        call msg(TMPStr)
-                        write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Top(i) ',Modflow.GWF.Top(i)
-                        call msg(TMPStr)                        
-                        write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Bottom(i) ',Modflow.GWF.Bottom(i)
-                        call msg(TMPStr)                        
-
-                    endif
+                    !!!crgm temp debug outputs
+                    !!if(i==5) then
+                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                    !!    call msg(TMPStr)
+                    !!    !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                    !!    !call msg(TMPStr)
+                    !!    write(TMPStr,'(a,f15.5)') ' TMPLT_GWF.PerpendicularArea(j,i) ',TMPLT_GWF.PerpendicularArea(j,i)
+                    !!    call msg(TMPStr)
+                    !!    write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                    !!    call msg(TMPStr)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Top(i) ',Modflow.GWF.Top(i)
+                    !!    call msg(TMPStr)                        
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Bottom(i) ',Modflow.GWF.Bottom(i)
+                    !!    call msg(TMPStr)                        
+                    !!
+                    !!endif
                 end if
             end do
         end do
@@ -7736,13 +7805,9 @@
         call AllocChk(ialloc,'SWF cell horizontal area arrays')
         Modflow.SWF.CellArea(:)=0.0d0
         do i=1,TMPLT_SWF.nElements
-            do j=1,TMPLT_SWF.nNodesPerElement
-                j1=TMPLT_SWF.iNode(j,i)
-                if(j < TMPLT_SWF.nNodesPerElement) then
-                    j2=TMPLT_SWF.iNode(j+1,i)
-                else
-                    j2=TMPLT_SWF.iNode(1,i)
-                end if
+            do j=1,TMPLT_SWF.nFacesPerElement
+                j1=TMPLT_SWF.iNode(TMPLT_SWF.LocalFaceNodes(1,j),i)
+                j2=TMPLT_SWF.iNode(TMPLT_SWF.LocalFaceNodes(2,j),i)
                 
                 if(TMPLT_SWF.nNodesPerElement == 3) then
                     call area_triangle(TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),0.0d0, &
@@ -7759,7 +7824,7 @@
                     Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.xCircle(i),TMPLT_SWF.yCircle(i),TMPLT_SWF.z(j2),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j2))
                     
-                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode) .AND. bcheck(TMPLT_SWF.Node_is(j2),BoundaryNode)) then 
+                    if(TMPLT_SWF.FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
                         call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
@@ -7786,7 +7851,7 @@
                     !if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode)) then 
                     !    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
                     !endif
-                    if(bcheck(TMPLT_SWF.Node_is(j1),BoundaryNode) .AND. bcheck(TMPLT_SWF.Node_is(j2),BoundaryNode)) then 
+                    if(TMPLT_SWF.FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
                         call Line3DSegment_Tecplot(FNumTecplot,TMPLT_SWF.x(j1),TMPLT_SWF.y(j1),TMPLT_SWF.z(j1),TMPLT_SWF.xSide(j,i),TMPLT_SWF.ySide(j,i),TMPLT_SWF.z(j1))
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
@@ -8279,7 +8344,7 @@
         call TemplateToTecplot(Modflow,TMPLT)
         
         ! These routines required for both node- and mesh-centred control volume cases
-        call FlagOuterBoundaryFaces(TMPLT) ! From faces connected to only 1 element 
+        call BuildFaceTopologyFromTecplotDomain(TMPLT) ! From faces connected to only 1 element 
         call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
         call IaJa_MeshCentred(TMPLT) 
         
@@ -8328,16 +8393,20 @@
                     select case (TMPLT.FaceList(j,i))
                     case ( 1 )
                         TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(1,i)   
-                        TMPLT.ConnectionLength(j,i)=TMPLT.SideLength(1,i)/2.0d0
+                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(1,i))**2 + &
+                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(1,i))**2)
                     case ( 2 )
                         TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(2,i)   
-                        TMPLT.ConnectionLength(j,i)=TMPLT.SideLength(2,i)/2.0d0
+                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(2,i))**2 + &
+                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(2,i))**2)
                     case ( 3 )
                         TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(3,i)   
-                        TMPLT.ConnectionLength(j,i)=TMPLT.SideLength(3,i)/2.0d0
+                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(3,i))**2 + &
+                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(3,i))**2)
                     case ( 4 )
                         TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(4,i)   
-                        TMPLT.ConnectionLength(j,i)=TMPLT.SideLength(4,i)/2.0d0
+                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(4,i))**2 + &
+                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(4,i))**2)
                     end select
                     TMPLT.PerpendicularArea(j,i)=TMPLT.PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
                 end if
@@ -8376,7 +8445,7 @@
         real(dr) :: D, DC, D1, D2, RC
         
         ! For node-centred modflow cell connection and area calculations we need xSide, ySide array coordinates
-        allocate(TMPLT.xSide(TMPLT.nNodesPerElement,TMPLT.nElements),&
+        allocate(TMPLT.xSide(TMPLT.nNodesPerElement,TMPLT.nElements), &
                     TMPLT.ySide(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'GB xSide, ySide')
         
@@ -8427,14 +8496,11 @@
         end do
         
         do i=1,TMPLT.nElements
-            do j=1,TMPLT.nNodesPerElement
-                j1=TMPLT.iNode(j,i)
-                if(j < TMPLT.nNodesPerElement) then
-                    j2=TMPLT.iNode(j+1,i)
-                else
-                    j2=TMPLT.iNode(1,i)
-                end if
-                if(bcheck(TMPLT.Node_is(j1),BoundaryNode) .and. bcheck(TMPLT.Node_is(j2),BoundaryNode)) then ! boundary segment
+            do j=1,TMPLT.nFacesPerElement
+                j1=TMPLT.iNode(TMPLT.LocalFaceNodes(1,j),i)
+                j2=TMPLT.iNode(TMPLT.LocalFaceNodes(2,j),i)
+                
+                if(TMPLT.FaceNeighbour(j,i) == 0) then ! face on boundary
                 
                     if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
                         ! xSide, ySide at circle tangent for boundary element sides
@@ -8694,7 +8760,6 @@
         write(Modflow.iCLN,'(i9)') Modflow.CLN.njag
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
         write(Modflow.iCLN,'(10i4)') (modflow.CLN.ia(i),i=1,modflow.CLN.nCells)
-        write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  JA()'
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
         do i=1,modflow.GWF.nCells
             write(Modflow.iCLN,'(20i8)') (abs(modflow.CLN.ConnectionList(j,i)),j=1,modflow.CLN.ia(i))
@@ -8962,8 +9027,13 @@
         ! Layer type: Assume type 4 (i.e. convertible, with transmissivity computed using upstream water-table depth
         if(.not. allocated(modflow.GWF.LayTyp)) then 
             allocate(modflow.GWF.LayTyp(modflow.GWF.nLayers),stat=ialloc)
-            call AllocChk(ialloc,'Layer type array')            
-            modflow.GWF.LayTyp(:) = 4
+            call AllocChk(ialloc,'Layer type array')
+            if(.not. modflow.SaturatedFlow) then
+                modflow.GWF.LayTyp(:) = 4
+            else
+                modflow.GWF.LayTyp(:) = 0
+            endif
+            
         end if
         write(Modflow.iLPF,'(40i2)') (modflow.GWF.LayTyp(k),k=1,modflow.GWF.nlayers)
 

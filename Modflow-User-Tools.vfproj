@@ -39,14 +39,14 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="Release|x64" UseCompiler="ifxCompiler">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" AdditionalIncludeDirectories="$(TEC360INCLUDE)" RuntimeLibrary="rtMultiThreadedDLL"/>
-			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" HeapArrays="0" AdditionalIncludeDirectories="$(TEC360INCLUDE)" RuntimeLibrary="rtMultiThreadedDebug"/>
+			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(TEC360LIB)" SubSystem="subSystemConsole" AdditionalDependencies="tecio.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 			<Tool Name="VFCustomBuildTool"/>
 			<Tool Name="VFPreLinkEventTool"/>
 			<Tool Name="VFPreBuildEventTool"/>
-			<Tool Name="VFPostBuildEventTool"/>
+			<Tool Name="VFPostBuildEventTool" CommandLine="post_buildR.bat"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 	</Configurations>
@@ -58,10 +58,8 @@
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 			<File RelativePath=".\fem.f90"/>
 			<File RelativePath=".\GeneralRoutines.f90"/>
-			<File RelativePath=".\GenericList.f90">
-			</File>
-			<File RelativePath=".\HGS.f90">
-			</File>
+			<File RelativePath=".\GenericList.f90"/>
+			<File RelativePath=".\HGS.f90"/>
 			<File RelativePath=".\Materials.f90"/>
 			<File RelativePath=".\MeshGeneration.f90"/>
 			<File RelativePath=".\Modflow_USG.f90"/>

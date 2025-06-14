@@ -111,6 +111,7 @@ module Tecplot !
     
     logical :: yVertical
     
+    
     type TecplotDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
         character(MAX_LBL) :: STR_LengthUnit
@@ -145,15 +146,17 @@ module Tecplot !
         integer, allocatable :: iLayer(:)      ! Element layer number
         integer, allocatable :: iZone(:)       ! Element zone number
         
-        ! inner circles
-        logical :: InnerCircles=.false.      ! Set to true if inner circles are calculated for Tecplot triangles
-        real(dr), allocatable :: ElementArea(:)   ! projected area of Element in XY
-        real(dr), allocatable :: rCircle(:)    ! projected inner circle radius from GridBldr
-        real(dr), allocatable :: xCircle(:)    ! x coordinate of inner circle centre
-        real(dr), allocatable :: yCircle(:)   ! y coordinate of inner circle centre
-        real(dr), allocatable :: SideLength(:,:) ! projected side length from GridBldr, nNodesPerElement by nElements
-        real(dr), allocatable :: xSide(:,:)         ! projected x coordinate of inner circle radius tangent to side
-        real(dr), allocatable :: ySide(:,:)         ! projected y coordinate of inner circle radius tangent to side
+        ! Element properties for TMPLT, 2D in XY
+        logical :: InnerCircles=.false.      ! Set to true if TMPLT elements are triangles, false for rectangles
+        real(dr), allocatable :: ElementArea(:)   ! element area
+        real(dr), allocatable :: SideLength(:,:) ! length of each element side (nNodesPerElement,nElements)
+        real(dr), allocatable :: xSide(:,:)      ! x coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) (nNodesPerElement,nElements)
+        real(dr), allocatable :: ySide(:,:)      ! y coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) (nNodesPerElement,nElements)
+        ! Triangles
+        real(dr), allocatable :: rCircle(:)      ! inner circle radius 
+        real(dr), allocatable :: xCircle(:)      ! x coordinate of inner circle centre
+        real(dr), allocatable :: yCircle(:)      ! y coordinate of inner circle centre
+        real(dr), allocatable :: zCircle(:)      ! z coordinate of inner circle centre, 0 by default for TMPLT
         
         real(dr), allocatable :: Length(:) ! length of CLN cell
         real(dr), allocatable :: LowestElevation(:) ! lowest point of CLN cell
@@ -182,11 +185,22 @@ module Tecplot !
         ! Faces
         logical :: FacesCalculated = .false.
         integer :: nFaces  = 0
-        integer, allocatable :: nFaceNodes(:)        ! number of faces/node in list
-	    integer, allocatable :: iFace(:,:) ! iFace(i,nFaceNodes(i)) is list of faces for node i
-        integer, allocatable :: FaceNode(:,:) ! nface,4)
-        integer, allocatable :: FaceNeighbourElement(:,:) ! nface,2)
-        integer, allocatable :: Face_Is(:)
+        integer :: nNodesPerFace
+        integer :: nFacesPerElement
+        integer, allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
+        integer, allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
+        integer, allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
+        real(dr), allocatable :: FaceCentroidX(:,:) ! (nFacesPerElement,nElements)
+        real(dr), allocatable :: FaceCentroidY(:,:) ! (nFacesPerElement,nElements)
+        real(dr), allocatable :: FaceCentroidZ(:,:) ! (nFacesPerElement,nElements)
+
+        !!! Local node numbers for 2D and 3D element faces 
+        !!integer, allocatable :: nFaceNodes(:)        ! number of faces/node in list
+        !!integer, allocatable :: iFace(:,:) ! iFace(i,nFaceNodes(i)) is list of faces for node i
+        !!integer, allocatable :: FaceNode(:,:) ! nface,4)
+        !!integer, allocatable :: FaceNeighbourElement(:,:) ! nface,2)
+        !!integer, allocatable :: Face_Is(:)
+        
             
     end type TecplotDomain
 
