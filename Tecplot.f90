@@ -5,7 +5,7 @@ module Tecplot !
     implicit none
 
     include "tecio.f90"
-    integer :: nVar
+    integer(i4) :: nVar
     character(MAX_STR) :: VarSTR
     character(MAX_STR) :: ZoneSTR
     character(MAX_STR) :: CellCenteredSTR    
@@ -19,19 +19,19 @@ module Tecplot !
         character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
 
         character(11) :: Name='none'
-        integer :: nElements                ! number of Elements in the mesh
-        integer :: nLayers                 ! number of layers in the mesh 
-        integer :: nNodes               ! number of nodes in the mesh  
+        integer(i4) :: nElements                ! number of Elements in the mesh
+        integer(i4) :: nLayers                 ! number of layers in the mesh 
+        integer(i4) :: nNodes               ! number of nodes in the mesh  
 
-        integer :: nNodesPerElement        ! number of nodes/Element  
-        integer, allocatable :: iNode(:,:)  ! node list for Element (nElements, nNodesPerElement)
+        integer(i4) :: nNodesPerElement        ! number of nodes/Element  
+        integer(i4), allocatable :: iNode(:,:)  ! node list for Element (nElements, nNodesPerElement)
            
         !! arrays of size nElements
         real(dp), allocatable :: xElement(:)      ! Element x coordinate
         real(dp), allocatable :: yElement(:)      ! Element y coordinate
         real(dp), allocatable :: zElement(:)      ! Element z coordinate
-        integer, allocatable :: iLayer(:)      ! Element layer number
-        integer, allocatable :: iZone(:)       ! Element zone number
+        integer(i4), allocatable :: iLayer(:)      ! Element layer number
+        integer(i4), allocatable :: iZone(:)       ! Element zone number
         
         ! Element properties for TMPLT, 2D in XY
         real(dp), allocatable :: ElementArea(:)   ! element area
@@ -49,10 +49,10 @@ module Tecplot !
         real(dp), allocatable :: SlopeAngle(:) ! angel of CLN cell with horizontal
         
         ! Element connections
-        integer, allocatable :: njag      ! total number of connections for mesh
-        integer, allocatable :: ia(:)      ! size nElements, number of connections/Element
-        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
-        integer, allocatable :: ThroughFace(:,:)  ! connected through face  (MAX_CNCTS,nCells)
+        integer(i4), allocatable :: njag      ! total number of connections for mesh
+        integer(i4), allocatable :: ia(:)      ! size nElements, number of connections/Element
+        integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
+        integer(i4), allocatable :: ThroughFace(:,:)  ! connected through face  (MAX_CNCTS,nCells)
         real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
 
@@ -61,19 +61,19 @@ module Tecplot !
         real(dp), allocatable :: y(:)
         real(dp), allocatable :: z(:)
         
-        integer :: nZones                  ! number of zones in domain
-        integer,allocatable	:: Element_is(:)  ! size nElements,  bit setting e.g. chosen/not chosen
-        integer,allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
-        integer,allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
+        integer(i4) :: nZones                  ! number of zones in domain
+        integer(i4),allocatable	:: Element_is(:)  ! size nElements,  bit setting e.g. chosen/not chosen
+        integer(i4),allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
+        integer(i4),allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
         
         ! Faces
         logical :: FacesCalculated = .false.
-        integer :: nFaces  = 0
-        integer :: nNodesPerFace
-        integer :: nFacesPerElement
-        integer, allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
-        integer, allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
-        integer, allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
+        integer(i4) :: nFaces  = 0
+        integer(i4) :: nNodesPerFace
+        integer(i4) :: nFacesPerElement
+        integer(i4), allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
+        integer(i4), allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
+        integer(i4), allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
         real(dp), allocatable :: FaceCentroidX(:,:) ! (nFacesPerElement,nElements)
         real(dp), allocatable :: FaceCentroidY(:,:) ! (nFacesPerElement,nElements)
         real(dp), allocatable :: FaceCentroidZ(:,:) ! (nFacesPerElement,nElements)
@@ -83,21 +83,21 @@ module Tecplot !
 
 
     ! General parameters 
-	integer :: ieco = 0
-	integer :: nln
-	integer :: len
-	integer :: nfile
-    real*8	:: xc, yc, zc
-    integer :: nx, ny, nz
+	integer(i4) :: ieco = 0
+	integer(i4) :: nln
+	integer(i4) :: len
+	integer(i4) :: nfile
+    real(dp)	:: xc, yc, zc
+    integer(i4) :: nx, ny, nz
     
     contains
     
 
     subroutine Line3DSegment_Tecplot(FNum,x1,y1,z1,x2,y2,z2)
         implicit none
-        integer :: FNum
-        REAL(dp) :: x1, y1, z1
-        REAL(dp) :: x2, y2, z2
+        integer(i4) :: FNum
+        real(dp) :: x1, y1, z1
+        real(dp) :: x2, y2, z2
         write(FNum,'(a)') 'GEOMETRY T=LINE3D' !, C=CUST3, LT=0.1'
         write(FNum,'(i5)') 1
         write(FNum,'(i5)') 2

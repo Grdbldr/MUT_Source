@@ -14,25 +14,25 @@ module Raster
     
     character(80) :: rasterfile 
     
-    integer, parameter :: MAXBINS=1000
+    integer(i4), parameter :: MAXBINS=1000
 
 
     type RasterData
-        real,  ALLOCATABLE :: rastval(:,:)   ! raster elevations
+        real(sp),  ALLOCATABLE :: rastval(:,:)   ! raster elevations
         real(dp),  ALLOCATABLE :: rastx(:)   ! raster x-coordinates
         real(dp),  ALLOCATABLE :: rasty(:)   ! raster y-coordinates
         real(dp) ::  vmiss = 0.0
-        integer nxrast,nyrast
+        integer(i4) nxrast,nyrast
         real(dp) :: dxmin,dymin
         real(dp) :: dxmax,dymax
         logical :: have_raster
 	    logical :: missing
 
-        real,  ALLOCATABLE :: rastval2(:,:)   ! raster elevations
+        real(sp),  ALLOCATABLE :: rastval2(:,:)   ! raster elevations
         real(dp),  ALLOCATABLE :: rastx2(:)   ! raster x-coordinates
         real(dp),  ALLOCATABLE :: rasty2(:)   ! raster y-coordinates
         real(dp) ::  vmiss2 = 0.0
-        integer nxrast2,nyrast2
+        integer(i4) nxrast2,nyrast2
         real(dp) :: dxmin2,dymin2
         real(dp) :: dxmax2,dymax2
         logical :: have_raster2
@@ -43,7 +43,7 @@ module Raster
         real(dp) ::  zspc  = 0.0
         
         
-        integer :: nbinTot
+        integer(i4) :: nbinTot
         real(dp),  ALLOCATABLE :: vbin(:)
         integer(dp),  ALLOCATABLE :: nbin(:)
         real(dp),  ALLOCATABLE :: cbin(:,:)
@@ -56,7 +56,7 @@ module Raster
    subroutine ProcessRaster(FnumTG, Raster_l) !--- Process Raster instructions for this data structure  Raster_l
         implicit none
     
-        integer :: FnumTG
+        integer(i4) :: FnumTG
 
         type (RasterData) Raster_l  
 
@@ -111,14 +111,14 @@ module Raster
         
         type (RasterData) Raster_l  
 
-        integer :: i, j, k, lpos
+        integer(i4) :: i, j, k, lpos
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
 
         character(80) :: line
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        real :: min_elev, max_elev 
+        real(sp) :: min_elev, max_elev 
 
         ! Fracman mafic file 
         read(FnumTG,'(a)') FName
@@ -219,10 +219,10 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
 
-        integer :: j, k
-        integer :: Fnum
+        integer(i4) :: j, k
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
 
         ! Fracman mafic file 
@@ -250,7 +250,7 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: i, j, k
+        integer(i4) :: i, j, k
         logical :: found
 
 	    if(allocated(Raster_l.vbin)) deallocate(Raster_l.vbin,Raster_l.nbin,Raster_l.cbin) 
@@ -305,10 +305,10 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
         real(dp) :: ltmin, val
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! Fracman mafic file 
         read(FnumTG,*) ltmin, val
@@ -327,10 +327,10 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
         real(dp) :: repval, val
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! Fracman mafic file 
         read(FnumTG,*) repval, val
@@ -349,10 +349,10 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
         real(dp) :: multiplier
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! multiplier
         read(FnumTG,*) multiplier
@@ -372,19 +372,19 @@ module Raster
 
         type (RasterData) Raster_l  
 
-        integer :: FnumTG
+        integer(i4) :: FnumTG
 
-        integer :: i, j, k
-        integer :: Fnum
+        integer(i4) :: i, j, k
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
 
-        integer :: FnumXYZ
+        integer(i4) :: FnumXYZ
         character(MAX_STR) :: FNameXYZ
 
         character(MAX_LBL) :: line
        
         
-        integer :: nPts
+        integer(i4) :: nPts
         real(dp), allocatable :: xt(:)
         real(dp), allocatable :: yt(:)
         real(dp), allocatable :: vt(:)
@@ -486,7 +486,7 @@ module Raster
 
         type (RasterData) Raster_l  
 
-	    integer :: j, k
+	    integer(i4) :: j, k
 	    logical :: foundx, foundy, missing
 	    real(dp) :: xp, yp, znew
 	    real(dp) :: y1, y2, y3, y4, t, u

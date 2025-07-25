@@ -8,14 +8,14 @@ module fem !
     subroutine InnerCircle(x,y,area,xc,yc,radius,lseg,aseg,dseg)
         implicit none
 
-        real*8, intent(in) :: x(3),y(3)
-        real*8, intent(out) :: area,xc,yc,radius,lseg(3,3),aseg(3,3),dseg(3,3)
+        real(dp), intent(in) :: x(3),y(3)
+        real(dp), intent(out) :: area,xc,yc,radius,lseg(3,3),aseg(3,3),dseg(3,3)
 
-        integer :: i,j
-        integer :: npt=3
-        real*8 :: s,x1,x2,y1,y2
-        real*8 :: small = 1.0d-10
-        real*8 :: PI
+        integer(i4) :: i,j
+        integer(i4) :: npt=3
+        real(dp) :: s,x1,x2,y1,y2
+        real(dp) :: small = 1.0d-10
+        real(dp) :: PI
 
         PI = 4.0d0*atan(1.0)
 
@@ -57,15 +57,15 @@ module fem !
     subroutine OuterCircle(x,y,area,xc,yc,radius,lseg,aseg,dseg,bad_triangle)
         implicit none
 
-        real*8, intent(in) :: x(3),y(3)
-        real*8, intent(out) :: area,xc,yc,radius,lseg(3,3),aseg(3,3),dseg(3,3)
+        real(dp), intent(in) :: x(3),y(3)
+        real(dp), intent(out) :: area,xc,yc,radius,lseg(3,3),aseg(3,3),dseg(3,3)
         logical, intent(out) :: bad_triangle
 
-        integer :: i,j,k
-        integer :: npt=3
-        real*8 :: x1,x2,y1,y2,a11,a12,a21,a22,r1,r2,det,xmid,ymid,side(3)
-        real*8 :: small = 1.0d-10
-        real*8 :: PI
+        integer(i4) :: i,j,k
+        integer(i4) :: npt=3
+        real(dp) :: x1,x2,y1,y2,a11,a12,a21,a22,r1,r2,det,xmid,ymid,side(3)
+        real(dp) :: small = 1.0d-10
+        real(dp) :: PI
 
         PI = 4.0d0*atan(1.0)
 

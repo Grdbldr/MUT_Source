@@ -5,16 +5,16 @@ module MUT  !### Modflow-USG Tools
     
     implicit none
 
-    !integer, parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
+    !integer(i4), parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
     character(MAX_INST) :: MUT_CMD="none"
     character(MAX_INST) :: BuildModflowUSG_CMD="build modflow usg"
     character(MAX_INST) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
 
     character(256) :: FileNameMUT
-    integer :: FnumMUT
-    integer :: FnumUserMUT
-    character(40)       :: prefix = ''
-    integer				:: l_prfx  = 0
+    integer(i4) :: FnumMUT
+    integer(i4) :: FnumUserMUT
+    character(40) :: prefix = ''
+    integer(i4)	:: l_prfx  = 0
 
     character(MAX_LBL) :: DirName ! directory name
 

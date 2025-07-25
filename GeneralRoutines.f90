@@ -1,22 +1,12 @@
 module GeneralRoutines    !### bit setting routines
     use ifport
-	
+	use KindParameters
     use ifwin, only : GetCurrentDirectory
     implicit none
     
-    character(37) :: MUTVersion=' 1.61 BETA'
+    character(37) :: MUTVersion=' 1.63 BETA'
 
 
-    !---------------------------------------------- Machine declarations
-    !
-    ! Purpose: Define kind parameters for use with declaration statements
-    !
-    !  e.g.     real(dp)    ::  var2
-    !           integer(i4) ::  ivar2
-    integer, parameter :: sp = selected_real_kind(6, 37)    
-	integer, parameter :: dp = selected_real_kind(15, 307)
-    integer, parameter :: i2 = selected_int_kind(4)    
-    integer, parameter :: i4 = selected_int_kind(9)    
     
     !-----------------------------------------------Constants
     real(dp), parameter :: PI = 3.14159265359
@@ -25,13 +15,13 @@ module GeneralRoutines    !### bit setting routines
     integer(i4), parameter :: zero		=	0
 	
     !---------------------------------------------- String declarations
-    integer, parameter :: MAX_STR=1000
-    integer, parameter :: MAX_LBL=200
-    integer, parameter :: MAX_INST=200
+    integer(i4), parameter :: MAX_STR=1000
+    integer(i4), parameter :: MAX_LBL=200
+    integer(i4), parameter :: MAX_INST=200
     
-    integer, Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
+    integer(i4), Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
 
-    integer, parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
+    integer(i4), parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
 
     character(MAX_STR) :: USERBIN
     
@@ -50,20 +40,20 @@ module GeneralRoutines    !### bit setting routines
 
     character(1) :: str1
     character(2) :: str2
-    integer :: l1, l2
+    integer(i4) :: l1, l2
 
 
 	character(256) :: CurrentDir=' '
     
     
-    integer :: ilen
+    integer(i4) :: ilen
     character(10) :: FileOpenSTR   ='---> Open '
     character(9)  :: FileCreateSTR ='---> New '
     character(10) :: FileReadSTR   ='<--- Read '
     character(11) :: FileStripSTR  ='<--- Strip '
     
     !---------------------------------------------- General declarations
-    integer :: ncount
+    integer(i4) :: ncount
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
@@ -76,24 +66,24 @@ module GeneralRoutines    !### bit setting routines
     
     
     !---------------------------------------------- Bit-setting constants
-    integer :: Chosen=0
-    integer :: ConstantHead=1
-    integer :: Drain=2
-    integer :: Recharge=3
-    integer :: CriticalDepth=4
-    integer :: BoundaryNode=5
-    integer :: Inactive=6
-    integer :: Well=7
+    integer(i4) :: Chosen=0
+    integer(i4) :: ConstantHead=1
+    integer(i4) :: Drain=2
+    integer(i4) :: Recharge=3
+    integer(i4) :: CriticalDepth=4
+    integer(i4) :: BoundaryNode=5
+    integer(i4) :: Inactive=6
+    integer(i4) :: Well=7
     
     
 
 
     !---------------------------------------------- Raster declarations
-    integer :: nRaster ! number of rasters currently
+    integer(i4) :: nRaster ! number of rasters currently
     type ArcAscii
         character(MAX_LBL) :: Lbl ! info lable, user defined (eg 'Grid data')
-        integer :: ncols ! number of columns
-        integer :: nrows ! number of rows
+        integer(i4) :: ncols ! number of columns
+        integer(i4) :: nrows ! number of rows
         real(dp) :: xllcorner
         real(dp) :: yllcorner
         real(dp) :: cellsize
@@ -101,25 +91,25 @@ module GeneralRoutines    !### bit setting routines
     end type ArcAscii
 
     !---------------------------------------------- FileIO declarations
-    integer :: ialloc  = 0
+    integer(i4) :: ialloc  = 0
 
 	logical :: file_open_flag(10000) = .false.
     logical :: FileExists
-    integer :: status
+    integer(i4) :: status
 
-    integer :: FnumEco
+    integer(i4) :: FnumEco
     character(MAX_STR) :: FNameEco
     character(MAX_STR) :: FNameInput
 
 
-    integer :: itmp
+    integer(i4) :: itmp
 
 
     ! used in new_line
     character(1) :: a
 
     !---------------------------------------------- Error Message declarations
-    integer :: ErrFNum
+    integer(i4) :: ErrFNum
     character(MAX_STR) :: ErrStr
 
     !---------------------------------------------- Stopwatch (elapsed time)
@@ -127,16 +117,16 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_INST) :: SplitTime_CMD="split time"
     character(MAX_INST) :: ElapsedTime_CMD="elapsed time"
 
-    REAL :: time_begin(100), time_end(100)
+    real(sp) :: time_begin(100), time_end(100)
     character(40) :: StopWatchLbl(100)
 
     !---------------------------------------------- TimeDate declarations
     character(12) :: DateSTR
     character(12) :: TimeSTR
     character(5) :: TimezoneSTR
-    integer ::ijul
+    integer(i4) ::ijul
 
-    integer, parameter :: NMonthStartDay=3001
+    integer(i4), parameter :: NMonthStartDay=3001
     character(8) :: MonthStartDaySTR(NMonthStartDay)
     real(dp):: MonthStartDay(NMonthStartDay)
     data (MonthStartDaySTR(ijul),MonthStartDay(ijul),ijul=1,NMonthStartDay) &
@@ -3143,7 +3133,7 @@ module GeneralRoutines    !### bit setting routines
     "Jan-2150",   91313.00/
 
 
-    integer :: im, iy
+    integer(i4) :: im, iy
     real(dp):: ExcDay(1900:2899,12)
     data ((ExcDay(iy,im),im=1,12),iy=1900,2899) &
         /1.00,32.00,61.00,92.00,122.00,153.00,183.00,214.00,245.00,275.00,306.00,336.00,&
@@ -4188,12 +4178,12 @@ module GeneralRoutines    !### bit setting routines
     end subroutine WarnMsg
 
     subroutine PercentDone(icur,iend)
-        integer :: icur, iend
+        integer(i4) :: icur, iend
         write(*,'(1a1,a,f6.2,$)') char(13),'Percent complete: ', float(icur)/float(iend)*100
     end subroutine PercentDone
 
     subroutine StopWatch(iwatch,istr)
-        integer :: iwatch
+        integer(i4) :: iwatch
         character(*) :: istr
         character(MAX_LBL) :: EtimeMsg
         character(8) whatimeisit
@@ -4209,7 +4199,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine StopWatch
 
     subroutine SplitTime(iwatch)
-        integer :: iwatch
+        integer(i4) :: iwatch
         character(MAX_LBL) :: EtimeMsg
 
         CALL CPU_TIME ( time_end(iwatch) )
@@ -4220,7 +4210,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine SplitTime
 
     subroutine ElapsedTime(iwatch)
-        integer :: iwatch
+        integer(i4) :: iwatch
         character(MAX_LBL) :: EtimeMsg
 
         CALL CPU_TIME ( time_end(iwatch) )
@@ -4236,7 +4226,7 @@ module GeneralRoutines    !### bit setting routines
     subroutine AllocChk(ialloc,string) !--- Array allocation error message to file and display. Stop
         !   Purpose:
         character*(*) string
-	 	integer ialloc
+	 	integer(i4) ialloc
 
         if(ialloc.ne.0) then
             write(*,*) 'error: allocating (run-time error number: ',ialloc,')'
@@ -4252,9 +4242,9 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine GrowIntegerArray(iArray,nSizeIn,nSizeout)
         implicit none
-        integer, allocatable :: iArray(:)
-        integer, allocatable :: iTMP(:)
-        integer :: nSizeIn, nSizeOut
+        integer(i4), allocatable :: iArray(:)
+        integer(i4), allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
         
         allocate(iTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'iTMP array')
@@ -4265,9 +4255,9 @@ module GeneralRoutines    !### bit setting routines
     
     subroutine GrowInteger2dArray(iArray,nSize1,nSizeIn,nSizeout)
         implicit none
-        integer, allocatable :: iArray(:,:)
-        integer, allocatable :: iTMP(:,:)
-        integer :: nSize1, nSizeIn, nSizeOut
+        integer(i4), allocatable :: iArray(:,:)
+        integer(i4), allocatable :: iTMP(:,:)
+        integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(iTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'iTMP array')
@@ -4278,9 +4268,9 @@ module GeneralRoutines    !### bit setting routines
     
     subroutine GrowRealArray(rArray,nSizeIn,nSizeout)
         implicit none
-        real, allocatable :: rArray(:)
-        real, allocatable :: rTMP(:)
-        integer :: nSizeIn, nSizeOut
+        real(sp), allocatable :: rArray(:)
+        real(sp), allocatable :: rTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
         
         allocate(rTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
@@ -4291,9 +4281,9 @@ module GeneralRoutines    !### bit setting routines
     
     subroutine GrowReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
         implicit none
-        real, allocatable :: rArray(:,:)
-        real, allocatable :: rTMP(:,:)
-        integer :: nSize1, nSizeIn, nSizeOut
+        real(sp), allocatable :: rArray(:,:)
+        real(sp), allocatable :: rTMP(:,:)
+        integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
@@ -4306,7 +4296,7 @@ module GeneralRoutines    !### bit setting routines
         implicit none
         real(dp), allocatable :: rArray(:)
         real(dp), allocatable :: rTMP(:)
-        integer :: nSizeIn, nSizeOut
+        integer(i4) :: nSizeIn, nSizeOut
         
         allocate(rTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
@@ -4320,7 +4310,7 @@ module GeneralRoutines    !### bit setting routines
         implicit none
         real(dp), allocatable :: rArray(:,:)
         real(dp), allocatable :: rTMP(:,:)
-        integer :: nSize1, nSizeIn, nSizeOut
+        integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
@@ -4333,7 +4323,7 @@ module GeneralRoutines    !### bit setting routines
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.
         use global, only: niunit
-        integer :: iunit
+        integer(i4) :: iunit
 	    iunit=NIUNIT+1  ! don't mess with modflow unit numbers which are less NIUNIT
 	    do
 		    if(iunit > 2100) stop 'iunit > 2100. Call ghostbusters.'
@@ -4349,7 +4339,7 @@ module GeneralRoutines    !### bit setting routines
 
 
     subroutine FreeUnit(iunit) !--- number. Make available.
-        integer :: iunit
+        integer(i4) :: iunit
         if(file_open_flag(iunit)) then
 		    file_open_flag(iunit)=.false.
 	        close(iunit)
@@ -4361,7 +4351,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine FreeUnit
 
     subroutine OpenAscii(iunit,fname) !--- Return unit # of file or stop
-        integer :: iunit
+        integer(i4) :: iunit
         character(*) :: fname
         
 	    call GetUnit(iunit)
@@ -4376,7 +4366,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine OpenAscii
 
     subroutine OpenBinary(iunit,fname) !--- Return unit # of file or report error and stop.
-        integer :: iunit
+        integer(i4) :: iunit
         character(*) :: fname
 
 	    call GetUnit(iunit)
@@ -4395,7 +4385,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine OpenBinary
 
        subroutine OpenDirect(iunit,fname) !--- Return unit # of file or stop
-        integer :: iunit
+        integer(i4) :: iunit
         character(*) :: fname
 
 	    call GetUnit(iunit)
@@ -4420,7 +4410,7 @@ module GeneralRoutines    !### bit setting routines
 	    implicit none
 
         character*(*) :: string
-        integer :: length,i,j
+        integer(i4) :: length,i,j
         length=len(string)
         do i=1,length
             j=ichar(string(i:i))
@@ -4436,7 +4426,7 @@ module GeneralRoutines    !### bit setting routines
 	    implicit none
 
         character*(*) :: string
-        integer :: length,i,j
+        integer(i4) :: length,i,j
         length=len(string)
         do i=1,length
             j=ichar(string(i:i))
@@ -4452,20 +4442,20 @@ module GeneralRoutines    !### bit setting routines
 	    implicit none
 
         logical :: PfxFileExists
-        integer :: PfxFNum
+        integer(i4) :: PfxFNum
         character(MAX_LBL) :: PfxFName
 
         logical :: DfltFileExists
         character(MAX_LBL) :: DfltFName
 
         logical :: UserFileExists
-        integer :: UserFNum
+        integer(i4) :: UserFNum
         character(MAX_LBL) :: UserFName
 
         character*40 prefix
         character*(*) ext
         character*10 dext
-        integer l_ext,lp
+        integer(i4) l_ext,lp
 
         dext=ext
         l_ext=index(dext,' ')+1
@@ -4567,8 +4557,8 @@ module GeneralRoutines    !### bit setting routines
     subroutine StripComments(nin,nout)
 	    implicit none
 
-        integer :: i, j, nin, nout, status, len
-        integer :: FnumInclude
+        integer(i4) :: i, j, nin, nout, status, len
+        integer(i4) :: FnumInclude
         character*256 line, line_i
         logical :: FileExists
 
@@ -4672,7 +4662,7 @@ module GeneralRoutines    !### bit setting routines
     !---------------------------------------------- Time routines
 
     subroutine Julian_month(SimTime,imonth,JulianDay,JulianMonthSTR) !--- Given SimTime, return Julian month number and date string
-        integer :: i,imonth
+        integer(i4) :: i,imonth
         real(dp) :: SimTime
         character(8) :: JulianMonthSTR
         real(dp):: JulianDay
@@ -4692,12 +4682,12 @@ module GeneralRoutines    !### bit setting routines
     function ExcelDay(datestring) !--- Convert date (eg. mm/dd/yyyy hh:mm:ss) string to Excel day number.
         ! This function assumes general date format as above!!!!!!!!
 
-	    integer :: i
+	    integer(i4) :: i
         real(dp) :: ExcelDay
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 	
         character*(*) :: datestring
-	    integer :: year, month, day, hour, minute, second
+	    integer(i4) :: year, month, day, hour, minute, second
 
 
 
@@ -4742,7 +4732,7 @@ module GeneralRoutines    !### bit setting routines
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
         logical :: YearFirst=.false.
 
-        integer :: LeapDay = 0
+        integer(i4) :: LeapDay = 0
 
 	    character*(*) :: datestring, timestring
 	    real(dp) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
@@ -4893,7 +4883,7 @@ module GeneralRoutines    !### bit setting routines
 	    real(dp) :: DecimalYear_MDYFormat
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 
-        integer :: LeapDay = 0
+        integer(i4) :: LeapDay = 0
 
 	    character*(*) :: datestring, timestring
 	    real(dp) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
@@ -5162,10 +5152,10 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- String routines
 
-    integer function CountChars(achar,str) !--- Occurrences of a character in a string.
+    integer(i4) function CountChars(achar,str) !--- Occurrences of a character in a string.
         character(1) :: achar
         character(*) :: str
-        integer :: i
+        integer(i4) :: i
 
         CountChars=0
 
@@ -5176,8 +5166,8 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine BlanksToCommas(str) !--- Trim blank start then multiple BLANKs to COMMA.
         character(*) :: str
-        integer :: i
-        integer :: j
+        integer(i4) :: i
+        integer(i4) :: j
 
         do i=1,len_trim(str)
             if(str(i:i)/=BLANK) then ! trim blanks from start
@@ -5210,8 +5200,8 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine BlanksToUnderscore(str) !--- Trim blank start then multiple BLANKs to _.
         character(*) :: str
-        integer :: i
-        integer :: j
+        integer(i4) :: i
+        integer(i4) :: j
 
         do i=1,len_trim(str)
             if(str(i:i)/=BLANK) then ! trim blanks from start
@@ -5246,9 +5236,9 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_STR) function GetColStr(str,i,delim) !--- Extract the data string at column i
         character(*) :: str
         character(*) :: delim
-        integer :: i
-        integer :: j
-        integer :: k
+        integer(i4) :: i
+        integer(i4) :: j
+        integer(i4) :: k
         character(MAX_STR) :: line
         line=str
         do j=1,i
@@ -5261,7 +5251,7 @@ module GeneralRoutines    !### bit setting routines
     end function GetColStr
 
     character(256) function FileNumberString(i) !--- Convert I to an exact length string
-        integer :: i
+        integer(i4) :: i
 
         if(i<10) then
             write(FileNumberString,'(i1)') i
@@ -5287,7 +5277,7 @@ module GeneralRoutines    !### bit setting routines
     subroutine set(bit,prop)
         ! Purpose: Set this bit in prop
         implicit none
-        integer bit,prop
+        integer(i4) bit,prop
 
 
         bit=ibset(bit,prop) ! Compaq Fortran routine ibset fred standard?
@@ -5297,7 +5287,7 @@ module GeneralRoutines    !### bit setting routines
         ! Purpose: Clear this bit in prop
         implicit none
 
-        integer bit,prop
+        integer(i4) bit,prop
         bit=ibclr(bit,prop) ! Compaq Fortran routine ibclr fred standard?
 
     end subroutine clear
@@ -5305,7 +5295,7 @@ module GeneralRoutines    !### bit setting routines
         ! Purpose: Toggle this bit in prop
         implicit none
 
-        integer bit,prop
+        integer(i4) bit,prop
         if (bcheck(bit,prop)) then
             call clear(bit,prop)
         else
@@ -5317,7 +5307,7 @@ module GeneralRoutines    !### bit setting routines
         ! Purpose: Return true if this bit in prop is set
         implicit none
 
-        integer bit,prop
+        integer(i4) bit,prop
         logical btest
         bcheck=btest(bit,prop)
 
@@ -5386,7 +5376,7 @@ module GeneralRoutines    !### bit setting routines
 
         logical xsame,ysame,zsame
 
-    !rt 2006.09.07 ier is defined as integer in module grok_mod and therefore in call subroutine. Define it here as integer
+    !rt 2006.09.07 ier is defined as integer(i4) in module grok_mod and therefore in call subroutine. Define it here as integer
     !	real(dp) :: a, b, c, d, ier
 	    real(dp) :: a, b, c, d
 	    real(dp) :: x1, x2, y1, y2,  z1, z2, x3, y3, z3
@@ -5395,7 +5385,7 @@ module GeneralRoutines    !### bit setting routines
         real(dp) :: u1, u2, u3
         real(dp) :: v1, v2, v3
         real(dp) :: k1, k2, k3
-        integer :: ier
+        integer(i4) :: ier
 
         !     ier is return code
         !         = 0 no problems
@@ -5533,9 +5523,9 @@ module GeneralRoutines    !### bit setting routines
     end subroutine eq_plane
 
     !-----------------------------------------------Other routines
-    integer function MyMod(i1,i2)
+    integer(i4) function MyMod(i1,i2)
         implicit none
-        integer :: i1, i2
+        integer(i4) :: i1, i2
         myMod=mod(i1,i2)
         if(mymod == 0) mymod=i2
         
@@ -5545,7 +5535,7 @@ module GeneralRoutines    !### bit setting routines
     subroutine read_val(iunit,label, val)
 	    implicit none
 
-        integer :: iunit
+        integer(i4) :: iunit
         real(dp):: val
         character*(*) label
 
@@ -5560,7 +5550,7 @@ module GeneralRoutines    !### bit setting routines
     logical function in_poly(npoly,polyx,polyy,px,py)
 	    implicit none
 				
-	    integer :: i, cn, n, npoly
+	    integer(i4) :: i, cn, n, npoly
 	    real(dp) :: px,py, vt
 	    real(dp) :: polyx(npoly),polyy(npoly)
 
@@ -5587,11 +5577,11 @@ module GeneralRoutines    !### bit setting routines
     end function in_poly
 
     SUBROUTINE INDEXX3(N,ARRIN,INDX)
-	    integer :: i, n, j, l, ir, indxt
-	    real :: q
+	    integer(i4) :: i, n, j, l, ir, indxt
+	    real(sp) :: q
 
 	    real(dp) :: arrin(n)
-	    integer :: indx(n)
+	    integer(i4) :: indx(n)
 
 
 
@@ -5637,11 +5627,11 @@ module GeneralRoutines    !### bit setting routines
     END SUBROUTINE INDEXX3
 
     SUBROUTINE INDEXX_int(N,ARRIN,INDX)
-	    integer :: i, n, j, l, ir, indxt
-	    integer :: q
+	    integer(i4) :: i, n, j, l, ir, indxt
+	    integer(i4) :: q
 
-	    integer :: arrin(n)
-	    integer :: indx(n)
+	    integer(i4) :: arrin(n)
+	    integer(i4) :: indx(n)
 
 
 
@@ -5686,11 +5676,11 @@ module GeneralRoutines    !### bit setting routines
 
     END SUBROUTINE INDEXX_int
     SUBROUTINE INDEXX_char(N,ARRIN,INDX)
-	    integer :: i, n, j, l, ir, indxt
+	    integer(i4) :: i, n, j, l, ir, indxt
 	    character(MAX_LBL) :: q
 
 	    character(*) :: arrin(n)
-	    integer :: indx(n)
+	    integer(i4) :: indx(n)
 
 
 

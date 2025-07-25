@@ -2,97 +2,97 @@ Module Materials
     use GeneralRoutines
     implicit none
 
-        integer :: nGWFMaterials
-        integer,allocatable :: GWF_MaterialID(:)
+        integer(i4) :: nGWFMaterials
+        integer(i4),allocatable :: GWF_MaterialID(:)
         character*256, allocatable :: GWF_MaterialName(:)
-        real, allocatable :: Porosity(:)
-        real, allocatable :: Kh_Kx(:)
-        real, allocatable :: Kv_Kz(:)
-        real, allocatable :: Ky(:)
-        real, allocatable :: Specificstorage(:)
-        real, allocatable :: SpecificYield(:)
+        real(sp), allocatable :: Porosity(:)
+        real(sp), allocatable :: Kh_Kx(:)
+        real(sp), allocatable :: Kv_Kz(:)
+        real(sp), allocatable :: Ky(:)
+        real(sp), allocatable :: Specificstorage(:)
+        real(sp), allocatable :: SpecificYield(:)
         character*256, allocatable :: UnsaturatedFunctionType(:)
-        real, allocatable :: Alpha(:)
-        real, allocatable :: Beta(:)
-        real, allocatable :: Sr(:)
-        real, allocatable :: BrooksCoreyExponent(:)   
+        real(sp), allocatable :: Alpha(:)
+        real(sp), allocatable :: Beta(:)
+        real(sp), allocatable :: Sr(:)
+        real(sp), allocatable :: BrooksCoreyExponent(:)   
         character*256, allocatable :: GWF_LengthUnit(:)
         character*256, allocatable :: GWF_TimeUnit(:)
         
-        integer :: nCLNMaterials
-        integer,allocatable         :: CLN_ID(:)
+        integer(i4) :: nCLNMaterials
+        integer(i4),allocatable         :: CLN_ID(:)
         character*256, allocatable  :: CLN_Name(:)
         character*256, allocatable  :: CLN_Type(:)
         character*256, allocatable  :: Geometry(:)
         character*256, allocatable  :: Direction(:)
-        real, allocatable           :: CircularRadius(:)
-        real, allocatable           :: RectangularWidth(:)
-        real, allocatable           :: RectangularHeight(:)
-        real, allocatable           :: LongitudinalK(:)
+        real(sp), allocatable           :: CircularRadius(:)
+        real(sp), allocatable           :: RectangularWidth(:)
+        real(sp), allocatable           :: RectangularHeight(:)
+        real(sp), allocatable           :: LongitudinalK(:)
         character*256, allocatable  :: FlowTreatment(:)
         character*256, allocatable  :: CLN_LengthUnit(:)
         character*256, allocatable  :: CLN_TimeUnit(:)
         
-        integer :: nSWFMaterials
-        integer,allocatable :: SWF_MaterialID(:)
+        integer(i4) :: nSWFMaterials
+        integer(i4),allocatable :: SWF_MaterialID(:)
         character*256, allocatable :: SWF_MaterialName(:)
-        real, allocatable :: ManningCoefficient(:)
-        real, allocatable :: DepressionStorageHeight(:)
-        real, allocatable :: ObstructionStorageHeight(:)
-        real, allocatable :: SWFSmoothingDepth1(:)
-        real, allocatable :: SWFSmoothingDepth2(:)
+        real(sp), allocatable :: ManningCoefficient(:)
+        real(sp), allocatable :: DepressionStorageHeight(:)
+        real(sp), allocatable :: ObstructionStorageHeight(:)
+        real(sp), allocatable :: SWFSmoothingDepth1(:)
+        real(sp), allocatable :: SWFSmoothingDepth2(:)
         character*256, allocatable :: SWF_LengthUnit(:)
         character*256, allocatable :: SWF_TimeUnit(:)
 
-        integer :: nET
-        integer,allocatable :: ET_ID(:)
+        integer(i4) :: nET
+        integer(i4),allocatable :: ET_ID(:)
         character*256, allocatable :: ET_Name(:)
         character*256, allocatable :: ET_TimeUnit(:)
-        real, allocatable :: EvaporationDepth(:)
-        real, allocatable :: RootDepth(:)
+        real(sp), allocatable :: EvaporationDepth(:)
+        real(sp), allocatable :: RootDepth(:)
         character*256, allocatable :: LAI_Table(:)
-        real, allocatable :: C1(:)
-        real, allocatable :: C2(:)
-        real, allocatable :: C3(:)
-        real, allocatable :: WiltingPoint(:)
-        real, allocatable :: FieldCapacity(:)
-        real, allocatable :: OxicLimit(:)
-        real, allocatable :: AnoxicLimit(:)
-        real, allocatable :: EvaporationMinimum(:)
-        real, allocatable :: EvaporationMaximum(:)
-        real, allocatable :: CanopyStorageParameter(:)
-        real, allocatable :: InitialInterceptionStorage(:)
+        real(sp), allocatable :: C1(:)
+        real(sp), allocatable :: C2(:)
+        real(sp), allocatable :: C3(:)
+        real(sp), allocatable :: WiltingPoint(:)
+        real(sp), allocatable :: FieldCapacity(:)
+        real(sp), allocatable :: OxicLimit(:)
+        real(sp), allocatable :: AnoxicLimit(:)
+        real(sp), allocatable :: EvaporationMinimum(:)
+        real(sp), allocatable :: EvaporationMaximum(:)
+        real(sp), allocatable :: CanopyStorageParameter(:)
+        real(sp), allocatable :: InitialInterceptionStorage(:)
         character*256, allocatable :: ET_LengthUnit(:)
         
-        integer :: nSMS
-        integer :: iSMSParameterSet
-        integer,allocatable ::          SMS_ID(:)
+        integer(i4) :: nSMS
+        integer(i4) :: iSMSParameterSet
+        integer(i4),allocatable ::          SMS_ID(:)
         character*256, allocatable ::   SMS_Name(:)
-        real, allocatable ::            SMS_HCLOSE(:)
-        real, allocatable ::            SMS_HICLOSE(:)
-        integer, allocatable ::         SMS_MXITER(:)
-        integer, allocatable ::         SMS_ITER1(:)
-        integer, allocatable ::         SMS_IPRSMS(:)
-        integer, allocatable ::         SMS_NONLINMETH(:)
-        integer, allocatable ::         SMS_LINMETH(:)
-        real, allocatable ::            SMS_THETA(:)
-        real, allocatable ::            SMS_KAPPA(:)
-        real, allocatable ::            SMS_GAMMA(:)
-        real, allocatable ::            SMS_AMOMENTUM(:)
-        integer, allocatable ::         SMS_NUMTRACK(:)
-        real, allocatable ::            SMS_BTOL(:)
-        real, allocatable ::            SMS_BREDUC(:)
-        real, allocatable ::            SMS_RES_LIM(:)
-        integer, allocatable ::         SMS_ITRUNCNEWTON(:)
+        real(sp), allocatable ::            SMS_HCLOSE(:)
+        real(sp), allocatable ::            SMS_HICLOSE(:)
+        integer(i4), allocatable ::         SMS_MXITER(:)
+        integer(i4), allocatable ::         SMS_ITER1(:)
+        integer(i4), allocatable ::         SMS_IPRSMS(:)
+        integer(i4), allocatable ::         SMS_NONLINMETH(:)
+        integer(i4), allocatable ::         SMS_LINMETH(:)
+        real(sp), allocatable ::            SMS_THETA(:)
+        real(sp), allocatable ::            SMS_KAPPA(:)
+        real(sp), allocatable ::            SMS_GAMMA(:)
+        real(sp), allocatable ::            SMS_AMOMENTUM(:)
+        integer(i4), allocatable ::         SMS_NUMTRACK(:)
+        real(sp), allocatable ::            SMS_BTOL(:)
+        real(sp), allocatable ::            SMS_BREDUC(:)
+        real(sp), allocatable ::            SMS_RES_LIM(:)
+        integer(i4), allocatable ::         SMS_ITRUNCNEWTON(:)
         character*256, allocatable ::   SMS_Options(:)
-        integer, allocatable ::         SMS_IACL(:)
-        integer, allocatable ::         SMS_NORDER(:)
-        integer, allocatable ::         SMS_LEVEL(:)
-        integer, allocatable ::         SMS_NORTH(:)
-        integer, allocatable ::         SMS_IREDSYS(:)
-        real, allocatable ::            SMS_RRCTOL(:)
-        integer, allocatable ::         SMS_IDROPTOL(:)
-        real, allocatable ::            SMS_EPSRN(:)
+        integer(i4), allocatable ::         SMS_IACL(:)
+        integer(i4), allocatable ::         SMS_NORDER(:)
+        integer(i4), allocatable ::         SMS_LEVEL(:)
+        integer(i4), allocatable ::         SMS_NORTH(:)
+        integer(i4), allocatable ::         SMS_IREDSYS(:)
+        real(sp), allocatable ::            SMS_RRCTOL(:)
+        integer(i4), allocatable ::         SMS_IDROPTOL(:)
+        real(sp), allocatable ::            SMS_EPSRN(:)
         character*256, allocatable ::   SMS_LengthUnit(:)
    
     contains
@@ -102,11 +102,11 @@ Module Materials
         implicit none
 
         
-        integer :: i
+        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
-        integer :: id
+        integer(i4) :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
@@ -165,10 +165,10 @@ Module Materials
 
     end subroutine DB_ReadGWFMaterials
     
-    integer function ParseLineINum(line)
+    integer(i4) function ParseLineINum(line)
         implicit none
         character(*) :: line
-        integer :: j
+        integer(i4) :: j
     
         j=INDEX(line,',')
         read(line(:j-1),*) ParseLineINum
@@ -176,10 +176,10 @@ Module Materials
         
     end function ParseLineINum
 
-    real function ParseLineRNum(line)
+    real(sp) function ParseLineRNum(line)
         implicit none
         character(*) :: line
-        integer :: j
+        integer(i4) :: j
     
         j=INDEX(line,',')
         read(line(:j-1),*) ParseLineRNum
@@ -190,7 +190,7 @@ Module Materials
     character(MAX_LBL) function ParseLineSTR(line)
         implicit none
         character(*) :: line
-        integer :: j
+        integer(i4) :: j
     
         j=INDEX(line,',')
         read(line(:j-1),'(a)') ParseLineSTR
@@ -204,11 +204,11 @@ Module Materials
         implicit none
 
         
-        integer :: i
+        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
-        integer :: id
+        integer(i4) :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
@@ -266,11 +266,11 @@ Module Materials
         implicit none
 
         
-        integer :: i
+        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
-        integer :: id
+        integer(i4) :: id
 
 		call Msg(TAB//'Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
@@ -322,11 +322,11 @@ Module Materials
         implicit none
 
         
-        integer :: i
+        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
-        integer :: id
+        integer(i4) :: id
 
 		call Msg(TAB//TAB//'ET file '//trim(FName))
         call OpenAscii(itmp,FName)
@@ -396,11 +396,11 @@ Module Materials
         implicit none
 
         
-        integer :: i
+        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
-        integer :: id
+        integer(i4) :: id
 
 		call Msg(TAB//'SMS file '//trim(FName))
         call OpenAscii(itmp,FName)

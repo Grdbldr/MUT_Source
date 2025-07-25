@@ -140,17 +140,17 @@
     ! Post-processing modflow output files
     character(MAX_INST) :: ModflowOutputToModflowStructure_CMD='modflow output to modflow structure'
     
-    integer  :: FNum
+    integer(i4)  :: FNum
     character(MAX_STR) :: line
 
     logical :: JustBuilt=.false.
     
-    integer :: ActiveDomain=0
+    integer(i4) :: ActiveDomain=0
     character(5) :: ActiveDomainSTR
-    integer, parameter :: iTMPLT=0
-    integer, parameter :: iGWF=1
-    integer, parameter :: iSWF=2
-    integer, parameter :: iCLN=3
+    integer(i4), parameter :: iTMPLT=0
+    integer(i4), parameter :: iGWF=1
+    integer(i4), parameter :: iSWF=2
+    integer(i4), parameter :: iCLN=3
 
     ! By default, 2D finite-elements in template mesh are used to define control volumes
     logical :: NodalControlVolume=.false.
@@ -168,16 +168,16 @@
         character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
 
         character(10) :: Name='none'
-        integer :: nCells                ! number of cells in the mesh
-        integer :: nLayers                 ! number of layers in the mesh 
-        integer :: nNodes               ! number of nodes in the mesh for Tecplot visualization 
-        integer :: nElements               ! number of nodes in the mesh for Tecplot visualization 
+        integer(i4) :: nCells                ! number of cells in the mesh
+        integer(i4) :: nLayers                 ! number of layers in the mesh 
+        integer(i4) :: nNodes               ! number of nodes in the mesh for Tecplot visualization 
+        integer(i4) :: nElements               ! number of nodes in the mesh for Tecplot visualization 
         !
-        integer :: nNodesPerCell        ! number of nodes/cell  
-        integer, allocatable :: iNode(:,:)  ! node list for cell (nNodesPerElement, nCells )
+        integer(i4) :: nNodesPerCell        ! number of nodes/cell  
+        integer(i4), allocatable :: iNode(:,:)  ! node list for cell (nNodesPerElement, nCells )
         
-        integer :: iz      ! is 1 if the elevations of node and mesh elements vertices are supplied; 0 otherwise
-        integer :: ic      ! is 1 if the cell specifications associated with each node are supplied; 0 otherwise
+        integer(i4) :: iz      ! is 1 if the elevations of node and mesh elements vertices are supplied; 0 otherwise
+        integer(i4) :: ic      ! is 1 if the cell specifications associated with each node are supplied; 0 otherwise
 
            
         ! arrays of size nCells
@@ -186,8 +186,8 @@
         real(dp), allocatable :: zCell(:)      ! cell z coordinate
         real(dp), allocatable :: Top(:)        ! cell top elevation
         real(dp), allocatable :: Bottom(:)     ! cell bottom elevation
-        integer, allocatable :: iLayer(:)      ! cell layer number
-        integer, allocatable :: iZone(:)       ! cell zone number
+        integer(i4), allocatable :: iLayer(:)      ! cell layer number
+        integer(i4), allocatable :: iZone(:)       ! cell zone number
         
         ! inner circles
         real(dp), allocatable :: CellArea(:)        ! projected area of cell in XY
@@ -197,120 +197,120 @@
         real(dp), allocatable :: ySide(:,:)         ! projected y coordinate of inner circle radius tangent to side
         
         ! Cell connection 
-        integer, allocatable :: njag      ! total number of connections for domain
-        integer, allocatable :: mia(:)      ! size nCells, number of connections/cell
-        integer, allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
+        integer(i4), allocatable :: njag      ! total number of connections for domain
+        integer(i4), allocatable :: mia(:)      ! size nCells, number of connections/cell
+        integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
         real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
         
-        integer :: NCLNGWC      ! # of CLN to GWF connections
-        integer :: NCONDUITYP   ! number of circular CLN's
-        integer :: NRECTYP      ! number of rectangular CLN's
+        integer(i4) :: NCLNGWC      ! # of CLN to GWF connections
+        integer(i4) :: NCONDUITYP   ! number of circular CLN's
+        integer(i4) :: NRECTYP      ! number of rectangular CLN's
         
         real(dp), allocatable :: StartingHeads(:)   ! STRT in modflow i.e. initial heads
-        integer :: nCHDCells=0        
+        integer(i4) :: nCHDCells=0        
         real(dp), allocatable :: ConstantHead(:)  ! CHD assigned head value
 
         real(dp), allocatable :: Recharge(:)  ! RCH assigned recharge value
-        integer :: nRCHoption  ! RCH option (nrchop in Modflow)
+        integer(i4) :: nRCHoption  ! RCH option (nrchop in Modflow)
         
-        integer :: nDRNCells=0        
+        integer(i4) :: nDRNCells=0        
         real(dp), allocatable :: DrainElevation(:)  ! DRN assigned Drain Elevation value
         real(dp), allocatable :: DrainConductance(:)  ! DRN assigned Drain Conductance value
 
-        integer :: nWELCells=0        
+        integer(i4) :: nWELCells=0        
         real(dp), allocatable :: PumpingRate(:)  ! WEL assigned Pumping Rate value
         
         real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
-        integer :: nSWBCCells=0        
+        integer(i4) :: nSWBCCells=0        
         
         ! of size nNodes
         real(dp), allocatable :: x(:) 
         real(dp), allocatable :: y(:)
         real(dp), allocatable :: z(:)
         
-        integer, allocatable :: ibound(:)
-        integer, allocatable :: laybcd(:)  ! size nLayers, non-zero value indicates layer has a quasi-3D confining bed below
-        integer :: nodelay    ! for now assume a constant for stacked mesh with no vertical refinement
+        integer(i4), allocatable :: ibound(:)
+        integer(i4), allocatable :: laybcd(:)  ! size nLayers, non-zero value indicates layer has a quasi-3D confining bed below
+        integer(i4) :: nodelay    ! for now assume a constant for stacked mesh with no vertical refinement
         
-        integer, allocatable :: LayTyp(:)  ! size nLayers, layer type
-        integer, allocatable :: LayAvg(:)  ! size nLayers, layer type
+        integer(i4), allocatable :: LayTyp(:)  ! size nLayers, layer type
+        integer(i4), allocatable :: LayAvg(:)  ! size nLayers, layer type
         real(dp), allocatable :: chani(:)  ! size nLayers, layer type
-        integer, allocatable :: layvka(:)  ! size nLayers, layer type
-        integer, allocatable :: laywet(:)  ! size nLayers, layer type
+        integer(i4), allocatable :: layvka(:)  ! size nLayers, layer type
+        integer(i4), allocatable :: laywet(:)  ! size nLayers, layer type
         
-        integer :: nZones                  ! number of zones in domain
-        integer,allocatable	:: Cell_is(:)  ! size ncells,  bit setting e.g. chosen/not chosen
-        integer,allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
-        integer,allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
+        integer(i4) :: nZones                  ! number of zones in domain
+        integer(i4),allocatable	:: Cell_is(:)  ! size ncells,  bit setting e.g. chosen/not chosen
+        integer(i4),allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
+        integer(i4),allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
 
     
         
         
-        real, allocatable :: hnew(:)  ! initial head
+        real(sp), allocatable :: hnew(:)  ! initial head
         
         ! .HDS file
         character(128) :: FNameHDS
-        integer :: iHDS
-        real, allocatable :: Head(:,:)
+        integer(i4) :: iHDS
+        real(sp), allocatable :: Head(:,:)
         
         ! .DDN file
         character(128) :: FNameDDN
-        integer :: iDDN
-	    real, allocatable :: Drawdown(:,:)
+        integer(i4) :: iDDN
+	    real(sp), allocatable :: Drawdown(:,:)
         
         ! .CBB file 
-        integer :: nComp
+        integer(i4) :: nComp
         character(128) :: FNameCBB
-        integer :: iCBB
-        real, allocatable :: Cbb_STORAGE(:,:)
-	    real, allocatable :: Cbb_CONSTANT_HEAD(:,:)
-	    real, allocatable :: Cbb_RECHARGE(:,:)
-	    real, allocatable :: Cbb_WELLS(:,:)
-	    real, allocatable :: Cbb_DRAINS(:,:)
-	    real, allocatable :: Cbb_CLN(:,:)
-	    real, allocatable :: Cbb_SWF(:,:)
-	    real, allocatable :: Cbb_FLOW_FACE(:,:)
-	    real, allocatable :: Cbb_GWF(:,:)
-	    real, allocatable :: Cbb_SWBC(:,:)
+        integer(i4) :: iCBB
+        real(sp), allocatable :: Cbb_STORAGE(:,:)
+	    real(sp), allocatable :: Cbb_CONSTANT_HEAD(:,:)
+	    real(sp), allocatable :: Cbb_RECHARGE(:,:)
+	    real(sp), allocatable :: Cbb_WELLS(:,:)
+	    real(sp), allocatable :: Cbb_DRAINS(:,:)
+	    real(sp), allocatable :: Cbb_CLN(:,:)
+	    real(sp), allocatable :: Cbb_SWF(:,:)
+	    real(sp), allocatable :: Cbb_FLOW_FACE(:,:)
+	    real(sp), allocatable :: Cbb_GWF(:,:)
+	    real(sp), allocatable :: Cbb_SWBC(:,:)
         
-        real, allocatable :: laycbd(:)
+        real(sp), allocatable :: laycbd(:)
         
         ! GWF properties (cell-based)
-        real, allocatable :: Kh(:)
-        real, allocatable :: Kv(:)
-        real, allocatable :: Ss(:)
-        real, allocatable :: Sy(:)
-        real, allocatable :: Alpha(:)
-        real, allocatable :: Beta(:)
-        real, allocatable :: Sr(:)
-        real, allocatable :: Brooks(:)
+        real(sp), allocatable :: Kh(:)
+        real(sp), allocatable :: Kv(:)
+        real(sp), allocatable :: Ss(:)
+        real(sp), allocatable :: Sy(:)
+        real(sp), allocatable :: Alpha(:)
+        real(sp), allocatable :: Beta(:)
+        real(sp), allocatable :: Sr(:)
+        real(sp), allocatable :: Brooks(:)
 
         ! CLN properties (zoned)
-        integer, allocatable    :: Geometry(:)           ! circular or rectangular
-        integer, allocatable    :: Direction(:)          ! vertical, horizontal or angled
-        real, allocatable       :: CircularRadius(:)    ! dimension of CLN
-        real, allocatable       :: RectangularWidth(:)    ! dimension of CLN
-        real, allocatable       :: RectangularHeight(:)    ! dimension of CLN
-        real, allocatable       :: LongitudinalK(:)    ! dimension of CLN
-        integer, allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
+        integer(i4), allocatable    :: Geometry(:)           ! circular or rectangular
+        integer(i4), allocatable    :: Direction(:)          ! vertical, horizontal or angled
+        real(sp), allocatable       :: CircularRadius(:)    ! dimension of CLN
+        real(sp), allocatable       :: RectangularWidth(:)    ! dimension of CLN
+        real(sp), allocatable       :: RectangularHeight(:)    ! dimension of CLN
+        real(sp), allocatable       :: LongitudinalK(:)    ! dimension of CLN
+        integer(i4), allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
 
         ! SWF properties (zoned)
-        real, allocatable :: Sgcl(:)   ! SWF-GWF connection length
-        real, allocatable :: Manning(:)   ! Manning's coefficient of friction
-        real, allocatable :: DepressionStorageHeight(:)
-        real, allocatable :: ObstructionStorageHeight(:)
-        real, allocatable :: H1DepthForSmoothing(:)   ! SWF depth smoothing parameter
-        real, allocatable :: H2DepthForSmoothing(:)   ! SWF depth smoothing parameter
+        real(sp), allocatable :: Sgcl(:)   ! SWF-GWF connection length
+        real(sp), allocatable :: Manning(:)   ! Manning's coefficient of friction
+        real(sp), allocatable :: DepressionStorageHeight(:)
+        real(sp), allocatable :: ObstructionStorageHeight(:)
+        real(sp), allocatable :: H1DepthForSmoothing(:)   ! SWF depth smoothing parameter
+        real(sp), allocatable :: H2DepthForSmoothing(:)   ! SWF depth smoothing parameter
         
         ! Observation Points
         ! .OBS file
         character(128) :: FNameOBS
-        integer :: iOBS
+        integer(i4) :: iOBS
 
-        integer :: nObsPnt=0
+        integer(i4) :: nObsPnt=0
         character(MAX_LBL) :: ObsPntName(MAX_OBS)
-        integer :: ObsPntCell(MAX_OBS)
+        integer(i4) :: ObsPntCell(MAX_OBS)
             
     end type ModflowDomain
  
@@ -334,37 +334,37 @@
 
         ! GSF file required for grid dimensions but not listed in NAM file
         character(128) :: FNameGSF
-        integer :: iGSF
+        integer(i4) :: iGSF
         
         ! CLN_GSF file required for grid dimensions but not listed in NAM file
         character(128) :: FNameCLN_GSF
-        integer :: iCLN_GSF
+        integer(i4) :: iCLN_GSF
         
         ! SWF_GSF file required for grid dimensions but not listed in NAM file
         character(128) :: FNameSWF_GSF
-        integer :: iSWF_GSF
+        integer(i4) :: iSWF_GSF
         
         ! NAM file
         character(128) :: FNameNAM
-        integer :: iNAM
+        integer(i4) :: iNAM
         
         ! DISU file
         character(128) :: FNameDISU
-        integer :: iDISU
+        integer(i4) :: iDISU
 
         ! LIST file
         character(128) :: FNameLIST
-        integer :: iLIST
+        integer(i4) :: iLIST
         
         ! Units
         character(MAX_LBL) :: STR_TimeUnit
-        integer :: TimeUnits=1    ! default 1 is seconds
+        integer(i4) :: TimeUnits=1    ! default 1 is seconds
         character(MAX_LBL) :: STR_LengthUnit
-        integer :: LengthUnits=2   ! default 2 is meters
+        integer(i4) :: LengthUnits=2   ! default 2 is meters
         
         ! BAS6 file
         character(128) :: FNameBAS6
-        integer :: iBAS6
+        integer(i4) :: iBAS6
         ! BAS6 options 
         logical :: xsection=.false.
         logical :: chtoch=.false.
@@ -379,168 +379,168 @@
         logical :: dpio=.false.
         logical :: ihm=.false.
         logical :: syall=.false.
-        integer :: ixsec = 0    
-        integer :: ichflg = 0   
-        integer :: ifrefm = 0   
-        integer :: iprtim = 0   
-        integer :: iunstr = 0   
-        integer :: iprconn = 0  
-        integer :: ifrcnvg = 0 
-        integer :: iunsat=1
-        integer :: idpin = 0    
-        integer :: idpout = 0   
-        integer :: ihmsim = 0   
-        integer :: iuihm = 0    
-        integer :: isyall = 0   
+        integer(i4) :: ixsec = 0    
+        integer(i4) :: ichflg = 0   
+        integer(i4) :: ifrefm = 0   
+        integer(i4) :: iprtim = 0   
+        integer(i4) :: iunstr = 0   
+        integer(i4) :: iprconn = 0  
+        integer(i4) :: ifrcnvg = 0 
+        integer(i4) :: iunsat=1
+        integer(i4) :: idpin = 0    
+        integer(i4) :: idpout = 0   
+        integer(i4) :: ihmsim = 0   
+        integer(i4) :: iuihm = 0    
+        integer(i4) :: isyall = 0   
 
         ! SMS file
         character(128) :: FNameSMS
-        integer :: iSMS
+        integer(i4) :: iSMS
 
         ! OC file
         character(128) :: FNameOC
-        integer :: iOC
-        integer :: ntime = 0
-        real, allocatable :: timot(:)
+        integer(i4) :: iOC
+        integer(i4) :: ntime = 0
+        real(sp), allocatable :: timot(:)
         real(dp), allocatable :: OutputTimes(:)
-        integer :: nOutputTimes
+        integer(i4) :: nOutputTimes
         
         !Stress Periods
-        integer :: nPeriods = 0
-        real, allocatable :: StressPeriodDuration(:)
-        integer, allocatable :: StressPeriodnTsteps(:)
-        real, allocatable :: StressPeriodnTstepMult(:)
+        integer(i4) :: nPeriods = 0
+        real(sp), allocatable :: StressPeriodDuration(:)
+        integer(i4), allocatable :: StressPeriodnTsteps(:)
+        real(sp), allocatable :: StressPeriodnTstepMult(:)
         character(2), allocatable :: StressPeriodType(:)
         ! Stress period defaults
-        real :: StressPeriodDeltat=1.000000e-03
-        real :: StressPeriodTminat=1.000000e-05
-        real :: StressPeriodTmaxat=60.0d0
-        real :: StressPeriodTadjat=1.100000e+00
-        real :: StressPeriodTcutat=2.000000e+00        
+        real(sp) :: StressPeriodDeltat=1.000000e-03
+        real(sp) :: StressPeriodTminat=1.000000e-05
+        real(sp) :: StressPeriodTmaxat=60.0d0
+        real(sp) :: StressPeriodTadjat=1.100000e+00
+        real(sp) :: StressPeriodTcutat=2.000000e+00        
         
         ! LPF file
         character(128) :: FNameLPF
-        integer :: iLPF
+        integer(i4) :: iLPF
 
         ! RCH file
         character(128) :: FNameRCH
-        integer :: iRCH
+        integer(i4) :: iRCH
         
         ! RIV file
         character(128) :: FNameRIV
-        integer :: iRIV
+        integer(i4) :: iRIV
         
         ! WEL file
         character(128) :: FNameWEL
-        integer :: iWEL
+        integer(i4) :: iWEL
         
         ! CHD file
         character(128) :: FNameCHD
-        integer :: iCHD
+        integer(i4) :: iCHD
 
         ! EVT file
         character(128) :: FNameEVT
-        integer :: iEVT
+        integer(i4) :: iEVT
         
         ! DRN file
         character(128) :: FNameDRN
-        integer :: iDRN
+        integer(i4) :: iDRN
  
         ! CLN file
         character(128) :: FNameCLN
-        integer :: iCLN
+        integer(i4) :: iCLN
 
         ! SWF file
         character(128) :: FNameSWF
-        integer :: iSWF
+        integer(i4) :: iSWF
 
         ! SWBC file
         character(128) :: FNameSWBC
-        integer :: iSWBC
+        integer(i4) :: iSWBC
        
         ! GNC file
         character(128) :: FNameGNC
-        integer :: iGNC
+        integer(i4) :: iGNC
 
         ! LAK file
         character(128) :: FNameLAK
-        integer :: iLAK=0
+        integer(i4) :: iLAK=0
 
         ! OBPT file
         character(128) :: FNameOBPT
-        integer :: iOBPT
+        integer(i4) :: iOBPT
        
         ! CBCCLN file
         character(128) :: FNameCBCCLN
-        integer :: iCBCCLN
+        integer(i4) :: iCBCCLN
   
         ! Scan file
-        integer :: nDim=10000
-        integer :: nKeyWord
+        integer(i4) :: nDim=10000
+        integer(i4) :: nKeyWord
         character(MAX_STR), ALLOCATABLE :: KeyWord(:) ! read buffer for location data
         character(128) :: FNameSCAN
-        integer :: iSCAN
+        integer(i4) :: iSCAN
         
         ! Modflow file extensions MUT currently does not recognize or process
-        integer ::iBCF6
-        integer ::iEVS 
-        integer ::iGHB 
-        integer ::iRTS 
-        integer ::iTIB 
-        integer ::iDPF 
-        integer ::iPCB 
-        integer ::iBCT 
-        integer ::iFHB 
-        integer ::iRES 
-        integer ::iSTR 
-        integer ::iIBS 
-        integer ::iHFB6
-        integer ::iDIS 
-        integer ::iPVAL
-        integer ::iSGB 
-        integer ::iHOB 
-        integer ::iDPT 
-        integer ::iZONE
-        integer ::iMULT
-        integer ::iDROB
-        integer ::iRVOB
-        integer ::iGBOB
-        integer ::iDDF 
-        integer ::iCHOB
-        integer ::iETS 
-        integer ::iDRT 
-        integer ::iQRT 
-        integer ::iGMG 
-        integer ::ihyd 
-        integer ::iSFR 
-        integer ::iMDT 
-        integer ::iGAGE
-        integer ::iLVDA
-        integer ::iSYF 
-        integer ::ilmt6
-        integer ::iMNW1
-        integer ::iKDEP
-        integer ::iSUB 
-        integer ::iUZF 
-        integer ::igwm 
-        integer ::iSWT 
-        integer ::iPATH
-        integer ::iPTH 
-        integer ::iTVM 
+        integer(i4) ::iBCF6
+        integer(i4) ::iEVS 
+        integer(i4) ::iGHB 
+        integer(i4) ::iRTS 
+        integer(i4) ::iTIB 
+        integer(i4) ::iDPF 
+        integer(i4) ::iPCB 
+        integer(i4) ::iBCT 
+        integer(i4) ::iFHB 
+        integer(i4) ::iRES 
+        integer(i4) ::iSTR 
+        integer(i4) ::iIBS 
+        integer(i4) ::iHFB6
+        integer(i4) ::iDIS 
+        integer(i4) ::iPVAL
+        integer(i4) ::iSGB 
+        integer(i4) ::iHOB 
+        integer(i4) ::iDPT 
+        integer(i4) ::iZONE
+        integer(i4) ::iMULT
+        integer(i4) ::iDROB
+        integer(i4) ::iRVOB
+        integer(i4) ::iGBOB
+        integer(i4) ::iDDF 
+        integer(i4) ::iCHOB
+        integer(i4) ::iETS 
+        integer(i4) ::iDRT 
+        integer(i4) ::iQRT 
+        integer(i4) ::iGMG 
+        integer(i4) ::ihyd 
+        integer(i4) ::iSFR 
+        integer(i4) ::iMDT 
+        integer(i4) ::iGAGE
+        integer(i4) ::iLVDA
+        integer(i4) ::iSYF 
+        integer(i4) ::ilmt6
+        integer(i4) ::iMNW1
+        integer(i4) ::iKDEP
+        integer(i4) ::iSUB 
+        integer(i4) ::iUZF 
+        integer(i4) ::igwm 
+        integer(i4) ::iSWT 
+        integer(i4) ::iPATH
+        integer(i4) ::iPTH 
+        integer(i4) ::iTVM 
 
 
         !character(128) :: Name
-        !integer :: LengthName
+        !integer(i4) :: LengthName
         !logical :: Exists=.false.
-	    !integer :: Unit
+	    !integer(i4) :: Unit
 
         ! logical :: blockel
         !
         !
         !logical,allocatable :: nchosen(:)
         !
-        !integer :: iz
-        !integer :: ic
+        !integer(i4) :: iz
+        !integer(i4) :: ic
         !
 	    !real(dp), allocatable :: Kx(:)
 	    !real(dp), allocatable :: Thick(:)
@@ -552,9 +552,9 @@
 	    !real(dp), allocatable :: Vanis(:)
      !   
         ! River Flows
-        integer :: nlines
-	    integer, allocatable :: StressPeriod(:)
-	    integer, allocatable :: RiverCell(:)
+        integer(i4) :: nlines
+	    integer(i4), allocatable :: StressPeriod(:)
+	    integer(i4), allocatable :: RiverCell(:)
 	    real(dp), allocatable :: RiverFlow(:)
 	    real(dp), allocatable :: RiverHead(:)
 	    real(dp), allocatable :: RiverElev(:)
@@ -563,8 +563,8 @@
 
         ! Head Calibration
         ! StressPeriod,WellName,X83_ft,Y89_ft,Zmin,Zmax,ZMidpoint,Observed_ft,Simulated_ft,Residual_ft,Residual_ft_Jeff
-        integer :: nlinesHead
-	    integer, allocatable :: StressPeriodHead(:)
+        integer(i4) :: nlinesHead
+	    integer(i4), allocatable :: StressPeriodHead(:)
 	    character(30), allocatable :: WellNameHead(:)
 	    real(dp), allocatable :: Xhead(:)
 	    real(dp), allocatable :: YHead(:)
@@ -577,7 +577,7 @@
         
         ! Well Construction
         ! Name	X	Y	Bottom_elevation_ft	Top_elevation_ft	casing_radius_ft	Well_on	Well_off
-        integer :: nWellConst
+        integer(i4) :: nWellConst
 	    character(30), allocatable :: NameWellConst(:)
 	    real(dp), allocatable :: XWellConst(:)
 	    real(dp), allocatable :: YWellConst(:)
@@ -590,7 +590,7 @@
 
         ! EI Well Construction
         ! Name	X	Y	Top_elevation_ft	L1   Offset  L2
-        integer :: n_EIWell
+        integer(i4) :: n_EIWell
 	    character(30), allocatable :: Name_EIWell(:)
 	    real(dp), allocatable :: X_EIWell(:)
 	    real(dp), allocatable :: Y_EIWell(:)
@@ -604,21 +604,21 @@
         ! CLN file
         
       !!! URWORD        
-      !!integer :: linlen
-      !!integer :: ncode, icol, iout, in
-      !!integer :: istart
-      !!real :: r
-      !!integer :: istop,n
+      !!integer(i4) :: linlen
+      !!integer(i4) :: ncode, icol, iout, in
+      !!integer(i4) :: istart
+      !!real(sp) :: r
+      !!integer(i4) :: istop,n
 
         
 
     end type ModflowProject
 
     ! other local variables
-    integer, Parameter :: MAXCLN=10000  ! assuming never more than 10000 CLN's
-    integer, Parameter :: MAXSTRESS=10000  ! assuming never more than 10000 Stress Periods
+    integer(i4), Parameter :: MAXCLN=10000  ! assuming never more than 10000 CLN's
+    integer(i4), Parameter :: MAXSTRESS=10000  ! assuming never more than 10000 Stress Periods
 
-    real :: MinSeparationDistance=0.0001
+    real(sp) :: MinSeparationDistance=0.0001
     
     
     contains
@@ -722,11 +722,11 @@
     subroutine AssignAlphatoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)' 
@@ -745,10 +745,10 @@
     subroutine AssignBetatoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: value
         
         read(FNumMUT,*) value
@@ -767,10 +767,10 @@
     subroutine AssignBrookstoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: value
         
         read(FNumMUT,*) value
@@ -789,11 +789,11 @@
     subroutine AssignCHDtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: head
         
         read(FNumMUT,*) head
@@ -838,7 +838,7 @@
         type (ModflowProject) modflow
         type (ModflowDomain) domain
         
-        integer :: i, j, k, j1, j2
+        integer(i4) :: i, j, k, j1, j2
         real(dp) :: AddToLength
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
@@ -911,7 +911,7 @@
         type (ModflowProject) modflow
         type (ModflowDomain) domain
         
-        integer :: i
+        integer(i4) :: i
         
 		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
 
@@ -954,10 +954,10 @@
     subroutine AssignDepthForSmoothingtoSWF(FnumMUT,domain)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: value1, value2
         
         read(FNumMUT,*) value1, value2
@@ -980,11 +980,11 @@
     subroutine AssignDRNtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: cond
         
         read(FNumMUT,*) cond
@@ -1027,11 +1027,11 @@
     subroutine AssignKhtoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
@@ -1048,11 +1048,11 @@
     subroutine AssignKvtoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
@@ -1070,11 +1070,11 @@
     subroutine AssignDepressiontoSWF(FnumMUT,domain)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
@@ -1093,11 +1093,11 @@
     subroutine AssignManningtoSWF(FnumMUT,domain)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1/3)    '//TRIM(UnitsOfTime)
@@ -1116,11 +1116,11 @@
     subroutine AssignObstructiontoSWF(FnumMUT,domain)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
@@ -1139,14 +1139,14 @@
     subroutine AssignMaterialtoGWF(FNumMUT, Domain) 
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        integer :: iMaterial
+        integer(i4) :: i
+        integer(i4) :: iMaterial
         
-        real :: LengthConversionFactor
-        real :: TimeConversionFactor
+        real(sp) :: LengthConversionFactor
+        real(sp) :: TimeConversionFactor
         
         read(FNumMUT,*) iMaterial
         
@@ -1275,7 +1275,7 @@
     
     end subroutine AssignMaterialtoGWF
     
-    real function LengthConverter(Project_LengthUnit,Material_LengthUnit)
+    real(sp) function LengthConverter(Project_LengthUnit,Material_LengthUnit)
         implicit none
         character(*) :: Project_LengthUnit
         character(*) :: Material_LengthUnit
@@ -1314,7 +1314,7 @@
     
     end function LengthConverter
     
-    real function TimeConverter(Project_TimeUnit,Material_TimeUnit)
+    real(sp) function TimeConverter(Project_TimeUnit,Material_TimeUnit)
         implicit none
         character(*) :: Project_TimeUnit
         character(*) :: Material_TimeUnit
@@ -1392,14 +1392,14 @@
     subroutine AssignMaterialtoCLN(FnumMUT,CLN)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) CLN
         
-        integer :: i
-        integer :: iMaterial
+        integer(i4) :: i
+        integer(i4) :: iMaterial
 
-        real :: LengthConversionFactor
-        real :: TimeConversionFactor
+        real(sp) :: LengthConversionFactor
+        real(sp) :: TimeConversionFactor
 
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
@@ -1548,14 +1548,14 @@
         implicit none
 
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        integer :: iMaterial
+        integer(i4) :: i
+        integer(i4) :: iMaterial
 
-        real :: LengthConversionFactor
-        real :: TimeConversionFactor
+        real(sp) :: LengthConversionFactor
+        real(sp) :: TimeConversionFactor
         
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
@@ -1633,13 +1633,13 @@
     subroutine AssignRCHtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: rech
-        integer :: nRCHoption
+        integer(i4) :: nRCHoption
         
         read(FNumMUT,*) rech
         write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
@@ -1710,11 +1710,11 @@
     subroutine AssignWELtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) modflow
         type (ModflowDomain) Domain
         
-        integer :: i, itmp, itmpcln
+        integer(i4) :: i, itmp, itmpcln
         real(dp) :: PumpRate
         
         read(FNumMUT,*) PumpRate
@@ -1791,11 +1791,11 @@
     subroutine CLN_AssignCircularRadius(FnumMUT,CLN)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) CLN
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
@@ -1813,11 +1813,11 @@
     subroutine CLN_AssignRectangularWidthHeight(FnumMUT,CLN)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) CLN
         
-        integer :: i
-        real :: width, height
+        integer(i4) :: i
+        real(sp) :: width, height
         
         read(FNumMUT,*) width, height
         write(TmpSTR,'(2'//FMT_R4//',a)')  width, height,'     '//TRIM(UnitsOfLength)
@@ -1836,11 +1836,11 @@
     subroutine AssignSgcltoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
@@ -1858,11 +1858,11 @@
     subroutine AssignSrtoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
@@ -1880,11 +1880,11 @@
     subroutine AssignSstoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)'
@@ -1902,10 +1902,10 @@
     subroutine AssignStartingDepthtoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: value
         
         read(FNumMUT,*) value
@@ -1925,10 +1925,10 @@
     subroutine AssignStartingHeadtoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
         real(dp) :: value
         
         read(FNumMUT,*) value
@@ -1947,11 +1947,11 @@
     subroutine AssignSytoDomain(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
         
-        integer :: i
-        real :: value
+        integer(i4) :: i
+        real(sp) :: value
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
@@ -1970,12 +1970,12 @@
         implicit none
 
         character(MAX_STR) :: FName
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         character(*) :: prefix
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
         
-        integer :: i
+        integer(i4) :: i
         
         Modflow.MUTPrefix=prefix
 
@@ -2498,7 +2498,7 @@
     
         type (ModflowProject) Modflow
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         Modflow.CLN.name='CLN'
                 
@@ -2610,17 +2610,17 @@
     subroutine BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,TMPLT_GWF)
         implicit none
     
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_GWF
 
-        integer :: i, j, k
+        integer(i4) :: i, j, k
 
         ! For modflow cell connection and area calculations
-        integer :: icell, iNode
+        integer(i4) :: icell, iNode
         
-        integer :: iElement, iLay
+        integer(i4) :: iElement, iLay
         
         Modflow.GWF.name='GWF'
 
@@ -2819,7 +2819,7 @@
     
         type (ModflowProject) Modflow
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         Modflow.SWF.name='SWF'
                 
@@ -2950,8 +2950,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
 
         
@@ -2983,11 +2983,11 @@
     subroutine ChooseZoneNumber(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i
-        integer :: number
+        integer(i4) :: i
+        integer(i4) :: number
         
         if(.not. allocated(domain.Zone_Is)) then 
             allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
@@ -3023,8 +3023,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
 
         
@@ -3049,11 +3049,11 @@
     subroutine ChooseGBNodes(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iNode
+        integer(i4) :: i, j
+	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iNode
 
         character(MAX_STR) :: FName
         character*80 :: dummy
@@ -3125,11 +3125,11 @@
     subroutine ChooseGBNodesTemplate(FNumMUT,TMPLT) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
         character(MAX_STR) :: FName
         character*80 :: dummy
@@ -3203,8 +3203,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
 
         ncount=0
@@ -3223,10 +3223,10 @@
     subroutine ChooseNodeAtXYZTemplate(FNumMut,Domain)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(TecplotDomain) Domain
 
-	    integer :: i,iNode
+	    integer(i4) :: i,iNode
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
@@ -3253,10 +3253,10 @@
     subroutine ChooseNodeAtXYZ(FNumMut,Domain)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(ModflowDomain) Domain
 
-	    integer :: i,iNode
+	    integer(i4) :: i,iNode
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
@@ -3283,11 +3283,11 @@
     subroutine ChooseCellsByLayer(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i, iLyr
-	    integer :: ncount
+        integer(i4) :: i, iLyr
+	    integer(i4) :: ncount
 
         read(FNumMut,*) iLyr
         write(TMPStr,*) TAB//'Choose cells in layer: ',iLyr
@@ -3311,10 +3311,10 @@
     subroutine ChooseCellAtXYZ(FNumMut,Domain)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(ModflowDomain) Domain
 
-	    integer :: i,iCell
+	    integer(i4) :: i,iCell
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
@@ -3341,14 +3341,14 @@
     subroutine ChooseCellbyXYZ_LayerRange(FNumMut,Domain)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(ModflowDomain) Domain
 
-	    integer :: i
+	    integer(i4) :: i
 	    real(dp) :: x1,x2
 	    real(dp) :: y1,y2
 	    real(dp) :: z1,z2
-	    integer :: ltop,lbot,ntemp,ielmin,ielmax
+	    integer(i4) :: ltop,lbot,ntemp,ielmin,ielmax
 
         call Msg('Find cells whose centroids are in the range defined by: ')
         read(FNumMut,*) x1,x2
@@ -3402,11 +3402,11 @@
     subroutine ChooseCellsFromFile(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount, iCell,status2
+        integer(i4) :: i
+	    integer(i4) :: ncount, iCell,status2
 
         character*80 fname
         logical togon(domain.nCells)
@@ -3446,8 +3446,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i, j
-	    integer :: ncount
+        integer(i4) :: i, j
+	    integer(i4) :: ncount
 
 
        
@@ -3475,11 +3475,11 @@
     subroutine ChooseCellsFromGBElements(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iCell
+        integer(i4) :: i, j
+	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iCell
 
         character*80 fname
         character*80 dummy
@@ -3542,11 +3542,11 @@
     subroutine ChooseCellsFromGBElementsTemplate(FNumMUT,TMPLT) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iElement
+        integer(i4) :: i, j
+	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
 
         character*80 fname
         character*80 dummy
@@ -3610,11 +3610,11 @@
     subroutine ChooseCellsFromGBNodes(FNumMUT,domain) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) Domain
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iCell
+        integer(i4) :: i, j
+	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iCell
 
         character*80 fname
         character*80 dummy
@@ -3677,11 +3677,11 @@
     subroutine ChooseCellsFromGBNodesTemplate(FNumMUT,TMPLT) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
 
-        integer :: i, j
-	    integer :: nLayer_bot, nLayer_top, ncount, iElement
+        integer(i4) :: i, j
+	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
 
         character*80 fname
         character*80 dummy
@@ -3747,8 +3747,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
 
         do i=1,domain.nCells
@@ -3773,8 +3773,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
         if(.not. allocated(domain.Node_Is)) then 
             allocate(domain.Node_Is(domain.nNodes),stat=ialloc)
@@ -3805,8 +3805,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
         if(.not. allocated(domain.Zone_Is)) then 
             allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
@@ -3835,9 +3835,9 @@
         implicit none
         type(TecplotDomain) TMPLT_CLN
         
-        integer :: i, k, l
-        integer :: iEl, jEl
-        integer :: iNd, jNd
+        integer(i4) :: i, k, l
+        integer(i4) :: iEl, jEl
+        integer(i4) :: iNd, jNd
         
         real(dp) :: SeparationDistance
         
@@ -3892,35 +3892,35 @@
         type (ModflowProject) Modflow
         character(400) :: line
         
-        integer :: ICLNNDS
+        integer(i4) :: ICLNNDS
         CHARACTER*24 ANAME(3)
         DATA ANAME(1) /'   NODES PER CLN SEGMENT'/
         DATA ANAME(2) /'                      IA'/
         DATA ANAME(3) /'                      JA'/
 
-        integer :: i1
-        integer :: IJA
-        integer :: II
-        real :: FLENG
-        integer :: IFTYP
-        integer :: ICCWADI
-        real :: FELEV
-        integer :: IFDIR
-        integer :: IFNO
-        real :: FANGLE
-        integer :: IFLIN
-        integer :: LLOC
-        integer :: ISTART
-        integer :: ISTOP
-        real :: R
-        real :: FSKIN        
-        real :: FANISO        
-        integer :: IFCON
-        integer :: IFNOD
-        integer :: ICGWADI
-        integer :: IFROW
-        integer :: IFLAY
-        integer :: IFCOL, i, j, k
+        integer(i4) :: i1
+        integer(i4) :: IJA
+        integer(i4) :: II
+        real(sp) :: FLENG
+        integer(i4) :: IFTYP
+        integer(i4) :: ICCWADI
+        real(sp) :: FELEV
+        integer(i4) :: IFDIR
+        integer(i4) :: IFNO
+        real(sp) :: FANGLE
+        integer(i4) :: IFLIN
+        integer(i4) :: LLOC
+        integer(i4) :: ISTART
+        integer(i4) :: ISTOP
+        real(sp) :: R
+        real(sp) :: FSKIN        
+        real(sp) :: FANISO        
+        integer(i4) :: IFCON
+        integer(i4) :: IFNOD
+        integer(i4) :: ICGWADI
+        integer(i4) :: IFROW
+        integer(i4) :: IFLAY
+        integer(i4) :: IFCOL, i, j, k
      
         
         
@@ -4393,15 +4393,15 @@
       USE GLOBAL, ONLY: IOUT,IFREFM,&
                        INCLN
         implicit none
-      DOUBLE PRECISION PERIF,AREAF
+      real(dp) PERIF,AREAF
       CHARACTER*400 LINE
 
         type (ModflowProject) Modflow
         
-        integer :: i, ifno, lloc
-        real :: conduitk, frad, tcond, tcoef, R
-        integer :: istop, istart
-        real :: tthk, tcfluid, fsrad
+        integer(i4) :: i, ifno, lloc
+        real(sp) :: conduitk, frad, tcond, tcoef, R
+        integer(i4) :: istop, istart
+        real(sp) :: tthk, tcfluid, fsrad
         
       
 !----------------------------------------------------------------------------------------
@@ -4484,13 +4484,13 @@
       USE GLOBAL, ONLY: IOUT,IFREFM,&
                        INCLN
         implicit none
-      DOUBLE PRECISION PERIF,AREAF
+      real(dp) PERIF,AREAF
       CHARACTER*400 LINE
 
         type (ModflowProject) Modflow
         
-        integer :: i, ifno, lloc, istart, istop, iftotno
-        real :: fheight, flength, conduitk, r, fsw, fsh, fwidth
+        integer(i4) :: i, ifno, lloc, istart, istop, iftotno
+        real(sp) :: fheight, flength, conduitk, r, fsw, fsh, fwidth
         
         
 !----------------------------------------------------------------------------------------
@@ -4538,9 +4538,9 @@
         implicit none
         type(ModflowProject) Modflow
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.CLN.name)//'.tecplot.dat'
@@ -4640,13 +4640,13 @@
 
         type (ModflowProject) Modflow
         
-        integer :: Fnum
-        integer :: FNumStepPeriodTime
+        integer(i4) :: Fnum
+        integer(i4) :: FNumStepPeriodTime
         character(MAX_STR) :: FNameStepPeriodTime
         
         
-        integer :: iTStep
-        integer :: iPeriod
+        integer(i4) :: iTStep
+        integer(i4) :: iPeriod
         real(dp) :: TotalTime
         real(dp) :: dum1, dum2, dum3, dum4
         
@@ -4721,7 +4721,7 @@
 
         type (ModflowDomain) Domain
         
-        integer :: i
+        integer(i4) :: i
 
         do i=1,domain.nCells
             if(bcheck(domain.Cell_is(i),chosen)) then
@@ -4737,7 +4737,7 @@
 
         type (TecplotDomain) TMPLT
         
-        integer :: i
+        integer(i4) :: i
 
         do i=1,TMPLT.nElements
             if(bcheck(TMPLT.Element_is(i),chosen)) then
@@ -4753,7 +4753,7 @@
 
         type (TecplotDomain)  D
 
-        integer :: i, j, k, l
+        integer(i4) :: i, j, k, l
         
         call StopWatch(1,'BuildFaceTopologyFromTecplotDomain')
         call Msg('Building face topology from model domain...') 
@@ -4885,7 +4885,7 @@
 
         type (TecplotDomain)  TMPLT
 
-        integer :: i, in1, in2, in3, in4 
+        integer(i4) :: i, in1, in2, in3, in4 
         
         allocate(seg_node(TMPLT.nElements*4,2))
         
@@ -4950,7 +4950,7 @@
     subroutine GenerateLayeredTMPLT_GWF(FNumMUT,TMPLT,TMPLT_GWF)
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_GWF
         
@@ -4962,9 +4962,9 @@
 
 	    ! Given a 2D mesh, define top elevation, layer bottoms and sublayering interactively.
 
-        integer :: i, j, k
+        integer(i4) :: i, j, k
         
-        integer :: iGWF_Cell, kCell, iDown, iUp
+        integer(i4) :: iGWF_Cell, kCell, iDown, iUp
         
         if(TMPLT.nNodes < 1000) then
             user_nz=1000
@@ -5220,7 +5220,7 @@
         !   - inherits face neighbour information from TMPLT
 
         implicit none
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_SWF
 
@@ -5228,7 +5228,7 @@
         character(MAX_INST) :: instruction
         character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
     
-        integer :: j
+        integer(i4) :: j
         
         continue
 
@@ -5286,7 +5286,7 @@
         !   - inherits face neighbour information from TMPLT
 
         implicit none
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_SWF
 
@@ -5294,7 +5294,7 @@
         character(MAX_INST) :: instruction
         character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
     
-        integer :: i, j
+        integer(i4) :: i, j
         
         continue
 
@@ -5491,11 +5491,11 @@
         
         character(MAX_INST) :: instruction
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         
-        integer :: i
+        integer(i4) :: i
         
-        real :: OutputTimes(1000)
+        real(sp) :: OutputTimes(1000)
         
         type (ModflowProject) Modflow
         
@@ -5537,9 +5537,9 @@
     !-------------------------------------------------------------
     subroutine GrowKeyWordArray(Modflow,ndim) !--- during run if necessary 
         type (ModflowProject) Modflow
-	    real, parameter :: nf_mult=2
-	    integer :: ndim_new
-	    integer :: ndim,i
+	    real(sp), parameter :: nf_mult=2
+	    integer(i4) :: ndim_new
+	    integer(i4) :: ndim,i
 	    character(MAX_STR), allocatable :: KeyWord_tmp(:) 
 
 	    ndim_new=nint(ndim*nf_mult)
@@ -5577,9 +5577,9 @@
         implicit none
         type (ModflowProject) Modflow
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i
+        integer(i4) :: i
 
        
         ! tecplot output file
@@ -5608,9 +5608,9 @@
         implicit none
         type(ModflowProject) Modflow
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.GWF.name)//'.tecplot.dat'
@@ -5788,10 +5788,10 @@
         implicit none
         type(TecplotDomain) domain
         
-        integer :: i, j, k, l
-        integer :: iEl, jEl
-        integer :: iNd, jNd
-        integer :: j1, j2
+        integer(i4) :: i, j, k, l
+        integer(i4) :: iEl, jEl
+        integer(i4) :: iNd, jNd
+        integer(i4) :: j1, j2
         
         real(dp) :: SeparationDistance
         
@@ -5873,11 +5873,11 @@
     !----------------------------------------------------------------------
     subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
         implicit none
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(ModflowDomain) domain
 
-        integer :: i, j
-	    integer :: npairs
+        integer(i4) :: i, j
+	    integer(i4) :: npairs
 	    real(dp) :: t
                 
         character(256) :: instruction
@@ -5939,13 +5939,13 @@
      !----------------------------------------------------------------------
     subroutine InitialHeadFromDepthSatToGWF(FNumMUT,domain)
         implicit none
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type(ModflowDomain) domain
 
-        integer :: i
-	    integer :: npairs
+        integer(i4) :: i
+	    integer(i4) :: npairs
         
-        integer :: iCell
+        integer(i4) :: iCell
         real(dp) :: depth
         real(dp) :: sw
                 
@@ -6239,7 +6239,7 @@
         implicit none
     
         type (ModflowProject) Modflow
-        integer :: i
+        integer(i4) :: i
 
         ! For modflow cell connection and area calculations
         
@@ -6267,10 +6267,10 @@
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_GWF
-        integer :: i, j
+        integer(i4) :: i, j
         
         ! For modflow cell connection and area calculations
-        integer :: icell
+        integer(i4) :: icell
         
         ! use existing TMPLT.CellArea (e.g. area of triangle)  
         allocate(Modflow.GWF.CellArea(Modflow.GWF.nCells),stat=ialloc)
@@ -6354,7 +6354,7 @@
         implicit none
     
         type (ModflowProject) Modflow
-        integer :: i
+        integer(i4) :: i
 
         ! Cell horizontal areas
         ! use existing TMPLT.CellArea (e.g. area of triangle)  
@@ -6382,9 +6382,9 @@
     !    implicit none
     !    type(TecplotDomain) domain
     !
-    !    integer :: Fnum
+    !    integer(i4) :: Fnum
     !    character(MAX_STR) :: FName
-    !    integer :: i, j
+    !    integer(i4) :: i, j
     !
     !    
     !    
@@ -6448,7 +6448,7 @@
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
         
-        integer :: i
+        integer(i4) :: i
         character(MAX_STR) :: FName
         
         If(allocated(domain.xCell)) then
@@ -6621,7 +6621,7 @@
         implicit none
         type (ModflowProject) Modflow
         
-        integer :: i
+        integer(i4) :: i
         
         Modflow.FNameOBPT=trim(Modflow.Prefix)//'.OBPT'
         call OpenAscii(Modflow.iOBPT,Modflow.FNameOBPT)
@@ -6681,12 +6681,12 @@
         PARAMETER (VERSION='USG-TRANSPORT VERSION 2.02.1')
         PARAMETER (MFVNAM='USG-TRANSPORT ') !USG = Un-Structured Grids
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         
-        integer :: i
+        integer(i4) :: i
        
-        integer :: inunit
+        integer(i4) :: inunit
         CHARACTER*4 CUNIT(NIUNIT)
         DATA CUNIT/'BCF6', 'WEL ', 'DRN ', 'RIV ', 'EVT ', 'EVS ', 'GHB ',&  !  7  et time series is now EVS as ETS is for segmented ET&
                 'RCH ', 'RTS ', 'TIB ', 'DPF ', 'OC  ', 'SMS ', 'PCB ',&  ! 14
@@ -6698,7 +6698,7 @@
                 'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
                 'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
                 'TVM ', 'SWF ', 'SWBC', 'OBPT', 33*'    '/
-        integer :: maxunit, nc 
+        integer(i4) :: maxunit, nc 
 
         INCLUDE 'openspec.inc'
 
@@ -7155,9 +7155,9 @@
         type (ModflowProject) Modflow
         type (ModflowDomain) Domain
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i, j, nvar, nVarShared
+        integer(i4) :: i, j, nvar, nVarShared
 
         character(4000) :: VarSharedStr
 
@@ -7423,7 +7423,7 @@
         type (ModflowProject) Modflow
         type(TecplotDomain) TMPLT
         
-        integer :: i, j, nvar
+        integer(i4) :: i, j, nvar
         character(MAX_STR) :: FName
         
         if(TMPLT.nNodesPerElement==3) then
@@ -7510,8 +7510,8 @@
 
         type (ModflowDomain) Domain
 
-        integer :: i
-	    integer :: ncount
+        integer(i4) :: i
+	    integer(i4) :: ncount
 
 
         
@@ -7566,18 +7566,18 @@
     subroutine NodeCentredGWFCellGeometry(FnumMUT,Modflow, TMPLT_GWF,TMPLT)
         implicit none
     
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         type (TecplotDomain) TMPLT
         type (TecplotDomain) TMPLT_GWF
         
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! For modflow cell connection and area calculations
-        integer :: j1, j2, iCell
+        integer(i4) :: j1, j2, iCell
         real(dp) :: TriangleArea
         
-        integer :: FnumTecplot
+        integer(i4) :: FnumTecplot
         character(MAX_STR) :: FNameTecplot
 
         FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.CellGeometry.tecplot.dat'
@@ -7721,13 +7721,13 @@
         implicit none
     
         type (ModflowProject) Modflow
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! For modflow cell connection and area calculations
-        integer :: j1, j2
+        integer(i4) :: j1, j2
         real(dp) :: TriangleArea
 
-        integer :: FnumTecplot
+        integer(i4) :: FnumTecplot
         character(MAX_STR) :: FNameTecplot
         
         FNameTecplot=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.SWF.CellGeometry.tecplot.dat'
@@ -7821,13 +7821,13 @@
     subroutine ObservationPoint(FNumMUT,domain)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowDomain) domain
 
 	    ! Assign the cell containing XYZ input coordinate as named obervation point and output head, sat, depth, conc ... 
 
-        integer :: i
-	    integer :: iCell
+        integer(i4) :: i
+	    integer(i4) :: iCell
 	    real(dp) :: x1,y1,z1,dist_min,f1
         
         domain.nObsPnt=domain.nObsPnt+1
@@ -7863,7 +7863,7 @@
         character(*) :: FileType
         character(*) :: line
         character(*) :: prefix
-        integer :: iUnit
+        integer(i4) :: iUnit
         character(*) :: FName
         
         l1=index(line,trim(Prefix))-1
@@ -7897,7 +7897,7 @@
         character(*) :: FileType
         character(*) :: line
         character(*) :: prefix
-        integer :: iUnit
+        integer(i4) :: iUnit
         character(*) :: FName
         
         l1=index(line,trim(Prefix))-1
@@ -7927,7 +7927,7 @@
     subroutine PostprocessExistingModflowModel(FNumMUT, Modflow,prefix) !--- Post-process existing Modflow model from instructions
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         character(*) :: prefix
         type (ModflowProject) Modflow
         
@@ -7943,8 +7943,8 @@
 
         type (ModflowProject) Modflow
         
-        integer :: Fnum
-        integer :: i
+        integer(i4) :: Fnum
+        integer(i4) :: i
      
         character(MAX_STR) :: line
         character(MAX_STR) :: PossibleKey
@@ -7986,9 +7986,9 @@
     subroutine SMSParamterSetNumber(FNumMUT) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         
-        real :: LengthConversionFactor
+        real(sp) :: LengthConversionFactor
 
         read(FNumMUT,*) iSMSParameterSet
         write(TmpSTR,'(i4)') iSMSParameterSet
@@ -8078,10 +8078,10 @@
     subroutine StressPeriod(FNumMUT,modflow)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         
-        integer, parameter :: MAXStressPeriods=100
+        integer(i4), parameter :: MAXStressPeriods=100
         character(MAX_INST) :: Type_CMD	                =   'type'
         character(MAX_INST) :: Duration_CMD	            =   'duration'
         character(MAX_INST) :: NumberOfTimesteps_CMD	=   'number of timesteps'
@@ -8169,9 +8169,9 @@
         implicit none
         type(ModflowProject) Modflow
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.SWF.name)//'.tecplot.dat'
@@ -8300,7 +8300,7 @@
         implicit none
         type (TecplotDomain) TMPLT
 
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! Cell connection length and perpendicular area arrays
         allocate(TMPLT.ConnectionLength(MAX_CNCTS,TMPLT.nElements), &
@@ -8357,16 +8357,16 @@
         implicit none
         type(TecplotDomain) TMPLT
         
-        integer :: i, j, jNode, kNode
+        integer(i4) :: i, j, jNode, kNode
         
         real(dp) :: FractionSide
         
-        integer :: ia_TMP(TMPLT.nNodes)
-        integer :: ConnectionList_TMP(MAX_CNCTS,TMPLT.nNodes)
+        integer(i4) :: ia_TMP(TMPLT.nNodes)
+        integer(i4) :: ConnectionList_TMP(MAX_CNCTS,TMPLT.nNodes)
         real(dp) :: ConnectionLength_TMP(MAX_CNCTS,TMPLT.nNodes)
         real(dp) :: PerpendicularArea_TMP(MAX_CNCTS,TMPLT.nNodes)
         
-        integer :: iSort(MAX_CNCTS)
+        integer(i4) :: iSort(MAX_CNCTS)
 
         
         ! If TMPLT defined by triangles with inner circles then:
@@ -8378,7 +8378,7 @@
 	    real(dp) :: rseg, rcut
         
         ! For xSide, ySide circle tangent
-        integer :: j1, j2
+        integer(i4) :: j1, j2
         real(dp) :: D, DC, D1, D2, RC
         
         ! For node-centred modflow cell connection and area calculations we need xSide, ySide array coordinates
@@ -8551,9 +8551,9 @@
         type(ModflowProject) Modflow
         type(TecplotDomain) TMPLT
 
-        integer :: Fnum
+        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer :: i, j
+        integer(i4) :: i, j
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'.tecplot.dat'
@@ -8634,7 +8634,7 @@
         
         type (ModflowProject) Modflow
         
-        integer :: i
+        integer(i4) :: i
  	
         !------------------- CHD file
         write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! maximum number of CHD cells in any stress period 
@@ -8672,7 +8672,7 @@
         type (ModflowProject) Modflow
         
         
-        integer :: i, j, k
+        integer(i4) :: i, j, k
         character(MAX_STR) :: OutputLine
         
         Modflow.CLN.NCLNGWC=Modflow.CLN.nCells  ! assume for now that all cln cells are connected to underlying gwf cells
@@ -8786,7 +8786,7 @@
         
         type (ModflowProject) Modflow
         
-        integer :: i
+        integer(i4) :: i
  	
         !------------------- DRN file
         write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! maximum number of DRN cells in any stress period 
@@ -8825,7 +8825,7 @@
         implicit none
         type (ModflowProject) Modflow
 
-        integer :: i, j, k, nStrt,nEnd
+        integer(i4) :: i, j, k, nStrt,nEnd
         
         !------------------- BAS6 file
         ! Hardwired for unstructured, free format and solving Richard's equation when built from scratch
@@ -9171,7 +9171,7 @@
         implicit none
         type (ModflowProject) Modflow
 
-        integer :: i, j, k
+        integer(i4) :: i, j, k
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
         write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, & ! NSWFNDS 
@@ -9285,10 +9285,10 @@
 
         type (ModflowProject) Modflow
         
-        integer :: i
+        integer(i4) :: i
 
-        integer :: Fnum
-        integer :: FnumTecplot
+        integer(i4) :: Fnum
+        integer(i4) :: FnumTecplot
         character(MAX_STR) :: FNameTecplot
         
         
@@ -9296,7 +9296,7 @@
         real(dp) :: VarNumRate(100)
         Real(dp) :: VarNumCumulative(100)
         logical :: DoVars
-        integer :: bline
+        integer(i4) :: bline
         logical :: InSection
         real(dp) :: TotalTime
         real(dp) :: dum1, dum2, dum3, dum4
@@ -9305,7 +9305,7 @@
         character(4000) :: output_line
         character(4000) :: line
         
-        integer :: len
+        integer(i4) :: len
 
 
         
@@ -9510,7 +9510,7 @@
       USE NAMEFILEMODULE
       USE GWFBASMODULE, ONLY:IFLUSHS,CFLUSH
       INCLUDE 'openspec.inc'
-      integer :: IUNIT(NIUNIT)
+      integer(i4) :: IUNIT(NIUNIT)
       CHARACTER*4 CUNIT(NIUNIT)
       CHARACTER*7 FILSTAT
       CHARACTER*20 FILACT, FMTARG, ACCARG
@@ -9519,12 +9519,12 @@
       CHARACTER*300 LINE, FNAME
       CHARACTER*20 FILTYP
       LOGICAL LOP
-      INTEGER, DIMENSION(99) ::TMPFLUSHS !kkz -tmp for list of binary output unit numbers to flush
+      integer(i4), DIMENSION(99) ::TMPFLUSHS !kkz -tmp for list of binary output unit numbers to flush
       
-      integer :: iout, inunit, maxunit, inbas, i, lenver, indent, niunit
-      integer :: lloc, ityp1, ityp2
-      real :: r
-      integer :: n, istop, iu, istart, inam2, inam1, iflen, iflush, iopt2, iopt1, ii
+      integer(i4) :: iout, inunit, maxunit, inbas, i, lenver, indent, niunit
+      integer(i4) :: lloc, ityp1, ityp2
+      real(sp) :: r
+      integer(i4) :: n, istop, iu, istart, inam2, inam1, iflen, iflush, iopt2, iopt1, ii
       
       type (ModflowProject) Modflow
 
@@ -9848,9 +9848,9 @@
         type (ModflowProject) Modflow
         
         CHARACTER*400 LINE
-        integer :: inoc, lloc, in, istart, k
-        real :: r
-        integer :: istop, n, itrunit, icunit
+        integer(i4) :: inoc, lloc, in, istart, k
+        real(sp) :: r
+        integer(i4) :: istop, n, itrunit, icunit
         
         itrunit=0   !rgm for now assume no bct (block-centred transport) file opened
         icunit=Modflow.iCLN
@@ -10150,9 +10150,9 @@
         !
         CHARACTER*400 LINE
         
-        integer :: inoc, iout, lloc, istart, istop
-        real :: r
-        integer :: n
+        integer(i4) :: inoc, iout, lloc, istart, istop
+        real(sp) :: r
+        integer(i4) :: n
         !     ------------------------------------------------------------------
         !
         !1------ALPHABETIC OUTPUT CONTROL.  WRITE MESSAGE AND SET INITIAL VALUES
@@ -10398,7 +10398,7 @@
                 
         !
         
-                integer :: inoc, iout, it, i
+                integer(i4) :: inoc, iout, it, i
         !     ------------------------------------------------------------------
         !
         !1------READ PRINT TIME ARRAY
@@ -10483,21 +10483,21 @@
               DATA ANAME(9) /'     STORAGE COEFFICIENT'/
               DATA ANAME(10) /'UNSAT PARAMETER ZONE MAP'/
               
-              integer :: in, lloc, istop, istart, i, k
-              real :: r
-              integer :: nplpf, nopchk, n
-              integer :: izon, itrows,inlak
-              integer :: NCNVRT
-                integer :: NHANI
-                integer :: NWETD
-                integer :: ILAYUNSAT
-                integer :: NPHK
-                integer :: NPVKCB
-                integer :: NPVK
-                integer :: NPVANI
-                integer :: NPSS
-                integer :: NPSY
-                integer :: NPHANI
+              integer(i4) :: in, lloc, istop, istart, i, k
+              real(sp) :: r
+              integer(i4) :: nplpf, nopchk, n
+              integer(i4) :: izon, itrows,inlak
+              integer(i4) :: NCNVRT
+                integer(i4) :: NHANI
+                integer(i4) :: NWETD
+                integer(i4) :: ILAYUNSAT
+                integer(i4) :: NPHK
+                integer(i4) :: NPVKCB
+                integer(i4) :: NPVK
+                integer(i4) :: NPVANI
+                integer(i4) :: NPSS
+                integer(i4) :: NPSY
+                integer(i4) :: NPHANI
 
               
               in=modflow.iLPF
@@ -11032,13 +11032,13 @@
 
       type (ModflowProject) Modflow
 
-      REAL, DIMENSION(:),ALLOCATABLE  ::HTMP1
-      REAL*8, DIMENSION(:),ALLOCATABLE  ::HTMP18
+      real(sp), DIMENSION(:),ALLOCATABLE  ::HTMP1
+      real(dp), DIMENSION(:),ALLOCATABLE  ::HTMP18
       CHARACTER*24 ANAME(2)
       DATA ANAME(1) /' CONDUIT BOUNDARY ARRAY'/
       DATA ANAME(2) /'   CONDUIT INITIAL HEAD'/
       
-      integer :: n
+      integer(i4) :: n
       
       iout=FNumEco
       INCLN=Modflow.iCLN
@@ -11061,7 +11061,7 @@
         IF(IBOUND(NODES+N).EQ.0) HNEW(NODES+N)=HNOFLO
       end do
       DEALLOCATE(HTMP1)
-      ELSE    !----------------------------------DOUBLE PRECISION READ
+      ELSE    !----------------------------------real(dp) READ
       ALLOCATE(HTMP18(NCLNNDS))
       CALL U1DREL8(HTMP18,ANAME(2),NCLNNDS,0,INCLN,IOUT)
       DO N=1,NCLNNDS
@@ -11127,13 +11127,13 @@
 
       type (ModflowProject) Modflow
 
-      REAL, DIMENSION(:),ALLOCATABLE  ::HTMP1
-      REAL*8, DIMENSION(:),ALLOCATABLE  ::HTMP18
+      real(sp), DIMENSION(:),ALLOCATABLE  ::HTMP1
+      real(dp), DIMENSION(:),ALLOCATABLE  ::HTMP18
       CHARACTER*24 ANAME(2)
       DATA ANAME(1) /'     SWF BOUNDARY ARRAY'/
       DATA ANAME(2) /'       SWF INITIAL HEAD'/
       
-      integer :: k, n
+      integer(i4) :: k, n
       
       iout=FNumEco
       INSWF=Modflow.iSWF
@@ -11169,7 +11169,7 @@
             IF(IBOUND(NODES+NCLNNDS+N).EQ.0) HNEW(NODES+NCLNNDS+N)=HNOFLO
           end do
           DEALLOCATE(HTMP1)
-      ELSE    !----------------------------------DOUBLE PRECISION READ
+      ELSE    !----------------------------------real(dp) READ
           ALLOCATE(HTMP18(NSWFNDS))
           CALL U1DREL8(HTMP18,ANAME(2),NSWFNDS,0,INSWF,IOUT)
           DO N=1,NSWFNDS
@@ -11231,10 +11231,10 @@
 !
       CHARACTER*400 LINE
       
-      integer :: in, mxpw, mxactw, lloc
-      real :: r
-      integer :: istart, istop, n, lstsum, k, lstbeg, ip, numinst, nlst
-      integer :: ninlst, i
+      integer(i4) :: in, mxpw, mxactw, lloc
+      real(sp) :: r
+      integer(i4) :: istart, istop, n, lstsum, k, lstbeg, ip, numinst, nlst
+      integer(i4) :: ninlst, i
       
         in=modflow.iWEL
         iout=FNumEco
@@ -11408,11 +11408,11 @@
 !      SPECIFICATIONS:
 !     ------------------------------------------------------------------
       USE SWF1MODULE
-      DOUBLE PRECISION THCK,HD,BBOT,&
+      real(dp) THCK,HD,BBOT,&
        DEPTH,SATEPS,D0S0
       
-      integer :: ioption
-      real :: epsilon
+      integer(i4) :: ioption
+      real(sp) :: epsilon
 !     ------------------------------------------------------------------
       EPSILON = 0.1D0
       SATEPS = 0.9D0*EPSILON
@@ -11473,9 +11473,9 @@
       CHARACTER*10 PN,CTMP1,CTMP2
       CHARACTER*400 LINE
       
-      integer :: in, np, iout,lstsum,iterp, mxlst, numinst, lloc, istart, istop,n
-      real :: r, pv
-      integer :: nlst, ni
+      integer(i4) :: in, np, iout,lstsum,iterp, mxlst, numinst, lloc, istart, istop,n
+      real(sp) :: r, pv
+      integer(i4) :: nlst, ni
 !     ------------------------------------------------------------------
 !
 !1------Read the parameter name and definition.
@@ -11629,20 +11629,20 @@
 !     ******************************************************************
       CHARACTER*(*) LABEL
       CHARACTER*16 CAUX(NCAUX)
-      real :: RLIST(LDIM,MXLIST)
+      real(sp) :: RLIST(LDIM,MXLIST)
       CHARACTER*400 LINE,FNAME
-      integer :: nunopn
+      integer(i4) :: nunopn
       DATA NUNOPN/99/
       INCLUDE 'openspec.inc'
       
-      integer :: nlist, lstbeg, iout, inpack, ial, iscloc1, naux
-      integer :: nrow, iscloc2, ifrefm, ncol, nlay, iprflg, in, iclose
-      real :: sfac
-      integer :: lloc, i
-      real :: r
-      integer :: istop, istart, n, nread2, nread1, ii, jj, k, j
-      integer :: mxlist, ldim, idum, iloc, ncaux
-      integer :: nn
+      integer(i4) :: nlist, lstbeg, iout, inpack, ial, iscloc1, naux
+      integer(i4) :: nrow, iscloc2, ifrefm, ncol, nlay, iprflg, in, iclose
+      real(sp) :: sfac
+      integer(i4) :: lloc, i
+      real(sp) :: r
+      integer(i4) :: istop, istart, n, nread2, nread1, ii, jj, k, j
+      integer(i4) :: mxlist, ldim, idum, iloc, ncaux
+      integer(i4) :: nn
       
 !     ------------------------------------------------------------------
 !
@@ -11776,20 +11776,20 @@
 !     ******************************************************************
       CHARACTER*(*) LABEL
       CHARACTER*16 CAUX(NCAUX)
-      real :: RLIST(LDIM,MXLIST)
+      real(sp) :: RLIST(LDIM,MXLIST)
       CHARACTER*400 LINE,FNAME
-      integer :: nunopn
+      integer(i4) :: nunopn
       DATA NUNOPN/99/
       INCLUDE 'openspec.inc'
       
-      integer :: inpack, iout, ial, lstbeg, nlist, iscloc1, nodes
-      integer :: naux, ifrefm, iscloc2, iprflg, in, iclose
-      real :: sfac
-      integer :: lloc, istop
-      real :: r
-      integer :: i, istart, n, nread2, nread1, ii,k,jj, idum, iloc
-      integer :: mxlist, ldim, ncaux
-      integer :: nn
+      integer(i4) :: inpack, iout, ial, lstbeg, nlist, iscloc1, nodes
+      integer(i4) :: naux, ifrefm, iscloc2, iprflg, in, iclose
+      real(sp) :: sfac
+      integer(i4) :: lloc, istop
+      real(sp) :: r
+      integer(i4) :: i, istart, n, nread2, nread1, ii,k,jj, idum, iloc
+      integer(i4) :: mxlist, ldim, ncaux
+      integer(i4) :: nn
       
 !     ------------------------------------------------------------------
 !
@@ -11917,7 +11917,7 @@
       CHARACTER*1 DASH(400)
       DATA DASH/400*'-'/
       
-      integer :: ncaux, naux, iout, len, nbuf, i, n1, j
+      integer(i4) :: ncaux, naux, iout, len, nbuf, i, n1, j
 !     ------------------------------------------------------------------
 !
 !1------Construct the complete label in BUF.  Start with BUF=LABEL.
@@ -11962,9 +11962,9 @@
 
       CHARACTER*400 LINE
       
-      integer :: in, mxpc, mxactc, lloc
-      real :: r
-      integer :: istart, istop, naux, n, lstsum, k, lstbeg, ip, numinst, nlst, ib, lb, i
+      integer(i4) :: in, mxpc, mxactc, lloc
+      real(sp) :: r
+      integer(i4) :: istart, istop, naux, n, lstsum, k, lstbeg, ip, numinst, nlst, ib, lb, i
 
       in=modflow.iCHD 
       iout=FNumEco
@@ -12088,9 +12088,9 @@
       CHARACTER*400 LINE
       CHARACTER*4 PTYP
       
-      integer :: in, lloc, istart, istop
-      real :: r
-      integer :: n, inoc, i, iconcrch, ii, inbct, inselev, k
+      integer(i4) :: in, lloc, istart, istop
+      real(sp) :: r
+      integer(i4) :: n, inoc, i, iconcrch, ii, inbct, inselev, k
       
       in=modflow.iRCH 
       iout=FNumEco
@@ -12283,9 +12283,9 @@
       
       type (ModflowProject) Modflow
 
-      integer :: in, mxpd, mxactd, lloc, istart, istop
-      real :: r
-      integer :: naux, n, lstsum, k, lstbeg, numinst, ip, nlst, ninlst, i
+      integer(i4) :: in, mxpd, mxactd, lloc, istart, istop
+      real(sp) :: r
+      integer(i4) :: naux, n, lstsum, k, lstbeg, numinst, ip, nlst, ninlst, i
       
       CHARACTER*400 LINE
 !     ------------------------------------------------------------------
@@ -12409,9 +12409,9 @@
       
       CHARACTER*400 LINE
       
-      integer :: in, lloc
-      real :: r
-      integer :: istart, istop
+      integer(i4) :: in, lloc
+      real(sp) :: r
+      integer(i4) :: istart, istop
       
       in=modflow.iSWBC 
       iout=FNumEco
@@ -12486,7 +12486,7 @@
       
       type (ModflowProject) Modflow
       
-      integer :: in, np, L
+      integer(i4) :: in, np, L
       
       in=modflow.iSWBC 
       iout=FNumEco
@@ -12574,8 +12574,8 @@
       
       type (ModflowProject) Modflow
 
-      REAL, DIMENSION(:,:),ALLOCATABLE  ::TEMP
-      INTEGER, DIMENSION(:,:),ALLOCATABLE  ::ITEMP
+      real(sp), DIMENSION(:,:),ALLOCATABLE  ::TEMP
+      integer(i4), DIMENSION(:,:),ALLOCATABLE  ::ITEMP
 !
       CHARACTER*24 ANAME(5)
       CHARACTER(LEN=200) line
@@ -12586,11 +12586,11 @@
       DATA ANAME(4) /'                  iznrch'/
       DATA ANAME(5) /'                    CONC'/
       
-      integer :: in, lloc, iniznrch, inselev, inconc
-      real :: r
-      integer :: istop, n, istart, inoc, inrech, i, j, ir, ic
-      integer :: iflag, kper, iurts, izr, iconcrch, ii
-      integer :: nn
+      integer(i4) :: in, lloc, iniznrch, inselev, inconc
+      real(sp) :: r
+      integer(i4) :: istop, n, istart, inoc, inrech, i, j, ir, ic
+      integer(i4) :: iflag, kper, iurts, izr, iconcrch, ii
+      integer(i4) :: nn
       
       in=modflow.iRCH
       iout=FNumEco
@@ -12886,7 +12886,7 @@
       
       type (ModflowProject) Modflow
       
-      integer :: in, np, naux, ioutu, mxactd, nread, n, l, ir, ic, il
+      integer(i4) :: in, np, naux, ioutu, mxactd, nread, n, l, ir, ic, il
 
       in=modflow.iDRN
       iout=FNumEco
@@ -12993,9 +12993,9 @@
       USE PARAMMODULE
       CHARACTER*(*) LINE
       
-      integer :: in, np, iout, lloc, istop
-      real :: r
-      integer :: n, istart
+      integer(i4) :: in, np, iout, lloc, istop
+      real(sp) :: r
+      integer(i4) :: n, istart
 !     ------------------------------------------------------------------
 !
 !  If NP has not already been defined, decode PARAMETER definitions if
@@ -13032,7 +13032,7 @@
       USE PARAMMODULE
       CHARACTER*(*) PTYP
       
-      integer :: i
+      integer(i4) :: i
 !     ------------------------------------------------------------------
 !
 !1------Loop through all parameters.  Set IACTIVE to 0 when the
@@ -13061,9 +13061,9 @@
       CHARACTER*400 LINE
       CHARACTER*10 CTMP1,CTMP2,CTMP3,CTMP4
       
-      integer :: in, ncol, nrow, ilay, iout, np, ipf, init, n
-      real :: rdum, zz
-      integer :: lloc, idum, istart, istop, ip, numinst, iloc,ni, ki, ii, nsub, i
+      integer(i4) :: in, ncol, nrow, ilay, iout, np, ipf, init, n
+      real(sp) :: rdum, zz
+      integer(i4) :: lloc, idum, istart, istop, ip, numinst, iloc,ni, ki, ii, nsub, i
 !     ------------------------------------------------------------------
 !
 !1------Set initialization flag to cause USUB2D to initialze ZZ to 0.
@@ -13187,10 +13187,10 @@
               CHARACTER*400 LINE
               CHARACTER*10 PN,CTMP1,CTMP2
               
-              integer :: in, iact, np, itvp, iterp, ilflg, iout, lloc, n, i, j
-              real :: r, pv
-              integer :: istop, ni, istart, nclu, numinst, ib, inst, kk
-              integer :: im1, im2, iz1, iz2
+              integer(i4) :: in, iact, np, itvp, iterp, ilflg, iout, lloc, n, i, j
+              real(sp) :: r, pv
+              integer(i4) :: istop, ni, istart, nclu, numinst, ib, inst, kk
+              integer(i4) :: im1, im2, iz1, iz2
         !     ------------------------------------------------------------------
         !
         !1------Read a parameter definition line and decode the parameter name,
@@ -13429,7 +13429,7 @@
         !
               CHARACTER*4 PTYP
               
-              integer :: np, iout, icl, lay, lv
+              integer(i4) :: np, iout, icl, lay, lv
         !     ------------------------------------------------------------------
         !
         !1------LOOP THROUGH THE CLUSTERS FOR THIS PARAMETER.
@@ -13480,8 +13480,8 @@
                                    LAYFLG,VKA,VKCB,HANI,IHANISO,&
                                    alpha,beta,sr,brook,BP,IBPN,itabrich
         !
-              REAL, DIMENSION(:,:),ALLOCATABLE  ::TEMP
-              REAL, DIMENSION (:), ALLOCATABLE :: TEMPPL
+              real(sp), DIMENSION(:,:),ALLOCATABLE  ::TEMP
+              real(sp), DIMENSION (:), ALLOCATABLE :: TEMPPL
         !
               CHARACTER*24 ANAME(15),STOTXT
               CHARACTER*4 PTYP
@@ -13501,10 +13501,10 @@
               DATA ANAME(13) /'                      sr'/
               DATA ANAME(14) /'                   brook'/
               DATA ANAME(15) /'     BUBBLING POINT HEAD'/
-              REAL PI
+              real(sp) PI
               
-              integer :: npsy, in, npvani, npss, nphk, nphani, npvk, npvkcb, nopchk, n, i, k, j
-              integer :: ii, jj, iis, kk, khani, ianame
+              integer(i4) :: npsy, in, npvani, npss, nphk, nphani, npvk, npvkcb, nopchk, n, i, k, j
+              integer(i4) :: ii, jj, iis, kk, khani, ianame
         !     ------------------------------------------------------------------
         !1-------ALLOCATE TEMP ARRAY FOR STORING 3-D INFORMATION
               ALLOCATE(TEMP(NCOL,NROW))
@@ -13772,7 +13772,7 @@
                                    LAYFLG,VKA,VKCB,HANI,HK,IHANISO,&
                                    alpha,beta,sr,brook,BP,IBPN,ITABRICH, LAYCON
         !
-              REAL, DIMENSION(:),ALLOCATABLE  ::TEMP
+              real(sp), DIMENSION(:),ALLOCATABLE  ::TEMP
         !
               CHARACTER*24 ANAME(16),STOTXT
               CHARACTER*4 PTYP
@@ -13794,10 +13794,10 @@
               DATA ANAME(15) /'                   brook'/
               DATA ANAME(16) /'     BUBBLING POINT HEAD'/
               
-            integer :: npss, nphk, in, nphani, npsy, npvk, npvani, nopchk, npvkcb
-            integer :: kk, nndlay, nstrt, khani, ianame, iis, n
-            real :: thick1, thick2, thick, akn
-            integer :: ndslay, ii, jj, ikn, k
+            integer(i4) :: npss, nphk, in, nphani, npsy, npvk, npvani, nopchk, npvkcb
+            integer(i4) :: kk, nndlay, nstrt, khani, ianame, iis, n
+            real(sp) :: thick1, thick2, thick, akn
+            integer(i4) :: ndslay, ii, jj, ikn, k
 
         !     ------------------------------------------------------------------
         !
@@ -14041,8 +14041,8 @@
               CHARACTER*(*) PTYP
               CHARACTER*24 ANAME
               
-              integer :: ncol, ilay, nrow, iout, ipf, init, ip, ii, nsub
-              real :: zz
+              integer(i4) :: ncol, ilay, nrow, iout, ipf, init, ip, ii, nsub
+              real(sp) :: zz
         !     ------------------------------------------------------------------
         !
         !1------Set initialization flag to cause USUB2D to initialze ZZ to 0.
@@ -14086,12 +14086,12 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       USE PARAMMODULE
-      INTEGER IBOUND(NCOL,NROW,NLAY)
-      REAL BUFF(NCOL,NROW)
+      integer(i4) IBOUND(NCOL,NROW,NLAY)
+      real(sp) BUFF(NCOL,NROW)
       CHARACTER*4 PTYP
       
-      integer :: lay, iout, iunstr, i, j, ip, ic, iza, ii
-      integer :: nlay, ncol, nrow, izi, iz, ilay, ierr, kk, ij, jj
+      integer(i4) :: lay, iout, iunstr, i, j, ip, ic, iza, ii
+      integer(i4) :: nlay, ncol, nrow, izi, iz, ilay, ierr, kk, ij, jj
 !     ------------------------------------------------------------------
 !
 !1------Make sure that the parameter type is non-blank.
@@ -14193,13 +14193,13 @@
 !     ------------------------------------------------------------------
       USE GLOBAL,      ONLY:gIA,JA,JAS,NJAS,NODES,NJA
       CHARACTER*24 ANAME
-      REAL, DIMENSION(:),ALLOCATABLE  ::TEMP,TEMPU
+      real(sp), DIMENSION(:),ALLOCATABLE  ::TEMP,TEMPU
       DIMENSION ARRAY(NJAS)
-      INTEGER IAG(NODES+1)
+      integer(i4) IAG(NODES+1)
       
-      integer :: iout, idsymrd, njag
-      real :: array
-      integer :: in, k, njags, n, iic, ii, jj, iis, iagnum, iig
+      integer(i4) :: iout, idsymrd, njag
+      real(sp) :: array
+      integer(i4) :: in, k, njags, n, iic, ii, jj, iis, iagnum, iig
       
 !     ------------------------------------------------------------------
       K = 0
@@ -14262,11 +14262,11 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       USE PARAMMODULE
-      real :: ZZ(NCOL,NROW)
+      real(sp) :: ZZ(NCOL,NROW)
       
-      integer :: init, nsub, ncol, ilay, ip, nrow, i,j, icstart, icstop
-      real :: aa
-      integer :: numinst, nclu, ni, ic, mlt, iz, jj
+      integer(i4) :: init, nsub, ncol, ilay, ip, nrow, i,j, icstart, icstop
+      real(sp) :: aa
+      integer(i4) :: numinst, nclu, ni, ic, mlt, iz, jj
       
 !     ------------------------------------------------------------------
 !
@@ -14346,18 +14346,18 @@
       
       SUBROUTINE ULAPRWC(A,NCOL,NROW,ILAY,IOUT,IPRN,ANAME)
 !     ******************************************************************
-!     WRITE A TWO-DIMENSIONAL REAL ARRAY.  IF THE ARRAY IS CONSTANT,
+!     WRITE A TWO-DIMENSIONAL real(sp),ARRAY.  IF THE ARRAY IS CONSTANT,
 !     PRINT JUST THE CONSTANT VALUE.  IF THE ARRAY IS NOT CONSTANT, CALL
 !     ULAPRW TO PRINT IT.
 !     ******************************************************************
 !
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
-      real :: A(NCOL,NROW)
+      real(sp) :: A(NCOL,NROW)
       CHARACTER*(*) ANAME
       
-      integer :: nrow, iout, iprn, ilay, ncol, i,j
-      real :: tmp
+      integer(i4) :: nrow, iout, iprn, ilay, ncol, i,j
+      real(sp) :: tmp
       
 !     ------------------------------------------------------------------
 !
@@ -14403,9 +14403,9 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       CHARACTER*16 TEXT
-      real :: BUF(NCOL,NROW)
+      real(sp) :: BUF(NCOL,NROW)
       
-      integer :: kper, ilay, iout, iprn, kstp, ip, i, j, ncol, nrow
+      integer(i4) :: kper, ilay, iout, iprn, kstp, ip, i, j, ncol, nrow
 !     ------------------------------------------------------------------
 !
 !1------PRINT A HEADER DEPENDING ON ILAY
@@ -14570,8 +14570,8 @@
               '0','1','2','3','4','5','6','7','8','9'/
       DATA DOT,SPACE/'.',' '/
       
-      integer :: ndig, iout, nspace, ncpl, nlbl1, nlbl, n, ntot, j1, j2
-      integer nlbl2, nwrap, i, nbf, j, i1, i2, i3, i4 
+      integer(i4) :: ndig, iout, nspace, ncpl, nlbl1, nlbl, n, ntot, j1, j2
+      integer(i4) nlbl2, nwrap, i, nbf, j, i1, i2, i3, i4 
 !     ------------------------------------------------------------------
 !
 !1------CALCULATE # OF COLUMNS TO BE PRINTED (NLBL), WIDTH
@@ -14650,9 +14650,9 @@
       USE PARAMMODULE
       CHARACTER*(*) LINE
       
-      integer ::  mxl, in, np, iout, lloc, istart
-      real :: r
-      integer :: n, istop
+      integer(i4) ::  mxl, in, np, iout, lloc, istart
+      real(sp) :: r
+      integer(i4) :: n, istop
 !     ------------------------------------------------------------------
 !
 !1------Decode PARAMETER definitions if they exist
@@ -14694,13 +14694,13 @@
       CHARACTER*400 LINE
       CHARACTER*10 CTMP1,CTMP2,CTMP3,CTMP4
       
-      integer ::  in
-      real :: rlist
-      integer :: nread, ioutu, ipvl1, naux, mxlst, ipvl2, ntot
-      integer :: lstvl, ncaux, lloc, idum, istop, istart
-      real :: rdum
-      integer :: ip, nlst, numinst, iloc, ni, ki, i, ii, iii
-      integer :: j, ipvl, il, ir, ic, jj, n, lstdim
+      integer(i4) ::  in
+      real(sp) :: rlist
+      integer(i4) :: nread, ioutu, ipvl1, naux, mxlst, ipvl2, ntot
+      integer(i4) :: lstvl, ncaux, lloc, idum, istop, istart
+      real(sp) :: rdum
+      integer(i4) :: ip, nlst, numinst, iloc, ni, ki, i, ii, iii
+      integer(i4) :: j, ipvl, il, ir, ic, jj, n, lstdim
       
 !     ------------------------------------------------------------------
 !
@@ -14838,13 +14838,13 @@
     subroutine ReadBinary_HDS_File(Modflow, domain)
         implicit none
         
-        integer :: i
+        integer(i4) :: i
         character*16   :: text
         
-        integer :: idum, KSTPREAD,KPERREAD
-        DOUBLE PRECISION :: TOTIMREAD,PERTIMREAD
+        integer(i4) :: idum, KSTPREAD,KPERREAD
+        real(dp) :: TOTIMREAD,PERTIMREAD
         
-        integer :: k, nndlay, nstrt, ndslay, ilay
+        integer(i4) :: k, nndlay, nstrt, ndslay, ilay
         
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
@@ -14887,13 +14887,13 @@
     subroutine ReadBinary_DDN_File(Modflow, domain)
         implicit none
         
-        integer :: i
+        integer(i4) :: i
         character*16   :: text
         
-        integer :: idum, KSTPREAD,KPERREAD
-        DOUBLE PRECISION :: TOTIMREAD,PERTIMREAD
+        integer(i4) :: idum, KSTPREAD,KPERREAD
+        real(dp) :: TOTIMREAD,PERTIMREAD
         
-        integer :: k, nndlay, nstrt, ndslay, ilay
+        integer(i4) :: k, nndlay, nstrt, ndslay, ilay
         
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
@@ -14933,17 +14933,17 @@
     ! borrowed from J. Doherty.
         implicit none
 
-        integer :: Fnum
+        integer(i4) :: Fnum
 
-        integer :: kstp,kper,NVAL,idum,ICODE
+        integer(i4) :: kstp,kper,NVAL,idum,ICODE
         character*16   :: text
         character*16  :: CompName(100)
-        real, allocatable :: dummy(:)
+        real(sp), allocatable :: dummy(:)
         
         
-        !real :: rmin
-        !real :: rmax
-        integer :: i, j, k
+        !real(sp) :: rmin
+        !real(sp) :: rmax
+        integer(i4) :: i, j, k
 
         
         type (ModflowProject) Modflow
@@ -15106,11 +15106,11 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       CHARACTER*4 TEXT(4)
-      DOUBLE PRECISION PERTIM,TOTIM
-      real :: BUF(NCOL,NROW)
-      REAL PERTIMS,TOTIMS
+      real(dp) PERTIM,TOTIM
+      real(sp) :: BUF(NCOL,NROW)
+      real(sp) PERTIMS,TOTIMS
       
-      integer :: ncol, kper, kstp, nrow, ilay, ichn, ncols, nrows, ic, ir
+      integer(i4) :: ncol, kper, kstp, nrow, ilay, ichn, ncols, nrows, ic, ir
 !     ------------------------------------------------------------------
 !1------WRITE AN UNFORMATTED RECORD CONTAINING IDENTIFYING
 !1------INFORMATION.
@@ -15136,11 +15136,11 @@
 !        SPECIFICATIONS:
 !     ------------------------------------------------------------------
       CHARACTER*16 TEXT
-      DOUBLE PRECISION PERTIM,TOTIM
-      real :: BUF(NODES)
-      REAL PERTIMS,TOTIMS
+      real(dp) PERTIM,TOTIM
+      real(sp) :: BUF(NODES)
+      real(sp) PERTIMS,TOTIMS
       
-      integer :: nstrt, kstp, kper, nodes, ilay, ichn, nndlay, i
+      integer(i4) :: nstrt, kstp, kper, nodes, ilay, ichn, nndlay, i
 !     ------------------------------------------------------------------
 !
 !1------WRITE AN UNFORMATTED RECORD CONTAINING IDENTIFYING INFORMATION.
@@ -15163,15 +15163,15 @@
         type (ModflowProject) Modflow
         
         CHARACTER*80 HEADNG(2)
-        integer :: ICHFLG 
-        integer :: IPRTIM 
-        integer :: IFRCNVG
-        integer :: LLOC   
-        integer :: ISTART 
-        integer :: ISTOP  
-        integer :: N      
-        real :: R         
-        integer :: INOC   
+        integer(i4) :: ICHFLG 
+        integer(i4) :: IPRTIM 
+        integer(i4) :: IFRCNVG
+        integer(i4) :: LLOC   
+        integer(i4) :: ISTART 
+        integer(i4) :: ISTOP  
+        integer(i4) :: N      
+        real(sp) :: R         
+        integer(i4) :: INOC   
        
         character(4000) :: line
     
@@ -15241,16 +15241,16 @@
             WRITE(IOUT,8)
             8    FORMAT(1X,'RICHARDS EQUATION SOLUTION')
         ELSEIF(LINE(ISTART:ISTOP).EQ.'DPIN') THEN
-            !----READ OPTIONS FOR SINGLE OR DOUBLE PRECISION READ / WRITE
+            !----READ OPTIONS FOR SINGLE OR real(dp) READ / WRITE
             WRITE(IOUT,115)
             115       FORMAT(1X,'INPUT BINARY FILES FOR PRIMARY VARIABLES ',&
-            'WILL BE IN DOUBLE PRECISION')
+            'WILL BE IN real(dp)')
             IDPIN = 1
             Modflow.dpin=.true.
         ELSE IF(LINE(ISTART:ISTOP).EQ.'DPOUT') THEN
             WRITE(IOUT,116)
             116      FORMAT(1X,'OUTPUT BINARY FILES FOR PRIMARY VARIABLES ',&
-            'WILL BE IN DOUBLE PRECISION')
+            'WILL BE IN real(dp)')
             IDPOUT = 1
             Modflow.dpout=.true.
         ELSE IF(LINE(ISTART:ISTOP).EQ.'DPIO') THEN
@@ -15317,10 +15317,10 @@
 
         type (ModflowProject) Modflow
         
-        integer :: Kloc, KK, nndlay, nstrt,ndslay,n
+        integer(i4) :: Kloc, KK, nndlay, nstrt,ndslay,n
        
-        REAL, DIMENSION(:),ALLOCATABLE  ::HTMP1
-        REAL*8, DIMENSION(:),ALLOCATABLE  ::HTMP18
+        real(sp), DIMENSION(:),ALLOCATABLE  ::HTMP1
+        real(dp), DIMENSION(:),ALLOCATABLE  ::HTMP18
         CHARACTER*24 ANAME(2)
         DATA ANAME(1) /'          BOUNDARY ARRAY'/
         DATA ANAME(2) /'            INITIAL HEAD'/
@@ -15365,7 +15365,7 @@
                 IF(IBOUND(N).EQ.0) HNEW(N)=HNOFLO
             end do
             DEALLOCATE(HTMP1)
-        ELSE       !----------------------------------DOUBLE PRECISION READ
+        ELSE       !----------------------------------real(dp) READ
             ALLOCATE(HTMP18(Nodes))
             DO Kloc=1,NLAY
                 NNDLAY = NODLAY(Kloc)
@@ -15415,8 +15415,8 @@
 
         type (ModflowProject) Modflow
         
-        integer :: indis,lloc,istop,istart, k
-        real :: r
+        integer(i4) :: indis,lloc,istop,istart, k
+        real(sp) :: r
         
         IOUT=FNumEco
 
@@ -15551,7 +15551,7 @@
         type (ModflowProject) Modflow
         
  
-        REAL, DIMENSION(:),    ALLOCATABLE  ::TEMP
+        real(sp), DIMENSION(:),    ALLOCATABLE  ::TEMP
         CHARACTER*24 ANAME(6)
         DATA ANAME(1) /'  NO. OF NODES PER LAYER'/
         DATA ANAME(2) /'                     TOP'/
@@ -15560,9 +15560,9 @@
         DATA ANAME(5) /'                      IA'/
         DATA ANAME(6) /'                      JA'/
         
-        integer :: indis, kk, nndlay,nstrt,ndslay
-        integer :: ij, ija, ii, k
-        integer :: nn
+        integer(i4) :: indis, kk, nndlay,nstrt,ndslay
+        integer(i4) :: ij, ija, ii, k
+        integer(i4) :: nn
         
         
         indis=Modflow.iDISU
@@ -15671,7 +15671,7 @@
         
 
         
-        integer :: indis, k
+        integer(i4) :: indis, k
         !
         CHARACTER*24 :: ANAME(4)
         DATA ANAME(1) /'     CONNECTION LENGTH 1'/
@@ -15701,12 +15701,12 @@
 
         type (ModflowProject) Modflow
         
-        integer :: indis,iss,itr,n,lloc, i
-        real*8 :: pp
-        integer :: istop, istart
-        real :: r
-        integer :: istartkp, istopkp
-        real :: stofrac
+        integer(i4) :: indis,iss,itr,n,lloc, i
+        real(dp) :: pp
+        integer(i4) :: istop, istart
+        real(sp) :: r
+        integer(i4) :: istartkp, istopkp
+        real(sp) :: stofrac
         
         
         IOUT=FNumEco
@@ -15830,9 +15830,9 @@
       DATA ANAME(2) /'                      IA'/
       DATA ANAME(3) /'                      JA'/
       
-      integer :: inswf, ioptfound, lloc, istart, i, in, istop
-      real :: r, farea, felev, sgcl, sgcarea, smann, swfh2, swfh1
-      integer :: iswfnds, k, ija, ii, iftyp, ifno, isswadi, ifgwno, ifcon, isgwadi
+      integer(i4) :: inswf, ioptfound, lloc, istart, i, in, istop
+      real(sp) :: r, farea, felev, sgcl, sgcarea, smann, swfh2, swfh1
+      integer(i4) :: iswfnds, k, ija, ii, iftyp, ifno, isswadi, ifgwno, ifcon, isgwadi
       
       
       IOUT=FNumEco
@@ -15840,7 +15840,7 @@
 
       
       
-!      DOUBLE PRECISION FRAD
+!      real(dp) FRAD
 !     ------------------------------------------------------------------
 !
 !      IF(.NOT.ALLOCATED(NCLNNDS)) THEN
@@ -16284,20 +16284,20 @@
         type (ModflowProject) Modflow
         character(400) :: line
         
-        integer :: IFNO, i
-        real :: FRAD
-        real :: CONDUITK
-        integer :: LLOC
-        real :: TCOND
-        real :: TTHK
-        real :: TCOEF
-        real :: TCFLUID
-        integer :: ISTOP
-        real :: R, r1, r2, r3
-        integer :: ISTART
-        real :: FSRAD
-        real*8 :: AREAF
-        real*8 :: PERIF
+        integer(i4) :: IFNO, i
+        real(sp) :: FRAD
+        real(sp) :: CONDUITK
+        integer(i4) :: LLOC
+        real(sp) :: TCOND
+        real(sp) :: TTHK
+        real(sp) :: TCOEF
+        real(sp) :: TCFLUID
+        integer(i4) :: ISTOP
+        real(sp) :: R, r1, r2, r3
+        integer(i4) :: ISTART
+        real(sp) :: FSRAD
+        real(dp) :: AREAF
+        real(dp) :: PERIF
         
         IOUT=FNumEco
 
@@ -16396,10 +16396,10 @@
     SUBROUTINE CLNA(IC,AREAF)
         !--------COMPUTE X-SECTIONAL FLOW AREA FOR NODE
         USE CLN1MODULE, ONLY:  ACLNCOND,NCONDUITYP,ACLNREC,NRECTYP
-        DOUBLE PRECISION AREAF,RADFSQ
-        integer :: ic
-        real :: pi
-        integer :: icl
+        real(dp) AREAF,RADFSQ
+        integer(i4) :: ic
+        real(sp) :: pi
+        integer(i4) :: icl
         !--------------------------------------------------------------------------------------
         PI = 3.1415926
         IF(IC.LE.NCONDUITYP)THEN
@@ -16420,10 +16420,10 @@
     SUBROUTINE CLNP(IC,FPER)
         !--------COMPUTE EFFECTIVE PERIMETER FOR CONNECTION OF CLN SEGMENT TO 3-D GRID
         USE CLN1MODULE, ONLY: ACLNCOND,NCONDUITYP,ACLNREC,NRECTYP
-        DOUBLE PRECISION FPER
-        integer :: ic
-        real :: pi
-        integer :: icl
+        real(dp) FPER
+        integer(i4) :: ic
+        real(sp) :: pi
+        integer(i4) :: icl
         !--------------------------------------------------------------------------------------
         PI = 3.1415926
         IF(IC.LE.NCONDUITYP)THEN
@@ -16461,15 +16461,15 @@
 !     ------------------------------------------------------------------
 !     ARGUMENTS
 !     ------------------------------------------------------------------
-      INTEGER IN
+      integer(i4) IN
 !     ------------------------------------------------------------------
 !     LOCAL VARIABLES
 !     ------------------------------------------------------------------
-      INTEGER lloc, istart, istop, i, K, IFDPARAM, MXVL, NPP
-      INTEGER IPCGUM
+      integer(i4) lloc, istart, istop, i, K, IFDPARAM, MXVL, NPP
+      integer(i4) IPCGUM
       CHARACTER(LEN=200) line
-      REAL r, HCLOSEdum, HICLOSEdum,  thetadum, amomentdum,yo
-      REAL akappadum, gammadum, BREDUCDUM,BTOLDUM,RESLIMDUM
+      real(sp) r, HCLOSEdum, HICLOSEdum,  thetadum, amomentdum,yo
+      real(sp) akappadum, gammadum, BREDUCDUM,BTOLDUM,RESLIMDUM
 !
       type (ModflowProject) Modflow
       
@@ -16828,7 +16828,7 @@
       SUBROUTINE SET_RELAX(IFDPARAM)
       USE SMSMODULE, ONLY: Akappa,Gamma,Amomentum,Breduc,Btol,Numtrack,&
                           THETA, Res_lim
-      INTEGER IFDPARAM
+      integer(i4) IFDPARAM
 ! Simple option
       SELECT CASE ( IFDPARAM )
       CASE ( 1 )
@@ -16871,10 +16871,10 @@
         
         type (ModflowProject) Modflow
 
-        integer :: i, j
+        integer(i4) :: i, j
         
-        integer :: i1, i2, i3
-        real :: r1, r2, r3
+        integer(i4) :: i1, i2, i3
+        real(sp) :: r1, r2, r3
         
         ! read initial comment lines beginning with #
         do 
@@ -16962,10 +16962,10 @@
         implicit none
         
         type (ModflowProject) Modflow
-        integer :: i, j
+        integer(i4) :: i, j
         
-        integer :: i1, i2
-        real :: r1, r2, r3
+        integer(i4) :: i1, i2
+        real(sp) :: r1, r2, r3
         
         ! read initial comment lines beginning with #
         do 
@@ -17023,10 +17023,10 @@
         
         type (ModflowProject) Modflow
 
-        integer :: i, j
+        integer(i4) :: i, j
         
-        integer :: i1, i2, i3
-        real :: r1, r2, r3
+        integer(i4) :: i1, i2, i3
+        real(sp) :: r1, r2, r3
         
         ! read initial comment lines beginning with #
         do 
@@ -17111,7 +17111,7 @@
     subroutine UnitsLength(FnumMUT,Project) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Project
         
         character(MAX_LBL) :: value
@@ -17145,7 +17145,7 @@
     subroutine UnitsTime(FNumMUT,Project) 
         implicit none
 
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (ModflowProject) Project
         
         character(MAX_LBL) :: value
@@ -17208,7 +17208,7 @@
         !c          a quote character.
         !c        if ncode is 1, the word is converted to upper case.
         !c        if ncode is 2, the word is converted to an integer.
-        !c        if ncode is 3, the word is converted to a real number.
+        !c        if ncode is 3, the word is converted to a real(sp),number.
         !c        number conversion error is written to unit iout if iout is
         !c          positive; error is written to default output if iout is 0;
         !c          no error message is written if iout is negative.
@@ -17226,19 +17226,19 @@
         CHARACTER*1 TAB
 
         ! rgm modified ...
-        integer :: len
-        integer :: linlen
-        integer :: in
-        integer :: icol
-        integer :: iout
-        real :: r
-        integer :: istart
-        integer :: istop
-        integer :: n
-        integer :: ii, jj, kk
-        integer :: ncode
-        integer :: l
-        integer :: idiff
+        integer(i4) :: len
+        integer(i4) :: linlen
+        integer(i4) :: in
+        integer(i4) :: icol
+        integer(i4) :: iout
+        real(sp) :: r
+        integer(i4) :: istart
+        integer(i4) :: istop
+        integer(i4) :: n
+        integer(i4) :: ii, jj, kk
+        integer(i4) :: ncode
+        integer(i4) :: l
+        integer(i4) :: idiff
         
 
         
@@ -17328,7 +17328,7 @@
         !
         !7------Number conversion error.
         200   IF(NCODE.EQ.3) THEN
-            STRING= 'A REAL NUMBER'
+            STRING= 'A real(sp),NUMBER'
             L=13
         ELSE
             STRING= 'AN INTEGER'
@@ -17390,7 +17390,7 @@
         !c          a quote character.
         !c        if ncode is 1, the word is converted to upper case.
         !c        if ncode is 2, the word is converted to an integer.
-        !c        if ncode is 3, the word is converted to a real number.
+        !c        if ncode is 3, the word is converted to a real(sp),number.
         !c        number conversion error is written to unit iout if iout is
         !c          positive; error is written to default output if iout is 0;
         !c          no error message is written if iout is negative.
@@ -17408,19 +17408,19 @@
         character*1 tab
         
         ! rgm modified ...
-        integer :: len
-        integer :: linlen
-        integer :: in
-        integer :: icol
-        integer :: iout
-        real*8 :: r
-        integer :: istart
-        integer :: istop
-        integer :: n
-        integer :: ii, jj, kk
-        integer :: ncode
-        integer :: l
-        integer :: idiff
+        integer(i4) :: len
+        integer(i4) :: linlen
+        integer(i4) :: in
+        integer(i4) :: icol
+        integer(i4) :: iout
+        real(dp) :: r
+        integer(i4) :: istart
+        integer(i4) :: istop
+        integer(i4) :: n
+        integer(i4) :: ii, jj, kk
+        integer(i4) :: ncode
+        integer(i4) :: l
+        integer(i4) :: idiff
         
         !... to here
 
@@ -17502,7 +17502,7 @@
         !c
         !c7------number conversion error.
 200     if(ncode.eq.3) then
-            string= 'a real number'
+            string= 'a real(sp),number'
             l=13
         else
             string= 'an integer'
@@ -17565,7 +17565,7 @@
         !     ------------------------------------------------------------------
               CHARACTER WORD*(*)
         !
-              integer :: l, len, idiff, k
+              integer(i4) :: l, len, idiff, k
         !1------Compute the difference between lowercase and uppercase.
               L = LEN(WORD)
               IDIFF=ICHAR('a')-ICHAR('A')
@@ -17591,9 +17591,9 @@
               CHARACTER*10 CTMP1,CTMP2
               CHARACTER*400 LINE
               
-              integer :: ip, iout, iterp, i, in, ipl4, iloc, lloc, istart
-              real :: r
-              integer :: n, istop, j
+              integer(i4) :: ip, iout, iterp, i, in, ipl4, iloc, lloc, istart
+              real(sp) :: r
+              integer(i4) :: n, istop, j
         !     ------------------------------------------------------------------
         !
         !1------COMPUTE LOCATION OF NAME IN INAME, AND READ LINE CONTAINING
@@ -17648,11 +17648,11 @@
     
     CHARACTER*(*) LINE
     
-    integer :: IOUT
-    integer :: IN
-    integer :: LEN
-    integer :: L
-    integer :: II
+    integer(i4) :: IOUT
+    integer(i4) :: IN
+    integer(i4) :: LEN
+    integer(i4) :: L
+    integer(i4) :: II
 
     IOUT=FNumEco
 
@@ -17684,7 +17684,7 @@
 
     SUBROUTINE U1DREL(A,ANAME,nJJ,KK,IN,IOUT)
 !     ******************************************************************
-!     ROUTINE TO INPUT 1-D REAL DATA MATRICES
+!     ROUTINE TO INPUT 1-D real(sp),DATA MATRICES
 !       A IS ARRAY TO INPUT
 !       ANAME IS 24 CHARACTER DESCRIPTION OF A
 !       JJ IS NO. OF ELEMENTS
@@ -17696,21 +17696,21 @@
 !     ------------------------------------------------------------------
       CHARACTER*16 TEXT
       CHARACTER*24 ANAME
-      real :: A(nJJ)
-      real :: PERTIM,TOTIM
+      real(sp) :: A(nJJ)
+      real(sp) :: PERTIM,TOTIM
       CHARACTER*20 FMTIN
       CHARACTER*400 CNTRL
       CHARACTER*400 FNAME
       INCLUDE 'openspec.inc'
       
-      integer :: in, KK, iout, jj
-      integer :: nunopn
+      integer(i4) :: in, KK, iout, jj
+      integer(i4) :: nunopn
       DATA NUNOPN/99/
-      integer :: iclose, ifree,icol
-      real :: R
-      integer :: istart, istop,n,locat
-      real :: cnstnt
-      integer :: iprn, kper, nstrt, ilay, kstp, nndlay, nJJ
+      integer(i4) :: iclose, ifree,icol
+      real(sp) :: R
+      integer(i4) :: istart, istop,n,locat
+      real(sp) :: cnstnt
+      integer(i4) :: iprn, kper, nstrt, ilay, kstp, nndlay, nJJ
       
       IOUT=FNumEco
 
@@ -17837,7 +17837,7 @@
     
     SUBROUTINE U1DREL8(A,ANAME,nJJ,KK,IN,IOUT)
 !     ******************************************************************
-!     ROUTINE TO INPUT 1-D REAL DATA MATRICES
+!     ROUTINE TO INPUT 1-D real(sp),DATA MATRICES
 !       A IS ARRAY TO INPUT
 !       ANAME IS 24 CHARACTER DESCRIPTION OF A
 !       JJ IS NO. OF ELEMENTS
@@ -17849,21 +17849,21 @@
 !     ------------------------------------------------------------------
       CHARACTER*16 TEXT
       CHARACTER*24 ANAME
-      DOUBLE PRECISION :: A(nJJ)
-      DOUBLE PRECISION :: PERTIM,TOTIM
+      real(dp) :: A(nJJ)
+      real(dp) :: PERTIM,TOTIM
       CHARACTER*20 FMTIN
       CHARACTER*400 CNTRL
       CHARACTER*400 FNAME
       INCLUDE 'openspec.inc'
       
-      integer :: in, KK, iout, jj
-      integer :: nunopn
+      integer(i4) :: in, KK, iout, jj
+      integer(i4) :: nunopn
       DATA NUNOPN/99/
-      integer :: iclose, ifree,icol
-      real :: R
-      integer :: istart, istop,n,locat
-      real :: cnstnt
-      integer :: iprn, kper, nstrt, ilay, kstp, nndlay, nJJ
+      integer(i4) :: iclose, ifree,icol
+      real(sp) :: R
+      integer(i4) :: istart, istop,n,locat
+      real(sp) :: cnstnt
+      integer(i4) :: iprn, kper, nstrt, ilay, kstp, nndlay, nJJ
       
       IOUT=FNumEco
 
@@ -17990,7 +17990,7 @@
     
     SUBROUTINE U2DREL(A,ANAME,II,JJ,K,IN,IOUT)
         !     ******************************************************************
-        !     ROUTINE TO INPUT 2-D REAL DATA MATRICES
+        !     ROUTINE TO INPUT 2-D real(sp),DATA MATRICES
         !       A IS ARRAY TO INPUT
         !       ANAME IS 24 CHARACTER DESCRIPTION OF A
         !       II IS NO. OF ROWS
@@ -18010,13 +18010,13 @@
               CHARACTER*400 CNTRL
               CHARACTER*16 TEXT
               CHARACTER*400 FNAME
-              REAL PERTIMRD,TOTIMRD
+              real(sp) PERTIMRD,TOTIMRD
               
-              integer :: NUNOPN
+              integer(i4) :: NUNOPN
               DATA NUNOPN/99/
-              integer :: in, i,j,k, iout, iclose, ifree, icol, n, istop, istart, locat, iprn, jj, ii
-              real :: a, r, cnstnt
-              integer :: kstp, ilay, kper
+              integer(i4) :: in, i,j,k, iout, iclose, ifree, icol, n, istop, istart, locat, iprn, jj, ii
+              real(sp) :: a, r, cnstnt
+              integer(i4) :: kstp, ilay, kper
               
               INCLUDE 'openspec.inc'
         !     ------------------------------------------------------------------
@@ -18159,7 +18159,7 @@
 
     SUBROUTINE U1DINT(IA,ANAME,nJJ,KK,IN,IOUT)
 !     ******************************************************************
-!     ROUTINE TO INPUT 1-D REAL DATA MATRICES
+!     ROUTINE TO INPUT 1-D real(sp),DATA MATRICES
 !       A IS ARRAY TO INPUT
 !       ANAME IS 24 CHARACTER DESCRIPTION OF A
 !       JJ IS NO. OF ELEMENTS
@@ -18177,13 +18177,13 @@
       DATA NUNOPN/99/
       INCLUDE 'openspec.inc'
       
-      integer :: iout,ia,KK,in
-      integer :: NUNOPN
+      integer(i4) :: iout,ia,KK,in
+      integer(i4) :: NUNOPN
       DATA NUNOPN/99/
-      integer :: jj, iclose, ifree, icol, istart
-      real :: R
-      integer :: n
-      integer :: istop, locat, iprn, icnstnt, nJJ
+      integer(i4) :: jj, iclose, ifree, icol, istart
+      real(sp) :: R
+      integer(i4) :: n
+      integer(i4) :: istop, locat, iprn, icnstnt, nJJ
         
       IOUT=FNumEco
       
@@ -18291,7 +18291,7 @@
 
       SUBROUTINE U2DINT(IA,ANAME,II,JJ,K,IN,IOUT)
 !     ******************************************************************
-!     ROUTINE TO INPUT 2-D INTEGER DATA MATRICES
+!     ROUTINE TO INPUT 2-D integer(i4) DATA MATRICES
 !       IA IS ARRAY TO INPUT
 !       ANAME IS 24 CHARACTER DESCRIPTION OF IA
 !       II IS NO. OF ROWS
@@ -18310,13 +18310,13 @@
       CHARACTER*20 FMTIN
       CHARACTER*400 CNTRL
       CHARACTER*400 FNAME
-      integer :: nunopn
+      integer(i4) :: nunopn
       DATA NUNOPN/99/
       INCLUDE 'openspec.inc'
       
-      integer :: iout, k, in, ia, ii, iclose, ifree, icol, istart
-      real :: r
-      integer :: n, istop, locat, iconst, iprn, i, j, jj
+      integer(i4) :: iout, k, in, ia, ii, iclose, ifree, icol, istart
+      real(sp) :: r
+      integer(i4) :: n, istop, locat, iconst, iprn, i, j, jj
 !     ------------------------------------------------------------------
       !write(iout,*) '$$$ U2DINT aname: ',trim(ANAME)
 !

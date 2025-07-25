@@ -1,5 +1,6 @@
 ! A generic linked list object
 module list
+  use KindParameters
   implicit none
 
   private
@@ -14,12 +15,12 @@ module list
   public :: list_next
 
   ! A public variable to use as a MOLD for transfer()
-  integer, dimension(:), allocatable :: list_data
+  integer(i4), dimension(:), allocatable :: list_data
 
   ! Linked list node data type
   type :: list_t
      private
-     integer, dimension(:), pointer :: data => null()
+     integer(i4), dimension(:), pointer :: data => null()
      type(list_t), pointer :: next => null()
   end type list_t
 
@@ -28,7 +29,7 @@ contains
   ! Initialize a head node SELF and optionally store the provided DATA.
   subroutine list_init(self, data)
     type(list_t), pointer :: self
-    integer, dimension(:), intent(in), optional :: data
+    integer(i4), dimension(:), intent(in), optional :: data
 
     allocate(self)
     nullify(self%next)
@@ -70,7 +71,7 @@ contains
   ! Insert a list node after SELF containing DATA (optional)
   subroutine list_insert(self, data)
     type(list_t), pointer :: self
-    integer, dimension(:), intent(in), optional :: data
+    integer(i4), dimension(:), intent(in), optional :: data
     type(list_t), pointer :: next
 
     allocate(next)
@@ -89,7 +90,7 @@ contains
   ! Store the encoded DATA in list node SELF
   subroutine list_put(self, data)
     type(list_t), pointer :: self
-    integer, dimension(:), intent(in) :: data
+    integer(i4), dimension(:), intent(in) :: data
 
     if (associated(self%data)) then
        deallocate(self%data)
@@ -101,7 +102,7 @@ contains
   ! Return the DATA stored in the node SELF
   function list_get(self) result(data)
     type(list_t), pointer :: self
-    integer, dimension(:), pointer :: data
+    integer(i4), dimension(:), pointer :: data
     data => self%data
   end function list_get
 
@@ -109,6 +110,7 @@ end module list
 
     ! A derived type for storing data.
 module data
+  use KindParameters
   implicit none
 
   private
@@ -118,17 +120,17 @@ module data
 
   ! Data is stored in data_t
   type :: data_t
-     real :: x
+     real(sp) :: x
   end type data_t
 
   ! Two xyz coordinate triples define the endpoints of a segment
   type :: data_Segment
-     real :: p1x
-     real :: p1y
-     real :: p1z
-     real :: p2x
-     real :: p2y
-     real :: p2z
+     real(sp) :: p1x
+     real(sp) :: p1y
+     real(sp) :: p1z
+     real(sp) :: p2x
+     real(sp) :: p2y
+     real(sp) :: p2z
   end type data_Segment
 
   ! A trick to allow us to store pointers in the list

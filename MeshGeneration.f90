@@ -3,31 +3,31 @@ Module MeshGeneration
     use Tecplot
     implicit none
 
-    integer :: user_nz
-    integer :: user_maxnlayer=50
+    integer(i4) :: user_nz
+    integer(i4) :: user_maxnlayer=50
     real(dp), allocatable  :: x(:)
     real(dp), allocatable  :: y(:)
     real(dp), allocatable  :: z(:)
-    integer, allocatable  :: in(:,:)
-    integer, allocatable  :: iprp(:)
-    integer, allocatable  :: ilyr(:)
+    integer(i4), allocatable  :: in(:,:)
+    integer(i4), allocatable  :: iprp(:)
+    integer(i4), allocatable  :: ilyr(:)
     real(dp), allocatable  :: zi(:)
     real(dp), allocatable  :: base_elev(:)
     character(MAX_LBL), allocatable  :: layer_name(:)
-    integer, allocatable  :: nsublayer(:)
+    integer(i4), allocatable  :: nsublayer(:)
         
-    integer :: nsheet
-    integer :: nlayers
+    integer(i4) :: nsheet
+    integer(i4) :: nlayers
 
     real(dp), allocatable  :: top_elev(:)
 
-    integer :: nn_temp, ne_temp
+    integer(i4) :: nn_temp, ne_temp
         
     logical :: layer_defined=.false.
     logical :: zone_by_template=.false.
     
-    integer, allocatable :: seg_node(:,:)
-    integer :: nSeg        
+    integer(i4), allocatable :: seg_node(:,:)
+    integer(i4) :: nSeg        
 
     
     contains
@@ -35,14 +35,14 @@ Module MeshGeneration
     subroutine MeshFromGb(FNumMUT,TMPLT)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
         
         character(128) :: GBPrefix
 
-        integer :: i,j
-        real*8 :: x(3),y(3)
-        real*8 :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
+        integer(i4) :: i,j
+        real(dp) :: x(3),y(3)
+        real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
         
         
        TMPLT.name='TMPLT'
@@ -150,13 +150,13 @@ Module MeshGeneration
     subroutine Quadtree2DMeshFromGWV(FNumMUT,TMPLT)
         implicit none
     
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
         
         character(MAX_STR) :: line
         character(MAX_STR) :: FName
         
-        integer :: i,j, i1, i2
+        integer(i4) :: i,j, i1, i2
         real(dp) :: r1, r2, r3
         
         
@@ -263,12 +263,12 @@ Module MeshGeneration
     subroutine list_file_elevation(fname,nprop,maxnnp)
         implicit none
 
-        integer :: i
-        integer :: maxnnp
+        integer(i4) :: i
+        integer(i4) :: maxnnp
 
         character*(*) fname
         character*11 file_type
-        real*8 :: nprop(maxnnp)
+        real(dp) :: nprop(maxnnp)
 	    character(80) :: dtitle
 
         inquire(file=fname,exist=FileExists,form=file_type)
@@ -290,17 +290,17 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         type(TecplotDomain) TMPLT
 
 
-        integer :: i, j, k
-	    integer :: nbx, nby, nn2d, ne2d
+        integer(i4) :: i, j, k
+	    integer(i4) :: nbx, nby, nn2d, ne2d
         real(dp) :: xl, yl, delx, dely
         real(dp) :: xOffset, yOffset
         
-        real, allocatable :: xi(:)
-        real, allocatable :: yi(:)
+        real(sp), allocatable :: xi(:)
+        real(sp), allocatable :: yi(:)
 
         TMPLT.name='TMPLT'
 
@@ -434,15 +434,15 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine GenerateVariableRectangles(FNum,TMPLT)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         type(TecplotDomain) TMPLT
 
 
-        integer :: i, j, k
-	    integer :: nn2d, ne2d
+        integer(i4) :: i, j, k
+	    integer(i4) :: nn2d, ne2d
         
-        real, allocatable :: xi(:)
-        real, allocatable :: yi(:)
+        real(sp), allocatable :: xi(:)
+        real(sp), allocatable :: yi(:)
 
         TMPLT.name='TMPLT'
 
@@ -555,16 +555,16 @@ Module MeshGeneration
     !!----------------------------------------------------------------------
     !subroutine GenerateRectanglesInteractive(FNum,TMPLT)
     !    implicit none
-    !    integer :: FNum
+    !    integer(i4) :: FNum
     !    type(TecplotDomain) TMPLT
     !
-    !    integer :: i, j, k
+    !    integer(i4) :: i, j, k
 	   ! real(dp) :: xmin, xmax, x1, x2, dxstart, xfac, dxmax, xcur
 	   ! real(dp) :: ymin, ymax, y1, y2, dystart, yfac, dymax, ycur
     !    logical :: reverse
     !
-    !    real, allocatable :: xi(:)
-    !    real, allocatable :: yi(:)
+    !    real(sp), allocatable :: xi(:)
+    !    real(sp), allocatable :: yi(:)
     !    TMPLT.name='TMPLT'
     !
     !    !     generate uniform rectangles
@@ -730,15 +730,15 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine GenerateCLNDomain(FNum,TMPLT_CLN)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         type(TecplotDomain) TMPLT_CLN
         
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
         character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
         
-        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
-        integer :: nPoints  ! number of points in list
+        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        integer(i4) :: nPoints  ! number of points in list
         
 	    ! Build a single tecplot file which can have multiple CLN's
         TMPLT_CLN.name='TMPLT_CLN_CLN'
@@ -786,13 +786,13 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine CLNFromXYZPair(FNum,TMPLT_CLN)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         type(TecplotDomain) TMPLT_CLN
 
-        integer :: i
-        integer :: nSizeInit, nNodesInit, nElementsInit
+        integer(i4) :: i
+        integer(i4) :: nSizeInit, nNodesInit, nElementsInit
         real(dp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
-        integer :: nCells
+        integer(i4) :: nCells
                 
         real(dp) :: TotalLength
         real(dp) :: dx, dy, dz
@@ -965,7 +965,7 @@ Module MeshGeneration
     subroutine check_seg(i1,i2) 
 	    implicit none
      
-        integer :: j, k, i1, i2
+        integer(i4) :: j, k, i1, i2
 	    logical :: seg
 	 
         seg=.true. 
@@ -991,7 +991,7 @@ Module MeshGeneration
     subroutine new_segment(n1,n2)
 	    implicit none
 
-	    integer :: n1, n2
+	    integer(i4) :: n1, n2
 
 	    nseg=nseg+1
 
@@ -1020,11 +1020,11 @@ Module MeshGeneration
         !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
         !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain)  TMPLT
         
 
-        integer :: j,k
+        integer(i4) :: j,k
         logical :: zone_by_template
         character(120) :: basefile
 
@@ -1036,15 +1036,15 @@ Module MeshGeneration
 	    real(dp) :: tot_thick
         real(dp) :: base_offset
 
-	    integer :: node_fixed
-	    integer :: node3d
-	    integer :: nel3d
+	    integer(i4) :: node_fixed
+	    integer(i4) :: node3d
+	    integer(i4) :: nel3d
 
         logical :: minimum_layer_thickness
         logical :: offset_base
 	    logical :: proportional_sublayering
 
-	    integer :: nz_temp=0	
+	    integer(i4) :: nz_temp=0	
 
         nlayers=nlayers+1
 
@@ -1269,12 +1269,12 @@ Module MeshGeneration
     subroutine read_gb_nprop(fname,nprop,maxnnp)
         implicit none
 
-        integer :: i
-        integer :: maxnnp
+        integer(i4) :: i
+        integer(i4) :: maxnnp
 
         character*(*) fname
         character*11 file_type
-        real*8 :: nprop(maxnnp)
+        real(dp) :: nprop(maxnnp)
         real*4 :: nprop_gb(maxnnp)
 	    character(80) :: dtitle
 
@@ -1310,10 +1310,10 @@ Module MeshGeneration
         !character(MAX_INST) :: sine_function_elevation_cmd	=   'elevation from sine function in xy'
         !character(MAX_INST) :: cosine_function_elevation_cmd	=   'elevation from cosine function in xy'
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
 
-        integer :: j
+        integer(i4) :: j
         character(120) :: topfile
         real(dp) :: top_offset
         logical :: offset_top
@@ -1396,12 +1396,12 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine xyzFromListFile(FNum,xi,yi,zi,nPoints)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         
-        integer :: nSizeInit=2
-        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
-        real, allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
-        integer :: nPoints  ! number of points in list
+        integer(i4) :: nSizeInit=2
+        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        real(sp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
+        integer(i4) :: nPoints  ! number of points in list
 
         character(256) :: instruction
 
@@ -1469,10 +1469,10 @@ Module MeshGeneration
     subroutine bilinear_function_in_xy(FNumMUT,nprop,TMPLT)
         implicit none
         
-        integer :: FNumMUT
+        integer(i4) :: FNumMUT
         type (TecplotDomain) TMPLT
 
-        integer :: i
+        integer(i4) :: i
 	    real(dp) :: xf2d, xt2d, yf2d, yt2d, a1, a2, a3, a4, a5
 
         real(dp) :: nprop(TMPLT.nNodes)
@@ -1506,11 +1506,11 @@ Module MeshGeneration
     !----------------------------------------------------------------------
     subroutine xz_pairs_elevation(FNum,nprop,TMPLT)
         implicit none
-        integer :: FNum
+        integer(i4) :: FNum
         type(TecplotDomain) TMPLT
 
-        integer :: i, j
-	    integer :: npairs
+        integer(i4) :: i, j
+	    integer(i4) :: npairs
         real(dp) :: nprop(TMPLT.nNodes)
 	    real(dp) :: t
                 
@@ -1573,7 +1573,7 @@ Module MeshGeneration
         implicit none
 
         real(dp) :: zelev
-	    integer :: k, nk
+	    integer(i4) :: k, nk
 	    real(dp) :: base, top
 
         zelev=top-(top-base)*k/(nk)
