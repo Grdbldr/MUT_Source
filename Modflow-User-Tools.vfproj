@@ -59,12 +59,13 @@
 			<File RelativePath=".\fem.f90"/>
 			<File RelativePath=".\GeneralRoutines.f90"/>
 			<File RelativePath=".\GenericList.f90"/>
-			<File RelativePath=".\HGS.f90"/>
-			<File RelativePath=".\Materials.f90"/>
+			<File RelativePath=".\Materials.f90">
+			</File>
 			<File RelativePath=".\MeshGeneration.f90"/>
 			<File RelativePath=".\Modflow_USG.f90"/>
 			<File RelativePath=".\openspec.inc"/>
-			<File RelativePath=".\pre.f90"/>
+			<File RelativePath=".\pre.f90">
+			</File>
 			<File RelativePath=".\raster.f90"/>
 			<File RelativePath=".\Tecplot.f90"/>
 			<File RelativePath=".\TGModule.f90"/>
