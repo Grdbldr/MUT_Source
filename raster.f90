@@ -19,34 +19,34 @@ module Raster
 
     type RasterData
         real,  ALLOCATABLE :: rastval(:,:)   ! raster elevations
-        real(dr),  ALLOCATABLE :: rastx(:)   ! raster x-coordinates
-        real(dr),  ALLOCATABLE :: rasty(:)   ! raster y-coordinates
-        real(dr) ::  vmiss = 0.0
+        real(dp),  ALLOCATABLE :: rastx(:)   ! raster x-coordinates
+        real(dp),  ALLOCATABLE :: rasty(:)   ! raster y-coordinates
+        real(dp) ::  vmiss = 0.0
         integer nxrast,nyrast
-        real(dr) :: dxmin,dymin
-        real(dr) :: dxmax,dymax
+        real(dp) :: dxmin,dymin
+        real(dp) :: dxmax,dymax
         logical :: have_raster
 	    logical :: missing
 
         real,  ALLOCATABLE :: rastval2(:,:)   ! raster elevations
-        real(dr),  ALLOCATABLE :: rastx2(:)   ! raster x-coordinates
-        real(dr),  ALLOCATABLE :: rasty2(:)   ! raster y-coordinates
-        real(dr) ::  vmiss2 = 0.0
+        real(dp),  ALLOCATABLE :: rastx2(:)   ! raster x-coordinates
+        real(dp),  ALLOCATABLE :: rasty2(:)   ! raster y-coordinates
+        real(dp) ::  vmiss2 = 0.0
         integer nxrast2,nyrast2
-        real(dr) :: dxmin2,dymin2
-        real(dr) :: dxmax2,dymax2
+        real(dp) :: dxmin2,dymin2
+        real(dp) :: dxmax2,dymax2
         logical :: have_raster2
 	    logical :: missing2
 
-        real(dr) ::  xspc  = 0.0
-        real(dr) ::  yspc  = 0.0
-        real(dr) ::  zspc  = 0.0
+        real(dp) ::  xspc  = 0.0
+        real(dp) ::  yspc  = 0.0
+        real(dp) ::  zspc  = 0.0
         
         
         integer :: nbinTot
-        real(dr),  ALLOCATABLE :: vbin(:)
-        integer(dr),  ALLOCATABLE :: nbin(:)
-        real(dr),  ALLOCATABLE :: cbin(:,:)
+        real(dp),  ALLOCATABLE :: vbin(:)
+        integer(dp),  ALLOCATABLE :: nbin(:)
+        real(dp),  ALLOCATABLE :: cbin(:,:)
 
     end type RasterData
 
@@ -306,7 +306,7 @@ module Raster
         type (RasterData) Raster_l  
 
         integer :: FnumTG
-        real(dr) :: ltmin, val
+        real(dp) :: ltmin, val
 
         integer :: i, j
 
@@ -328,7 +328,7 @@ module Raster
         type (RasterData) Raster_l  
 
         integer :: FnumTG
-        real(dr) :: repval, val
+        real(dp) :: repval, val
 
         integer :: i, j
 
@@ -350,7 +350,7 @@ module Raster
         type (RasterData) Raster_l  
 
         integer :: FnumTG
-        real(dr) :: multiplier
+        real(dp) :: multiplier
 
         integer :: i, j
 
@@ -385,9 +385,9 @@ module Raster
        
         
         integer :: nPts
-        real(dr), allocatable :: xt(:)
-        real(dr), allocatable :: yt(:)
-        real(dr), allocatable :: vt(:)
+        real(dp), allocatable :: xt(:)
+        real(dp), allocatable :: yt(:)
+        real(dp), allocatable :: vt(:)
         logical :: SetnCols
 
         read(FnumTG,'(a)') FNameXYZ
@@ -488,8 +488,8 @@ module Raster
 
 	    integer :: j, k
 	    logical :: foundx, foundy, missing
-	    real(dr) :: xp, yp, znew
-	    real(dr) :: y1, y2, y3, y4, t, u
+	    real(dp) :: xp, yp, znew
+	    real(dp) :: y1, y2, y3, y4, t, u
 
 
 	    missing = .false.

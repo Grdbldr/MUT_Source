@@ -5,21 +5,21 @@ Module MeshGeneration
 
     integer :: user_nz
     integer :: user_maxnlayer=50
-    real(dr), allocatable  :: x(:)
-    real(dr), allocatable  :: y(:)
-    real(dr), allocatable  :: z(:)
+    real(dp), allocatable  :: x(:)
+    real(dp), allocatable  :: y(:)
+    real(dp), allocatable  :: z(:)
     integer, allocatable  :: in(:,:)
     integer, allocatable  :: iprp(:)
     integer, allocatable  :: ilyr(:)
-    real(dr), allocatable  :: zi(:)
-    real(dr), allocatable  :: base_elev(:)
+    real(dp), allocatable  :: zi(:)
+    real(dp), allocatable  :: base_elev(:)
     character(MAX_LBL), allocatable  :: layer_name(:)
     integer, allocatable  :: nsublayer(:)
         
     integer :: nsheet
     integer :: nlayers
 
-    real(dr), allocatable  :: top_elev(:)
+    real(dp), allocatable  :: top_elev(:)
 
     integer :: nn_temp, ne_temp
         
@@ -89,6 +89,7 @@ Module MeshGeneration
         open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')
         read(itmp) (TMPLT.iZone(i),i=1,TMPLT.nElements)
 	    call freeunit(itmp)
+        TMPLT.nZones=maxval(TMPLT.iZone)
         
         allocate(TMPLT.ElementArea(TMPLT.nElements),TMPLT.rCircle(TMPLT.nElements),TMPLT.xCircle(TMPLT.nElements),&
             TMPLT.yCircle(TMPLT.nElements),TMPLT.zCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
@@ -129,7 +130,6 @@ Module MeshGeneration
         end do
                     
         
-        TMPLT.InnerCircles=.true.
         TMPLT.IsDefined=.true.
         allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'TMPLT Element_Is array')            
@@ -157,7 +157,7 @@ Module MeshGeneration
         character(MAX_STR) :: FName
         
         integer :: i,j, i1, i2
-        real(dr) :: r1, r2, r3
+        real(dp) :: r1, r2, r3
         
         
         TMPLT.name='TMPLT'
@@ -288,62 +288,6 @@ Module MeshGeneration
     end subroutine list_file_elevation
     
     !----------------------------------------------------------------------
-    subroutine GenerateCLNDomain(FNum,TMPLT_CLN)
-        implicit none
-        integer :: FNum
-        type(TecplotDomain) TMPLT_CLN
-        
-        character(MAX_INST) :: Instruction
-        character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
-        
-        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
-        integer :: nPoints  ! number of points in list
-        
-	    ! Build a single tecplot file which can have multiple CLN's
-        TMPLT_CLN.name='TMPLT_CLN'
-        TMPLT_CLN.meshtype='UNSTRUCTURED'
-        TMPLT_CLN.nZones=0
-        TMPLT_CLN.nNodesPerElement=2
-        TMPLT_CLN.ElementType='felineseg'
-
-        read_Instructions: do
-            read(FNum,'(a60)',iostat=status) Instruction
-            if(status /= 0) exit
-
-		    call LwrCse(instruction)
-
-            if(index(Instruction,'end') /= 0) then
-                call Msg(TAB//'end generate cln domain')
-                exit read_Instructions
-            else
-                call Msg('')
-                call Msg(TAB//Instruction)
-            end if
-                
-
-            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
-                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
-              
-            else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
-                call CLNFromXYZPair(FNum,TMPLT_CLN)
-                
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
-            end if
-
-        end do read_Instructions
-        
-        TMPLT_CLN.IsDefined=.true.
-        
-        allocate(TMPLT_CLN.Element_Is(TMPLT_CLN.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_CLN.name)//' Element_Is array')            
-        TMPLT_CLN.Element_Is(:)=0
-        
-        continue
-        
-    end subroutine GenerateCLNDomain
-    !----------------------------------------------------------------------
     subroutine GenerateUniformRectangles(FNum,TMPLT)
         implicit none
         integer :: FNum
@@ -352,8 +296,8 @@ Module MeshGeneration
 
         integer :: i, j, k
 	    integer :: nbx, nby, nn2d, ne2d
-        real(dr) :: xl, yl, delx, dely
-        real(dr) :: xOffset, yOffset
+        real(dp) :: xl, yl, delx, dely
+        real(dp) :: xOffset, yOffset
         
         real, allocatable :: xi(:)
         real, allocatable :: yi(:)
@@ -615,8 +559,8 @@ Module MeshGeneration
     !    type(TecplotDomain) TMPLT
     !
     !    integer :: i, j, k
-	   ! real(dr) :: xmin, xmax, x1, x2, dxstart, xfac, dxmax, xcur
-	   ! real(dr) :: ymin, ymax, y1, y2, dystart, yfac, dymax, ycur
+	   ! real(dp) :: xmin, xmax, x1, x2, dxstart, xfac, dxmax, xcur
+	   ! real(dp) :: ymin, ymax, y1, y2, dystart, yfac, dymax, ycur
     !    logical :: reverse
     !
     !    real, allocatable :: xi(:)
@@ -784,6 +728,62 @@ Module MeshGeneration
     !end subroutine GenerateRectanglesInteractive
 
     !----------------------------------------------------------------------
+    subroutine GenerateCLNDomain(FNum,TMPLT_CLN)
+        implicit none
+        integer :: FNum
+        type(TecplotDomain) TMPLT_CLN
+        
+        character(MAX_INST) :: Instruction
+        character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
+        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
+        
+        real, allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        integer :: nPoints  ! number of points in list
+        
+	    ! Build a single tecplot file which can have multiple CLN's
+        TMPLT_CLN.name='TMPLT_CLN_CLN'
+        TMPLT_CLN.meshtype='UNSTRUCTURED'
+        TMPLT_CLN.nZones=0
+        TMPLT_CLN.nNodesPerElement=2
+        TMPLT_CLN.ElementType='felineseg'
+
+        read_Instructions: do
+            read(FNum,'(a60)',iostat=status) Instruction
+            if(status /= 0) exit
+
+		    call LwrCse(instruction)
+
+            if(index(Instruction,'end') /= 0) then
+                call Msg(TAB//'end generate cln domain')
+                exit read_Instructions
+            else
+                call Msg('')
+                call Msg(TAB//Instruction)
+            end if
+                
+
+            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
+                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
+              
+            else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
+                call CLNFromXYZPair(FNum,TMPLT_CLN)
+                
+            else
+			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
+            end if
+
+        end do read_Instructions
+        
+        TMPLT_CLN.IsDefined=.true.
+        
+        allocate(TMPLT_CLN.Element_Is(TMPLT_CLN.nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT_CLN.name)//' Element_Is array')            
+        TMPLT_CLN.Element_Is(:)=0
+        
+        continue
+        
+    end subroutine GenerateCLNDomain
+    !----------------------------------------------------------------------
     subroutine CLNFromXYZPair(FNum,TMPLT_CLN)
         implicit none
         integer :: FNum
@@ -791,16 +791,16 @@ Module MeshGeneration
 
         integer :: i
         integer :: nSizeInit, nNodesInit, nElementsInit
-        real(dr), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
+        real(dp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
         integer :: nCells
                 
-        real(dr) :: TotalLength
-        real(dr) :: dx, dy, dz
-        real(dr) :: cx, cy, cz
+        real(dp) :: TotalLength
+        real(dp) :: dx, dy, dz
+        real(dp) :: cx, cy, cz
 
-	    real(dr) :: xp(2)
-	    real(dr) :: yp(2)
-	    real(dr) :: zp(2)
+	    real(dp) :: xp(2)
+	    real(dp) :: yp(2)
+	    real(dp) :: zp(2)
 	    xp(:) = 0
 	    yp(:) = 0
 	    zp(:) = 0
@@ -1028,13 +1028,13 @@ Module MeshGeneration
         logical :: zone_by_template
         character(120) :: basefile
 
-        real(dr), allocatable :: sub_thick(:)
-        !real(dr) :: zelev
-        real(dr) :: z_added
-        !real(dr) :: zelev_proportional
-        real(dr) :: sub_thick_frac
-	    real(dr) :: tot_thick
-        real(dr) :: base_offset
+        real(dp), allocatable :: sub_thick(:)
+        !real(dp) :: zelev
+        real(dp) :: z_added
+        !real(dp) :: zelev_proportional
+        real(dp) :: sub_thick_frac
+	    real(dp) :: tot_thick
+        real(dp) :: base_offset
 
 	    integer :: node_fixed
 	    integer :: node3d
@@ -1315,7 +1315,7 @@ Module MeshGeneration
 
         integer :: j
         character(120) :: topfile
-        real(dr) :: top_offset
+        real(dp) :: top_offset
         logical :: offset_top
 
 	    offset_top = .false.
@@ -1473,9 +1473,9 @@ Module MeshGeneration
         type (TecplotDomain) TMPLT
 
         integer :: i
-	    real(dr) :: xf2d, xt2d, yf2d, yt2d, a1, a2, a3, a4, a5
+	    real(dp) :: xf2d, xt2d, yf2d, yt2d, a1, a2, a3, a4, a5
 
-        real(dr) :: nprop(TMPLT.nNodes)
+        real(dp) :: nprop(TMPLT.nNodes)
 
 	    read(FNumMUT,*) xf2d, xt2d, yf2d, yt2d
 	    call Msg(TAB//'Bilinear function for the following range:')
@@ -1511,13 +1511,13 @@ Module MeshGeneration
 
         integer :: i, j
 	    integer :: npairs
-        real(dr) :: nprop(TMPLT.nNodes)
-	    real(dr) :: t
+        real(dp) :: nprop(TMPLT.nNodes)
+	    real(dp) :: t
                 
         character(256) :: instruction
 
-	    real(dr) :: xp(1000)
-	    real(dr) :: zp(1000)
+	    real(dp) :: xp(1000)
+	    real(dp) :: zp(1000)
 	    xp(:) = 0
 	    zp(:) = 0
 
@@ -1572,9 +1572,9 @@ Module MeshGeneration
     function zelev(top,base,k,nk)
         implicit none
 
-        real(dr) :: zelev
+        real(dp) :: zelev
 	    integer :: k, nk
-	    real(dr) :: base, top
+	    real(dp) :: base, top
 
         zelev=top-(top-base)*k/(nk)
 
@@ -1584,9 +1584,9 @@ Module MeshGeneration
     function zelev_proportional(top,base,rsub,rsubtot)
         implicit none
 
-	    real(dr) :: zelev_proportional
+	    real(dp) :: zelev_proportional
 	
-	    real(dr) :: base, top, rsub, rsubtot
+	    real(dp) :: base, top, rsub, rsubtot
 
         zelev_proportional=top-(top-base)*rsub/(rsubtot)
 

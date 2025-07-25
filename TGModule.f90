@@ -1,7 +1,6 @@
 module MUT  !### Modflow-USG Tools
     use GeneralRoutines
     use MUSG
-    !use HGS
     use tecplot
     
     implicit none
@@ -10,10 +9,6 @@ module MUT  !### Modflow-USG Tools
     character(MAX_INST) :: MUT_CMD="none"
     character(MAX_INST) :: BuildModflowUSG_CMD="build modflow usg"
     character(MAX_INST) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
-    !character(MAX_INST) :: PostprocessExistingHGSModel_CMD="postprocess existing hgs model"
-    ! TecIO szplt
-    character(MAX_INST) :: BuildTecplot_CMD="build tecplot"
-        
 
     character(256) :: FileNameMUT
     integer :: FnumMUT
@@ -107,13 +102,6 @@ module MUT  !### Modflow-USG Tools
 
             else if(index(MUT_CMD, PostprocessExistingModflowModel_CMD) /= 0) then
                 call PostprocessExistingModflowModel(FnumMUT,MyProject,prefix)
-
-
-            !else if(index(MUT_CMD, PostprocessExistingHGSModel_CMD) /= 0) then
-            !    call PostprocessExistingHGSModel(FnumMUT,MyHGS)
-
-            else if(index(MUT_CMD, BuildTecplot_CMD) /= 0) then
-                call BuildTecplot(FnumMUT)
 
             else
                 call ErrMsg('MUT?:'//MUT_CMD)

@@ -3,22 +3,26 @@ module GeneralRoutines    !### bit setting routines
 	
     use ifwin, only : GetCurrentDirectory
     implicit none
+    
+    character(37) :: MUTVersion=' 1.60 Bundle BETA'
+
 
     !---------------------------------------------- Machine declarations
     !
     ! Purpose: Define kind parameters for use with declaration statements
     !
-    !  e.g.     real(dr)    ::  var2
-    !           integer(di) ::  ivar2
-	integer, parameter :: dr=selected_real_kind(p=13,r=300)
-	integer, parameter :: mr=selected_real_kind(8)
-    integer, parameter :: di=selected_int_kind(9)
-    integer, parameter :: mi=selected_int_kind(4)
-
+    !  e.g.     real(dp)    ::  var2
+    !           integer(i4) ::  ivar2
+    integer, parameter :: sp = selected_real_kind(6, 37)    
+	integer, parameter :: dp = selected_real_kind(15, 307)
+    integer, parameter :: i2 = selected_int_kind(4)    
+    integer, parameter :: i4 = selected_int_kind(9)    
+    
     !-----------------------------------------------Constants
-    real(dr), parameter :: PI = 3.14159265359
-    real(dr), parameter :: Third = 1.0d0/3.0d0
-    real(dr), parameter :: small		=	1.0d-6
+    real(dp), parameter :: PI = 3.14159265359
+    real(dp), parameter :: Third = 1.0d0/3.0d0
+    real(dp), parameter :: small		=	1.0d-6
+    integer(i4), parameter :: zero		=	0
 	
     !---------------------------------------------- String declarations
     integer, parameter :: MAX_STR=1000
@@ -26,7 +30,7 @@ module GeneralRoutines    !### bit setting routines
     integer, parameter :: MAX_INST=200
     
     integer, Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
-    
+
     integer, parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
 
     character(MAX_STR) :: USERBIN
@@ -58,6 +62,14 @@ module GeneralRoutines    !### bit setting routines
     character(10) :: FileReadSTR   ='<--- Read '
     character(11) :: FileStripSTR  ='<--- Strip '
     
+    !---------------------------------------------- General declarations
+    integer :: ncount
+    character(MAX_LBL) :: UnitsOfLength='METERS'
+    character(MAX_LBL) :: UnitsOfTime='SECONDS'
+
+
+
+    
     !---------------------------------------------- Formats
     character(20), parameter :: FMT_R4='1x,1pg13.6,1x'
     character(20), parameter :: FMT_R8='1x,1pg24.16,1x'
@@ -82,10 +94,10 @@ module GeneralRoutines    !### bit setting routines
         character(MAX_LBL) :: Lbl ! info lable, user defined (eg 'Grid data')
         integer :: ncols ! number of columns
         integer :: nrows ! number of rows
-        real(dr) :: xllcorner
-        real(dr) :: yllcorner
-        real(dr) :: cellsize
-        real(dr), allocatable :: val(:,:)
+        real(dp) :: xllcorner
+        real(dp) :: yllcorner
+        real(dp) :: cellsize
+        real(dp), allocatable :: val(:,:)
     end type ArcAscii
 
     !---------------------------------------------- FileIO declarations
@@ -118,16 +130,6 @@ module GeneralRoutines    !### bit setting routines
     REAL :: time_begin(100), time_end(100)
     character(40) :: StopWatchLbl(100)
 
-    !---------------------------------------------- General declarations
-    integer :: ncount
-    character(37) :: MUTVersion=' 1.43'
-    character(MAX_LBL) :: UnitsOfLength='METERS'
-    character(MAX_LBL) :: UnitsOfTime='SECONDS'
-
-    !---------------------------------------------- HGS domain coupling scheme types
-	integer :: multi = 1
-	integer :: shared = 0
-
     !---------------------------------------------- TimeDate declarations
     character(12) :: DateSTR
     character(12) :: TimeSTR
@@ -136,7 +138,7 @@ module GeneralRoutines    !### bit setting routines
 
     integer, parameter :: NMonthStartDay=3001
     character(8) :: MonthStartDaySTR(NMonthStartDay)
-    real(dr):: MonthStartDay(NMonthStartDay)
+    real(dp):: MonthStartDay(NMonthStartDay)
     data (MonthStartDaySTR(ijul),MonthStartDay(ijul),ijul=1,NMonthStartDay) &
     /"Jan-1900",   0.00,  &
     "Feb-1900",   32.00, &
@@ -3142,7 +3144,7 @@ module GeneralRoutines    !### bit setting routines
 
 
     integer :: im, iy
-    real(dr):: ExcDay(1900:2899,12)
+    real(dp):: ExcDay(1900:2899,12)
     data ((ExcDay(iy,im),im=1,12),iy=1900,2899) &
         /1.00,32.00,61.00,92.00,122.00,153.00,183.00,214.00,245.00,275.00,306.00,336.00,&
         367.00,398.00,426.00,457.00,487.00,518.00,548.00,579.00,610.00,640.00,671.00,701.00,&
@@ -4302,8 +4304,8 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine GrowDRealArray(rArray,nSizeIn,nSizeout)
         implicit none
-        real(dr), allocatable :: rArray(:)
-        real(dr), allocatable :: rTMP(:)
+        real(dp), allocatable :: rArray(:)
+        real(dp), allocatable :: rTMP(:)
         integer :: nSizeIn, nSizeOut
         
         allocate(rTMP(nSizeout),stat=ialloc)
@@ -4316,8 +4318,8 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine GrowDReal2dArray(rArray,nSize1,nSizeIn,nSizeout)
         implicit none
-        real(dr), allocatable :: rArray(:,:)
-        real(dr), allocatable :: rTMP(:,:)
+        real(dp), allocatable :: rArray(:,:)
+        real(dp), allocatable :: rTMP(:,:)
         integer :: nSize1, nSizeIn, nSizeOut
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
@@ -4671,9 +4673,9 @@ module GeneralRoutines    !### bit setting routines
 
     subroutine Julian_month(SimTime,imonth,JulianDay,JulianMonthSTR) !--- Given SimTime, return Julian month number and date string
         integer :: i,imonth
-        real(dr) :: SimTime
+        real(dp) :: SimTime
         character(8) :: JulianMonthSTR
-        real(dr):: JulianDay
+        real(dp):: JulianDay
 
 
         do i=2,3001
@@ -4691,7 +4693,7 @@ module GeneralRoutines    !### bit setting routines
         ! This function assumes general date format as above!!!!!!!!
 
 	    integer :: i
-        real(dr) :: ExcelDay
+        real(dp) :: ExcelDay
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 	
         character*(*) :: datestring
@@ -4735,15 +4737,15 @@ module GeneralRoutines    !### bit setting routines
 
     function DecimalYear(datestring,timestring) !--- Convert date (eg. 11-May-2009) & time (hh:mm:ss) string to decimal year e.g. 2013.4
 
-	    real(dr) :: DecimalYear
-	    real(dr) :: test
+	    real(dp) :: DecimalYear
+	    real(dp) :: test
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
         logical :: YearFirst=.false.
 
         integer :: LeapDay = 0
 
 	    character*(*) :: datestring, timestring
-	    real(dr) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
+	    real(dp) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
 	    data cumul_days/31.,59.,90.,120.,151.,181.,212.,243.,273.,304.,334./
 
 
@@ -4888,13 +4890,13 @@ module GeneralRoutines    !### bit setting routines
 
     function DecimalYear_MDYFormat(datestring,timestring) !--- Convert date (eg. 11-May-2009) & time (hh:mm:ss) string to decimal year e.g. 2013.4
 
-	    real(dr) :: DecimalYear_MDYFormat
+	    real(dp) :: DecimalYear_MDYFormat
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
 
         integer :: LeapDay = 0
 
 	    character*(*) :: datestring, timestring
-	    real(dr) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
+	    real(dp) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
 	    data cumul_days/31.,59.,90.,120.,151.,181.,212.,243.,273.,304.,334./
 
 
@@ -5024,17 +5026,17 @@ module GeneralRoutines    !### bit setting routines
 
     function DecimalDay(datestring,timestring) !--- Convert date (eg. 11-May-2009) & time (hh:mm:ss) string to decimal day e.g. 40233.183
 
-	    real(dr) :: DecimalDay
+	    real(dp) :: DecimalDay
         character(MAX_STR) ::DStr  ! a string extracted at a specific row and column
-	    real(dr) :: test
+	    real(dp) :: test
         logical :: YearFirst=.false.
     	
 	    save start_year
 
 	    character*(*) :: datestring, timestring
-	    real(dr) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
+	    real(dp) :: year, month, day, hour, minute, second, cumul_days(11), tot_days
 	    data cumul_days/31.,59.,90.,120.,151.,181.,212.,243.,273.,304.,334./
-	    real(dr) :: start_year
+	    real(dp) :: start_year
 
         DStr=GetColStr(datestring,1,DateDelim)
 	
@@ -5329,25 +5331,25 @@ module GeneralRoutines    !### bit setting routines
 		!---------------------------------------------------------
 		implicit none
 
-		real(dr), intent(in)  :: x1
-		real(dr), intent(in)  :: y1
-		real(dr), intent(in)  :: z1
-		real(dr), intent(in)  :: x2
-		real(dr), intent(in)  :: y2
-		real(dr), intent(in)  :: z2
-		real(dr), intent(in)  :: x3
-		real(dr), intent(in)  :: y3
-		real(dr), intent(in)  :: z3
-		real(dr), intent(out) :: areat
-		real(dr) :: t1, t2, t3, t4, t5, t6
-		real(dr) :: x4, y4, z4, eucnorm
+		real(dp), intent(in)  :: x1
+		real(dp), intent(in)  :: y1
+		real(dp), intent(in)  :: z1
+		real(dp), intent(in)  :: x2
+		real(dp), intent(in)  :: y2
+		real(dp), intent(in)  :: z2
+		real(dp), intent(in)  :: x3
+		real(dp), intent(in)  :: y3
+		real(dp), intent(in)  :: z3
+		real(dp), intent(out) :: areat
+		real(dp) :: t1, t2, t3, t4, t5, t6
+		real(dp) :: x4, y4, z4, eucnorm
 		!---------------------------------------------------------
 
 		t1 = x2 - x1; t2 = y2 - y1; t3 = z2 - z1
 		t4 = x3 - x1; t5 = y3 - y1; t6 = z3 - z1
 		call cross_product(t1,t2,t3,t4,t5,t6,x4,y4,z4)
 		eucnorm = sqrt( x4 * x4 + y4 * y4 + z4 * z4 )
-		areat = 0.5_dr * eucnorm
+		areat = 0.5_dp * eucnorm
 		return
 
 	end subroutine area_triangle
@@ -5362,15 +5364,15 @@ module GeneralRoutines    !### bit setting routines
 		!----------------------------------------------------
 		implicit none
 
-		real(dr), intent(in)  :: x1
-		real(dr), intent(in)  :: y1
-		real(dr), intent(in)  :: z1
-		real(dr), intent(in)  :: x2
-		real(dr), intent(in)  :: y2
-		real(dr), intent(in)  :: z2
-		real(dr), intent(out) :: x3
-		real(dr), intent(out) :: y3
-		real(dr), intent(out) :: z3
+		real(dp), intent(in)  :: x1
+		real(dp), intent(in)  :: y1
+		real(dp), intent(in)  :: z1
+		real(dp), intent(in)  :: x2
+		real(dp), intent(in)  :: y2
+		real(dp), intent(in)  :: z2
+		real(dp), intent(out) :: x3
+		real(dp), intent(out) :: y3
+		real(dp), intent(out) :: z3
 		!----------------------------------------------------
 
 		x3 = y1 * z2 - z1 * y2
@@ -5385,14 +5387,14 @@ module GeneralRoutines    !### bit setting routines
         logical xsame,ysame,zsame
 
     !rt 2006.09.07 ier is defined as integer in module grok_mod and therefore in call subroutine. Define it here as integer
-    !	real(dr) :: a, b, c, d, ier
-	    real(dr) :: a, b, c, d
-	    real(dr) :: x1, x2, y1, y2,  z1, z2, x3, y3, z3
-	    real(dr) :: tl, t1u, t1, t2u, t2
-        real(dr) :: slope, yint
-        real(dr) :: u1, u2, u3
-        real(dr) :: v1, v2, v3
-        real(dr) :: k1, k2, k3
+    !	real(dp) :: a, b, c, d, ier
+	    real(dp) :: a, b, c, d
+	    real(dp) :: x1, x2, y1, y2,  z1, z2, x3, y3, z3
+	    real(dp) :: tl, t1u, t1, t2u, t2
+        real(dp) :: slope, yint
+        real(dp) :: u1, u2, u3
+        real(dp) :: v1, v2, v3
+        real(dp) :: k1, k2, k3
         integer :: ier
 
         !     ier is return code
@@ -5544,7 +5546,7 @@ module GeneralRoutines    !### bit setting routines
 	    implicit none
 
         integer :: iunit
-        real(dr):: val
+        real(dp):: val
         character*(*) label
 
         read(iunit,*) val
@@ -5559,8 +5561,8 @@ module GeneralRoutines    !### bit setting routines
 	    implicit none
 				
 	    integer :: i, cn, n, npoly
-	    real(dr) :: px,py, vt
-	    real(dr) :: polyx(npoly),polyy(npoly)
+	    real(dp) :: px,py, vt
+	    real(dp) :: polyx(npoly),polyy(npoly)
 
         cn = 0	! the crossing number counter
 
@@ -5588,7 +5590,7 @@ module GeneralRoutines    !### bit setting routines
 	    integer :: i, n, j, l, ir, indxt
 	    real :: q
 
-	    real(dr) :: arrin(n)
+	    real(dp) :: arrin(n)
 	    integer :: indx(n)
 
 
