@@ -1,7 +1,17 @@
 module fem !
     use GeneralRoutines
     implicit none
-    
+
+        type femesh
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
+        character(MAX_LBL) :: STR_LengthUnit
+
+        integer(i4) :: nNodesNew               ! number of nodes in the mesh
+
+    end type femesh
+
     contains
     
     !----------------------------------------------------------------------
