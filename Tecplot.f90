@@ -21,7 +21,7 @@ module Tecplot !
         character(11) :: Name='none'
         integer(i4) :: nElements                ! number of Elements in the mesh
         integer(i4) :: nLayers                 ! number of layers in the mesh 
-        integer(i4) :: nNodes               ! number of nodes in the mesh  
+        integer(i4) :: nNold               ! number of nodes in the mesh  
 
         integer(i4) :: nNodesPerElement        ! number of nodes/Element  
         integer(i4), allocatable :: iNode(:,:)  ! node list for Element (nElements, nNodesPerElement)
@@ -56,14 +56,14 @@ module Tecplot !
         real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
 
-        ! of size nNodes
+        ! of size nNold
         real(dp), allocatable :: x(:) 
         real(dp), allocatable :: y(:)
         real(dp), allocatable :: z(:)
         
         integer(i4) :: nZones                  ! number of zones in domain
         integer(i4),allocatable	:: Element_is(:)  ! size nElements,  bit setting e.g. chosen/not chosen
-        integer(i4),allocatable	:: Node_is(:)  ! size nNodes,  bit setting e.g. chosen/not chosen
+        integer(i4),allocatable	:: Node_is(:)  ! size nNold,  bit setting e.g. chosen/not chosen
         integer(i4),allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
         
         ! Faces

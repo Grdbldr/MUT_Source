@@ -33,6 +33,7 @@ Module MeshGeneration
     contains
     !----------------------------------------------------------------------
     subroutine MeshFromGb(FNumMUT,TMPLT)
+        use NumericalMesh
         implicit none
         
         integer(i4) :: FNumMUT
@@ -44,6 +45,8 @@ Module MeshGeneration
         real(dp) :: x(3),y(3)
         real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
         
+        type(mesh) :: GBMesh
+        GBMesh%Name="Grid Builder Mesh"
         
        TMPLT.name='TMPLT'
 
@@ -62,19 +65,25 @@ Module MeshGeneration
         !     NODE COORDINATES
 	    call getunit(itmp)
         open(itmp,file=trim(GBprefix)//'.xyc',form='unformatted')
-        read(itmp)TMPLT.nNodes
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes),stat=ialloc)
+        read(itmp)TMPLT.nNold
+        
+        GBMesh%nNodes=TMPLT.nNold
+        
+        allocate(TMPLT.x(TMPLT.nNold),TMPLT.y(TMPLT.nNold),TMPLT.z(TMPLT.nNold),stat=ialloc)
         call AllocChk(ialloc,'Read_gbldr_slice 2d node arrays')
         TMPLT.x = 0 ! automatic initialization
         TMPLT.y = 0 ! automatic initialization
         TMPLT.z = 0 ! automatic initialization
-        read(itmp) (TMPLT.x(i),TMPLT.y(i),i=1,TMPLT.nNodes)
+        read(itmp) (TMPLT.x(i),TMPLT.y(i),i=1,TMPLT.nNold)
 	    call freeunit(itmp)
 
         !     ELEMENT INCIDENCES
 	    call getunit(itmp)
         open(itmp,file=trim(GBprefix)//'.in3',form='unformatted')
         read(itmp)TMPLT.nElements
+
+        GBMesh%nElements=TMPLT.nElements
+
         allocate(TMPLT.iZone(TMPLT.nElements),TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements),&
            TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
         call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
@@ -135,7 +144,7 @@ Module MeshGeneration
         call AllocChk(ialloc,'TMPLT Element_Is array')            
         TMPLT.Element_Is(:)=0
 
-        write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT.nNodes
+        write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT.nNold
         call Msg(TmpSTR)
         write(TmpSTR,'(a,i8)') TAB//'Number of elements:    ',TMPLT.nElements
         call Msg(TmpSTR)
@@ -182,14 +191,14 @@ Module MeshGeneration
 
         read(itmp,*) TMPLT.meshtype
         read(itmp,*) TMPLT.nElements, TMPLT.nLayers, i1, i2
-        read(itmp,*) TMPLT.nNodes
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes), stat=ialloc)
+        read(itmp,*) TMPLT.nNold
+        allocate(TMPLT.x(TMPLT.nNold),TMPLT.y(TMPLT.nNold),TMPLT.z(TMPLT.nNold), stat=ialloc)
         call AllocChk(ialloc,'SWF node coordinate arrays')
         TMPLT.x = 0 ! automatic initialization
         TMPLT.y = 0 ! automatic initialization
         TMPLT.z = 0 ! automatic initialization
         
-        read(itmp,*) (TMPLT.x(i),TMPLT.y(i),TMPLT.z(i),i=1,TMPLT.nNodes)
+        read(itmp,*) (TMPLT.x(i),TMPLT.y(i),TMPLT.z(i),i=1,TMPLT.nNold)
         
         ! determine the number of nodes per Element (TMPLT.nNodesPerElement)
         read(itmp,*) i1,r1,r2,r3,i2,TMPLT.nNodesPerElement
@@ -252,7 +261,7 @@ Module MeshGeneration
         
         TMPLT.IsDefined=.true.
     
-        write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT.nNodes
+        write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT.nNold
         call Msg(TmpSTR)
         write(TmpSTR,'(a,i8)') '        Number of elements               ',TMPLT.nElements
         call Msg(TmpSTR)
@@ -345,8 +354,8 @@ Module MeshGeneration
         end do
 
         !     generate 2D slice first
-        TMPLT.nNodes=nx*ny
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes),stat=ialloc)
+        TMPLT.nNold=nx*ny
+        allocate(TMPLT.x(TMPLT.nNold),TMPLT.y(TMPLT.nNold),TMPLT.z(TMPLT.nNold),stat=ialloc)
         call AllocChk(ialloc,'Gen_u_rects node arrays')
         TMPLT.x = 0.0d0 
         TMPLT.y = 0.0d0 
@@ -421,7 +430,7 @@ Module MeshGeneration
         TMPLT.Element_Is(:)=0
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNold
         call Msg(TmpSTR)
         write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
         call Msg(TmpSTR)
@@ -468,8 +477,8 @@ Module MeshGeneration
         read(FNum,*) (yi(i),i=1,ny)
 
         !     generate 2D slice first
-        TMPLT.nNodes=nx*ny
-        allocate(TMPLT.x(TMPLT.nNodes),TMPLT.y(TMPLT.nNodes),TMPLT.z(TMPLT.nNodes),stat=ialloc)
+        TMPLT.nNold=nx*ny
+        allocate(TMPLT.x(TMPLT.nNold),TMPLT.y(TMPLT.nNold),TMPLT.z(TMPLT.nNold),stat=ialloc)
         call AllocChk(ialloc,'Gen_v_rects node arrays')
         TMPLT.x = 0.0d0 
         TMPLT.y = 0.0d0 
@@ -544,7 +553,7 @@ Module MeshGeneration
         TMPLT.IsDefined=.true.
 
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT.nNold
         call Msg(TmpSTR)
         write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
         call Msg(TmpSTR)
@@ -806,11 +815,11 @@ Module MeshGeneration
 	    zp(:) = 0
         
         
-        nNodesInit=TMPLT_CLN.nNodes
+        nNodesInit=TMPLT_CLN.nNold
         nElementsInit=TMPLT_CLN.nElements
         TMPLT_CLN.nZones=TMPLT_CLN.nZones+1
 
-        nSizeInit=max(2,TMPLT_CLN.nNodes)
+        nSizeInit=max(2,TMPLT_CLN.nNold)
 	    allocate(xiTMP(nSizeInit*2),yiTMP(nSizeInit*2),ziTMP(nSizeInit*2),stat=ialloc)
 	    call AllocChk(ialloc,'xyzTMP arrays')
 	    xiTMP(:) = -999.0d0
@@ -853,8 +862,8 @@ Module MeshGeneration
         cy=yp(1)
         cz=zp(1)
         do i=1,nCells+1
-            TMPLT_CLN.nNodes=TMPLT_CLN.nNodes+1
-            if(TMPLT_CLN.nNodes > nSizeInit) then
+            TMPLT_CLN.nNold=TMPLT_CLN.nNold+1
+            if(TMPLT_CLN.nNold > nSizeInit) then
                 xiTMP (1:nSizeInit) = TMPLT_CLN.x 
                 call move_alloc (xiTMP, TMPLT_CLN.x)
                 yiTMP (1:nSizeInit) = TMPLT_CLN.y 
@@ -870,16 +879,16 @@ Module MeshGeneration
 	            ziTMP(:) = -999.0d0
 
             endif
-            TMPLT_CLN.x(TMPLT_CLN.nNodes)=cx
-            TMPLT_CLN.y(TMPLT_CLN.nNodes)=cy
-            TMPLT_CLN.z(TMPLT_CLN.nNodes)=cz
+            TMPLT_CLN.x(TMPLT_CLN.nNold)=cx
+            TMPLT_CLN.y(TMPLT_CLN.nNold)=cy
+            TMPLT_CLN.z(TMPLT_CLN.nNold)=cz
             cx=cx+dx
             cy=cy+dy
             cz=cz+dz
         end do
         
         ! Trim CLN xyz to final size
-        nSizeInit=TMPLT_CLN.nNodes
+        nSizeInit=TMPLT_CLN.nNold
         deallocate(xiTMP,yiTMP,ziTMP)
         allocate(xiTMP(nSizeInit),yiTMP(nSizeInit),ziTMP(nSizeInit),stat=ialloc)
 	    call AllocChk(ialloc,'xyzTMP points arrays')
@@ -895,7 +904,7 @@ Module MeshGeneration
         call move_alloc (ziTMP, TMPLT_CLN.z)
         
         if(.not. allocated(TMPLT_CLN.iZone)) then  
-            TMPLT_CLN.nElements=TMPLT_CLN.nNodes-1
+            TMPLT_CLN.nElements=TMPLT_CLN.nNold-1
             allocate(TMPLT_CLN.iZone(TMPLT_CLN.nElements), &
                 TMPLT_CLN.iNode(TMPLT_CLN.nNodesPerElement,TMPLT_CLN.nElements), &
                 TMPLT_CLN.iLayer(TMPLT_CLN.nElements), &
@@ -920,7 +929,7 @@ Module MeshGeneration
             TMPLT_CLN.SlopeAngle=-999.0d0
         else
             nSizeInit=TMPLT_CLN.nElements
-            TMPLT_CLN.nElements=TMPLT_CLN.nNodes-1
+            TMPLT_CLN.nElements=TMPLT_CLN.nNold-1
             call growInteger2dArray(TMPLT_CLN.iNode,2,nSizeInit,TMPLT_CLN.nElements)
             call growIntegerArray(TMPLT_CLN.iZone,nSizeInit,TMPLT_CLN.nElements)
             call growIntegerArray(TMPLT_CLN.iLayer,nSizeInit,TMPLT_CLN.nElements)
@@ -951,7 +960,7 @@ Module MeshGeneration
         TMPLT_CLN.IsDefined=.true.
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT_CLN.nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT_CLN.nNold
         call Msg(TmpSTR)
         write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT_CLN.nElements
         call Msg(TmpSTR)
@@ -1121,7 +1130,7 @@ Module MeshGeneration
 			    read(FNumMUT,*) base_elev(1)
 			    write(TmpSTR,'('//FMT_R8//',a)') base_elev(1),'     '//TRIM(UnitsOfLength)
                 call Msg(TAB//TAB//'Layer base elevation '//TRIM(TmpSTR))
-			    do j=2,TMPLT.nNodes
+			    do j=2,TMPLT.nNold
 				    base_elev(j)=base_elev(1)
 			    end do
 
@@ -1130,13 +1139,13 @@ Module MeshGeneration
 			    read(FNumMUT,'(a)') basefile
 			    call Msg(TAB//TAB//'Base elevation from '//trim(basefile))
                 call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
-                call read_gb_nprop(basefile,base_elev,TMPLT.nNodes)
+                call read_gb_nprop(basefile,base_elev,TMPLT.nNold)
 
             elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') basefile
 			    call Msg(TAB//TAB//'Base elevation from '//trim(basefile))
                 call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
-                call list_file_elevation(basefile,base_elev,TMPLT.nNodes)
+                call list_file_elevation(basefile,base_elev,TMPLT.nNold)
                 
                 
 
@@ -1165,7 +1174,7 @@ Module MeshGeneration
         end do read_layer_instructions
 
 	    if(offset_base) then
-            do j=1,TMPLT.nNodes
+            do j=1,TMPLT.nNold
                 base_elev(j)=base_elev(j)+base_offset
 		    end do
 
@@ -1177,7 +1186,7 @@ Module MeshGeneration
 
            !         new nodes
             node_fixed=0
-            do j=1,TMPLT.nNodes
+            do j=1,TMPLT.nNold
                 if(base_elev(j) >= top_elev(j)) then
                     !rt-jun01
                     if(.not. minimum_layer_thickness) then
@@ -1197,7 +1206,7 @@ Module MeshGeneration
                     base_elev(j) = top_elev(j) - z_added
                     node_fixed = node_fixed + 1
                 end if
-                node3d=nsheet*TMPLT.nNodes+j
+                node3d=nsheet*TMPLT.nNold+j
                 x(node3d)=TMPLT.x(j)
                 y(node3d)=TMPLT.y(j)
                 if(proportional_sublayering) then
@@ -1212,26 +1221,26 @@ Module MeshGeneration
                 nel3d=(nsheet-1)*TMPLT.nElements+j
                 ilyr(nel3d)=nsheet
                 if(nln==6) then ! prisms from triangles
-                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNodes
-                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNodes
-                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNodes
-                    in(4,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNodes
-                    in(5,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNodes
-                    in(6,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNodes
+                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNold
+                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNold
+                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNold
+                    in(4,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNold
+                    in(5,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNold
+                    in(6,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNold
                     if(zone_by_template) then
                         iprp(nel3d)=TMPLT.iZone(j)
                     else
                         iprp(nel3d)=nlayers
                     end if
                 else ! blocks from rectangles, not currently supported
-                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNodes
-                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNodes
-                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNodes
-                    in(4,nel3d)=TMPLT.iNode(4,j)+nsheet*TMPLT.nNodes
-				    in(5,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNodes
-                    in(6,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNodes
-                    in(7,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNodes
-                    in(8,nel3d)=TMPLT.iNode(4,j)+(nsheet-1)*TMPLT.nNodes
+                    in(1,nel3d)=TMPLT.iNode(1,j)+nsheet*TMPLT.nNold
+                    in(2,nel3d)=TMPLT.iNode(2,j)+nsheet*TMPLT.nNold
+                    in(3,nel3d)=TMPLT.iNode(3,j)+nsheet*TMPLT.nNold
+                    in(4,nel3d)=TMPLT.iNode(4,j)+nsheet*TMPLT.nNold
+				    in(5,nel3d)=TMPLT.iNode(1,j)+(nsheet-1)*TMPLT.nNold
+                    in(6,nel3d)=TMPLT.iNode(2,j)+(nsheet-1)*TMPLT.nNold
+                    in(7,nel3d)=TMPLT.iNode(3,j)+(nsheet-1)*TMPLT.nNold
+                    in(8,nel3d)=TMPLT.iNode(4,j)+(nsheet-1)*TMPLT.nNold
         
                     if(zone_by_template) then
                         iprp(nel3d)=TMPLT.iZone(j)
@@ -1243,7 +1252,7 @@ Module MeshGeneration
             end do
 
 
-            zi(nsheet)=z((nsheet-1)*TMPLT.nNodes+1)
+            zi(nsheet)=z((nsheet-1)*TMPLT.nNold+1)
             nsheet=nsheet+1
             !call user_size_check(nsheet+1,user_nz,user_nz_str)
         end do
@@ -1255,7 +1264,7 @@ Module MeshGeneration
         end if
 
 	    ! initialize base elevation for (potential) next layer
-        do j=1,TMPLT.nNodes
+        do j=1,TMPLT.nNold
             top_elev(j)=base_elev(j)
         end do
 
@@ -1339,7 +1348,7 @@ Module MeshGeneration
                 read(FNumMUT,*) top_elev(1)
                 write(TmpSTR,'(2('//FMT_R8//'),a)') top_elev(1),'     '//UnitsOfLength
                 call Msg(TAB//trim(TmpSTR))
-                do j=2,TMPLT.nNodes
+                do j=2,TMPLT.nNold
 	                top_elev(j)=top_elev(1)
                 end do
 
@@ -1353,13 +1362,13 @@ Module MeshGeneration
 			    read(FNumMUT,'(a)') topfile
 			    call Msg(TAB//TAB//'Top elevation from '//trim(topfile))
                 call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
-                call read_gb_nprop(topfile,top_elev,TMPLT.nNodes)
+                call read_gb_nprop(topfile,top_elev,TMPLT.nNold)
 
             elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
 			    call Msg(TAB//TAB//'Top elevation from '//trim(topfile))
                 call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
-                call list_file_elevation(topfile,top_elev,TMPLT.nNodes)
+                call list_file_elevation(topfile,top_elev,TMPLT.nNold)
                 
             elseif(index(instruction, xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
@@ -1386,7 +1395,7 @@ Module MeshGeneration
         end do read_top
     
 	    if(offset_top) then
-            do j=1,TMPLT.nNodes
+            do j=1,TMPLT.nNold
                 top_elev(j)=top_elev(j)+top_offset
 		    end do
 
@@ -1475,7 +1484,7 @@ Module MeshGeneration
         integer(i4) :: i
 	    real(dp) :: xf2d, xt2d, yf2d, yt2d, a1, a2, a3, a4, a5
 
-        real(dp) :: nprop(TMPLT.nNodes)
+        real(dp) :: nprop(TMPLT.nNold)
 
 	    read(FNumMUT,*) xf2d, xt2d, yf2d, yt2d
 	    call Msg(TAB//'Bilinear function for the following range:')
@@ -1495,7 +1504,7 @@ Module MeshGeneration
         call Msg(TAB//trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      curve_y = ',a5,'     '//TRIM(UnitsOfLength)
         call Msg(TAB//trim(TmpSTR))
-        do i=1,TMPLT.nNodes
+        do i=1,TMPLT.nNold
 		    if( TMPLT.x(i).ge.xf2d .and. TMPLT.x(i).le.xt2d .and. TMPLT.y(i).ge.yf2d .and. TMPLT.y(i).le.yt2d) then
 			    nprop(i)=a1 + a2*(TMPLT.x(i)-xf2d) + a3*(TMPLT.x(i)-xf2d)**2 + a4*(TMPLT.y(i)-yf2d) + a5*(TMPLT.y(i)-yf2d)**2
 		    end if
@@ -1511,7 +1520,7 @@ Module MeshGeneration
 
         integer(i4) :: i, j
 	    integer(i4) :: npairs
-        real(dp) :: nprop(TMPLT.nNodes)
+        real(dp) :: nprop(TMPLT.nNold)
 	    real(dp) :: t
                 
         character(256) :: instruction
@@ -1556,7 +1565,7 @@ Module MeshGeneration
 	    end do read_xz_pairs
 
 
-        do i=1,TMPLT.nNodes
+        do i=1,TMPLT.nNold
 		    do j=1,npairs-1
 			    if(TMPLT.x(i) >= xp(j) .and. TMPLT.x(i) <= xp(j+1)) then  ! interpolate
 	                t=(TMPLT.x(i)-xp(j))/(xp(j+1)-xp(j))

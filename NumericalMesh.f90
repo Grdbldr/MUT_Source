@@ -1,16 +1,43 @@
-module fem !
+module NumericalMesh
+    use BasicTypes
     use GeneralRoutines
     implicit none
+    
+    type node 
+        real(dp) :: x
+        real(dp) :: y
+        real(dp) :: z
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: is
+    end type node 
+    
+    type element
+        character(40) :: Typ ! element typ eg triangle, quadrilateral, prism, block etc
+        !character(len=:), allocatable :: Typ ! number of nodes in element
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: is
+        integer(i4) :: nZones
+        integer(i4) :: idZone
+    end type element    
 
-        type femesh
+    type mesh
         character(len=:), allocatable :: name
         integer(i4) :: id
         character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
         character(MAX_LBL) :: STR_LengthUnit
 
-        integer(i4) :: nNodesNew               ! number of nodes in the mesh
+        integer(i4) :: nNodes              ! number of nodes in the femesh
+        type(node), allocatable :: node(:) ! array of nodes
+       
+        integer(i4) :: nElements              ! number of elements in the femesh
+        type(element), allocatable :: element(:) ! array of elements
 
-    end type femesh
+        integer(i4) :: nNodesPerElement ! number of nodes in element
+        integer(i4), allocatable :: idNode(:,:) ! array of local node ids for elements
+
+    end type mesh
 
     contains
     
@@ -141,4 +168,4 @@ module fem !
     end subroutine OuterCircle
 
 
-end module fem 
+end module NumericalMesh 

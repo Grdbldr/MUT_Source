@@ -1,4 +1,4 @@
-module Geom
+module BasicTypes
     use KindParameters, only: dp, i4
     implicit none(type, external)
 
