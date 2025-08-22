@@ -14,12 +14,25 @@ module NumericalMesh
     
     type element
         character(40) :: Typ ! element typ eg triangle, quadrilateral, prism, block etc
+        character(40) :: TecplotTyp ! element typ eg fetriangle, fequadrilateral, feblock etc
         !character(len=:), allocatable :: Typ ! number of nodes in element
         character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
         integer(i4) :: nZones
         integer(i4) :: idZone
+        real(dp) :: area  ! area of the element if 2D
+        real(dp) :: xyArea  ! area of the 2D element in XY 
+        
+        real(dp) :: xCircle  ! triangle inner circle
+        real(dp) :: yCircle
+        real(dp) :: zCircle
+        real(dp) :: rCircle
+        real(dp) :: xElement
+        real(dp) :: yElement
+        real(dp) :: zElement
+        real(dp) :: SideLength(3) ! length of sides if triangle
+
     end type element    
 
     type mesh
@@ -27,9 +40,11 @@ module NumericalMesh
         integer(i4) :: id
         character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
         character(MAX_LBL) :: STR_LengthUnit
+        
 
         integer(i4) :: nNodes              ! number of nodes in the femesh
         type(node), allocatable :: node(:) ! array of nodes
+        real(dp) :: xMin, xMax, yMin, yMax, zMin, zMax ! bounding box of the mesh
        
         integer(i4) :: nElements              ! number of elements in the femesh
         type(element), allocatable :: element(:) ! array of elements
@@ -37,6 +52,11 @@ module NumericalMesh
         integer(i4) :: nNodesPerElement ! number of nodes in element
         integer(i4), allocatable :: idNode(:,:) ! array of local node ids for elements
 
+    
+            
+            
+            
+            
     end type mesh
 
     contains

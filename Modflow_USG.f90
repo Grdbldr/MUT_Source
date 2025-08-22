@@ -1,7 +1,7 @@
 ﻿module MUSG !
     use GeneralRoutines
     !use ProcessCSV
-    !use fem
+    use NumericalMesh    
     use materials
     use MeshGeneration
     use GB
@@ -17,6 +17,11 @@
     
     ! Pre-processing i.e. building a modflow structure
     ! By default, we will assume a node-centred control volume
+    
+    ! By default, Tecplot output is disabled
+    ! This option enables Tecplot output
+    character(MAX_INST) :: EnableTecplotOutput_CMD='enable tecplot output'
+    
     
     ! --------------------------------------------------Mesh definition section
     ! By default, the 2D template mesh is converted to Modflow mesh using a mesh-centred control volume approach
@@ -162,11 +167,10 @@
     type ModflowDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
         
-        type(TecplotDomain) l_TMPLT
+        type(mesh) l_TMPLT
         
         logical :: IsDefined=.false.      ! this type of domain has been defined 
         character(128) :: MeshType      ! structured or unstructured?
-        character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
 
         character(10) :: Name='none'
         integer(i4) :: nCells                ! number of cells in the mesh
@@ -318,15 +322,17 @@
 
     type ModflowProject
  
-        type(TecplotDomain) TMPLT
+        type(mesh) TMPLT
         type(ModflowDomain) GWF
         type(ModflowDomain) CLN
         type(ModflowDomain) SWF
         
+        type(mesh) TMPLT2D
+        
         character(128) :: MUTPrefix
         character(128) :: Prefix='Modflow'
         
-
+        
         ! By default, RICHARDS equation for variably-saturated flow is used
         logical :: SaturatedFlow=.false.
         
@@ -1974,7 +1980,8 @@
         integer(i4) :: FNumMUT
         character(*) :: prefix
         type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
+        type (mesh) TMPLT2D
         
         integer(i4) :: i
         
@@ -2061,9 +2068,12 @@
                 call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
 
             elseif (index(instruction, SaturatedFlow_CMD)  /= 0) then
-                ! Saturated flow
                 Modflow.SaturatedFlow=.true.
                 call Msg(TAB//'*** Saturated flow approach is used ')
+
+            elseif (index(instruction, EnableTecplotOutput_CMD)  /= 0) then
+                EnableTecplotOutput=.true.
+                call Msg(TAB//'*** Tecplot Output Enabled')
 
                 
             ! Units set assignment
@@ -2103,8 +2113,8 @@
                 call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
                 
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
-                call ReadGridBuilderMesh(FNumMut)
-                call MeshFromGb(FnumMUT,TMPLT)
+                call ReadGridBuilderMesh(FNumMut,TMPLT2D)
+                call MeshFromGb(FnumMUT,TMPLT2D)
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
             
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
@@ -2614,8 +2624,8 @@
     
         integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_GWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_GWF
 
         integer(i4) :: i, j, k
 
@@ -3128,7 +3138,7 @@
         implicit none
 
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
 
         integer(i4) :: i
 	    integer(i4) :: ncount
@@ -3226,7 +3236,7 @@
         implicit none
         
         integer(i4) :: FNumMUT
-        type(TecplotDomain) Domain
+        type(mesh) Domain
 
 	    integer(i4) :: i,iNode
 	    real(dp) :: x1,y1,z1,dist_min,f1
@@ -3545,7 +3555,7 @@
         implicit none
 
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
 
         integer(i4) :: i, j
 	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
@@ -3680,7 +3690,7 @@
         implicit none
 
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
 
         integer(i4) :: i, j
 	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
@@ -3835,7 +3845,7 @@
     !-------------------------------------------------------------
     subroutine CLN_IaJaStructure(TMPLT_CLN)
         implicit none
-        type(TecplotDomain) TMPLT_CLN
+        type(mesh) TMPLT_CLN
         
         integer(i4) :: i, k, l
         integer(i4) :: iEl, jEl
@@ -4576,7 +4586,7 @@
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.CLN.name)//'"  ,N=',Modflow.CLN.l_TMPLT.nNold,', E=',Modflow.CLN.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(Modflow.CLN.l_TMPLT.elementtype)
+        ', datapacking=block, zonetype='//trim(Modflow.CLN.l_TMPLT%Element%TecplotTyp)
             
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -4700,11 +4710,11 @@
     !-------------------------------------------------------------
     subroutine DisplayDomainAttributes(domain)
         implicit none
-        type (TecplotDomain) Domain
+        type (mesh) Domain
         
         
         call Msg('*** Derived '//trim(domain.name)//' mesh attributes:')
-        call Msg('    Tecplot Element Type: '//trim(domain.ElementType))
+        call Msg('    Tecplot Element Type: '//trim(domain%Element%TecplotTyp))
         write(TMPStr,'(i10)') domain.nElements
         call Msg(trim(TmpSTR)//' Elements')
         write(TMPStr,'(i10)') domain.nLayers
@@ -4737,7 +4747,7 @@
     subroutine FlagChosenCellsInactiveTMPLT(TMPLT) 
         implicit none
 
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
         
         integer(i4) :: i
 
@@ -4750,19 +4760,19 @@
     end subroutine FlagChosenCellsInactiveTMPLT
     
     !----------------------------------------------------------------------
-    subroutine BuildFaceTopologyFromTecplotDomain(D)
+    subroutine BuildFaceTopologyFrommesh(D)
         implicit none
 
-        type (TecplotDomain)  D
+        type (mesh)  D
 
         integer(i4) :: i, j, k, l
         
-        call StopWatch(1,'BuildFaceTopologyFromTecplotDomain')
+        call StopWatch(1,'BuildFaceTopologyFrommesh')
         call Msg('Building face topology from model domain...') 
 
         
         ! Local node numbers for 2D and 3D element faces 
-        select case (D.ElementType)
+        select case (D%Element%TecplotTyp)
         case ('felineseg')
                 D.nNodesPerFace=1
                 D.nFacesPerElement=2
@@ -4824,7 +4834,7 @@
 	        D.LocalFaceNodes(1,6)=2; D.LocalFaceNodes(2,6)=6; D.LocalFaceNodes(3,6)=7; D.LocalFaceNodes(4,6)=3    ! right
             
         case default
-            call ErrMsg('ElementType '//trim(D.ElementType)//' not supported')
+            call ErrMsg('Tecplot Element Type '//trim(D%Element%TecplotTyp)//' not supported')
         end select  
   
         ! *** ASSUMPTION: If two face centroids are coincident, then the faces are shared by neighbouring elements
@@ -4879,13 +4889,13 @@
         continue
                 
      
-    end subroutine BuildFaceTopologyFromTecplotDomain
+    end subroutine BuildFaceTopologyFrommesh
 
     !----------------------------------------------------------------------
     subroutine FlagOuterBoundaryNodes(TMPLT)
         implicit none
 
-        type (TecplotDomain)  TMPLT
+        type (mesh)  TMPLT
 
         integer(i4) :: i, in1, in2, in3, in4 
         
@@ -4953,8 +4963,8 @@
         implicit none
 
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_GWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_GWF
         
         character(MAX_INST) :: instruction
         character(MAX_INST) :: zone_by_template_cmd			=   'zone by template'
@@ -5117,7 +5127,7 @@
             TMPLT_GWF.nZones=nlayers
         end if
         
-        TMPLT_GWF.ElementType='febrick'
+        TMPLT_GWF%Element%TecplotTyp='febrick'
 
         nz=nsheet
         zi(nsheet)=z((nsheet-1)*TMPLT.nNold+1)
@@ -5223,8 +5233,8 @@
 
         implicit none
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_SWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_SWF
 
         
         character(MAX_INST) :: instruction
@@ -5289,8 +5299,8 @@
 
         implicit none
         integer(i4) :: FNumMUT
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_SWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_SWF
 
         
         character(MAX_INST) :: instruction
@@ -5354,7 +5364,7 @@
 
         
         TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-        TMPLT_SWF.ElementType=TMPLT.ElementType
+        TMPLT_SWF.D%Element%TecplotTyp=TMPLT.D%Element%TecplotTyp
         TMPLT_SWF.nElements=TMPLT.nElements
         
         ! Just define these for now
@@ -5400,7 +5410,7 @@
         TMPLT_SWF.LocalFaceNodes(:,:)=TMPLT.LocalFaceNodes(:,:)
         
         ! Innercircle arrays if triangles
-        if(TMPLT.ElementType == 'fetriangle') then
+        if(TMPLT%Element%TecplotTyp == 'fetriangle') then
             allocate(TMPLT_SWF.rCircle(TMPLT_SWF.nElements), &
                 TMPLT_SWF.xCircle(TMPLT_SWF.nElements), &
                 TMPLT_SWF.yCircle(TMPLT_SWF.nElements),stat=ialloc)
@@ -5684,7 +5694,7 @@
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',modflow.GWF.l_TMPLT.nNold,', E=',modflow.GWF.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(modflow.GWF.l_TMPLT.elementtype)
+        ', datapacking=block, zonetype='//trim(modflow.GWF.l_TMPLT%Element%TecplotTyp)
         
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -5788,7 +5798,7 @@
     !-------------------------------------------------------------
     subroutine IaJa_MeshCentred(domain)
         implicit none
-        type(TecplotDomain) domain
+        type(mesh) domain
         
         integer(i4) :: i, j, k, l
         integer(i4) :: iEl, jEl
@@ -6267,8 +6277,8 @@
         implicit none
     
         type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_GWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_GWF
         integer(i4) :: i, j
         
         ! For modflow cell connection and area calculations
@@ -6379,70 +6389,6 @@
         end do
     end subroutine MeshCentredSWFCellGeometry
 
-    !!-------------------------------------------------------------
-    !subroutine ModflowDomainGridToTecplot(FName,domain)
-    !    implicit none
-    !    type(TecplotDomain) domain
-    !
-    !    integer(i4) :: Fnum
-    !    character(MAX_STR) :: FName
-    !    integer(i4) :: i, j
-    !
-    !    
-    !    
-    !    call OpenAscii(FNum,FName)
-    !    call Msg('  ')
-    !    call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-    !
-    !    write(FNum,*) 'Title = "'//trim(domain.name)//'"'
-    !
-    !    write(FNum,'(a)') 'variables="X","Y","Z"'
-    !    write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" ,N=',domain.nNold,', E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
-    !    write(FNum,'(a)') trim(ZoneSTR)
-    !    write(FNum,'(a)') '# x'
-    !    write(FNum,'(5('//FMT_R8//'))') (domain.x(i),i=1,domain.nNold)
-    !    write(FNum,'(a)') '# y'
-    !    write(FNum,'(5('//FMT_R8//'))') (domain.y(i),i=1,domain.nNold)
-    !    write(FNum,'(a)') '# z'
-    !    write(FNum,'(5('//FMT_R8//'))') (domain.z(i),i=1,domain.nNold)
-    !    
-    !    do i=1,domain.nElements
-    !        if(domain.name == 'TMPLT_GWF') then
-    !            if(domain.nNodesPerElement==6) then ! 6-node fetriangle, repeat nodes 3 and 6 for 8-node tecplot type febrick
-    !                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i) 
-    !            else if(domain.nNodesPerElement==8) then ! 8-node brick 
-    !                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,8) 
-    !            else
-    !                write(TmpSTR,'(i2)') domain.nNodesPerElement
-    !                call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-    !            end if
-    !        else if(domain.name == 'TMPLT_SWF' .or. domain.name == 'TMPLT') then
-    !            if(domain.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-    !                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3) !, domain.iNode(3,i) 
-    !            else if(domain.nNodesPerElement==4) then ! 4-node quadrilateral
-    !                if(domain.iNode(4,i) > 0) then
-    !                    write(FNum,'(8i8)') (domain.iNode(j,i),j=1,4) 
-    !                else
-    !                    write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i) 
-    !                end if
-    !            else
-    !                write(TmpSTR,'(i2)') domain.nNodesPerElement
-    !                call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-    !            end if
-    !        else if(domain.name == 'TMPLT_CLN' .or. domain.name == 'TMPLT') then
-    !            if(domain.nNodesPerElement==2) then ! 2-node line
-    !                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,2) 
-    !            else
-    !                write(TmpSTR,'(i2)') domain.nNodesPerElement
-    !                call ErrMsg(trim(domain.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
-    !            end if
-    !        end if
-    !    end do
-    !
-    !    call FreeUnit(FNum)
-    !   
-    !        
-    !end subroutine ModflowDomainGridToTecplot
     
     !-------------------------------------------------------------
     subroutine ModflowDomainScatterToTecplot(Modflow,domain)
@@ -6831,13 +6777,13 @@
         
             call Read_GWF_GSF(Modflow)
             
-            modflow.GWF.ElementType='febrick'
+            modflow.GWF%Element%TecplotTyp='febrick'
 
         end if
 
         if(Modflow.iCLN /= 0) THEN
             Modflow.CLN.Name='CLN'
-            modflow.CLN.ElementType='felineseg'
+            modflow.CLN%Element%TecplotTyp='felineseg'
             Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
             inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
             if(.not. FileExists) then
@@ -6865,9 +6811,9 @@
                 call Read_SWF_GSF(Modflow)
                 
                 if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                    modflow.SWF.ElementType='fetriangle'
+                    modflow.SWF%Element%TecplotTyp='fetriangle'
                 else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
-                    modflow.SWF.ElementType='fequadrilateral'
+                    modflow.SWF%Element%TecplotTyp='fequadrilateral'
                 end if
 
             end if
@@ -7234,7 +7180,7 @@
         write(FNum,'(a)') trim(VarSTR)
             
         write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
-            ',N=',domain.nNold,', E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
+            ',N=',domain.nNold,', E=',domain.nElements,', datapacking=block, zonetype='//trim(domain%Element%TecplotTyp)
         
         if(NodalControlVolume) then
             call AppendAuxdata(Modflow,ZoneSTR)
@@ -7345,7 +7291,7 @@
         do j=2,Modflow.ntime
             
             write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNold,', &
-                E=',domain.nElements,', datapacking=block, zonetype='//trim(domain.elementtype)
+                E=',domain.nElements,', datapacking=block, zonetype='//trim(domain%Element%TecplotTyp)
             
             if(NodalControlVolume) then
                 call AppendAuxdata(Modflow,ZoneSTR)
@@ -7423,7 +7369,7 @@
     subroutine ModflowTMPLTScatterToTecplot(Modflow,TMPLT)
         implicit none
         type (ModflowProject) Modflow
-        type(TecplotDomain) TMPLT
+        type(mesh) TMPLT
         
         integer(i4) :: i, j, nvar
         character(MAX_STR) :: FName
@@ -7570,8 +7516,8 @@
     
         integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
-        type (TecplotDomain) TMPLT_GWF
+        type (mesh) TMPLT
+        type (mesh) TMPLT_GWF
         
         integer(i4) :: i, j
 
@@ -8207,7 +8153,7 @@
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',Modflow.SWF.l_TMPLT.nNold,', E=',Modflow.SWF.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(Modflow.SWF.l_TMPLT.elementtype)
+        ', datapacking=block, zonetype='//trim(Modflow.SWF.l_TMPLT%Element%TecplotTyp)
             
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -8278,12 +8224,12 @@
     subroutine TemplateBuild(Modflow,TMPLT)
         implicit none
         type(ModflowProject) Modflow
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
 
         call TemplateToTecplot(Modflow,TMPLT)
         
         ! These routines required for both node- and mesh-centred control volume cases
-        call BuildFaceTopologyFromTecplotDomain(TMPLT)  
+        call BuildFaceTopologyFrommesh(TMPLT)  
         call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
         call IaJa_MeshCentred(TMPLT) 
         
@@ -8300,7 +8246,7 @@
     !-------------------------------------------------------------
     subroutine CellGeometry_MeshCentred(TMPLT)
         implicit none
-        type (TecplotDomain) TMPLT
+        type (mesh) TMPLT
 
         integer(i4) :: i, j
 
@@ -8357,7 +8303,7 @@
         ! Convert TMPLT IaJa structure from mesh-centred to node-centred 
         ! Calculate node-centred cell ConnectionLength and PerpendicularArea arrays
         implicit none
-        type(TecplotDomain) TMPLT
+        type(mesh) TMPLT
         
         integer(i4) :: i, j, jNode, kNode
         
@@ -8551,7 +8497,7 @@
     subroutine TemplateToTecplot(Modflow,TMPLT)
         implicit none
         type(ModflowProject) Modflow
-        type(TecplotDomain) TMPLT
+        type(mesh) TMPLT
 
         integer(i4) :: Fnum
         character(MAX_STR) :: FName
@@ -8579,7 +8525,7 @@
 
 
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(TMPLT.name)//'"  ,N=',TMPLT.nNold,', E=',TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(TMPLT.elementtype)
+        ', datapacking=block, zonetype='//trim(TMPLT%Element%TecplotTyp)
         
         CellCenteredSTR=', VARLOCATION=([4,5'
         if(nVar.ge.6) then

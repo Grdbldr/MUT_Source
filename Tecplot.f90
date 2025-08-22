@@ -1,7 +1,6 @@
 module Tecplot !
     use iso_c_binding
     use GeneralRoutines
-    use fem
     implicit none
 
     include "tecio.f90"
@@ -16,7 +15,7 @@ module Tecplot !
         
         logical :: IsDefined=.false.      ! this type of domain has been defined 
         character(128) :: MeshType      ! structured or unstructured?
-        character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
+        !character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
 
         character(11) :: Name='none'
         integer(i4) :: nElements                ! number of Elements in the mesh

@@ -1,23 +1,15 @@
 module GB
     use GeneralRoutines
-    use fem
+    use NumericalMesh
+    use tecplot
     implicit none
 
-    type gbmesh
-        character(len=:), allocatable :: name
-        integer(i4) :: id
-        character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
-        character(MAX_LBL) :: STR_LengthUnit
-
-        integer(i4) :: nNodesNew               ! number of nodes in the mesh
-
-    end type gbmesh
 
     contains
     !----------------------------------------------------------------------
-    subroutine ReadGridBuilderMesh(FNumMUT)
-        use NumericalMesh
+    subroutine ReadGridBuilderMesh(FNumMUT,GBMesh)
         implicit none
+        type(mesh) gbmesh
         
         integer(i4) :: FNumMUT
         
@@ -27,12 +19,11 @@ module GB
         real(dp) :: x(3),y(3)
         real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
         
-        type(mesh) :: GBMesh
-        GBMesh%Name="Grid Builder Mesh"
         
         !rgm oct-95  added this so only grid builder prefix needed
         !     prefix of grid files
         read(FNumMut,'(a80)') GBPrefix
+        GBMesh%Name=TRIM(GBPrefix)
 
         inquire(file=trim(GBprefix)//'.grd',exist=FileExists)
         if(.not. FileExists) then
@@ -40,7 +31,8 @@ module GB
         end if
 
         GBMesh%nNodesPerElement=3
-        GBMesh%Element%Typ='fetriangle'
+        GBMesh%Element%Typ='triangle'
+        GBMesh%Element%TecplotTyp='fetriangle'
         
         !     NODE COORDINATES
 	    call getunit(itmp)
@@ -68,51 +60,43 @@ module GB
         read(itmp) (GBMesh%idNode(1,i),GBMesh%idNode(2,i),GBMesh%idNode(3,i), i=1,GBMesh%nElements)
 	    call freeunit(itmp)
 
-        !     Element area numbers
+        !     Element zone numbers
 	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')
+        open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')  ! ean contains GB element area(aka zone) numbers 
         read(itmp) (GBMesh%Element(i)%idZone,i=1,GBMesh%nElements)
 	    call freeunit(itmp)
         GBMesh%Element%nZones=maxval(GBMesh%Element%idZone)
         
-        !allocate(TMPLT.ElementArea(TMPLT.nElements),TMPLT.rCircle(TMPLT.nElements),TMPLT.xCircle(TMPLT.nElements),&
-        !    TMPLT.yCircle(TMPLT.nElements),TMPLT.zCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
-        !    TMPLT.zElement(TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'GB Inner circle arrays')
-        !
-        !allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'GB SideLlength array')
-        !
-        !do i=1,TMPLT.nElements
-        !    ! xc and yc from circumcircles
-        !    if(TMPLT.nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
-        !    do j=1,TMPLT.nNodesPerElement
-        !        x(j)=TMPLT.x(TMPLT.iNode(j,i))
-        !        y(j)=TMPLT.y(TMPLT.iNode(j,i))
-        !    end do
-        !    call InnerCircle(x,y,TMPLT.ElementArea(i),xc,yc,TMPLT.rCircle(i),lseg,aseg,dseg)
-        !    
-        !    TMPLT.SideLength(1,i)=lseg(1,2)
-        !    TMPLT.SideLength(2,i)=lseg(2,3)
-        !    TMPLT.SideLength(3,i)=lseg(3,1)
-        !   
-        !    TMPLT.xCircle(i)=xc
-        !    TMPLT.yCircle(i)=yc
-        !        
-        !        
-        !    ! zc from centroid of the iNode array coordinates
-        !    zc=0.0
-        !    do j=1,3
-        !        zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-        !    end do
-        !        
-        !    TMPLT.xElement(i)=xc
-        !    TMPLT.yElement(i)=yc
-        !    TMPLT.zElement(i)=zc/3
-        !    TMPLT.zCircle(i)=zc/3
-        !   
-        !end do
-        !            
+        do i=1,GBMesh%nElements
+            ! xc and yc from circumcircles
+            if(GBMesh%nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
+            do j=1,GBMesh%nNodesPerElement
+                x(j)=GBMesh%node(GBMesh%idNode(j,i))%x
+                y(j)=GBMesh%node(GBMesh%idNode(j,i))%y
+            end do
+            call InnerCircle(x,y,GBMesh%Element(i)%xyArea,xc,yc,GBMesh%Element(i)%rCircle,lseg,aseg,dseg)
+            
+            GBMesh%Element(i)%SideLength(1)=lseg(1,2)
+            GBMesh%Element(i)%SideLength(2)=lseg(2,3)
+            GBMesh%Element(i)%SideLength(3)=lseg(3,1)
+           
+            GBMesh%Element(i)%xCircle=xc
+            GBMesh%Element(i)%yCircle=yc
+                
+                
+            ! zc from centroid of the iNode array coordinates
+            zc=0.0
+            do j=1,3
+                zc=zc+GBMesh%node(GBMesh%idNode(j,i))%z
+            end do
+                
+            GBMesh%Element(i)%xElement=xc
+            GBMesh%Element(i)%yElement=yc
+            GBMesh%Element(i)%zElement=zc/3
+            GBMesh%Element(i)%zCircle=zc/3
+           
+        end do
+                    
         !
         !TMPLT.IsDefined=.true.
         !allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
@@ -127,9 +111,96 @@ module GB
         !TMPLT.STR_LengthUnit=UnitsOfLength
         !write(TmpSTR,'(a)') TAB//'Assumed length Units:  '//trim(UnitsOfLength)
         !call Msg(TmpSTR)
+        
+        if(EnableTecplotOutput) then
+            call GBToTecplot(GBMesh)
+        endif
+        
+
 
         return
     end subroutine ReadGridBuilderMesh
+    
+    !-------------------------------------------------------------
+    subroutine GBToTecplot(GBMesh)
+        implicit none
+        type(mesh) gbmesh
+        
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i, j
+
+        ! tecplot output file
+        FName=trim(GBMesh%name)//'.tecplot.dat'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+
+        write(FNum,*) 'Title = "'//trim(GBMesh%name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","Zone","Element Area","Inner Circle Radius"'
+        nVar=6
+
+        !if(allocated(GBMesh%rCircle)) then
+        !    VarSTR=trim(VarSTR)//'"'//trim(GBMesh%name)//'Inner circle radius",'
+        !    nVar=nVar+1
+        !end if
+            
+        write(FNum,'(a)') trim(VarSTR)
+
+
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(GBMesh%name)//'"  ,N=',GBMesh%nNodes,', E=',GBMesh%nElements,&
+        ', datapacking=block, zonetype='//trim(GBMesh%Element(1)%TecplotTyp)
+        
+        CellCenteredSTR=', VARLOCATION=([4,5'
+        if(nVar.ge.6) then
+            do j=6,nVar
+                write(str2,'(i2)') j
+                CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+            end do
+        end if
+        CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+        write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
+
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5('//FMT_R8//'))') (GBMesh%node(i)%x,i=1,GBMesh%nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5('//FMT_R8//'))') (GBMesh%node(i)%y,i=1,GBMesh%nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5('//FMT_R8//'))') (GBMesh%node(i)%z,i=1,GBMesh%nNodes)
+        
+        write(FNum,'(a)') '# zone'
+        write(FNum,'(5i8)') (GBMesh%Element(i)%idZone,i=1,GBMesh%nElements)
+            
+        write(FNum,'(a)') '# element area'
+        write(FNum,'(5('//FMT_R8//'))') (GBMesh%Element(i)%Area,i=1,GBMesh%nElements)
+                    
+        write(FNum,'(a)') '# circle radius'
+        write(FNum,'(5('//FMT_R8//'))') (GBMesh%Element(i)%rCircle,i=1,GBMesh%nElements)
+            
+        
+        do i=1,GBMesh%nElements
+            if(GBMesh%nNodesPerElement==3) then ! 3-node triangle
+                write(FNum,'(8i8)') (GBMesh%idNode(j,i),j=1,3)
+            else if(GBMesh%nNodesPerElement==4) then ! 4-node quadrilateral
+                if(GBMesh%idNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (GBMesh%idNode(j,i),j=1,4) 
+                else
+                    write(FNum,'(8i8)') (GBMesh%idNode(j,i),j=1,3), GBMesh%idNode(3,i) 
+                end if
+            else
+                write(TmpSTR,'(i2)')GBMesh%nNodesPerElement
+                call ErrMsg(trim(GBMesh%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
+
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine GBToTecplot
+
 
     
     end module GB

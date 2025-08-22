@@ -61,6 +61,7 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
+    logical :: EnableTecplotOutput = .false.
 
 
     
