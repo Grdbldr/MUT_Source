@@ -20,7 +20,7 @@ module Tecplot !
         character(11) :: Name='none'
         integer(i4) :: nElements                ! number of Elements in the mesh
         integer(i4) :: nLayers                 ! number of layers in the mesh 
-        integer(i4) :: nNold               ! number of nodes in the mesh  
+        !integer(i4) :: nNold               ! number of nodes in the mesh  
 
         integer(i4) :: nNodesPerElement        ! number of nodes/Element  
         integer(i4), allocatable :: iNode(:,:)  ! node list for Element (nElements, nNodesPerElement)
@@ -65,17 +65,17 @@ module Tecplot !
         integer(i4),allocatable	:: Node_is(:)  ! size nNold,  bit setting e.g. chosen/not chosen
         integer(i4),allocatable	:: Zone_is(:)  ! size nZones,  bit setting e.g. chosen/not chosen
         
-        ! Faces
-        logical :: FacesCalculated = .false.
-        integer(i4) :: nFaces  = 0
-        integer(i4) :: nNodesPerFace
-        integer(i4) :: nFacesPerElement
-        integer(i4), allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
-        integer(i4), allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
-        integer(i4), allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
-        real(dp), allocatable :: FaceCentroidX(:,:) ! (nFacesPerElement,nElements)
-        real(dp), allocatable :: FaceCentroidY(:,:) ! (nFacesPerElement,nElements)
-        real(dp), allocatable :: FaceCentroidZ(:,:) ! (nFacesPerElement,nElements)
+        !! Faces
+        !logical :: FacesCalculated = .false.
+        !integer(i4) :: nFaces  = 0
+        !integer(i4) :: nNodesPerFace
+        !integer(i4) :: nFacesPerElement
+        !integer(i4), allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
+        !integer(i4), allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
+        !integer(i4), allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
+        !real(dp), allocatable :: FaceCentroidX(:,:) ! (nFacesPerElement,nElements)
+        !real(dp), allocatable :: FaceCentroidY(:,:) ! (nFacesPerElement,nElements)
+        !real(dp), allocatable :: FaceCentroidZ(:,:) ! (nFacesPerElement,nElements)
 
             
     end type TecplotDomain

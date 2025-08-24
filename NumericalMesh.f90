@@ -3,6 +3,9 @@ module NumericalMesh
     use GeneralRoutines
     implicit none
     
+    real(sp) :: MinSeparationDistance=0.0001
+
+    
     type node 
         real(dp) :: x
         real(dp) :: y
@@ -14,54 +17,238 @@ module NumericalMesh
     
     type element
         character(40) :: Typ ! element typ eg triangle, quadrilateral, prism, block etc
-        character(40) :: TecplotTyp ! element typ eg fetriangle, fequadrilateral, feblock etc
         !character(len=:), allocatable :: Typ ! number of nodes in element
         character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
-        integer(i4) :: nZones
         integer(i4) :: idZone
+        integer(i4) :: iLayer ! layer number for extruded mesh
         real(dp) :: area  ! area of the element if 2D
         real(dp) :: xyArea  ! area of the 2D element in XY 
         
         real(dp) :: xCircle  ! triangle inner circle
         real(dp) :: yCircle
         real(dp) :: zCircle
-        real(dp) :: rCircle
-        real(dp) :: xElement
+        real(dp) :: rCircle  ! triangle inner circle radius
+        real(dp) :: xTangent(3) ! triangle inner circle radius tangent to side
+        real(dp) :: yTangent(3)         
+        
+        real(dp) :: SideLength(4) ! length of sides if triangle or rectangle
+        
+        real(dp) :: xElement    ! element centroid
         real(dp) :: yElement
         real(dp) :: zElement
-        real(dp) :: SideLength(3) ! length of sides if triangle
+        
+        real(dp) :: Length          ! property of CLN cell
+        real(dp) :: LowestElevation
+        real(dp) :: SlopeAngle
 
     end type element    
+    
+    type cell 
+        real(dp) :: x
+        real(dp) :: y
+        real(dp) :: z
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: is
+        integer(i4) :: idZone
+        integer(i4) :: iLayer ! layer number for extruded mesh
+    end type cell 
+    
+    type zone 
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: is
+    end type zone 
 
     type mesh
         character(len=:), allocatable :: name
         integer(i4) :: id
         character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
         character(MAX_LBL) :: STR_LengthUnit
-        
+  
+        character(40) :: TecplotTyp ! element typ eg fetriangle, fequadrilateral, feblock etc
 
-        integer(i4) :: nNodes              ! number of nodes in the femesh
+        integer(i4) :: nNodes              ! number of nodes in the mesh
         type(node), allocatable :: node(:) ! array of nodes
         real(dp) :: xMin, xMax, yMin, yMax, zMin, zMax ! bounding box of the mesh
        
-        integer(i4) :: nElements              ! number of elements in the femesh
+        integer(i4) :: nElements              ! number of elements in the mesh
         type(element), allocatable :: element(:) ! array of elements
 
         integer(i4) :: nNodesPerElement ! number of nodes in element
         integer(i4), allocatable :: idNode(:,:) ! array of local node ids for elements
+        
+        integer(i4) :: nCells ! number of cells in mesh
+        type(cell), allocatable :: cell(:) ! array of cells
+        
+        logical :: FacesCalculated = .false.
+        integer(i4) :: nFaces  = 0
+        integer(i4) :: nNodesPerFace
+        integer(i4) :: nFacesPerElement
+        integer(i4), allocatable :: LocalFaceNodes(:,:) ! nNodesPerFace, nFacesPerElement
+        integer(i4), allocatable :: FaceHost(:,:) ! (nFacesPerElement,nElements)
+        integer(i4), allocatable :: FaceNeighbour(:,:) ! (nFacesPerElement,nElements)
+        real(dp), allocatable :: FaceCentroidX(:,:) ! (nFacesPerElement,nElements)
+        real(dp), allocatable :: FaceCentroidY(:,:) ! (nFacesPerElement,nElements)
+        real(dp), allocatable :: FaceCentroidZ(:,:) ! (nFacesPerElement,nElements)
+        
+        integer(i4) :: nZones
+        type(zone), allocatable :: zone(:) ! array of zones
+        
+        integer(i4) :: nLayers                 ! number of layers in the mesh 
 
-    
-            
-            
-            
-            
+
     end type mesh
 
     contains
-    
+
     !----------------------------------------------------------------------
+    subroutine BuildFaceTopologyFrommesh(D)
+        implicit none
+
+        type (mesh)  D
+
+        integer(i4) :: i, j, k, l
+        
+        call StopWatch(1,'BuildFaceTopologyFrommesh')
+        call Msg('Building face topology from model domain...') 
+
+        
+        ! Local node numbers for 2D and 3D element faces 
+        select case (D%TecplotTyp)
+        case ('felineseg')
+                D.nNodesPerFace=1
+                D.nFacesPerElement=2
+                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'D.LocalFaceNodes  fetriangle')
+		                                 ! end1   end2   
+	            !data D.LocalFaceNodes/     1,      2   /
+	            D.LocalFaceNodes(1,1)=1    ! end1
+                D.LocalFaceNodes(1,2)=2    ! end2   
+        
+        case ('fetriangle')
+                D.nNodesPerFace=2
+                D.nFacesPerElement=3
+                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'D.LocalFaceNodes  fetriangle')
+		                                 ! side1   side2   side3 
+	            !data D.LocalFaceNodes/    1,2,      2,3,    3,1   /
+	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
+                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
+                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=1    ! side3 
+            
+        case ('fequadrilateral')
+                D.nNodesPerFace=2
+                D.nFacesPerElement=4
+                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'D.LocalFaceNodes  fequadrilateral')
+		                                 ! side1     side2   side3   side4 
+	            !data D.LocalFaceNodes/    1,2,      2,3,    3,4,    4,1   /
+	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
+                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
+                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=4    ! side3 
+                D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=1    ! side3 
+                
+        case ('feprism')
+            D.nNodesPerFace=4
+            D.nFacesPerElement=5
+            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'D.LocalFaceNodes  feprism')
+                                        ! bottom      top         side1       side2       side3 
+	        !data D.LocalFaceNodes/    1,2,3,0,    4,5,6,0,    1,2,5,4,    1,3,6,4,    2,3,6,5   /
+	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=0    ! bottom
+	        D.LocalFaceNodes(1,2)=4; D.LocalFaceNodes(2,2)=5; D.LocalFaceNodes(3,2)=6; D.LocalFaceNodes(4,2)=0    ! top
+	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=5; D.LocalFaceNodes(4,3)=4    ! side1
+	        D.LocalFaceNodes(1,4)=1; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=6; D.LocalFaceNodes(4,4)=4    ! side2
+	        D.LocalFaceNodes(1,5)=2; D.LocalFaceNodes(2,5)=3; D.LocalFaceNodes(3,5)=6; D.LocalFaceNodes(4,5)=5    ! side3
+
+        case ('febrick')
+            D.nNodesPerFace=4
+            D.nFacesPerElement=6
+            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'D.LocalFaceNodes  febrick')
+                                        ! bottom      top         front       back        left        right 
+	        !data D.LocalFaceNodes/    1,2,3,4,    5,6,7,8,    1,2,6,5,    4,3,7,8,    1,5,8,4,    2,6,7,3   /
+	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=4    ! bottom
+	        D.LocalFaceNodes(1,2)=5; D.LocalFaceNodes(2,2)=6; D.LocalFaceNodes(3,2)=7; D.LocalFaceNodes(4,2)=8    ! top
+	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=6; D.LocalFaceNodes(4,3)=5    ! front
+	        D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=7; D.LocalFaceNodes(4,4)=8    ! back
+	        D.LocalFaceNodes(1,5)=1; D.LocalFaceNodes(2,5)=5; D.LocalFaceNodes(3,5)=8; D.LocalFaceNodes(4,5)=4    ! left
+	        D.LocalFaceNodes(1,6)=2; D.LocalFaceNodes(2,6)=6; D.LocalFaceNodes(3,6)=7; D.LocalFaceNodes(4,6)=3    ! right
+            
+        case default
+            call ErrMsg('Tecplot Element Type '//trim(D%TecplotTyp)//' not supported')
+        end select  
+  
+        ! *** ASSUMPTION: If two face centroids are coincident, then the faces are shared by neighbouring elements
+        allocate(D.FaceCentroidX(D.nFacesPerElement,D.nElements), &
+                 D.FaceCentroidY(D.nFacesPerElement,D.nElements), &
+                 D.FaceCentroidZ(D.nFacesPerElement,D.nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face Centroid arrays')
+        
+        allocate(D.FaceHost(D.nFacesPerElement,D.nElements), &
+                 D.FaceNeighbour(D.nFacesPerElement,D.nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face host/neighbour arrays')
+        D.FaceHost(:,:)=0
+               
+        D.nFaces=0
+        do i=1,D.nElements
+            do j=1,D.nFacesPerElement
+                D.FaceHost(j,i)=i
+                D.nFaces=D.nFaces+1
+                D.FaceCentroidX(j,i)=0.0d0
+                D.FaceCentroidY(j,i)=0.0d0
+                D.FaceCentroidZ(j,i)=0.0d0
+                do k=1,D.nNodesPerFace
+                    D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%x
+                    D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%y
+                    D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%z
+                end do
+                D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)/D.nNodesPerFace
+                D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)/D.nNodesPerFace
+                D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)/D.nNodesPerFace
+            end do
+        end do
+        
+        D.FaceNeighbour(:,:)=0
+        do i=1,D.nElements
+            do j=1,D.nFacesPerElement
+                SearchLoop:do k=i+1,D.nElements
+                    do l=1,D.nFacesPerElement
+                        if(abs(D.FaceCentroidX(j,i)-D.FaceCentroidX(l,k)) < MinSeparationDistance .AND. &
+                           abs(D.FaceCentroidY(j,i)-D.FaceCentroidY(l,k)) < MinSeparationDistance .AND. &
+                           abs(D.FaceCentroidZ(j,i)-D.FaceCentroidZ(l,k)) < MinSeparationDistance) then ! shared face
+                            D.FaceNeighbour(j,i)=k    
+                            D.FaceNeighbour(l,k)=i 
+                            exit SearchLoop
+                        endif
+                    end do
+                end do SearchLoop
+            end do
+        end do
+        
+        call ElapsedTime(1)
+        
+        continue
+                
+     
+    end subroutine BuildFaceTopologyFrommesh
+
+    !----------------------------------------------------------------------
+    subroutine GrowElementArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        type(element), allocatable :: iArray(:)
+        type(element), allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowElementArray
     subroutine InnerCircle(x,y,area,xc,yc,radius,lseg,aseg,dseg)
         implicit none
 

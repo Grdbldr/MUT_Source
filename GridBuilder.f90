@@ -32,7 +32,7 @@ module GB
 
         GBMesh%nNodesPerElement=3
         GBMesh%Element%Typ='triangle'
-        GBMesh%Element%TecplotTyp='fetriangle'
+        GBMesh%TecplotTyp='fetriangle'
         
         !     NODE COORDINATES
 	    call getunit(itmp)
@@ -65,7 +65,7 @@ module GB
         open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')  ! ean contains GB element area(aka zone) numbers 
         read(itmp) (GBMesh%Element(i)%idZone,i=1,GBMesh%nElements)
 	    call freeunit(itmp)
-        GBMesh%Element%nZones=maxval(GBMesh%Element%idZone)
+        GBMesh%nZones=maxval(GBMesh%Element%idZone)
         
         do i=1,GBMesh%nElements
             ! xc and yc from circumcircles
@@ -103,7 +103,7 @@ module GB
         !call AllocChk(ialloc,'TMPLT Element_Is array')            
         !TMPLT.Element_Is(:)=0
         !
-        !write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT.nNold
+        !write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT%nNodes
         !call Msg(TmpSTR)
         !write(TmpSTR,'(a,i8)') TAB//'Number of elements:    ',TMPLT.nElements
         !call Msg(TmpSTR)
@@ -152,7 +152,7 @@ module GB
 
 
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(GBMesh%name)//'"  ,N=',GBMesh%nNodes,', E=',GBMesh%nElements,&
-        ', datapacking=block, zonetype='//trim(GBMesh%Element(1)%TecplotTyp)
+        ', datapacking=block, zonetype='//trim(GBMesh%TecplotTyp)
         
         CellCenteredSTR=', VARLOCATION=([4,5'
         if(nVar.ge.6) then
