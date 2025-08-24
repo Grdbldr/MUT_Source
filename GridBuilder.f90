@@ -84,33 +84,19 @@ module GB
             GBMesh%Element(i)%yCircle=yc
                 
                 
-            ! zc from centroid of the iNode array coordinates
+            ! zc from centroid of the idNode array coordinates
             zc=0.0
             do j=1,3
                 zc=zc+GBMesh%node(GBMesh%idNode(j,i))%z
             end do
                 
-            GBMesh%Element(i)%xElement=xc
-            GBMesh%Element(i)%yElement=yc
-            GBMesh%Element(i)%zElement=zc/3
+            GBMesh%Element(i)%x=xc
+            GBMesh%Element(i)%y=yc
+            GBMesh%Element(i)%z=zc/3
             GBMesh%Element(i)%zCircle=zc/3
            
         end do
                     
-        !
-        !TMPLT.IsDefined=.true.
-        !allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'TMPLT Element_Is array')            
-        !TMPLT.Element_Is(:)=0
-        !
-        !write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT%nNodes
-        !call Msg(TmpSTR)
-        !write(TmpSTR,'(a,i8)') TAB//'Number of elements:    ',TMPLT.nElements
-        !call Msg(TmpSTR)
-        !
-        !TMPLT.STR_LengthUnit=UnitsOfLength
-        !write(TmpSTR,'(a)') TAB//'Assumed length Units:  '//trim(UnitsOfLength)
-        !call Msg(TmpSTR)
         
         if(EnableTecplotOutput) then
             call GBToTecplot(GBMesh)

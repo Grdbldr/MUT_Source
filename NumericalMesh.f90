@@ -7,9 +7,10 @@ module NumericalMesh
 
     
     type node 
-        real(dp) :: x
+        real(dp) :: x   ! coordinates
         real(dp) :: y
         real(dp) :: z
+        
         character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
@@ -23,22 +24,26 @@ module NumericalMesh
         integer(i4) :: is
         integer(i4) :: idZone
         integer(i4) :: iLayer ! layer number for extruded mesh
+        
+        real(dp) :: x    ! coordinates of element centroid
+        real(dp) :: y
+        real(dp) :: z
+
         real(dp) :: area  ! area of the element if 2D
         real(dp) :: xyArea  ! area of the 2D element in XY 
         
         real(dp) :: xCircle  ! triangle inner circle
         real(dp) :: yCircle
         real(dp) :: zCircle
-        real(dp) :: rCircle  ! triangle inner circle radius
+        real(dp) :: rCircle     ! triangle inner circle radius
         real(dp) :: xTangent(3) ! triangle inner circle radius tangent to side
         real(dp) :: yTangent(3)         
         
+        real(dp) :: xSide(4)      ! x coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) 
+        real(dp) :: ySide(4)      ! y coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) 
         real(dp) :: SideLength(4) ! length of sides if triangle or rectangle
         
-        real(dp) :: xElement    ! element centroid
-        real(dp) :: yElement
-        real(dp) :: zElement
-        
+       
         real(dp) :: Length          ! property of CLN cell
         real(dp) :: LowestElevation
         real(dp) :: SlopeAngle
@@ -49,6 +54,9 @@ module NumericalMesh
         real(dp) :: x
         real(dp) :: y
         real(dp) :: z
+        real(dp) :: area   ! area of the cell in xy plane
+        real(dp) :: top    ! top elevation of the cell 
+        real(dp) :: bottom ! bottom elevation of the cell
         character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
@@ -80,8 +88,17 @@ module NumericalMesh
         integer(i4) :: nNodesPerElement ! number of nodes in element
         integer(i4), allocatable :: idNode(:,:) ! array of local node ids for elements
         
+        ! Cell connection 
+        integer(i4) :: njag      ! total number of connections for mesh
+        integer(i4), allocatable :: ia(:)      ! size nElements, number of connections/Element
+        integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
+        real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
+        real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
+        integer(i4), allocatable :: ThroughFace(:,:)  ! connected through face  (MAX_CNCTS,nCells)
+
         integer(i4) :: nCells ! number of cells in mesh
         type(cell), allocatable :: cell(:) ! array of cells
+        integer(i4) :: nNodesPerCell ! number of nodes in cell
         
         logical :: FacesCalculated = .false.
         integer(i4) :: nFaces  = 0
@@ -98,6 +115,8 @@ module NumericalMesh
         type(zone), allocatable :: zone(:) ! array of zones
         
         integer(i4) :: nLayers                 ! number of layers in the mesh 
+        
+
 
 
     end type mesh
@@ -113,7 +132,7 @@ module NumericalMesh
         integer(i4) :: i, j, k, l
         
         call StopWatch(1,'BuildFaceTopologyFrommesh')
-        call Msg('Building face topology from model domain...') 
+        call Msg('Building face topology from model domain%..') 
 
         
         ! Local node numbers for 2D and 3D element faces 

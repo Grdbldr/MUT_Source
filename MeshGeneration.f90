@@ -32,243 +32,6 @@ Module MeshGeneration
 
     
     contains
-    !!----------------------------------------------------------------------
-    !subroutine MeshFromGb(FNumMUT,TMPLT)
-    !    use NumericalMesh
-    !    implicit none
-    !    
-    !    integer(i4) :: FNumMUT
-    !    type (mesh) TMPLT
-    !    
-    !    character(128) :: GBPrefix
-    !
-    !    integer(i4) :: i,j
-    !    real(dp) :: x(3),y(3)
-    !    real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
-    !    
-    !    type(mesh) :: GBMesh
-    !    GBMesh%Name="Grid Builder Mesh"
-    !    
-    !   TMPLT.name='TMPLT'
-    !
-    !    !rgm oct-95  added this so only grid builder prefix needed
-    !    !     prefix of grid files
-    !    read(FNumMut,'(a80)') GBPrefix
-    !
-    !    inquire(file=trim(GBprefix)//'.grd',exist=FileExists)
-    !    if(.not. FileExists) then
-    !        call ErrMsg('File not found: '//trim(GBprefix)//'.grd')
-    !    end if
-    !
-    !    TMPLT.nNodesPerElement=3
-    !    TMPLT%TecplotTyp='fetriangle'
-    !    
-    !    !     NODE COORDINATES
-	   ! call getunit(itmp)
-    !    open(itmp,file=trim(GBprefix)//'.xyc',form='unformatted')
-    !    read(itmp)TMPLT%nNodes
-    !    
-    !    GBMesh%nNodes=TMPLT%nNodes
-    !    
-    !    allocate(TMPLT.x(TMPLT%nNodes),TMPLT.y(TMPLT%nNodes),TMPLT.z(TMPLT%nNodes),stat=ialloc)
-    !    call AllocChk(ialloc,'Read_gbldr_slice 2d node arrays')
-    !    TMPLT.x = 0 ! automatic initialization
-    !    TMPLT.y = 0 ! automatic initialization
-    !    TMPLT.z = 0 ! automatic initialization
-    !    read(itmp) (TMPLT.x(i),TMPLT.y(i),i=1,TMPLT%nNodes)
-	   ! call freeunit(itmp)
-    !
-    !    !     ELEMENT INCIDENCES
-	   ! call getunit(itmp)
-    !    open(itmp,file=trim(GBprefix)//'.in3',form='unformatted')
-    !    read(itmp)TMPLT.nElements
-    !
-    !    GBMesh%nElements=TMPLT.nElements
-    !
-    !    allocate(TMPLT.iZone(TMPLT.nElements),TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements),&
-    !       TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
-    !    TMPLT.iZone = 0 ! automatic initialization
-    !    TMPLT.iNode = 0 ! automatic initialization
-    !    TMPLT.iLayer = 1 ! automatic initialization
-    !    read(itmp) (TMPLT.iNode(1,i),TMPLT.iNode(2,i),TMPLT.iNode(3,i),i=1,TMPLT.nElements)
-	   ! call freeunit(itmp)
-    !
-    !    !     Element area numbers
-	   ! call getunit(itmp)
-    !    open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')
-    !    read(itmp) (TMPLT.iZone(i),i=1,TMPLT.nElements)
-	   ! call freeunit(itmp)
-    !    TMPLT.nZones=maxval(TMPLT.iZone)
-    !    
-    !    allocate(TMPLT.ElementArea(TMPLT.nElements),TMPLT.rCircle(TMPLT.nElements),TMPLT.xCircle(TMPLT.nElements),&
-    !        TMPLT.yCircle(TMPLT.nElements),TMPLT.zCircle(TMPLT.nElements),TMPLT.xElement(TMPLT.nElements), TMPLT.yElement(TMPLT.nElements),&
-    !        TMPLT.zElement(TMPLT.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'GB Inner circle arrays')
-    !    
-    !    allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'GB SideLlength array')
-    !
-    !    do i=1,TMPLT.nElements
-    !        ! xc and yc from circumcircles
-    !        if(TMPLT.nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
-    !        do j=1,TMPLT.nNodesPerElement
-    !            x(j)=TMPLT.x(TMPLT.iNode(j,i))
-    !            y(j)=TMPLT.y(TMPLT.iNode(j,i))
-    !        end do
-    !        call InnerCircle(x,y,TMPLT.ElementArea(i),xc,yc,TMPLT.rCircle(i),lseg,aseg,dseg)
-    !        
-    !        TMPLT.SideLength(1,i)=lseg(1,2)
-    !        TMPLT.SideLength(2,i)=lseg(2,3)
-    !        TMPLT.SideLength(3,i)=lseg(3,1)
-    !       
-    !        TMPLT.xCircle(i)=xc
-    !        TMPLT.yCircle(i)=yc
-    !            
-    !            
-    !        ! zc from centroid of the iNode array coordinates
-    !        zc=0.0
-    !        do j=1,3
-    !            zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-    !        end do
-    !            
-    !        TMPLT.xElement(i)=xc
-    !        TMPLT.yElement(i)=yc
-    !        TMPLT.zElement(i)=zc/3
-    !        TMPLT.zCircle(i)=zc/3
-    !       
-    !    end do
-    !                
-    !    
-    !    TMPLT.IsDefined=.true.
-    !    allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-    !    call AllocChk(ialloc,'TMPLT Element_Is array')            
-    !    TMPLT.Element_Is(:)=0
-    !
-    !    write(TmpSTR,'(a,i8)') TAB//'Number of nodes:       ',TMPLT%nNodes
-    !    call Msg(TmpSTR)
-    !    write(TmpSTR,'(a,i8)') TAB//'Number of elements:    ',TMPLT.nElements
-    !    call Msg(TmpSTR)
-    !    
-    !    TMPLT.STR_LengthUnit=UnitsOfLength
-    !    write(TmpSTR,'(a)') TAB//'Assumed length Units:  '//trim(UnitsOfLength)
-    !    call Msg(TmpSTR)
-    !
-    !    return
-    !end subroutine MeshFromGb
-  !  !----------------------------------------------------------------------
-  !  subroutine Quadtree2DMeshFromGWV(FNumMUT,TMPLT)
-  !      implicit none
-  !  
-  !      integer(i4) :: FNumMUT
-  !      type (mesh) TMPLT
-  !      
-  !      character(MAX_STR) :: line
-  !      character(MAX_STR) :: FName
-  !      
-  !      integer(i4) :: i,j, i1, i2
-  !      real(dp) :: r1, r2, r3
-  !      
-  !      
-  !      TMPLT.name='TMPLT'
-  !
-		!read(FNumMUT,'(a)') FName
-		!call Msg(TAB//TAB//'Quadtree file '//trim(FName))
-  !
-  !      call OpenAscii(itmp,FName)
-  !      call Msg('  ')
-  !      call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-  !      
-  !      ! read initial comment lines beginning with #
-  !      do 
-  !          read(itmp,'(a)') line
-  !          if(line(1:1).eq.'#') then
-  !              write(*,'(a)') line
-  !              cycle
-  !          end if
-  !          backspace(itmp)
-  !          exit
-  !      end do
-  !
-  !      read(itmp,*) TMPLT.meshtype
-  !      read(itmp,*) TMPLT.nElements, TMPLT.nLayers, i1, i2
-  !      read(itmp,*) TMPLT%nNodes
-  !      allocate(TMPLT.x(TMPLT%nNodes),TMPLT.y(TMPLT%nNodes),TMPLT.z(TMPLT%nNodes), stat=ialloc)
-  !      call AllocChk(ialloc,'SWF node coordinate arrays')
-  !      TMPLT.x = 0 ! automatic initialization
-  !      TMPLT.y = 0 ! automatic initialization
-  !      TMPLT.z = 0 ! automatic initialization
-  !      
-  !      read(itmp,*) (TMPLT.x(i),TMPLT.y(i),TMPLT.z(i),i=1,TMPLT%nNodes)
-  !      
-  !      ! determine the number of nodes per Element (TMPLT.nNodesPerElement)
-  !      read(itmp,*) i1,r1,r2,r3,i2,TMPLT.nNodesPerElement
-  !      backspace(itmp)
-  !      allocate(TMPLT.iNode(TMPLT.nNodesPerElement,TMPLT.nElements), &
-  !          TMPLT.xElement(TMPLT.nElements),TMPLT.yElement(TMPLT.nElements),TMPLT.zElement(TMPLT.nElements), &
-  !          TMPLT.iLayer(TMPLT.nElements),stat=ialloc)
-  !      call AllocChk(ialloc,'SWF iNode, xyzElement, iLayer arrays')
-  !      
-  !      TMPLT.iNode = 0 ! automatic initialization
-  !      do i=1,TMPLT.nElements
-  !          read(itmp,*) i1,TMPLT.xElement(i),TMPLT.yElement(i),TMPLT.zElement(i),TMPLT.iLayer(i),i2,(TMPLT.iNode(j,i),j=1,TMPLT.nNodesPerElement)
-  !      end do
-	 !   call freeunit(itmp)
-  !      
-  !      TMPLT.IsDefined=.true.
-  !
-  !      write(TmpSTR,'(i10)') TMPLT.nElements 
-  !      call Msg('nElements: '//TmpSTR)
-  !      allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-  !      call AllocChk(ialloc,'TMPLT Element_Is array')            
-  !      TMPLT.Element_Is(:)=0
-  !
-  !
-  !      TMPLT%TecplotTyp='fequadrilateral'
-  !      
-  !      allocate(TMPLT.iZone(TMPLT.nElements),stat=ialloc)
-  !      call AllocChk(ialloc,'TMPLT iZone array')
-  !      TMPLT.iZone(:) = 1 ! automatic initialization
-  !      
-  !      allocate(TMPLT.ElementArea(TMPLT.nElements),stat=ialloc)
-  !      call AllocChk(ialloc,'TMPLT ElementArea array')
-  !      
-  !      allocate(TMPLT.SideLength(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
-  !      call AllocChk(ialloc,'GB SideLlength array')
-  !      
-  !      do i=1,TMPLT.nElements
-  !          ! xc and yc quadtree element side lengths
-  !          TMPLT.ElementArea(i)=(TMPLT.x(TMPLT.iNode(4,i))-TMPLT.x(TMPLT.iNode(1,i))) * &
-  !                               (TMPLT.y(TMPLT.iNode(2,i))-TMPLT.y(TMPLT.iNode(1,i)))
-  !          
-  !          TMPLT.SideLength(1,i)=abs(TMPLT.x(TMPLT.iNode(2,i)) - TMPLT.x(TMPLT.iNode(1,i)))
-  !          TMPLT.SideLength(2,i)=abs(TMPLT.y(TMPLT.iNode(3,i)) - TMPLT.y(TMPLT.iNode(2,i)))
-  !          TMPLT.SideLength(3,i)=abs(TMPLT.x(TMPLT.iNode(4,i)) - TMPLT.x(TMPLT.iNode(3,i)))
-  !          TMPLT.SideLength(4,i)=abs(TMPLT.y(TMPLT.iNode(1,i)) - TMPLT.y(TMPLT.iNode(4,i)))
-  !
-  !          
-  !          ! zc from centroid of the iNode array coordinates
-  !          zc=0.0
-  !          do j=1,4
-  !              zc=zc+TMPLT.z(TMPLT.iNode(j,i))
-  !          end do
-  !              
-  !          TMPLT.xElement(i)=(TMPLT.x(TMPLT.iNode(4,i))+TMPLT.x(TMPLT.iNode(1,i)))/2.0d0
-  !          TMPLT.yElement(i)=(TMPLT.y(TMPLT.iNode(2,i))-TMPLT.y(TMPLT.iNode(1,i)))/2.0d0
-  !          TMPLT.zElement(i)=zc/4
-  !          
-  !      end do
-  !                  
-  !      
-  !      TMPLT.IsDefined=.true.
-  !  
-  !      write(TmpSTR,'(a,i8)') '        Number of nodes               ',TMPLT%nNodes
-  !      call Msg(TmpSTR)
-  !      write(TmpSTR,'(a,i8)') '        Number of elements               ',TMPLT.nElements
-  !      call Msg(TmpSTR)
-  !
-  !      return
-  !  end subroutine Quadtree2DMeshFromGWV
     !----------------------------------------------------------------------
     subroutine list_file_elevation(fname,nprop,maxnnp)
         implicit none
@@ -312,10 +75,10 @@ Module MeshGeneration
         real(sp), allocatable :: xi(:)
         real(sp), allocatable :: yi(:)
 
-        TMPLT.name='TMPLT'
+        TMPLT%name='TMPLT'
 
         !     generate uniform rectangles
-        TMPLT.nNodesPerElement=4
+        TMPLT%nNodesPerElement=4
         TMPLT%TecplotTyp='fequadrilateral'
 
 
@@ -368,9 +131,9 @@ Module MeshGeneration
         TMPLT%Element(:)%idZone = 0 ! automatic initialization
         TMPLT%idNode(:,:) = 0 ! automatic initialization
         TMPLT%element%iLayer = 0
-        TMPLT%element%xElement=0.0d0
-        TMPLT%element%yElement=0.0d0
-        TMPLT%element%zElement=0.0d0
+        TMPLT%element%x=0.0d0
+        TMPLT%element%y=0.0d0
+        TMPLT%element%z=0.0d0
         TMPLT%element%Area=0.0d0
         TMPLT%element%xyArea=0.0d0
         
@@ -403,8 +166,8 @@ Module MeshGeneration
         do i=1,TMPLT%nElements
             TMPLT%element(i)%xyArea=  (TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x) * &
                                       (TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(1,i))%y)
-            TMPLT%element(i)%xElement=(TMPLT%node(TMPLT%idNode(2,i))%x + TMPLT%node(TMPLT%idNode(1,i))%x)/2.0d0
-            TMPLT%element(i)%yElement=(TMPLT%node(TMPLT%idNode(3,i))%y + TMPLT%node(TMPLT%idNode(1,i))%y)/2.0d0
+            TMPLT%element(i)%x=(TMPLT%node(TMPLT%idNode(2,i))%x + TMPLT%node(TMPLT%idNode(1,i))%x)/2.0d0
+            TMPLT%element(i)%y=(TMPLT%node(TMPLT%idNode(3,i))%y + TMPLT%node(TMPLT%idNode(1,i))%y)/2.0d0
             
             TMPLT%element(i)%SideLength(1)=abs(TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x)
             TMPLT%element(i)%SideLength(2)=abs(TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(2,i))%y)
@@ -417,16 +180,16 @@ Module MeshGeneration
         TMPLT%nZones=1
         TMPLT%Element%idZone = 1 ! automatic initialization
 
-        !TMPLT.IsDefined=.true.
+        !TMPLT%IsDefined=.true.
         
-        !allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'TMPLT Element_Is array')            
+        !allocate(TMPLT%element%is(TMPLT%nElements),stat=ialloc)
+        !call AllocChk(ialloc,'TMPLT element%is array')            
         TMPLT%Element%is=0
     
         call Msg(' ')
         write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT%nElements
         call Msg(TmpSTR)
         return
     end subroutine GenerateUniformRectangles
@@ -443,10 +206,10 @@ Module MeshGeneration
         real(sp), allocatable :: xi(:)
         real(sp), allocatable :: yi(:)
 
-        TMPLT.name='TMPLT'
+        TMPLT%name='TMPLT'
 
         !     generate variable rectangles
-        TMPLT.nNodesPerElement=4
+        TMPLT%nNodesPerElement=4
         TMPLT%TecplotTyp='fequadrilateral'
         
         !     xl, yl are grid lengths in x- and y-directions
@@ -480,9 +243,9 @@ Module MeshGeneration
         TMPLT%Element(:)%idZone = 0 ! automatic initialization
         TMPLT%idNode(:,:) = 0 ! automatic initialization
         TMPLT%element%iLayer = 0
-        TMPLT%element%xElement=0.0d0
-        TMPLT%element%yElement=0.0d0
-        TMPLT%element%zElement=0.0d0
+        TMPLT%element%x=0.0d0
+        TMPLT%element%y=0.0d0
+        TMPLT%element%z=0.0d0
         TMPLT%element%Area=0.0d0
         TMPLT%element%xyArea=0.0d0
 
@@ -515,8 +278,8 @@ Module MeshGeneration
         do i=1,TMPLT%nElements
             TMPLT%element(i)%xyArea=  (TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x) * &
                                       (TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(1,i))%y)
-            TMPLT%element(i)%xElement=(TMPLT%node(TMPLT%idNode(2,i))%x + TMPLT%node(TMPLT%idNode(1,i))%x)/2.0d0
-            TMPLT%element(i)%yElement=(TMPLT%node(TMPLT%idNode(3,i))%y + TMPLT%node(TMPLT%idNode(1,i))%y)/2.0d0
+            TMPLT%element(i)%x=(TMPLT%node(TMPLT%idNode(2,i))%x + TMPLT%node(TMPLT%idNode(1,i))%x)/2.0d0
+            TMPLT%element(i)%y=(TMPLT%node(TMPLT%idNode(3,i))%y + TMPLT%node(TMPLT%idNode(1,i))%y)/2.0d0
             
             TMPLT%element(i)%SideLength(1)=abs(TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x)
             TMPLT%element(i)%SideLength(2)=abs(TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(2,i))%y)
@@ -529,16 +292,16 @@ Module MeshGeneration
         TMPLT%nZones=1
         TMPLT%Element%idZone = 1 ! automatic initialization
 
-        !TMPLT.IsDefined=.true.
+        !TMPLT%IsDefined=.true.
         
-        !allocate(TMPLT.Element_Is(TMPLT.nElements),stat=ialloc)
-        !call AllocChk(ialloc,'TMPLT Element_Is array')            
+        !allocate(TMPLT%element%is(TMPLT%nElements),stat=ialloc)
+        !call AllocChk(ialloc,'TMPLT element%is array')            
         TMPLT%Element%is=0
 
         call Msg(' ')
         write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT.nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT%nElements
         call Msg(TmpSTR)
 
 
@@ -557,10 +320,10 @@ Module MeshGeneration
     !
     !    real(sp), allocatable :: xi(:)
     !    real(sp), allocatable :: yi(:)
-    !    TMPLT.name='TMPLT'
+    !    TMPLT%name='TMPLT'
     !
     !    !     generate uniform rectangles
-    !    TMPLT.nNodesPerElement=4
+    !    TMPLT%nNodesPerElement=4
     !    TMPLT%TecplotTyp='fequadrilateral'
     !
     !
@@ -719,237 +482,6 @@ Module MeshGeneration
     !    return
     !end subroutine GenerateRectanglesInteractive
 
-    !----------------------------------------------------------------------
-    subroutine GenerateCLNMesh(FNum,TMPLT_CLN)
-        implicit none
-        integer(i4) :: FNum
-        type(mesh) TMPLT_CLN
-        
-        character(MAX_INST) :: Instruction
-        character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
-        
-        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
-        integer(i4) :: nPoints  ! number of points in list
-        
-	    ! Build a single tecplot file which can have multiple CLN's
-        TMPLT_CLN%name='TMPLT_CLN'
-        !TMPLT_CLN.meshtype='UNSTRUCTURED'
-        TMPLT_CLN%nZones=0
-        TMPLT_CLN%nNodesPerElement=2
-        TMPLT_CLN%TecplotTyp='felineseg'
-
-        read_Instructions: do
-            read(FNum,'(a60)',iostat=status) Instruction
-            if(status /= 0) exit
-
-		    call LwrCse(instruction)
-
-            if(index(Instruction,'end') /= 0) then
-                call Msg(TAB//'end generate cln domain')
-                exit read_Instructions
-            else
-                call Msg('')
-                call Msg(TAB//Instruction)
-            end if
-                
-
-            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
-                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
-              
-            else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
-                call CLNFromXYZPair(FNum,TMPLT_CLN)
-                
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
-            end if
-
-        end do read_Instructions
-        
-        !TMPLT_CLN.IsDefined=.true.
-        
-        !allocate(TMPLT_CLN.Element_Is(TMPLT_CLN.nElements),stat=ialloc)
-        !call AllocChk(ialloc,trim(TMPLT_CLN.name)//' Element_Is array')            
-        TMPLT_CLN%Element%is=0
-        
-        continue
-        
-    end subroutine GenerateCLNMesh
-    !----------------------------------------------------------------------
-    subroutine CLNFromXYZPair(FNum,TMPLT_CLN)
-        implicit none
-        integer(i4) :: FNum
-        type(mesh) TMPLT_CLN
-        
-        type(node), allocatable :: nodeTMP(:)
-
-        integer(i4) :: i
-        integer(i4) :: nSizeInit, nNodesInit, nElementsInit
-        !real(dp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
-        integer(i4) :: nCells
-                
-        real(dp) :: TotalLength
-        real(dp) :: dx, dy, dz
-        real(dp) :: cx, cy, cz
-
-	    real(dp) :: xp(2)
-	    real(dp) :: yp(2)
-	    real(dp) :: zp(2)
-	    xp(:) = 0
-	    yp(:) = 0
-	    zp(:) = 0
-        
-        
-        nNodesInit=TMPLT_CLN%nNodes
-        nElementsInit=TMPLT_CLN%nElements
-        TMPLT_CLN%nZones=TMPLT_CLN%nZones+1
-
-        nSizeInit=max(2,TMPLT_CLN%nNodes)
-	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
-	    call AllocChk(ialloc,'nodeTMP arrays')
-	    nodeTMP%x = -999.0d0
-	    nodeTMP%y = -999.0d0
-	    nodeTMP%z = -999.0d0
-        
-        if(.not. allocated(TMPLT_CLN.node)) then  
-            allocate(TMPLT_CLN.node(nSizeInit),stat=ialloc)
-	        call AllocChk(ialloc,'TMPLT_CLN node array')
-	        TMPLT_CLN%node%x = -999.0d0
-	        TMPLT_CLN%node%y = -999.0d0
-	        TMPLT_CLN%node%z = -999.0d0
-        endif
-
-        call Msg(TAB//'                X                Y                Z')
-
-	    do i=1,2
-			read(FNum,*) xp(i),yp(i),zp(i)
-            write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
-            call Msg(TAB//trim(TmpSTR))
-        end do 
-        
- 		read(FNum,*) nCells
-        write(TmpSTR,'(a, i8)') 'Number of new CLN cells: ',nCells 
-        call Msg(TAB//trim(TmpSTR))
-        
-        TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
-        write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
-        call Msg(TAB//trim(TmpSTR))
-        if(TotalLength < 0.0001) then
-            call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
-        else if(TotalLength < 1e-10) then   
-            call ErrMsg(TAB//'Total Length of new CLN is essentially zero')
-        endif
-        
-        dx=(xp(2) - xp(1))/nCells
-        dy=(yp(2) - yp(1))/nCells
-        dz=(zp(2) - zp(1))/nCells
-        cx=xp(1)
-        cy=yp(1)
-        cz=zp(1)
-        do i=1,nCells+1
-            TMPLT_CLN%nNodes=TMPLT_CLN%nNodes+1
-            if(TMPLT_CLN%nNodes > nSizeInit) then
-                nodeTMP(1:nSizeInit) = TMPLT_CLN%node
-                call move_alloc (nodeTMP, TMPLT_CLN%node)
-                !yiTMP (1:nSizeInit) = TMPLT_CLN.y 
-                !call move_alloc (yiTMP, TMPLT_CLN.y)
-                !ziTMP (1:nSizeInit) = TMPLT_CLN.z 
-                !call move_alloc (ziTMP, TMPLT_CLN.z)
-                
-                nSizeInit=nSizeInit*2
-	            allocate(nodeTMP(nSizeInit*2),stat=ialloc)
-	            call AllocChk(ialloc,'nodeTMP arrays')
-	            nodeTMP%x = -999.0d0
-	            nodeTMP%y = -999.0d0
-	            nodeTMP%z = -999.0d0
-
-            endif
-            TMPLT_CLN%node(TMPLT_CLN%nNodes)%x=cx
-            TMPLT_CLN%node(TMPLT_CLN%nNodes)%y=cy
-            TMPLT_CLN%node(TMPLT_CLN%nNodes)%z=cz
-            cx=cx+dx
-            cy=cy+dy
-            cz=cz+dz
-        end do
-        
-        ! Trim CLN xyz to final size
-        nSizeInit=TMPLT_CLN%nNodes
-        deallocate(nodeTMP)
-	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
-	    call AllocChk(ialloc,'nodeTMP arrays')
-	    nodeTMP%x = -999.0d0
-	    nodeTMP%y = -999.0d0
-	    nodeTMP%z = -999.0d0
-        
-        nodeTMP(1:nSizeInit) = TMPLT_CLN%node
-        call move_alloc (nodeTMP, TMPLT_CLN%node)
-
-        !xiTMP (1:nSizeInit) = TMPLT_CLN.x 
-        !call move_alloc (xiTMP, TMPLT_CLN.x)
-        !yiTMP (1:nSizeInit) = TMPLT_CLN.y 
-        !call move_alloc (yiTMP, TMPLT_CLN.y)
-        !ziTMP (1:nSizeInit) = TMPLT_CLN.z 
-        !call move_alloc (ziTMP, TMPLT_CLN.z)
-        
-        if(.not. allocated(TMPLT_CLN%element)) then  
-            TMPLT_CLN.nElements=TMPLT_CLN%nNodes-1
-            allocate(TMPLT_CLN%Element(TMPLT_CLN%nElements), TMPLT_CLN%idNode(TMPLT_CLN%nNodesPerElement,TMPLT_CLN%nElements), stat=ialloc)
-            call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
-            TMPLT_CLN%Element(:)%idZone = 0 ! automatic initialization
-            TMPLT_CLN%idNode(:,:) = 0 ! automatic initialization
-            TMPLT_CLN%element%iLayer = 0
-            TMPLT_CLN%element%xElement=0.0d0
-            TMPLT_CLN%element%yElement=0.0d0
-            TMPLT_CLN%element%zElement=0.0d0
-            TMPLT_CLN%element%Area=0.0d0
-            TMPLT_CLN%element%xyArea=0.0d0
-            TMPLT_CLN%element%Length=-999.0d0
-            TMPLT_CLN%element%LowestElevation=-999.0d0
-            TMPLT_CLN%element%SlopeAngle=-999.0d0
-        else
-            nSizeInit=TMPLT_CLN.nElements
-            TMPLT_CLN.nElements=TMPLT_CLN%nNodes-1
-            call growInteger2dArray(TMPLT_CLN%idNode,2,nSizeInit,TMPLT_CLN%nElements)
-            call growElementArray(TMPLT_CLN%Element,nSizeInit,TMPLT_CLN%nElements)
-            !call growIntegerArray(TMPLT_CLN.iZone,nSizeInit,TMPLT_CLN.nElements)
-            !call growIntegerArray(TMPLT_CLN.iLayer,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.xElement,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.yElement,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.zElement,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.Area,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.Length,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.LowestElevation,nSizeInit,TMPLT_CLN.nElements)
-            !call growDRealArray(TMPLT_CLN.SlopeAngle,nSizeInit,TMPLT_CLN.nElements)
-        end if
-
-        ! generate line element incidences
-        do i=nElementsInit+1,TMPLT_CLN%nElements
-            TMPLT_CLN%element(i)%idZone=TMPLT_CLN%nZones
-            TMPLT_CLN%idNode(1,i)=i
-            TMPLT_CLN%idNode(2,i)=i+1
-            TMPLT_CLN%element(i)%xElement=(TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%x + TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%x)/2.0d0
-            TMPLT_CLN%element(i)%yElement=(TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%y + TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%y)/2.0d0
-            TMPLT_CLN%element(i)%zElement=(TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%z + TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%z)/2.0d0
-            TMPLT_CLN%element(i)%Length=sqrt(       (TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%x -   TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%x)**2 + & 
-                                                    (TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%y -   TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%y)**2 + & 
-                                                    (TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%z -   TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%z)**2) 
-            TMPLT_CLN%element(i)%LowestElevation=min (TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%z,    TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%z)
-            TMPLT_CLN%element(i)%SlopeAngle=asin(abs (TMPLT_CLN%node(TMPLT_CLN%idNode(2,i))%z-    TMPLT_CLN%node(TMPLT_CLN%idNode(1,i))%z))* 180.0d0 * pi
-        end do
-                    
-        !TMPLT_CLN.IsDefined=.true.
-    
-        call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT_CLN%nNodes
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT_CLN.nElements
-        call Msg(TmpSTR)
-
-
-        continue 
-    end subroutine CLNFromXYZPair
-    
-   
     !----------------------------------------------------------------------
     subroutine check_seg(i1,i2) 
 	    implicit none
@@ -1197,8 +729,8 @@ Module MeshGeneration
             end do
 
             !         new elements
-            do j=1,TMPLT.nElements
-                nel3d=(nsheet-1)*TMPLT.nElements+j
+            do j=1,TMPLT%nElements
+                nel3d=(nsheet-1)*TMPLT%nElements+j
                 ilyr(nel3d)=nsheet
                 if(nln==6) then ! prisms from triangles
                     in(1,nel3d)=TMPLT%idNode(1,j)+nsheet*TMPLT%nNodes

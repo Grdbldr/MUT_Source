@@ -167,42 +167,13 @@
     type,  extends(mesh)  :: ModflowDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
         
-        type(mesh) l_TMPLT
         
         logical :: IsDefined=.false.      ! this type of domain has been defined 
         character(128) :: MeshType      ! structured or unstructured?
-
-        !
-        integer(i4) :: nNodesPerCell        ! number of nodes/cell  
-        integer(i4), allocatable :: iNode(:,:)  ! node list for cell (nNodesPerElement, nCells )
         
         integer(i4) :: iz      ! is 1 if the elevations of node and mesh elements vertices are supplied; 0 otherwise
         integer(i4) :: ic      ! is 1 if the cell specifications associated with each node are supplied; 0 otherwise
 
-           
-        ! arrays of size nCells
-        real(dp), allocatable :: xCell(:)      ! cell x coordinate
-        real(dp), allocatable :: yCell(:)      ! cell y coordinate
-        real(dp), allocatable :: zCell(:)      ! cell z coordinate
-        real(dp), allocatable :: Top(:)        ! cell top elevation
-        real(dp), allocatable :: Bottom(:)     ! cell bottom elevation
-        integer(i4), allocatable :: iLayer(:)      ! cell layer number
-        integer(i4), allocatable :: iZone(:)       ! cell zone number
-        
-        ! inner circles
-        real(dp), allocatable :: CellArea(:)        ! projected area of cell in XY
-        real(dp), allocatable :: rCircle(:)         ! projected inner circle radius from TMPLT(e.g. GridBldr)
-        real(dp), allocatable :: SideLength(:,:)    ! projected side length from TMPLT(e.g. GridBldr), nNodesPerElement by nCells
-        !real(dp), allocatable :: xSide(:,:)         ! projected x coordinate of inner circle radius tangent to side
-        !real(dp), allocatable :: ySide(:,:)         ! projected y coordinate of inner circle radius tangent to side
-        
-        ! Cell connection 
-        integer(i4), allocatable :: njag      ! total number of connections for domain
-        integer(i4), allocatable :: mia(:)      ! size nCells, number of connections/cell
-        integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
-        real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
-        real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
-        
         integer(i4) :: NCLNGWC      ! # of CLN to GWF connections
         integer(i4) :: NCONDUITYP   ! number of circular CLN's
         integer(i4) :: NRECTYP      ! number of rectangular CLN's
@@ -224,7 +195,7 @@
         real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
         integer(i4) :: nSWBCCells=0        
         
-        ! of size nNold
+        ! of size nNodes
         real(dp), allocatable :: x(:) 
         real(dp), allocatable :: y(:)
         real(dp), allocatable :: z(:)
@@ -633,17 +604,17 @@
         write(Modflow.iNAM,'(a,i4,a)') 'CLN ',Modflow.iCLN,' '//trim(Modflow.FNameCLN)
         write(Modflow.iCLN,'(a,a)') '# MODFLOW-USG CLN file written by Modflow-User-Tools version ',trim(MUTVersion)
 
-        Modflow.CLN.FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
-        call getunit(Modflow.CLN.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iCBB,' '//trim(Modflow.CLN.FNameCBB)
+        Modflow%CLN%FNameCBB=trim(Modflow.Prefix)//'.CLN.cbb'
+        call getunit(Modflow%CLN%iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iCBB,' '//trim(Modflow%CLN%FNameCBB)
         
-        Modflow.CLN.FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
-        call getunit(Modflow.CLN.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iHDS,' '//trim(Modflow.CLN.FNameHDS)
+        Modflow%CLN%FNameHDS=trim(Modflow.Prefix)//'.CLN.HDS'
+        call getunit(Modflow%CLN%iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iHDS,' '//trim(Modflow%CLN%FNameHDS)
         
-        Modflow.CLN.FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
-        call getunit(Modflow.CLN.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.CLN.iDDN,' '//trim(Modflow.CLN.FNameDDN)
+        Modflow%CLN%FNameDDN=trim(Modflow.Prefix)//'.CLN.DDN'
+        call getunit(Modflow%CLN%iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iDDN,' '//trim(Modflow%CLN%FNameDDN)
 
     end subroutine AddCLNFiles
     
@@ -663,17 +634,17 @@
         write(Modflow.iSWF,'(a,a)') '# MODFLOW-USG SWF file written by Modflow-User-Tools version ',trim(MUTVersion)
 
         
-        Modflow.SWF.FNameCBB=trim(Modflow.Prefix)//'.SWF.cbb'
-        call getunit(Modflow.SWF.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iCBB,' '//trim(Modflow.SWF.FNameCBB)
+        Modflow%SWF%FNameCBB=trim(Modflow.Prefix)//'.SWF.cbb'
+        call getunit(Modflow%SWF%iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%SWF%iCBB,' '//trim(Modflow%SWF%FNameCBB)
         
-        Modflow.SWF.FNameHDS=trim(Modflow.Prefix)//'.SWF.HDS'
-        call getunit(Modflow.SWF.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iHDS,' '//trim(Modflow.SWF.FNameHDS)
+        Modflow%SWF%FNameHDS=trim(Modflow.Prefix)//'.SWF.HDS'
+        call getunit(Modflow%SWF%iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%SWF%iHDS,' '//trim(Modflow%SWF%FNameHDS)
         
-        Modflow.SWF.FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
-        call getunit(Modflow.SWF.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.SWF.iDDN,' '//trim(Modflow.SWF.FNameDDN)
+        Modflow%SWF%FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
+        call getunit(Modflow%SWF%iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%SWF%iDDN,' '//trim(Modflow%SWF%FNameDDN)
         
     end subroutine AddSWFFiles
     
@@ -727,11 +698,11 @@
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)' 
 
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Alpha of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Alpha of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Alpha(i)=value
+                domain%Alpha(i)=value
             end if
         end do
     
@@ -749,11 +720,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Beta of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Beta of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Beta(i)=value
+                domain%Beta(i)=value
             end if
         end do
     
@@ -771,11 +742,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Brooks of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Brooks of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Brooks(i)=value
+                domain%Brooks(i)=value
             end if
         end do
     
@@ -793,23 +764,23 @@
         real(dp) :: head
         
         read(FNumMUT,*) head
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
+        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
 		call Msg(trim(TmpSTR))
 
 
-        if(.not. allocated(domain.ConstantHead)) then 
-            allocate(domain.ConstantHead(domain.nCells),stat=ialloc)
+        if(.not. allocated(domain%ConstantHead)) then 
+            allocate(domain%ConstantHead(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell constant head array')            
-            domain.ConstantHead(:)=-999.d0
+            domain%ConstantHead(:)=-999.d0
         end if
         
         call Msg(TAB//'    Cell    Constant head')
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
                 call set(domain%cell(i)%is,ConstantHead)
-                domain.nCHDCells=domain.nCHDCells+1
-                domain.ConstantHead(i)=head
-                write(TmpSTR,'(i8,2x,'//FMT_R8//',a)') i,domain.ConstantHead(i),'     '//TRIM(UnitsofLength)
+                domain%nCHDCells=domain%nCHDCells+1
+                domain%ConstantHead(i)=head
+                write(TmpSTR,'(i8,2x,'//FMT_R8//',a)') i,domain%ConstantHead(i),'     '//TRIM(UnitsofLength)
                 call Msg(TAB//trim(TmpSTR))
             end if
         end do
@@ -837,35 +808,35 @@
         integer(i4) :: i, j, k, j1, j2
         real(dp) :: AddToLength
         
-		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
+		call Msg(TAB//'Define all chosen '//trim(domain%name)//' Cells to be critical depth')
 
-        call Msg('Assumes appropriate '//trim(domain.name)//' SWBC nodes flagged as boundary nodes') 
+        call Msg('Assumes appropriate '//trim(domain%name)//' SWBC nodes flagged as boundary nodes') 
         
         if(NodalControlVolume) then
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
-                    do k=1,domain.nElements
-                        do j=1,domain.l_TMPLT.nFacesPerElement
-                            if(domain.l_TMPLT.FaceNeighbour(j,k) == 0) then ! only consider faces that are on the outer boundary
-                                j1=domain.l_TMPLT.idNode(domain.l_TMPLT.LocalFaceNodes(1,j),k)
-                                j2=domain.l_TMPLT.idNode(domain.l_TMPLT.LocalFaceNodes(2,j),k)
+                    do k=1,domain%nElements
+                        do j=1,domain%nFacesPerElement
+                            if(domain%FaceNeighbour(j,k) == 0) then ! only consider faces that are on the outer boundary
+                                j1=domain%idNode(domain%LocalFaceNodes(1,j),k)
+                                j2=domain%idNode(domain%LocalFaceNodes(2,j),k)
                                 if(j1==i) then ! this node represents a chosen cell 
                                     if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
                                         call set(domain%cell(i)%is,CriticalDepth)
-                                        domain.nSWBCCells=domain.nSWBCCells+1
+                                        domain%nSWBCCells=domain%nSWBCCells+1
                                     endif
-                                    AddToLength=sqrt((domain%l_TMPLT%node(j1)%x - domain%l_TMPLT%element(k)%xTangent(j))**2 + &
-                                                     (domain%l_TMPLT%node(j1)%y - domain%l_TMPLT%element(k)%yTangent(j))**2) ! + (domain.l_TMPLT.x(j1) - domain.l_TMPLT.xSide(j,k))**2)
-                                    domain.CriticalDepthLength(i)=domain.CriticalDepthLength(i)+AddToLength
+                                    AddToLength=sqrt((domain%node(j1)%x - domain%element(k)%xTangent(j))**2 + &
+                                                     (domain%node(j1)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j1) - domain%xSide(j,k))**2)
+                                    domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+AddToLength
                                 endif
                                 if(j2==i) then ! this node represents a chosen cell 
                                     if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
                                         call set(domain%cell(i)%is,CriticalDepth)
-                                        domain.nSWBCCells=domain.nSWBCCells+1
+                                        domain%nSWBCCells=domain%nSWBCCells+1
                                     endif
-                                    AddToLength=sqrt((domain%l_TMPLT%node(j2)%x - domain%l_TMPLT%element(k)%xTangent(j))**2 + &
-                                                     (domain%l_TMPLT%node(j2)%y - domain%l_TMPLT%element(k)%yTangent(j))**2) ! + (domain.l_TMPLT.x(j2) - domain.l_TMPLT.xSide(j,k))**2)
-                                    domain.CriticalDepthLength(i)=domain.CriticalDepthLength(i)+AddToLength
+                                    AddToLength=sqrt((domain%node(j2)%x - domain%element(k)%xTangent(j))**2 + &
+                                                     (domain%node(j2)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j2) - domain%xSide(j,k))**2)
+                                    domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+AddToLength
                                 endif
                             endif
                         enddo 
@@ -873,15 +844,15 @@
                 endif
             end do
         else    
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
-                    do j=1,domain.l_TMPLT.nFacesPerElement
-                        if(domain.l_TMPLT.FaceNeighbour(j,i) == 0) then ! add sidelength to CriticalDepthLength
+                    do j=1,domain%nFacesPerElement
+                        if(domain%FaceNeighbour(j,i) == 0) then ! add sidelength to CriticalDepthLength
                             if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
                                 call set(domain%cell(i)%is,CriticalDepth)
-                                domain.nSWBCCells=domain.nSWBCCells+1
+                                domain%nSWBCCells=domain%nSWBCCells+1
                             endif
-                            domain.CriticalDepthLength(i)=domain.CriticalDepthLength(i)+domain.SideLength(j,i)
+                            domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+domain%Element(i)%SideLength(j)
                         endif
                     enddo
                 endif
@@ -911,24 +882,24 @@
         
         integer(i4) :: i
         
-		call Msg(TAB//'Define all chosen '//trim(domain.name)//' Cells to be critical depth')
+		call Msg(TAB//'Define all chosen '//trim(domain%name)//' Cells to be critical depth')
 
         call Msg(TAB//'Assumes SWBC Critical Depth Length equals sqrt(cell area)') 
         
         if(NodalControlVolume) then
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
                     call set(domain%cell(i)%is,CriticalDepth)
-                    domain.nSWBCCells=domain.nSWBCCells+1
-                    domain.CriticalDepthLength(i)=SQRT(domain.cellarea(i))
+                    domain%nSWBCCells=domain%nSWBCCells+1
+                    domain%CriticalDepthLength(i)=SQRT(domain%Element(i)%xyArea)
                 endif
             end do
         else    
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
                     call set(domain%cell(i)%is,CriticalDepth)
-                    domain.nSWBCCells=domain.nSWBCCells+1
-                    domain.CriticalDepthLength(i)=SQRT(domain.cellarea(i))
+                    domain%nSWBCCells=domain%nSWBCCells+1
+                    domain%CriticalDepthLength(i)=SQRT(domain%Element(i)%xyArea)
                     
                 end if
             end do
@@ -960,15 +931,15 @@
         
         read(FNumMUT,*) value1, value2
         write(TmpSTR,'('//FMT_R4//',a)') value1,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain.name)//' H1 depth for smoothing: '//trim(TmpSTR))
+		call Msg(TAB//trim(domain%name)//' H1 depth for smoothing: '//trim(TmpSTR))
         write(TmpSTR,'('//FMT_R4//',a)') value2,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain.name)//' H2 depth for smoothing: '//trim(TmpSTR))
+		call Msg(TAB//trim(domain%name)//' H2 depth for smoothing: '//trim(TmpSTR))
 
         
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                domain.H1DepthForSmoothing(i)=value1
-                domain.H2DepthForSmoothing(i)=value2
+                domain%H1DepthForSmoothing(i)=value1
+                domain%H2DepthForSmoothing(i)=value2
             end if
         end do
 
@@ -986,24 +957,24 @@
         real(dp) :: cond
         
         read(FNumMUT,*) cond
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//trim(domain.name)//' drain conductance: ',cond,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//trim(domain%name)//' drain conductance: ',cond,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
 		call Msg(trim(TmpSTR))
 
 
-        if(.not. allocated(domain.DrainConductance)) then 
-            allocate(domain.DrainConductance(domain.nCells),domain.DrainElevation(domain.nCells),stat=ialloc)
+        if(.not. allocated(domain%DrainConductance)) then 
+            allocate(domain%DrainConductance(domain%nCells),domain%DrainElevation(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell drain arrays')            
-            domain.ConstantHead(:)=-999.d0
+            domain%ConstantHead(:)=-999.d0
         end if
         
         call Msg('        Cell      DrainElevation             DrainConductance')
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
                 call set(domain%cell(i)%is,Drain)
-                domain.nDRNCells=domain.nDRNCells+1
-                domain.DrainElevation(i)=domain.Top(i)
-                domain.DrainConductance(i)=cond
-                write(TmpSTR,'(i8,2x,'//FMT_R8//',a,'//FMT_R8//',a)') i,domain.DrainElevation(i),'     '//TRIM(UnitsOfLength), domain.DrainConductance(i),'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
+                domain%nDRNCells=domain%nDRNCells+1
+                domain%DrainElevation(i)=domain%cell(i)%Top
+                domain%DrainConductance(i)=cond
+                write(TmpSTR,'(i8,2x,'//FMT_R8//',a,'//FMT_R8//',a)') i,domain%DrainElevation(i),'     '//TRIM(UnitsOfLength), domain%DrainConductance(i),'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
                 call Msg(TAB//trim(TmpSTR))
             end if
         end do
@@ -1033,11 +1004,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kh of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Kh of '//trim(TmpSTR))
         
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Kh(i)=value
+                domain%Kh(i)=value
             end if
         end do
     
@@ -1054,11 +1025,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Kv of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Kv of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Kv(i)=value
+                domain%Kv(i)=value
             end if
         end do
     
@@ -1076,12 +1047,12 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain.name)//' Depression Storage Height: '//trim(TmpSTR))
+		call Msg(TAB//trim(domain%name)//' Depression Storage Height: '//trim(TmpSTR))
 
 
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                domain.DepressionStorageHeight(i)=value
+                domain%DepressionStorageHeight(i)=value
             end if
         end do
     
@@ -1099,12 +1070,12 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1/3)    '//TRIM(UnitsOfTime)
-		call Msg(TAB//trim(domain.name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
+		call Msg(TAB//trim(domain%name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
 
 
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                domain.Manning(i)=value
+                domain%Manning(i)=value
             end if
         end do
     
@@ -1122,12 +1093,12 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain.name)//' Obstruction Storage Height: '//trim(TmpSTR))
+		call Msg(TAB//trim(domain%name)//' Obstruction Storage Height: '//trim(TmpSTR))
 
 
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                domain.ObstructionStorageHeight(i)=value
+                domain%ObstructionStorageHeight(i)=value
             end if
         end do
     
@@ -1156,7 +1127,7 @@
         end do
         
         write(TmpSTR,'(i5)') iMaterial
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
         
         write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
@@ -1210,22 +1181,22 @@
         endif
 
        
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                if(domain.name == 'GWF') then
-                    domain.Kh(i)=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain.Kv(i)=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain.Ss(i)=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
-                    domain.Sy(i)=SpecificYield(iMaterial)                                           ! -
-                    domain.Alpha(i)=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
-                    domain.Beta(i)=Beta(iMaterial)                                                  ! -
-                    domain.Sr(i)=Sr(iMaterial)                                                      ! -
+                if(domain%name == 'GWF') then
+                    domain%Kh(i)=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain%Kv(i)=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain%Ss(i)=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
+                    domain%Sy(i)=SpecificYield(iMaterial)                                           ! -
+                    domain%Alpha(i)=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
+                    domain%Beta(i)=Beta(iMaterial)                                                  ! -
+                    domain%Sr(i)=Sr(iMaterial)                                                      ! -
                     
                     select case(UnsaturatedFunctionType(iMaterial))
                     case ('Van Genuchten')
-                        domain.Brooks(i)= -BrooksCoreyExponent(iMaterial)
+                        domain%Brooks(i)= -BrooksCoreyExponent(iMaterial)
                     case ('Brooks-Corey')
-                        domain.Brooks(i)=BrooksCoreyExponent(iMaterial)
+                        domain%Brooks(i)=BrooksCoreyExponent(iMaterial)
                     case default
                         call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
                     end select
@@ -1558,7 +1529,7 @@
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
         
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
         write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)     ,'     '//TRIM(SWF_LengthUnit(iMaterial))//'^(-1/3)  '//TRIM(SWF_TimeUnit(iMaterial))
         call Msg(TmpSTR)
         write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial) ,'     '//TRIM(SWF_LengthUnit(iMaterial))
@@ -1597,13 +1568,13 @@
 
        
 
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                domain.Manning(i)=ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor ! L^(-1/3) T
-                domain.DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)*LengthConversionFactor         ! L
-                domain.ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)*LengthConversionFactor       ! L
-                domain.H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)*LengthConversionFactor                  ! L
-                domain.H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)*LengthConversionFactor                  ! L
+                domain%Manning(i)=ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor ! L^(-1/3) T
+                domain%DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)*LengthConversionFactor         ! L
+                domain%ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)*LengthConversionFactor       ! L
+                domain%H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)*LengthConversionFactor                  ! L
+                domain%H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)*LengthConversionFactor                  ! L
             end if                                                                               
         end do                                                                                   
 
@@ -1640,12 +1611,12 @@
         integer(i4) :: nRCHoption
         
         read(FNumMUT,*) rech
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
 		call Msg(trim(TmpSTR))
         read(FNumMUT,*) nRCHoption
-        write(TmpSTR,'(a,'//FMT_R8//')') TAB//'Assigning '//domain.name//' recharge option: ',nRCHoption
+        write(TmpSTR,'(a,'//FMT_R8//')') TAB//'Assigning '//domain%name//' recharge option: ',nRCHoption
 		call Msg(trim(TmpSTR))
-        domain.nRCHoption=nRCHoption
+        domain%nRCHoption=nRCHoption
         IF(nRCHoption.EQ.1) then
             call Msg(TAB//'Option 1 -- recharge to top layer')
         else IF(nRCHoption.EQ.2) then
@@ -1657,15 +1628,15 @@
         endif
 
         
-        if(.not. allocated(domain.Recharge)) then ! 
-            allocate(domain.Recharge(domain.nCells),stat=ialloc)
+        if(.not. allocated(domain%Recharge)) then ! 
+            allocate(domain%Recharge(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell recharge array')            
-            domain.Recharge(:)=-999.d0
+            domain%Recharge(:)=-999.d0
         end if
         
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             call set(domain%cell(i)%is,Recharge)
-            domain.Recharge(i)=rech
+            domain%Recharge(i)=rech
         end do
 
         if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
@@ -1675,31 +1646,31 @@
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
             write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
             write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow.iRCH,*) domain.nRCHoption, domain.iCBB  
+            write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB  
             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain.name == 'GWF') then
-                do i=1,domain.nCells
-                    if(Modflow.GWF.iLayer(i)==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+            if(domain%name == 'GWF') then
+                do i=1,domain%nCells
+                    if(Modflow%GWF%cell(i)%iLayer==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain.name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            else if(domain%name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
             endif                
 
 
         else
             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain.name == 'GWF') then
-                do i=1,domain.nCells
-                    if(Modflow.GWF.iLayer(i)==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+            if(domain%name == 'GWF') then
+                do i=1,domain%nCells
+                    if(Modflow%GWF%cell(i)%iLayer==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain.name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            else if(domain%name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
             endif                
         end if
     end subroutine AssignRCHtoDomain
@@ -1716,33 +1687,33 @@
         real(dp) :: PumpRate
         
         read(FNumMUT,*) PumpRate
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
 		call Msg(trim(TmpSTR))
         
-        if(.not. allocated(domain.PumpingRate)) then ! 
-            allocate(domain.PumpingRate(domain.nCells),stat=ialloc)
+        if(.not. allocated(domain%PumpingRate)) then ! 
+            allocate(domain%PumpingRate(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell PumpingRate array')            
-            domain.PumpingRate(:)=-999.d0
+            domain%PumpingRate(:)=-999.d0
         end if
 
         itmp=0
         itmpcln=0
 
-        if(domain.name == 'GWF') then
-            do i=1,domain.nCells
+        if(domain%name == 'GWF') then
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
-                    domain.nWELCells=domain.nWELCells+1
+                    domain%nWELCells=domain%nWELCells+1
                     call set(domain%cell(i)%is,Well)
-                    domain.PumpingRate(i)=PumpRate
+                    domain%PumpingRate(i)=PumpRate
                     itmp=itmp+1
                 endif
             end do
-        else if(domain.name == 'CLN') then
-            do i=1,domain.nCells
+        else if(domain%name == 'CLN') then
+            do i=1,domain%nCells
                 if(bcheck(domain%cell(i)%is,chosen)) then
-                    domain.nWELCells=domain.nWELCells+1
+                    domain%nWELCells=domain%nWELCells+1
                     call set(domain%cell(i)%is,Well)
-                    domain.PumpingRate(i)=PumpRate
+                    domain%PumpingRate(i)=PumpRate
                     itmpcln=itmpcln+1
                 endif
             end do
@@ -1759,23 +1730,23 @@
             if(itmp>0 .AND. itmpcln>0) then
                 call ErrMsg('WEL package can currently only be used for GWF or CLN domains but not both at the same time')
             else if(itmp>0) then
-                write(Modflow.iWEL,'(2i8)') itmp, modflow.GWF.icbb
+                write(Modflow.iWEL,'(2i8)') itmp, Modflow%GWF%icbb
                 write(Modflow.iWEL,'(3i8)') itmp, 0, 0 
             else if(itmpcln>0) then
-                write(Modflow.iWEL,'(2i8)') itmpcln, modflow.CLN.icbb
+                write(Modflow.iWEL,'(2i8)') itmpcln, Modflow%CLN%icbb
                 write(Modflow.iWEL,'(3i8)') 0, 0, itmpcln 
             endif
                 
-            if(domain.name == 'GWF') then
-                do i=1,domain.nCells
+            if(domain%name == 'GWF') then
+                do i=1,domain%nCells
                     if(bcheck(domain%cell(i)%is,Well)) then
-                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain.PumpingRate(i),0
+                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain%PumpingRate(i),0
                     endif
                 end do
-            else if(domain.name == 'CLN') then
-                do i=1,domain.nCells
+            else if(domain%name == 'CLN') then
+                do i=1,domain%nCells
                     if(bcheck(domain%cell(i)%is,Well)) then
-                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain.PumpingRate(i),0
+                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain%PumpingRate(i),0
                     endif
                 end do
             endif
@@ -1842,11 +1813,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells an Sgcl of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells an Sgcl of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Sgcl(i)=value
+                domain%Sgcl(i)=value
             end if
         end do
     
@@ -1864,11 +1835,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sr of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Sr of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Sr(i)=value
+                domain%Sr(i)=value
             end if
         end do
     
@@ -1886,11 +1857,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Ss of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Ss of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Ss(i)=value
+                domain%Ss(i)=value
             end if
         end do
     
@@ -1908,12 +1879,12 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a starting depth of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a starting depth of '//trim(TmpSTR))
 
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.StartingHeads(i)=domain.zCell(i)+value
+                domain%StartingHeads(i)=domain%cell(i)%z+value
             end if
         end do
     
@@ -1931,11 +1902,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells starting heads of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells starting heads of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.StartingHeads(i)=value
+                domain%StartingHeads(i)=value
             end if
         end do
     
@@ -1953,11 +1924,11 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain.name)//' cells a Sy of '//trim(TmpSTR))
+		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Sy of '//trim(TmpSTR))
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.Sy(i)=value
+                domain%Sy(i)=value
             end if
         end do
     
@@ -1998,20 +1969,20 @@
 
                     call ModflowObservationPointsFile(Modflow) 
 
-                    if(modflow.GWF.nCells >0) then
+                    if(Modflow%GWF%nCells >0) then
                         call WriteGWFFiles(Modflow)
                         call GWFToTecplot(Modflow)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.GWF)  
                     end if
                     
                    
-                    if(modflow.SWF.nCells >0) then
+                    if(Modflow%SWF%nCells >0) then
                         call WriteSWFFiles(Modflow)
                         call SWFToTecplot(Modflow)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.SWF)                
                     end if
                 
-                    if(modflow.CLN.nCells >0) then
+                    if(Modflow%CLN%nCells >0) then
                         call WriteCLNFiles(Modflow)
                         call CLNToTecplot(Modflow)
                         call ModflowDomainScatterToTecplot(Modflow,Modflow.CLN)                
@@ -2126,20 +2097,20 @@
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
            
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
-                call GenerateSWFDomain(FnumMUT,TMPLT,Modflow.SWF.l_TMPLT) ! inherit cell connection from TMPLT
+                call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
                 call BuildModflowSWFDomain(Modflow)   
                 call AddSWFFiles(Modflow)
 
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
-                call GenerateLayeredTMPLT_GWF(FnumMUT,TMPLT,Modflow.GWF.l_TMPLT) ! inherit cell connection from TMPLT and extend for GWF domain layers
-                call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,Modflow.GWF.l_TMPLT)
+                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,Modflow%GWF) ! inherit cell connection from TMPLT and extend for GWF domain layers
+                call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,Modflow%GWF)
                 
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
-                call GenerateCLNMesh(FnumMUT,Modflow.CLN.l_TMPLT)
+                call GenerateCLNDomain(FnumMUT,Modflow%CLN)
                 call BuildModflowCLNDomain(Modflow)
                 call AddCLNFiles(Modflow)
                 !JustBuilt=.true.
@@ -2503,123 +2474,93 @@
 
         integer(i4) :: i, j
 
-        Modflow.CLN.name='CLN'
+        Modflow%CLN%name='CLN'
                 
         if(NodalControlVolume) then
-            Modflow.CLN.nCells=Modflow.CLN.l_TMPLT%nNodes
+            Modflow%CLN%nCells=Modflow%CLN%nNodes
         else
-            Modflow.CLN.nCells=Modflow.CLN.l_TMPLT.nElements
+            Modflow%CLN%nCells=Modflow%CLN%nElements
         end if            
         
-        Modflow.CLN.nNodesPerCell=Modflow.CLN.l_TMPLT.nNodesPerElement
-        Modflow.CLN.nNold=Modflow.CLN.l_TMPLT%nNodes  ! Used when choosing gb nodes
-        Modflow.CLN.nElements=Modflow.CLN.l_TMPLT.nElements  ! Used when choosing gb nodes
+        Modflow%CLN%nNodesPerCell=Modflow%CLN%nNodesPerElement
 
         ! Modflow CLN cell coordinate 
-        allocate(Modflow.CLN.xCell(Modflow.CLN.nCells),Modflow.CLN.yCell(Modflow.CLN.nCells),Modflow.CLN.zCell(Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell coordinate arrays')
         if(NodalControlVolume) then
-            do i=1,Modflow.CLN.nCells
-                Modflow.CLN.xCell(i)=Modflow%CLN%l_TMPLT%node(i)%x
-                Modflow.CLN.yCell(i)=Modflow%CLN%l_TMPLT%node(i)%y
-                Modflow.CLN.zCell(i)=Modflow%CLN%l_TMPLT%node(i)%z
+            do i=1,Modflow%CLN%nCells
+                Modflow%CLN%cell(i)%x=Modflow%CLN%node(i)%x
+                Modflow%CLN%cell(i)%y=Modflow%CLN%node(i)%y
+                Modflow%CLN%cell(i)%z=Modflow%CLN%node(i)%z
             end do
         else
-            do i=1,Modflow.CLN.nCells
-                Modflow.CLN.xCell(i)=Modflow%CLN%l_TMPLT%element(i)%xElement
-                Modflow.CLN.yCell(i)=Modflow%CLN%l_TMPLT%element(i)%yElement
+            do i=1,Modflow%CLN%nCells
+                Modflow%CLN%cell(i)%x=Modflow%CLN%element(i)%x
+                Modflow%CLN%cell(i)%y=Modflow%CLN%element(i)%y
  
-                ! zc from centroid of the iNode array coordinates
+                ! zc from centroid of the idNode array coordinates
                 zc=0.0
-                do j=1,Modflow.CLN.nNodesPerCell
-                    zc=zc+Modflow%CLN%l_TMPLT%node(Modflow%CLN%l_TMPLT%idNode(j,i))%z
+                do j=1,Modflow%CLN%nNodesPerCell
+                    zc=zc+Modflow%CLN%node(Modflow%CLN%idNode(j,i))%z
                 end do
-                Modflow.CLN.zCell(i)=zc/Modflow.CLN.nNodesPerCell
+                Modflow%CLN%cell(i)%z=zc/Modflow%CLN%nNodesPerCell
             end do
         end if
         
-        !! Cell node list
-        !allocate(Modflow.CLN.iNode(Modflow.CLN.nNodesPerCell,Modflow.CLN.nElements),stat=ialloc)
-        !call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell node list array')
-        !Modflow.CLN.iNode(:,:) = Modflow.CLN.l_TMPLT.iNode(:,:)
-       
-        
-        !test
-        Modflow%CLN%nLayers=0
-              
         ! Modflow CLN cell layer number
-        Modflow%CLN%nLayers=Modflow%CLN%l_TMPLT%nLayers
-        allocate(Modflow.CLN.iLayer(Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Element layer number array')
-        do i=1,Modflow.CLN.nCells
-            Modflow.CLN.iLayer(i) = 1
+        do i=1,Modflow%CLN%nCells
+            Modflow%CLN%cell(i)%iLayer = 1
         end do
 
 
-        ! Cell zone number
-        Modflow.CLN.nZones=Modflow.CLN.l_TMPLT.nZones
-        allocate(Modflow.CLN.iZone(Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.CLN.name)//' iZone array')
-        !If(NodalControlVolume) then
-        !    ! Must account for element-based zone numbers in Modflow.CLN.l_TMPLT
-        !    do i=1,Modflow.CLN.l_TMPLT.nElements
-        !        do j=1,Modflow.CLN.l_TMPLT.nNodesPerElement
-        !            Modflow.CLN.iZone(Modflow.CLN.l_TMPLT.iNode(j,i))=Modflow.CLN.l_TMPLT.iZone(i)
-        !        end do
-        !    end do
-        !else
-            do i=1,Modflow.CLN.nCells
-                Modflow%CLN%cell(i)%idZone=Modflow.CLN.l_TMPLT.iZone(i)
-            end do
-        !end if
+        !! Cell zone number
+        !do i=1,Modflow%CLN%nCells
+        !    Modflow%CLN%cell(i)%idZone=Modflow%CLN%iZone(i)
+        !end do
         
         ! Cell Geometry
         !if(NodalControlVolume) then
-        !    call NodeCentredCLNCellGeometry(Modflow, Modflow.CLN.l_TMPLT,TMPLT)
+        !    call NodeCentredCLNCellGeometry(Modflow, Modflow%CLN,TMPLT)
         !else
             call MeshCentredCLNCellGeometry(Modflow)  ! Only mesh centred for now
         !end if
         
         ! Modflow CLN material properties (cell-based)
-        allocate(modflow.CLN.Sgcl(modflow.CLN.nCells),modflow.CLN.CriticalDepthLength(modflow.CLN.nCells),Modflow.CLN.StartingHeads(Modflow.CLN.nCells),stat=ialloc)
+        allocate(Modflow%CLN%Sgcl(Modflow%CLN%nCells),Modflow%CLN%CriticalDepthLength(Modflow%CLN%nCells),Modflow%CLN%StartingHeads(Modflow%CLN%nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN cell material property arrays')    
-        modflow.CLN.Sgcl(:)=0.001
-        modflow.CLN.CriticalDepthLength(:)=0.d0
-        Modflow.CLN.StartingHeads(:)=-999.d0
+        Modflow%CLN%Sgcl(:)=0.001
+        Modflow%CLN%CriticalDepthLength(:)=0.d0
+        Modflow%CLN%StartingHeads(:)=-999.d0
         
         ! Modflow CLN material properties (zone-based)
-       allocate(Modflow.CLN.Geometry(Modflow.CLN.nZones), &                    
-                Modflow.CLN.Direction(Modflow.CLN.nZones), &    
-                Modflow.CLN.CircularRadius(Modflow.CLN.nZones), &  
-                Modflow.CLN.RectangularWidth(Modflow.CLN.nZones), &  
-                Modflow.CLN.RectangularHeight(Modflow.CLN.nZones), &  
-                Modflow.CLN.LongitudinalK(Modflow.CLN.nZones), &  
-                Modflow.CLN.FlowTreatment(Modflow.CLN.nZones), &  
+       allocate(Modflow%CLN%Geometry(Modflow%CLN%nZones), &                    
+                Modflow%CLN%Direction(Modflow%CLN%nZones), &    
+                Modflow%CLN%CircularRadius(Modflow%CLN%nZones), &  
+                Modflow%CLN%RectangularWidth(Modflow%CLN%nZones), &  
+                Modflow%CLN%RectangularHeight(Modflow%CLN%nZones), &  
+                Modflow%CLN%LongitudinalK(Modflow%CLN%nZones), &  
+                Modflow%CLN%FlowTreatment(Modflow%CLN%nZones), &  
             stat=ialloc)
         call AllocChk(ialloc,'CLN zoned material property arrays') 
-        Modflow.CLN.Geometry(:)=-999
-        Modflow.CLN.Direction(:)=-999
-        Modflow.CLN.CircularRadius(:)=-999.d0
-        Modflow.CLN.RectangularWidth(:)=-999.d0
-        Modflow.CLN.RectangularHeight(:)=-999.d0
-        Modflow.CLN.LongitudinalK(:)=-999.d0
-        Modflow.CLN.FlowTreatment(:)=-999
+        Modflow%CLN%Geometry(:)=-999
+        Modflow%CLN%Direction(:)=-999
+        Modflow%CLN%CircularRadius(:)=-999.d0
+        Modflow%CLN%RectangularWidth(:)=-999.d0
+        Modflow%CLN%RectangularHeight(:)=-999.d0
+        Modflow%CLN%LongitudinalK(:)=-999.d0
+        Modflow%CLN%FlowTreatment(:)=-999
 
         
-        allocate(Modflow.CLN.Cell_Is(Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.CLN.name)//' Cell_Is array')            
-        Modflow.CLN.Cell_Is(:)=0
+        Modflow%CLN%Cell%is=0
    
     end subroutine BuildModflowCLNDomain
 
     !----------------------------------------------------------------------
-    subroutine BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,TMPLT_GWF)
+    subroutine BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,GWFDomain)
         implicit none
     
         integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         type (mesh) TMPLT
-        type (mesh) TMPLT_GWF
+        type (ModflowDomain) GWFDomain
 
         integer(i4) :: i, j, k
 
@@ -2628,194 +2569,172 @@
         
         integer(i4) :: iElement, iLay
         
-        Modflow.GWF.name='GWF'
+        Modflow%GWF%name='GWF'
 
         if(NodalControlVolume) then
-            Modflow.GWF.nCells=TMPLT%nNodes*(TMPLT_GWF.nLayers+1)
-            Modflow.GWF.nLayers=TMPLT_GWF.nLayers+1
+            Modflow%GWF%nCells=TMPLT%nNodes*(GWFDomain%nLayers+1)
+            Modflow%GWF%nLayers=GWFDomain%nLayers+1
 
         else
-            Modflow.GWF.nCells=TMPLT_GWF.nElements
-            Modflow.GWF.nLayers=TMPLT_GWF.nLayers
+            Modflow%GWF%nCells=GWFDomain%nElements
+            Modflow%GWF%nLayers=GWFDomain%nLayers
         end if            
         
-        Modflow.GWF.nNodesPerCell=TMPLT_GWF.nNodesPerElement
-        Modflow.GWF.nNold=TMPLT_GWF.nNold  ! Used when choosing gb nodes
-        Modflow.GWF.nElements=TMPLT_GWF.nElements
+        Modflow%GWF%nNodesPerCell=GWFDomain%nNodesPerElement
 
         ! Modflow GWF cell coordinate 
-        allocate(Modflow.GWF.xCell(Modflow.GWF.nCells),Modflow.GWF.yCell(Modflow.GWF.nCells),Modflow.GWF.zCell(Modflow.GWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//' Cell coordinate arrays')
         if(NodalControlVolume) then
-            allocate(Modflow.GWF.Top(Modflow.GWF.nCells),Modflow.GWF.Bottom(Modflow.GWF.nCells),stat=ialloc)
-            call AllocChk(ialloc,trim(Modflow.GWF.name)//' top, bottom arrays')
-            Modflow.GWF.Top(:)=0.0d0
-            Modflow.GWF.Bottom(:)=0.0d0
+            Modflow%GWF%Cell%Top=0.0d0
+            Modflow%GWF%Cell%Bottom=0.0d0
 
             icell=0
-            do j=1,TMPLT_GWF.nLayers+1
+            do j=1,GWFDomain%nLayers+1
                 do i=1,TMPLT%nNodes
                     icell=icell+1
                     iNode=i+(j-1)*TMPLT%nNodes
-                    Modflow.GWF.xCell(iCell)=TMPLT_GWF.x(iNode) 
-                    Modflow.GWF.yCell(iCell)=TMPLT_GWF.y(iNode) 
-                    Modflow.GWF.zCell(icell)=TMPLT_GWF.z(iNode)
+                    Modflow%GWF%cell(iCell)%x=GWFDomain%node(iNode)%x
+                    Modflow%GWF%cell(iCell)%y=GWFDomain%y(iNode) 
+                    Modflow%GWF%cell(icell)%z=GWFDomain%z(iNode)
                     
                     if(j==1) then
-                        Modflow.GWF.Top(icell)=TMPLT_GWF.z(iNode) 
-                        Modflow.GWF.Bottom(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode+TMPLT%nNodes))/2.0d0
-                    else if(j==TMPLT_GWF.nLayers+1) then
-                        Modflow.GWF.Top(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode-TMPLT%nNodes))/2.0d0
-                        Modflow.GWF.Bottom(icell)=TMPLT_GWF.z(iNode) 
+                        Modflow%GWF%Cell(icell)%Top=GWFDomain%z(iNode) 
+                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%z(iNode)+GWFDomain%z(iNode+TMPLT%nNodes))/2.0d0
+                    else if(j==GWFDomain%nLayers+1) then
+                        Modflow%GWF%Cell(icell)%Top=(GWFDomain%z(iNode)+GWFDomain%z(iNode-TMPLT%nNodes))/2.0d0
+                        Modflow%GWF%Cell(icell)%Bottom=GWFDomain%z(iNode) 
                     else
-                        Modflow.GWF.Top(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode-TMPLT%nNodes))/2.0d0
-                        Modflow.GWF.Bottom(icell)=(TMPLT_GWF.z(iNode)+TMPLT_GWF.z(iNode+TMPLT%nNodes))/2.0d0
+                        Modflow%GWF%Cell(icell)%Top=(GWFDomain%z(iNode)+GWFDomain%z(iNode-TMPLT%nNodes))/2.0d0
+                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%z(iNode)+GWFDomain%z(iNode+TMPLT%nNodes))/2.0d0
                     end if
                 end do
             end do
         else
-            do i=1,Modflow.GWF.nCells
-                iElement = myMOD(i,TMPLT.nElements)
-                Modflow.GWF.xCell(i)=TMPLT.xElement(iElement)
-                Modflow.GWF.yCell(i)=TMPLT.yElement(iElement)
+            do i=1,Modflow%GWF%nCells
+                iElement = myMOD(i,TMPLT%nElements)
+                Modflow%GWF%cell(i)%x=TMPLT%Element(iElement)%x
+                Modflow%GWF%cell(i)%y=TMPLT%Element(iElement)%y
+
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0
-                do j=1,Modflow.GWF.nNodesPerCell
-                    zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
+                do j=1,Modflow%GWF%nNodesPerCell
+                    zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
                 end do
-                Modflow.GWF.zCell(i)=zc/TMPLT_GWF.nNodesPerElement
+                Modflow%GWF%cell(i)%z=zc/GWFDomain%nNodesPerElement
             end do
         end if
         
-        ! Modflow GWF node coordinates 
-        allocate(Modflow.GWF.x(Modflow.GWF.nNold),Modflow.GWF.y(Modflow.GWF.nNold),Modflow.GWF.z(Modflow.GWF.nNold),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//' Node coordinate arrays')
-        do i=1,Modflow.GWF.nNold
-            Modflow.GWF.x(i)=TMPLT_GWF.x(i)
-            Modflow.GWF.y(i)=TMPLT_GWF.y(i)
-            Modflow.GWF.z(i)=TMPLT_GWF.z(i)
-        end do
-
-
-        ! Element node list
-        allocate(Modflow.GWF.iNode(Modflow.GWF.nNodesPerCell,Modflow.GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//' Cell node list array')
-        Modflow.GWF.iNode(:,:) = TMPLT_GWF.iNode(:,:)
+        !
+        !! Element node list
+        !Modflow%GWF%iNode(:,:) = GWFDomain%iNode(:,:)
 
         ! Element top and bottom
         if(.not. NodalControlVolume) then
-            allocate(Modflow.GWF.Top(Modflow.GWF.nCells),Modflow.GWF.Bottom(Modflow.GWF.nCells),stat=ialloc)
-            call AllocChk(ialloc,trim(Modflow.GWF.name)//' top, bottom arrays')
-            Modflow.GWF.Top(:)=0.0d0
-            Modflow.GWF.Bottom(:)=0.0d0
-            do i=1,TMPLT_GWF.nElements
-                if(TMPLT_GWF.nNodesPerElement == 6) then
+            Modflow%GWF%Cell%Top=0.0d0
+            Modflow%GWF%Cell%Bottom=0.0d0
+            do i=1,GWFDomain%nElements
+                if(GWFDomain%nNodesPerElement == 6) then
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=4,6
-                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
+                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
                     end do
-                    Modflow.GWF.Top(i)=zc/3
+                    Modflow%GWF%Cell(i)%Top=zc/3
         
                     ! zc from centroid of the iNode array z-coordinates for bottom face
                     zc=0.0
                     do j=1,3
-                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
+                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
                     end do
-                    Modflow.GWF.Bottom(i)=zc/3
+                    Modflow%GWF%Cell(i)%Bottom=zc/3
             
-                else if(TMPLT_GWF.nNodesPerElement == 8) then
+                else if(GWFDomain%nNodesPerElement == 8) then
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=5,8
-                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
+                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
                     end do
-                    Modflow.GWF.Top(i)=zc/4
+                    Modflow%GWF%Cell(i)%Top=zc/4
         
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=1,4
-                        zc=zc+TMPLT_GWF.z(TMPLT_GWF.iNode(j,i))
+                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
                     end do
-                    Modflow.GWF.Bottom(i)=zc/4
+                    Modflow%GWF%Cell(i)%Bottom=zc/4
                 end if
             end do
         end if
 
             
         ! Modflow GWF cell layer number
-        allocate(Modflow.GWF.iLayer(Modflow.GWF.nCells),stat=ialloc)
+        !allocate(Modflow%GWF%iLayer(Modflow%GWF%nCells),stat=ialloc)
         if(NodalControlVolume) then
-            call AllocChk(ialloc,trim(Modflow.GWF.name)//' cell layer number array')
-            do i=1,Modflow.GWF.nCells
+            !call AllocChk(ialloc,trim(Modflow%GWF%name)//' cell layer number array')
+            do i=1,Modflow%GWF%nCells
                 if(myMod(i,TMPLT%nNodes) == TMPLT%nNodes) then
                     iLay = i/(TMPLT%nNodes)
                 else 
                     iLay = i/(TMPLT%nNodes)+1
                 end if
                    
-                Modflow.GWF.iLayer(i) = iLay
+                Modflow%GWF%cell(i)%iLayer = iLay
             end do
         else
-            call AllocChk(ialloc,trim(Modflow.GWF.name)//' cell layer number array')
-            do i=1,Modflow.GWF.nCells
-                Modflow.GWF.iLayer(i) = TMPLT_GWF.iLayer(i) 
+            !call AllocChk(ialloc,trim(Modflow%GWF%name)//' cell layer number array')
+            do i=1,Modflow%GWF%nCells
+                Modflow%GWF%cell(i)%iLayer = GWFDomain%Element(i)%iLayer
             end do
         end if
         
         ! Layer has quasi-3D confining bed below if non-zero
-        allocate(Modflow.GWF.Laybcd(Modflow.GWF.nLayers),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//'.Laybcd array')
-        Modflow.GWF.Laybcd(:)=0
+        allocate(Modflow%GWF%Laybcd(Modflow%GWF%nLayers),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow%GWF%name)//'.Laybcd array')
+        Modflow%GWF%Laybcd(:)=0
         
         ! Cell zone number
-        Modflow.GWF.nZones=TMPLT_GWF.nZones
-        allocate(Modflow.GWF.iZone(Modflow.GWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//' iZone arrays')
+        Modflow%GWF%nZones=GWFDomain%nZones
         If(NodalControlVolume) then
-            CellLoop: do k=1,Modflow.GWF.nCells
-                do i=1,TMPLT_GWF.nElements
-                    do j=1,TMPLT_GWF.nNodesPerElement
-                        if(TMPLT_GWF.iNode(j,i) == k) then
-                            Modflow.GWF.iZone(k)=TMPLT_GWF.iZone(i)
+            CellLoop: do k=1,Modflow%GWF%nCells
+                do i=1,GWFDomain%nElements
+                    do j=1,GWFDomain%nNodesPerElement
+                        if(GWFDomain%idNode(j,i) == k) then
+                            Modflow%GWF%cell(k)%idZone=GWFDomain%element(i)%idZone
                             cycle CellLoop
                         end if
                     end do
                 end do
             end do CellLoop
         else
-            do i=1,Modflow.GWF.nCells
-                Modflow.GWF.iZone(i)=TMPLT_GWF.iZone(i)
+            do i=1,Modflow%GWF%nCells
+                Modflow%GWF%cell(i)%idZone=GWFDomain%Element(i)%idZone
             end do
         end if
 
         ! Cell Geometry
         if(NodalControlVolume) then
-            call NodeCentredGWFCellGeometry(FnumMUT,Modflow, TMPLT_GWF,TMPLT)
+            call NodeCentredGWFCellGeometry(FnumMUT,Modflow, GWFDomain,TMPLT)
         else
-            call MeshCentredGWFCellGeometry(Modflow, TMPLT_GWF,TMPLT)
+            call MeshCentredGWFCellGeometry(Modflow, GWFDomain,TMPLT)
         end if
         
         ! Modflow GWF material properties (cell-based)
-        allocate(Modflow.GWF.Kh(Modflow.GWF.nCells),Modflow.GWF.Kv(Modflow.GWF.nCells), &
-            Modflow.GWF.Ss(Modflow.GWF.nCells),Modflow.GWF.Sy(Modflow.GWF.nCells),&
-            Modflow.GWF.Alpha(Modflow.GWF.nCells),Modflow.GWF.Beta(Modflow.GWF.nCells),Modflow.GWF.Sr(Modflow.GWF.nCells), &
-            Modflow.GWF.Brooks(Modflow.GWF.nCells),Modflow.GWF.StartingHeads(Modflow.GWF.nCells), &
+        allocate(Modflow%GWF%Kh(Modflow%GWF%nCells),Modflow%GWF%Kv(Modflow%GWF%nCells), &
+            Modflow%GWF%Ss(Modflow%GWF%nCells),Modflow%GWF%Sy(Modflow%GWF%nCells),&
+            Modflow%GWF%Alpha(Modflow%GWF%nCells),Modflow%GWF%Beta(Modflow%GWF%nCells),Modflow%GWF%Sr(Modflow%GWF%nCells), &
+            Modflow%GWF%Brooks(Modflow%GWF%nCells),Modflow%GWF%StartingHeads(Modflow%GWF%nCells), &
             stat=ialloc)
         call AllocChk(ialloc,'GWF cell material property arrays')            
-        Modflow.GWF.Kh(:)=-999.d0
-        Modflow.GWF.Kh(:)=-999.d0
-        Modflow.GWF.Ss(:)=-999.d0
-        Modflow.GWF.Sy(:)=-999.d0
-        Modflow.GWF.Alpha(:)=-999.d0
-        Modflow.GWF.Beta(:)=-999.d0
-        Modflow.GWF.Sr(:)=-999.d0
-        Modflow.GWF.Brooks(:)=-999.d0
-        Modflow.GWF.StartingHeads(:)=-999.d0
+        Modflow%GWF%Kh(:)=-999.d0
+        Modflow%GWF%Kh(:)=-999.d0
+        Modflow%GWF%Ss(:)=-999.d0
+        Modflow%GWF%Sy(:)=-999.d0
+        Modflow%GWF%Alpha(:)=-999.d0
+        Modflow%GWF%Beta(:)=-999.d0
+        Modflow%GWF%Sr(:)=-999.d0
+        Modflow%GWF%Brooks(:)=-999.d0
+        Modflow%GWF%StartingHeads(:)=-999.d0
 
-        allocate(Modflow.GWF.Cell_Is(Modflow.GWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.GWF.name)//' Cell_Is array')            
-        Modflow.GWF.Cell_Is(:)=0
+        Modflow%GWF%Cell%is=0
     
     end subroutine BuildModflowGWFDomain
     
@@ -2827,86 +2746,84 @@
 
         integer(i4) :: i, j
 
-        Modflow.SWF.name='SWF'
+        Modflow%SWF%name='SWF'
                 
         if(NodalControlVolume) then
-            Modflow.SWF.nCells=Modflow.SWF.l_TMPLT%nNodes
-            Modflow.SWF.nodelay=Modflow.SWF.l_TMPLT%nNodes
+            Modflow%SWF%nCells=Modflow%SWF%nNodes
+            Modflow%SWF%nodelay=Modflow%SWF%nNodes
 
         else
-            Modflow.SWF.nCells=Modflow.SWF.l_TMPLT.nElements
-            Modflow.SWF.nodelay=Modflow.SWF.l_TMPLT.nElements
+            Modflow%SWF%nCells=Modflow%SWF%nElements
+            Modflow%SWF%nodelay=Modflow%SWF%nElements
         end if            
         
-        Modflow.SWF.nNodesPerCell=Modflow.SWF.l_TMPLT.nNodesPerElement
-        Modflow.SWF.nNold=Modflow.SWF.l_TMPLT%nNodes  ! Used when choosing gb nodes, flagging outer boundary nodes
-        Modflow.SWF.nElements=Modflow.SWF.l_TMPLT.nElements  ! Used when choosing gb elements
+        Modflow%SWF%nNodesPerCell=Modflow%SWF%nNodesPerElement
 
         ! Modflow SWF cell coordinate 
-        allocate(Modflow.SWF.xCell(Modflow.SWF.nCells),Modflow.SWF.yCell(Modflow.SWF.nCells),Modflow.SWF.zCell(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell coordinate arrays')
+        allocate(Modflow%SWF%cell%x(Modflow%SWF%nCells),Modflow%SWF%cell%y(Modflow%SWF%nCells),Modflow%SWF%cell%z(Modflow%SWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow%SWF%name)//' Cell coordinate arrays')
         if(NodalControlVolume) then
-            do i=1,Modflow.SWF.nCells
-                Modflow.SWF.xCell(i)=Modflow.SWF.l_TMPLT.x(i)
-                Modflow.SWF.yCell(i)=Modflow.SWF.l_TMPLT.y(i)
-                Modflow.SWF.zCell(i)=Modflow.SWF.l_TMPLT.z(i)
+            do i=1,Modflow%SWF%nCells
+                Modflow%SWF%cell%x(i)=Modflow%SWF%x(i)
+                Modflow%SWF%cell%y(i)=Modflow%SWF%y(i)
+                Modflow%SWF%cell%z(i)=Modflow%SWF%z(i)
             end do
         else
-            do i=1,Modflow.SWF.nCells
-                Modflow.SWF.xCell(i)=Modflow.SWF.l_TMPLT.xElement(i)
-                Modflow.SWF.yCell(i)=Modflow.SWF.l_TMPLT.yElement(i)
+            do i=1,Modflow%SWF%nCells
+                Modflow%SWF%cell%x(i)=Modflow%SWF%Element(i)%x
+                Modflow%SWF%cell%y(i)=Modflow%SWF%Element(i)%y
  
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0d0
-                do j=1,Modflow.SWF.nNodesPerCell
-                    zc=zc+Modflow.SWF.l_TMPLT.z(Modflow.SWF.l_TMPLT.iNode(j,i))
+                do j=1,Modflow%SWF%nNodesPerCell
+                    zc=zc+Modflow%SWF%z(Modflow%SWF%idNode(j,i))
                 end do
-                Modflow.SWF.zCell(i)=zc/float(Modflow.SWF.nNodesPerCell)
+                Modflow%SWF%cell%z(i)=zc/float(Modflow%SWF%nNodesPerCell)
             end do
         end if
         
-        ! Modflow SWF node coordinates 
-        allocate(Modflow.SWF.x(Modflow.SWF.nNold),Modflow.SWF.y(Modflow.SWF.nNold),Modflow.SWF.z(Modflow.SWF.nNold),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Node coordinate arrays')
-        do i=1,Modflow.SWF.nNold
-            Modflow.SWF.x(i)=Modflow.SWF.l_TMPLT.x(i)
-            Modflow.SWF.y(i)=Modflow.SWF.l_TMPLT.y(i)
-            Modflow.SWF.z(i)=Modflow.SWF.l_TMPLT.z(i)
-        end do
+        !! Modflow SWF node coordinates 
+        !allocate(Modflow%SWF%x(Modflow%SWF%nNodes),Modflow%SWF%y(Modflow%SWF%nNodes),Modflow%SWF%z(Modflow%SWF%nNodes),stat=ialloc)
+        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Node coordinate arrays')
+        !do i=1,Modflow%SWF%nNodes
+        !    Modflow%SWF%x(i)=Modflow%SWF%x(i)
+        !    Modflow%SWF%y(i)=Modflow%SWF%y(i)
+        !    Modflow%SWF%z(i)=Modflow%SWF%z(i)
+        !end do
 
-            ! Element node list
-        allocate(Modflow.SWF.iNode(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell node list array')
-        Modflow.SWF.iNode(:,:) = Modflow.SWF.l_TMPLT.iNode(:,:)
-       
-        ! Element side lengths
-        allocate(Modflow.SWF.SideLength(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell SideLength array')
-        Modflow.SWF.SideLength(:,:) = Modflow.SWF.l_TMPLT.SideLength(:,:)
+        !    ! Element node list
+        !allocate(Modflow%SWF%idNode(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
+        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Cell node list array')
+        !Modflow%SWF%iNode(:,:) = Modflow%SWF%iNode(:,:)
+        !
+        !! Element side lengths
+        !allocate(Modflow%SWF%SideLength(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
+        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Cell SideLength array')
+        !Modflow%SWF%SideLength(:,:) = Modflow%SWF%SideLength(:,:)
                
         ! Modflow SWF cell layer number
-        Modflow.SWF.nLayers=Modflow.SWF.l_TMPLT.nLayers
-        allocate(Modflow.SWF.iLayer(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Element layer number array')
-        do i=1,Modflow.SWF.nCells
-            Modflow.SWF.iLayer(i) = 1
+        Modflow%SWF%nLayers=Modflow%SWF%nLayers
+        allocate(Modflow%SWF%iLayer(Modflow%SWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow%SWF%name)//' Element layer number array')
+        do i=1,Modflow%SWF%nCells
+            Modflow%SWF%iLayer(i) = 1
         end do
 
 
         ! Cell zone number
-        Modflow.SWF.nZones=Modflow.SWF.l_TMPLT.nZones
-        allocate(Modflow.SWF.iZone(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' iZone array')
+        Modflow%SWF%nZones=Modflow%SWF%nZones
+        allocate(Modflow%SWF%iZone(Modflow%SWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,trim(Modflow%SWF%name)//' iZone array')
         If(NodalControlVolume) then
-            ! Must account for element-based zone numbers in Modflow.SWF.l_TMPLT
-            do i=1,Modflow.SWF.l_TMPLT.nElements
-                do j=1,Modflow.SWF.l_TMPLT.nNodesPerElement
-                    Modflow.SWF.iZone(Modflow.SWF.l_TMPLT.iNode(j,i))=Modflow.SWF.l_TMPLT.iZone(i)
+            ! Must account for element-based zone numbers in Modflow%SWF
+            do i=1,Modflow%SWF%nElements
+                do j=1,Modflow%SWF%nNodesPerElement
+                    Modflow%SWF%iZone(Modflow%SWF%idNode(j,i))=Modflow%SWF%iZone(i)
                 end do
             end do
         else
-            do i=1,Modflow.SWF.nCells
-                Modflow.SWF.iZone(i)=Modflow.SWF.l_TMPLT.iZone(i)
+            do i=1,Modflow%SWF%nCells
+                Modflow%SWF%iZone(i)=Modflow%SWF%iZone(i)
             end do
         end if
         
@@ -2918,35 +2835,30 @@
         end if
         
         ! Modflow SWF material properties (cell-based)
-        allocate(modflow.SWF.Sgcl(modflow.SWF.nCells),modflow.SWF.CriticalDepthLength(modflow.SWF.nCells),Modflow.SWF.StartingHeads(Modflow.SWF.nCells),stat=ialloc)
+        allocate(Modflow%SWF%Sgcl(Modflow%SWF%nCells),Modflow%SWF%CriticalDepthLength(Modflow%SWF%nCells),Modflow%SWF%StartingHeads(Modflow%SWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF cell material property arrays')    
-        modflow.SWF.Sgcl(:)=0.001d0
-        modflow.SWF.CriticalDepthLength(:)=0.d0
-        Modflow.SWF.StartingHeads(:)=-999.d0
+        Modflow%SWF%Sgcl(:)=0.001d0
+        Modflow%SWF%CriticalDepthLength(:)=0.d0
+        Modflow%SWF%StartingHeads(:)=-999.d0
         
         ! Modflow SWF material properties (zone-based)
-       allocate(Modflow.SWF.Manning(Modflow.SWF.nZones), &                   
-                Modflow.SWF.DepressionStorageHeight(Modflow.SWF.nZones), &   
-                Modflow.SWF.ObstructionStorageHeight(Modflow.SWF.nZones), &  
-                Modflow.SWF.H1DepthForSmoothing(Modflow.SWF.nZones), &       
-                Modflow.SWF.H2DepthForSmoothing(Modflow.SWF.nZones), &       
+       allocate(Modflow%SWF%Manning(Modflow%SWF%nZones), &                   
+                Modflow%SWF%DepressionStorageHeight(Modflow%SWF%nZones), &   
+                Modflow%SWF%ObstructionStorageHeight(Modflow%SWF%nZones), &  
+                Modflow%SWF%H1DepthForSmoothing(Modflow%SWF%nZones), &       
+                Modflow%SWF%H2DepthForSmoothing(Modflow%SWF%nZones), &       
             stat=ialloc)
         call AllocChk(ialloc,'SWF zoned material property arrays')            
-        Modflow.SWF.Manning(:)=-999.d0
-        Modflow.SWF.DepressionStorageHeight(:)=-999.d0
-        Modflow.SWF.ObstructionStorageHeight(:)=-999.d0
-        Modflow.SWF.H1DepthForSmoothing(:)=-999.d0
-        Modflow.SWF.H2DepthForSmoothing(:)=-999.d0
+        Modflow%SWF%Manning(:)=-999.d0
+        Modflow%SWF%DepressionStorageHeight(:)=-999.d0
+        Modflow%SWF%ObstructionStorageHeight(:)=-999.d0
+        Modflow%SWF%H1DepthForSmoothing(:)=-999.d0
+        Modflow%SWF%H2DepthForSmoothing(:)=-999.d0
 
         
-        allocate(Modflow.SWF.Cell_Is(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Cell_Is array')            
-        Modflow.SWF.Cell_Is(:)=0
+        Modflow%SWF%Cell%is=0
 
-        allocate(Modflow.SWF.Node_Is(Modflow.SWF.nNold),stat=ialloc)
-        call AllocChk(ialloc,trim(Modflow.SWF.name)//' Node_Is array')            
-        Modflow.SWF.Node_Is(:)=0
-        Modflow.SWF.Node_Is(:)=Modflow.SWF.l_TMPLT.Node_Is(:)
+        Modflow%SWF%node%is=0
    
     end subroutine BuildModflowSWFDomain
 
@@ -2959,23 +2871,15 @@
         integer(i4) :: i
 	    integer(i4) :: ncount
 
-
-        
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
-        
         ncount=0
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             call set(domain%zone(i)%is,chosen)
             ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' zone numbers currently chosen: '
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' zone numbers currently chosen: '
         call Msg(trim(TmpSTR))
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
                 write(TmpSTR,'(a,i5)') TAB,i
                 call Msg(trim(TmpSTR))
@@ -2994,27 +2898,21 @@
 
         integer(i4) :: i
         integer(i4) :: number
-        
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
 
 		read(FNumMUT,*) number
         write(TmpSTR,'(a,i8)') TAB//'Adding zone number: ',number
 		call Msg(trim(TmpSTR))
         
-        if(number <= 0 .or. number > domain.nZones) then
-            write(TmpSTR,'(a,i8)') 'Number must be between 1 and ',domain.nZones
+        if(number <= 0 .or. number > domain%nZones) then
+            write(TmpSTR,'(a,i8)') 'Number must be between 1 and ',domain%nZones
             call Errmsg(trim(TmpSTR))
         end if
 
-        call set(domain.Zone_Is(number),chosen)
+        call set(domain%zone(number)%is,chosen)
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' zone numbers currently chosen: '
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' zone numbers currently chosen: '
         call Msg(trim(TmpSTR))
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
                 write(TmpSTR,'(a,i5)') TAB,i
                 call Msg(trim(TmpSTR))
@@ -3031,18 +2929,10 @@
 
         integer(i4) :: i
 	    integer(i4) :: ncount
-
-
-        
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNold),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
         
         ncount=0
-        do i=1,domain.nNold
-            call set(domain.Node_Is(i),chosen)
+        do i=1,domain%nNodes
+            call set(domain%node(i)%is,chosen)
             ncount=ncount+1
         end do
 
@@ -3063,33 +2953,26 @@
 
         character(MAX_STR) :: FName
         character*80 :: dummy
-        logical :: togon(domain.nNold)
+        logical :: togon(domain%nNodes)
 
-        
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNold),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
-
-		read(FNumMUT,'(a)') fname
+        read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose nodes from '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
         read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain.nNold)
+        read(itmp,iostat=status) (togon(i),i=1,domain%nNodes)
         if(status /= 0) then
 		    call ErrMsg('While reading: '//fname)
         end if
         
-        if(domain.name == 'GWF') then
+        if(domain%name == 'GWF') then
 
             read(FNumMUT,*) nLayer_top,nLayer_bot
         
             nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_bot=min(nLayer_bot,domain%nLayers)
+            nLayer_top=min(nLayer_top,domain%nLayers)
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
@@ -3098,11 +2981,11 @@
 		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
 
             ncount=0
-            do i=1,domain.nNold
+            do i=1,domain%nNodes
                 if(togon(i)) then
                     do j=nLayer_top,nLayer_bot
-                        iNode=(j-1)*domain.nNold+i
-                        call set(Domain.Node_Is(iNode),chosen)
+                        iNode=(j-1)*domain%nNodes+i
+                        call set(domain%node(iNode)%is,chosen)
                         ncount=ncount+1
                     end do
                 end if
@@ -3110,15 +2993,15 @@
        
          else
             ncount=0
-            do i=1,domain.nNold
+            do i=1,domain%nNodes
                 if(togon(i)) then
-                    call set(domain.Node_Is(i),chosen)
+                    call set(domain%node(i)%is,chosen)
                     ncount=ncount+1
                 end if
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No nodes chosen')
@@ -3141,14 +3024,7 @@
         character*80 :: dummy
         logical :: togon(TMPLT%nNodes)
 
-        
-        if(.not. allocated(TMPLT.Node_Is)) then 
-            allocate(TMPLT.Node_Is(TMPLT%nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
-            TMPLT.Node_Is(:)=0
-        end if
-
-		read(FNumMUT,'(a)') fname
+        read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose nodes from '//trim(fname))
 
         call getunit(itmp)
@@ -3159,42 +3035,15 @@
 		    call ErrMsg('While reading: '//fname)
         end if
         
-      !  if(TMPLT.name == 'GWF') then
-      !
-      !      read(FNumMUT,*) nLayer_top,nLayer_bot
-      !  
-      !      nLayer_bot=max(nLayer_bot,1)
-      !      nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-      !      nLayer_top=min(nLayer_top,TMPLT.nLayers)
-      !      nLayer_top=max(nLayer_top,1)
-      !  
-      !      write(TmpSTR,'(i5)') nLayer_top
-		    !call Msg(TAB//'From Layer: '//trim(TmpSTR))
-      !      write(TmpSTR,'(i5)') nLayer_bot
-		    !call Msg(TAB//'To Layer:   '//trim(TmpSTR))
-      !
-      !      ncount=0
-      !      do i=1,TMPLT%nNodes
-      !          if(togon(i)) then
-      !              do j=nLayer_top,nLayer_bot
-      !                  iNode=(j-1)*TMPLT%nNodes+i
-      !                  call set(TMPLT.Node_Is(iNode),chosen)
-      !                  ncount=ncount+1
-      !              end do
-      !          end if
-      !      end do
-      ! 
-      !   else
-            ncount=0
-            do i=1,TMPLT%nNodes
-                if(togon(i)) then
-                    call set(TMPLT.Node_Is(i),chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        !end if
+        ncount=0
+        do i=1,TMPLT%nNodes
+            if(togon(i)) then
+                call set(TMPLT%node(i)%is,chosen)
+                ncount=ncount+1
+            end if
+        end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No nodes chosen')
@@ -3214,12 +3063,12 @@
 
 
         ncount=0
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             call set(domain%cell(i)%is,chosen)
             ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
@@ -3240,18 +3089,18 @@
         call Msg(TMPStr)
 
         dist_min=1.0e20
-	    do i=1,domain.nNold
-		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
+	    do i=1,domain%nNodes
+		    f1=sqrt((x1-domain%node(i)%x)**2+((y1-domain%node(i)%y))**2+((z1-domain%node(i)%z))**2)
 		    if(f1.lt.dist_min) then
 			    inode=i
 			    dist_min=f1
 		    endif
 	    end do
-        call set(domain.Node_Is(iNode),chosen)
+        call set(domain%node(iNode)%is,chosen)
         
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode),'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 
     end subroutine ChooseNodeAtXYZTemplate
@@ -3270,18 +3119,18 @@
         call Msg(TMPStr)
 
         dist_min=1.0e20
-	    do i=1,domain.nNold
-		    f1=sqrt((x1-domain.x(i))**2+((y1-domain.y(i)))**2+((z1-domain.z(i)))**2)
+	    do i=1,domain%nNodes
+		    f1=sqrt((x1-domain%node(i)%x)**2+((y1-domain%node(i)%y))**2+((z1-domain%node(i)%z))**2)
 		    if(f1.lt.dist_min) then
 			    inode=i
 			    dist_min=f1
 		    endif
 	    end do
-        call set(domain.Node_Is(iNode),chosen)
+        call set(domain%node(iNode)%is,chosen)
         
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain.x(iNode),domain.y(iNode),domain.z(iNode),'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain.x(iNode)-x1,domain.y(iNode)-y1,domain.z(iNode)-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 
     end subroutine ChooseNodeAtXYZ
@@ -3300,14 +3149,14 @@
         call Msg(TMPStr)
 
         ncount=0
-        do i=1,domain.nCells
-            if(domain.iLayer(i) == iLyr) then
+        do i=1,domain%nCells
+            if(domain%iLayer(i) == iLyr) then
                 call set(domain%cell(i)%is,chosen)
                 ncount=ncount+1
             endif
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen in layer: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen in layer: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
@@ -3328,18 +3177,18 @@
         call Msg(TMPStr)
 
         dist_min=1.0e20
-	    do i=1,domain.nCells
-		    f1=sqrt((x1-domain.xCell(i))**2+((y1-domain.yCell(i)))**2+((z1-domain.zCell(i)))**2)
+	    do i=1,domain%nCells
+		    f1=sqrt((x1-domain%cell%x(i))**2+((y1-domain%cell%y(i)))**2+((z1-domain%cell%z(i)))**2)
 		    if(f1.lt.dist_min) then
 			    iCell=i
 			    dist_min=f1
 		    endif
 	    end do
-        call set(domain.Cell_Is(iCell),chosen)
+        call set(domain%cell(iCell)%is,chosen)
         
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain.xCell(iCell),domain.yCell(iCell),domain.zCell(iCell),'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%cell%x(iCell),domain%cell%y(iCell),domain%cell%z(iCell),'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain.xCell(iCell)-x1,domain.yCell(iCell)-y1,domain.zCell(iCell)-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%cell%x(iCell)-x1,domain%cell%y(iCell)-y1,domain%cell%z(iCell)-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 
     end subroutine ChooseCellAtXYZ
@@ -3378,8 +3227,8 @@
             ltop=lbot
             lbot=ntemp
         end if
-        ielmin=(ltop-1)*domain.nodelay
-        ielmax=lbot*domain.nodelay + 1
+        ielmin=(ltop-1)*domain%nodelay
+        ielmax=lbot*domain%nodelay + 1
 
         x1=x1-small
         x2=x2+small
@@ -3389,8 +3238,8 @@
         z2=z2+small
 
         ncount=0
-        do i=1,domain.nCells
-            if(domain.xCell(i).ge.x1 .and. domain.xCell(i).le.x2 .and. domain.yCell(i).ge.y1 .and. domain.yCell(i).le.y2 .and. domain.zCell(i).ge.z1 .and. domain.zCell(i).le.z2) then
+        do i=1,domain%nCells
+            if(domain%cell%x(i).ge.x1 .and. domain%cell%x(i).le.x2 .and. domain%cell%y(i).ge.y1 .and. domain%cell%y(i).le.y2 .and. domain%cell%z(i).ge.z1 .and. domain%cell%z(i).le.z2) then
                 if(i .gt. ielmin .and. i .lt. ielmax) then
                     call set(domain%cell(i)%is,chosen)
                     ncount=ncount+1
@@ -3398,7 +3247,7 @@
             end if
         end do
     
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3415,7 +3264,7 @@
 	    integer(i4) :: ncount, iCell,status2
 
         character*80 fname
-        logical togon(domain.nCells)
+        logical togon(domain%nCells)
 
 		read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose Cells from ascii file '//trim(fname))
@@ -3430,14 +3279,14 @@
         enddo
         
         ncount=0
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(togon(i)) then
                 call set(domain%cell(i)%is,chosen)
                 ncount=ncount+1
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3458,18 +3307,18 @@
 
        
         ncount=0
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
-                do j=1,domain.nCells
-                    if(domain.iZone(j) == i) then
-                        call set(Domain.Cell_Is(j),chosen)
+                do j=1,domain%nCells
+                    if(domain%iZone(j) == i) then
+                        call set(domain%cell(j)%is,chosen)
                         ncount=ncount+1
                     end if
                 end do
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3489,7 +3338,7 @@
 
         character*80 fname
         character*80 dummy
-        logical togon(domain.l_TMPLT.nElements)
+        logical togon(domain%nElements)
 
 		read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose Cells from gb chosen elements file '//trim(fname))
@@ -3497,18 +3346,18 @@
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
         read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain.l_TMPLT.nElements)
+        read(itmp,iostat=status) (togon(i),i=1,domain%nElements)
         if(status /= 0) then
 		    call ErrMsg('While reading: '//fname)
         end if
         
-        if(domain.name == 'GWF') then
+        if(domain%name == 'GWF') then
 
             read(FNumMUT,*) nLayer_top,nLayer_bot
         
             nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_bot=min(nLayer_bot,domain%nLayers)
+            nLayer_top=min(nLayer_top,domain%nLayers)
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
@@ -3517,18 +3366,18 @@
 		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
 
             ncount=0
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(togon(i)) then
                     do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*domain.l_TMPLT.nElements+i
-                        call set(Domain.Cell_Is(iCell),chosen)
+                        iCell=(j-1)*domain%nElements+i
+                        call set(domain%cell(iCell)%is,chosen)
                         ncount=ncount+1
                     end do
                 end if
             end do
         else
             ncount=0
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(togon(i)) then
                     call set(domain%cell(i)%is,chosen)
                     ncount=ncount+1
@@ -3536,7 +3385,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3556,7 +3405,7 @@
 
         character*80 fname
         character*80 dummy
-        logical togon(TMPLT.nElements)
+        logical togon(TMPLT%nElements)
 
 		read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose Elements from '//trim(fname))
@@ -3564,18 +3413,18 @@
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
         read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT.nElements)
+        read(itmp,iostat=status) (togon(i),i=1,TMPLT%nElements)
         if(status /= 0) then
 		    call ErrMsg('While reading: '//fname)
         end if
         
-        if(TMPLT.name == 'GWF') then
+        if(TMPLT%name == 'GWF') then
 
             read(FNumMUT,*) nLayer_top,nLayer_bot
         
             nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-            nLayer_top=min(nLayer_top,TMPLT.nLayers)
+            nLayer_bot=min(nLayer_bot,TMPLT%nLayers)
+            nLayer_top=min(nLayer_top,TMPLT%nLayers)
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
@@ -3584,26 +3433,26 @@
 		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
 
             ncount=0
-            do i=1,TMPLT.nElements
+            do i=1,TMPLT%nElements
                 if(togon(i)) then
                     do j=nLayer_top,nLayer_bot
-                        iElement=(j-1)*TMPLT.nElements+i
-                        call set(TMPLT.Element_Is(iElement),chosen)
+                        iElement=(j-1)*TMPLT%nElements+i
+                        call set(TMPLT%element(iElement)%is,chosen)
                         ncount=ncount+1
                     end do
                 end if
             end do
         else
             ncount=0
-            do i=1,TMPLT.nElements
+            do i=1,TMPLT%nElements
                 if(togon(i)) then
-                    call set(TMPLT.Element_Is(i),chosen)
+                    call set(TMPLT%element(i)%is,chosen)
                     ncount=ncount+1
                 end if
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Elements chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' Elements chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Elements chosen')
 	    
@@ -3624,7 +3473,7 @@
 
         character*80 fname
         character*80 dummy
-        logical togon(domain.l_TMPLT%nNodes)
+        logical togon(domain%nNodes)
 
 		read(FNumMUT,'(a)') fname
 		call Msg(TAB//'Choose Cells from GB chosen nodes file '//trim(fname))
@@ -3632,18 +3481,18 @@
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
         read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain.l_TMPLT%nNodes)
+        read(itmp,iostat=status) (togon(i),i=1,domain%nNodes)
         if(status /= 0) then
 		    call ErrMsg('While reading: '//fname)
         end if
         
-        if(domain.name == 'GWF') then
+        if(domain%name == 'GWF') then
 
             read(FNumMUT,*) nLayer_top,nLayer_bot
         
             nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,Domain.nLayers)
-            nLayer_top=min(nLayer_top,Domain.nLayers)
+            nLayer_bot=min(nLayer_bot,domain%nLayers)
+            nLayer_top=min(nLayer_top,domain%nLayers)
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
@@ -3652,18 +3501,18 @@
 		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
 
             ncount=0
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(togon(i)) then
                     do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*domain.l_TMPLT%nNodes+i
-                        call set(Domain.Cell_Is(iCell),chosen)
+                        iCell=(j-1)*domain%nNodes+i
+                        call set(domain%cell(iCell)%is,chosen)
                         ncount=ncount+1
                     end do
                 end if
             end do
         else
             ncount=0
-            do i=1,domain.nCells
+            do i=1,domain%nCells
                 if(togon(i)) then
                     call set(domain%cell(i)%is,chosen)
                     ncount=ncount+1
@@ -3671,7 +3520,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3704,13 +3553,13 @@
 		    call ErrMsg('While reading: '//fname)
         end if
         
-        if(TMPLT.name == 'GWF') then
+        if(TMPLT%name == 'GWF') then
 
             read(FNumMUT,*) nLayer_top,nLayer_bot
         
             nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT.nLayers)
-            nLayer_top=min(nLayer_top,TMPLT.nLayers)
+            nLayer_bot=min(nLayer_bot,TMPLT%nLayers)
+            nLayer_top=min(nLayer_top,TMPLT%nLayers)
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
@@ -3723,7 +3572,7 @@
                 if(togon(i)) then
                     do j=nLayer_top,nLayer_bot
                         iElement=(j-1)*TMPLT%nNodes+i
-                        call set(TMPLT.Element_Is(iElement),chosen)
+                        call set(TMPLT%element(iElement)%is,chosen)
                         ncount=ncount+1
                     end do
                 end if
@@ -3732,13 +3581,13 @@
             ncount=0
             do i=1,TMPLT%nNodes
                 if(togon(i)) then
-                    call set(TMPLT.Element_Is(i),chosen)
+                    call set(TMPLT%element(i)%is,chosen)
                     ncount=ncount+1
                 end if
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT.name)//' Nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' Nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Nodes chosen')
 	    
@@ -3757,16 +3606,16 @@
 	    integer(i4) :: ncount
 
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             call clear(domain%cell(i)%is,chosen)
         end do
         
         ncount=0
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some Cells chosen')
@@ -3782,22 +3631,16 @@
         integer(i4) :: i
 	    integer(i4) :: ncount
 
-        if(.not. allocated(domain.Node_Is)) then 
-            allocate(domain.Node_Is(domain.nNold),stat=ialloc)
-            call AllocChk(ialloc,'Node_Is array')            
-            domain.Node_Is(:)=0
-        end if
-
-        do i=1,domain.nNold
-            call clear(domain.Node_Is(i),chosen)
+        do i=1,domain%nNodes
+            call clear(domain%node(i)%is,chosen)
         end do
         
         ncount=0
-        do i=1,domain.nNold
-            if(bcheck(domain.Node_Is(i),chosen)) ncount=ncount+1
+        do i=1,domain%nNodes
+            if(bcheck(domain%node(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some nodes chosen')
@@ -3814,22 +3657,16 @@
         integer(i4) :: i
 	    integer(i4) :: ncount
 
-        if(.not. allocated(domain.Zone_Is)) then 
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        end if
-
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             call clear(domain%zone(i)%is,chosen)
         end do
         
         ncount=0
-        do i=1,domain.nZones
+        do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' Zones chosen: ',ncount
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Zones chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some Zones chosen')
@@ -3837,9 +3674,9 @@
     end subroutine ClearAllZones
 
     !-------------------------------------------------------------
-    subroutine CLN_IaJaStructure(TMPLT_CLN)
+    subroutine CLN_IaJaStructure(CLNDomain)
         implicit none
-        type(mesh) TMPLT_CLN
+        type(ModflowDomain) CLNDomain
         
         integer(i4) :: i, k, l
         integer(i4) :: iEl, jEl
@@ -3849,39 +3686,39 @@
         
       
         call Msg(' ')
-        call Msg('  Generating cell connection arrays for domain '//trim(TMPLT_CLN.name)//'...')
+        call Msg('  Generating cell connection arrays for domain '//trim(CLNDomain%name)//'...')
         
-        allocate(TMPLT_CLN.ia(TMPLT_CLN.nElements), &
-                 TMPLT_CLN.ConnectionList(MAX_CNCTS,TMPLT_CLN.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_CLN.name)//'CLN iConnectionList arrays')
-        TMPLT_CLN.ia(:)=0
-        TMPLT_CLN.ConnectionLength(:,:)=0
+        allocate(CLNDomain%ia(CLNDomain%nElements), &
+                 CLNDomain%ConnectionList(MAX_CNCTS,CLNDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(CLNDomain%name)//'CLN iConnectionList arrays')
+        CLNDomain%ia(:)=0
+        CLNDomain%ConnectionLength(:,:)=0
         
-        do i=1,TMPLT_CLN.nElements   ! First element connection is to itself
-            TMPLT_CLN.ia(i)=1
-            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(i),i)=-i     ! Negative entry shows start of element i list 
+        do i=1,CLNDomain%nElements   ! First element connection is to itself
+            CLNDomain%ia(i)=1
+            CLNDomain%ConnectionList(CLNDomain%ia(i),i)=-i     ! Negative entry shows start of element i list 
         end do
 
 
         ! Brute force search for CLN neighbours
-        do iEl=1,TMPLT_CLN.nElements ! Loop over elements
-            do k=1,TMPLT_CLN.nNodesPerElement ! Loop over nodes in element
-                iNd=TMPLT_CLN.iNode(k,iEl)
+        do iEl=1,CLNDomain%nElements ! Loop over elements
+            do k=1,CLNDomain%nNodesPerElement ! Loop over nodes in element
+                iNd=CLNDomain%idNode(k,iEl)
                 
-                do jEl=iEl+1,TMPLT_CLN.nElements ! Loop over rest of elements
-                    do l=1,TMPLT_CLN.nNodesPerElement ! Loop over nodes in next element
-                        jNd=TMPLT_CLN.iNode(l,jEl)
-                        SeparationDistance=sqrt((TMPLT_CLN.x(iNd) - TMPLT_CLN.x(jNd))**2 + &
-                            (TMPLT_CLN.y(iNd) - TMPLT_CLN.y(jNd))**2 + &
-                            (TMPLT_CLN.z(iNd) - TMPLT_CLN.z(jNd))**2 )
+                do jEl=iEl+1,CLNDomain%nElements ! Loop over rest of elements
+                    do l=1,CLNDomain%nNodesPerElement ! Loop over nodes in next element
+                        jNd=CLNDomain%idNode(l,jEl)
+                        SeparationDistance=sqrt((CLNDomain%node(iNd)%x - CLNDomain%node(jNd)%x)**2 + &
+                            (CLNDomain%node(iNd)%y - CLNDomain%node(jNd)%y)**2 + &
+                            (CLNDomain%node(iNd)%z - CLNDomain%node(jNd)%z)**2 )
                         if(SeparationDistance < MinSeparationDistance) then
                             ! iEl is neighbour of jEl
-                            TMPLT_CLN.ia(iEl)=TMPLT_CLN.ia(iEl)+1
-                            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(iEl),iEl)=jEl
+                            CLNDomain%ia(iEl)=CLNDomain%ia(iEl)+1
+                            CLNDomain%ConnectionList(CLNDomain%ia(iEl),iEl)=jEl
                             
                             ! jEl is neighbour of iEl
-                            TMPLT_CLN.ia(jEl)=TMPLT_CLN.ia(jEl)+1
-                            TMPLT_CLN.ConnectionList(TMPLT_CLN.ia(jEl),jEl)=iEl
+                            CLNDomain%ia(jEl)=CLNDomain%ia(jEl)+1
+                            CLNDomain%ConnectionList(CLNDomain%ia(jEl),jEl)=iEl
                         endif
                     end do
                 end do
@@ -4549,38 +4386,38 @@
         integer(i4) :: i, j
 
         ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.CLN.name)//'.tecplot.dat'
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%CLN%name)//'.tecplot.dat'
         
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(Modflow.CLN.l_TMPLT.name)//'"'
+        write(FNum,*) 'Title = "'//trim(Modflow%CLN%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(modflow.CLN.name)//' Zone","'//trim(modflow.CLN.name)//' zCell",'
+        VarSTR='variables="X","Y","Z","'//trim(Modflow%CLN%name)//' Zone","'//trim(Modflow%CLN%name)//' cell%z",'
         nVar=5
             
-        if(allocated(Modflow.CLN.Sgcl)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' CLN-GWF connection length",'
+        if(allocated(Modflow%CLN%Sgcl)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' CLN-GWF connection length",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.CLN.StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' Initial Depth",'
+        if(allocated(Modflow%CLN%StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Initial Depth",'
             nVar=nVar+1
         end if
         
-        if(allocated(Modflow.CLN.CellArea)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.CLN.name)//' Cell area",'
+        if(allocated(Modflow%CLN%CellArea)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Cell area",'
             nVar=nVar+1
         end if
                 
         write(FNum,'(a)') trim(VarSTR)
           
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.CLN.name)//'"  ,N=',Modflow.CLN.l_TMPLT%nNodes,', E=',Modflow.CLN.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(Modflow.CLN.l_TMPLT%TecplotTyp)
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%CLN%name)//'"  ,N=',Modflow%CLN%nNodes,', E=',Modflow%CLN%nElements,&
+        ', datapacking=block, zonetype='//trim(Modflow%CLN%TecplotTyp)
             
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -4600,39 +4437,39 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.l_TMPLT.x(i),i=1,Modflow.CLN.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%x(i),i=1,Modflow%CLN%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.l_TMPLT.y(i),i=1,Modflow.CLN.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%y(i),i=1,Modflow%CLN%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.l_TMPLT.z(i),i=1,Modflow.CLN.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
         
         write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (Modflow%CLN%cell(i)%idZone,i=1,Modflow.CLN.nCells)
+        write(FNum,'(5i8)') (Modflow%CLN%cell(i)%idZone,i=1,Modflow%CLN%nCells)
             
-        write(FNum,'(a)') '# zCell i.e. cell bottom'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.zCell(i),i=1,Modflow.CLN.nCells)
+        write(FNum,'(a)') '# cell%z i.e. cell bottom'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%cell%z(i),i=1,Modflow%CLN%nCells)
             
-        if(allocated(Modflow.CLN.Sgcl)) then
+        if(allocated(Modflow%CLN%Sgcl)) then
             write(FNum,'(a)') '# SW-GW connection length'
-            write(FNum,'(10('//FMT_R4//'))') (Modflow.CLN.Sgcl(i),i=1,Modflow.CLN.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (Modflow%CLN%Sgcl(i),i=1,Modflow%CLN%nCells)
         end if
 
-        if(allocated(Modflow.CLN.StartingHeads)) then
+        if(allocated(Modflow%CLN%StartingHeads)) then
             write(FNum,'(a)') '# Starting depth'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.StartingHeads(i)-Modflow.CLN.ZCell(i),i=1,Modflow.CLN.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%StartingHeads(i)-Modflow%CLN%cell%z(i),i=1,Modflow%CLN%nCells)
         end if
 
-        if(allocated(Modflow.CLN.CellArea)) then
+        if(allocated(Modflow%CLN%CellArea)) then
             write(FNum,'(a)') '# Cell Area'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.CLN.CellArea(i),i=1,Modflow.CLN.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%CellArea(i),i=1,Modflow%CLN%nCells)
         end if
         
-        do i=1,Modflow.CLN.l_TMPLT.nElements
-            if(Modflow.CLN.l_TMPLT.nNodesPerElement==2) then ! 2-node line, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (Modflow.CLN.l_TMPLT.iNode(j,i),j=1,2) !, Modflow.CLN.l_TMPLT.iNode(3,i) 
+        do i=1,Modflow%CLN%nElements
+            if(Modflow%CLN%nNodesPerElement==2) then ! 2-node line, repeat node 3 for 4-node tecplot type fequadrilateral
+                write(FNum,'(8i8)') (Modflow%CLN%idNode(j,i),j=1,2) !, Modflow%CLN%iNode(3,i) 
             else
-                write(TmpSTR,'(i2)') Modflow.CLN.l_TMPLT.nNodesPerElement
-                call ErrMsg(trim(Modflow.CLN.l_TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)') Modflow%CLN%nNodesPerElement
+                call ErrMsg(trim(Modflow%CLN%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
         end do
        
@@ -4707,15 +4544,15 @@
         type (mesh) Domain
         
         
-        call Msg('*** Derived '//trim(domain.name)//' mesh attributes:')
+        call Msg('*** Derived '//trim(domain%name)//' mesh attributes:')
         call Msg('    Tecplot Element Type: '//trim(domain%TecplotTyp))
-        write(TMPStr,'(i10)') domain.nElements
+        write(TMPStr,'(i10)') domain%nElements
         call Msg(trim(TmpSTR)//' Elements')
-        write(TMPStr,'(i10)') domain.nLayers
+        write(TMPStr,'(i10)') domain%nLayers
         call Msg(trim(TmpSTR)//' Layers')
-        write(TMPStr,'(i10)') domain.nNold
+        write(TMPStr,'(i10)') domain%nNodes
         call Msg(trim(TmpSTR)//' Nodes')
-        write(TMPStr,'(i10)') domain.nNodesPerElement
+        write(TMPStr,'(i10)') domain%nNodesPerElement
         call Msg(trim(TmpSTR)//' Nodes Per Element')
         
         return
@@ -4729,7 +4566,7 @@
         
         integer(i4) :: i
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
                 call set(domain%cell(i)%is,Inactive)
             end if
@@ -4745,9 +4582,9 @@
         
         integer(i4) :: i
 
-        do i=1,TMPLT.nElements
-            if(bcheck(TMPLT.Element_is(i),chosen)) then
-                call set(TMPLT.Element_Is(i),Inactive)
+        do i=1,TMPLT%nElements
+            if(bcheck(TMPLT%element(i)%is,chosen)) then
+                call set(TMPLT%element(i)%is,Inactive)
             end if
         end do
     
@@ -4762,49 +4599,43 @@
 
         integer(i4) :: i, in1, in2, in3, in4 
         
-        allocate(seg_node(TMPLT.nElements*4,2))
+        allocate(seg_node(TMPLT%nElements*4,2))
         
-        if(.not. allocated(TMPLT.Node_Is)) then 
-            allocate(TMPLT.Node_Is(TMPLT%nNodes),stat=ialloc)
-            call AllocChk(ialloc,trim(TMPLT.name)//' Node_Is array')            
-            TMPLT.Node_Is(:)=0
-        end if
-     
         !     construct the array of boundary segment nodes
         call Msg('Find outer boundary segments...') 
-        if(TMPLT.nNodesPerElement==3) then
-            seg_node(1,1)=TMPLT.iNode(1,1) 
-            seg_node(1,2)=TMPLT.iNode(2,1) 
-            seg_node(2,1)=TMPLT.iNode(2,1) 
-            seg_node(2,2)=TMPLT.iNode(3,1) 
-            seg_node(3,1)=TMPLT.iNode(3,1) 
-            seg_node(3,2)=TMPLT.iNode(1,1) 
+        if(TMPLT%nNodesPerElement==3) then
+            seg_node(1,1)=TMPLT%idNode(1,1) 
+            seg_node(1,2)=TMPLT%idNode(2,1) 
+            seg_node(2,1)=TMPLT%idNode(2,1) 
+            seg_node(2,2)=TMPLT%idNode(3,1) 
+            seg_node(3,1)=TMPLT%idNode(3,1) 
+            seg_node(3,2)=TMPLT%idNode(1,1) 
             nseg=3 
 
-            do  i=2,TMPLT.nElements
-                in1=TMPLT.iNode(1,i) 
-                in2=TMPLT.iNode(2,i) 
-                in3=TMPLT.iNode(3,i) 
+            do  i=2,TMPLT%nElements
+                in1=TMPLT%idNode(1,i) 
+                in2=TMPLT%idNode(2,i) 
+                in3=TMPLT%idNode(3,i) 
                 call check_seg(in1,in2) 
                 call check_seg(in2,in3) 
                 call check_seg(in3,in1) 
             end do 
-        else if(TMPLT.nNodesPerElement==4) then
-            seg_node(1,1)=TMPLT.iNode(1,1) 
-            seg_node(1,2)=TMPLT.iNode(2,1) 
-            seg_node(2,1)=TMPLT.iNode(2,1) 
-            seg_node(2,2)=TMPLT.iNode(3,1) 
-            seg_node(3,1)=TMPLT.iNode(3,1) 
-            seg_node(3,2)=TMPLT.iNode(4,1) 
-            seg_node(4,1)=TMPLT.iNode(4,1) 
-            seg_node(4,2)=TMPLT.iNode(1,1) 
+        else if(TMPLT%nNodesPerElement==4) then
+            seg_node(1,1)=TMPLT%idNode(1,1) 
+            seg_node(1,2)=TMPLT%idNode(2,1) 
+            seg_node(2,1)=TMPLT%idNode(2,1) 
+            seg_node(2,2)=TMPLT%idNode(3,1) 
+            seg_node(3,1)=TMPLT%idNode(3,1) 
+            seg_node(3,2)=TMPLT%idNode(4,1) 
+            seg_node(4,1)=TMPLT%idNode(4,1) 
+            seg_node(4,2)=TMPLT%idNode(1,1) 
             nseg=4 
 
-            do  i=2,TMPLT.nElements
-                in1=TMPLT.iNode(1,i) 
-                in2=TMPLT.iNode(2,i) 
-                in3=TMPLT.iNode(3,i) 
-                in4=TMPLT.iNode(4,i) 
+            do  i=2,TMPLT%nElements
+                in1=TMPLT%idNode(1,i) 
+                in2=TMPLT%idNode(2,i) 
+                in3=TMPLT%idNode(3,i) 
+                in4=TMPLT%idNode(4,i) 
                 call check_seg(in1,in2) 
                 call check_seg(in2,in3) 
                 call check_seg(in3,in4) 
@@ -4814,20 +4645,251 @@
 
      
         do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-            call set(TMPLT.Node_Is(seg_node(i,1)),BoundaryNode) 
-            call set(TMPLT.Node_Is(seg_node(i,2)),BoundaryNode) 
+            call set(TMPLT%node(seg_node(i,1))%is,BoundaryNode) 
+            call set(TMPLT%node(seg_node(i,2))%is,BoundaryNode) 
         end do 
         
         continue
      
     end subroutine FlagOuterBoundaryNodes
 
-    subroutine GenerateLayeredTMPLT_GWF(FNumMUT,TMPLT,TMPLT_GWF)
+    !----------------------------------------------------------------------
+    subroutine GenerateCLNDomain(FNum,CLNDomain)
+        implicit none
+        integer(i4) :: FNum
+        type(ModflowDomain) CLNDomain
+        
+        character(MAX_INST) :: Instruction
+        character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
+        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
+        
+        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        integer(i4) :: nPoints  ! number of points in list
+        
+	    ! Build a single tecplot file which can have multiple CLN's
+        CLNDomain%name='CLNDomain'
+        !CLNDomain.meshtype='UNSTRUCTURED'
+        CLNDomain%nZones=0
+        CLNDomain%nNodesPerElement=2
+        CLNDomain%TecplotTyp='felineseg'
+
+        read_Instructions: do
+            read(FNum,'(a60)',iostat=status) Instruction
+            if(status /= 0) exit
+
+		    call LwrCse(instruction)
+
+            if(index(Instruction,'end') /= 0) then
+                call Msg(TAB//'end generate cln domain')
+                exit read_Instructions
+            else
+                call Msg('')
+                call Msg(TAB//Instruction)
+            end if
+                
+
+            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
+                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
+              
+            else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
+                call CLNFromXYZPair(FNum,CLNDomain)
+                
+            else
+			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
+            end if
+
+        end do read_Instructions
+        
+        !CLNDomain.IsDefined=.true.
+        
+        !allocate(CLNDomain.element%is(CLNDomain.nElements),stat=ialloc)
+        !call AllocChk(ialloc,trim(CLNDomain.name)//' element%is array')            
+        CLNDomain%Element%is=0
+        
+        continue
+        
+    end subroutine GenerateCLNDomain
+    !----------------------------------------------------------------------
+    subroutine CLNFromXYZPair(FNum,CLNDomain)
+        implicit none
+        integer(i4) :: FNum
+        type(ModflowDomain) CLNDomain
+        
+        type(node), allocatable :: nodeTMP(:)
+
+        integer(i4) :: i
+        integer(i4) :: nSizeInit, nNodesInit, nElementsInit
+        !real(dp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
+        integer(i4) :: nCells
+                
+        real(dp) :: TotalLength
+        real(dp) :: dx, dy, dz
+        real(dp) :: cx, cy, cz
+
+	    real(dp) :: xp(2)
+	    real(dp) :: yp(2)
+	    real(dp) :: zp(2)
+	    xp(:) = 0
+	    yp(:) = 0
+	    zp(:) = 0
+        
+        
+        nNodesInit=CLNDomain%nNodes
+        nElementsInit=CLNDomain%nElements
+        CLNDomain%nZones=CLNDomain%nZones+1
+
+        nSizeInit=max(2,CLNDomain%nNodes)
+	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'nodeTMP arrays')
+	    nodeTMP%x = -999.0d0
+	    nodeTMP%y = -999.0d0
+	    nodeTMP%z = -999.0d0
+        
+        if(.not. allocated(CLNDomain%node)) then  
+            allocate(CLNDomain%node(nSizeInit),stat=ialloc)
+	        call AllocChk(ialloc,'CLNDomain node array')
+	        CLNDomain%node%x = -999.0d0
+	        CLNDomain%node%y = -999.0d0
+	        CLNDomain%node%z = -999.0d0
+        endif
+
+        call Msg(TAB//'                X                Y                Z')
+
+	    do i=1,2
+			read(FNum,*) xp(i),yp(i),zp(i)
+            write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
+            call Msg(TAB//trim(TmpSTR))
+        end do 
+        
+ 		read(FNum,*) nCells
+        write(TmpSTR,'(a, i8)') 'Number of new CLN cells: ',nCells 
+        call Msg(TAB//trim(TmpSTR))
+        
+        TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
+        write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
+        call Msg(TAB//trim(TmpSTR))
+        if(TotalLength < 0.0001) then
+            call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
+        else if(TotalLength < 1e-10) then   
+            call ErrMsg(TAB//'Total Length of new CLN is essentially zero')
+        endif
+        
+        dx=(xp(2) - xp(1))/nCells
+        dy=(yp(2) - yp(1))/nCells
+        dz=(zp(2) - zp(1))/nCells
+        cx=xp(1)
+        cy=yp(1)
+        cz=zp(1)
+        do i=1,nCells+1
+            CLNDomain%nNodes=CLNDomain%nNodes+1
+            if(CLNDomain%nNodes > nSizeInit) then
+                nodeTMP(1:nSizeInit) = CLNDomain%node
+                call move_alloc (nodeTMP, CLNDomain%node)
+                !yiTMP (1:nSizeInit) = CLNDomain%node%y 
+                !call move_alloc (yiTMP, CLNDomain%node%y)
+                !ziTMP (1:nSizeInit) = CLNDomain%node%z 
+                !call move_alloc (ziTMP, CLNDomain%node%z)
+                
+                nSizeInit=nSizeInit*2
+	            allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	            call AllocChk(ialloc,'nodeTMP arrays')
+	            nodeTMP%x = -999.0d0
+	            nodeTMP%y = -999.0d0
+	            nodeTMP%z = -999.0d0
+
+            endif
+            CLNDomain%node(CLNDomain%nNodes)%x=cx
+            CLNDomain%node(CLNDomain%nNodes)%y=cy
+            CLNDomain%node(CLNDomain%nNodes)%z=cz
+            cx=cx+dx
+            cy=cy+dy
+            cz=cz+dz
+        end do
+        
+        ! Trim CLN xyz to final size
+        nSizeInit=CLNDomain%nNodes
+        deallocate(nodeTMP)
+	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'nodeTMP arrays')
+	    nodeTMP%x = -999.0d0
+	    nodeTMP%y = -999.0d0
+	    nodeTMP%z = -999.0d0
+        
+        nodeTMP(1:nSizeInit) = CLNDomain%node
+        call move_alloc (nodeTMP, CLNDomain%node)
+
+        !xiTMP (1:nSizeInit) = CLNDomain%node%x 
+        !call move_alloc (xiTMP, CLNDomain%node%x)
+        !yiTMP (1:nSizeInit) = CLNDomain%node%y 
+        !call move_alloc (yiTMP, CLNDomain%node%y)
+        !ziTMP (1:nSizeInit) = CLNDomain%node%z 
+        !call move_alloc (ziTMP, CLNDomain%node%z)
+        
+        if(.not. allocated(CLNDomain%element)) then  
+            CLNDomain%nElements=CLNDomain%nNodes-1
+            allocate(CLNDomain%Element(CLNDomain%nElements), CLNDomain%idNode(CLNDomain%nNodesPerElement,CLNDomain%nElements), stat=ialloc)
+            call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
+            CLNDomain%Element(:)%idZone = 0 ! automatic initialization
+            CLNDomain%idNode(:,:) = 0 ! automatic initialization
+            CLNDomain%element%iLayer = 0
+            CLNDomain%element%x=0.0d0
+            CLNDomain%element%y=0.0d0
+            CLNDomain%element%z=0.0d0
+            CLNDomain%element%Area=0.0d0
+            CLNDomain%element%xyArea=0.0d0
+            CLNDomain%element%Length=-999.0d0
+            CLNDomain%element%LowestElevation=-999.0d0
+            CLNDomain%element%SlopeAngle=-999.0d0
+        else
+            nSizeInit=CLNDomain%nElements
+            CLNDomain%nElements=CLNDomain%nNodes-1
+            call growInteger2dArray(CLNDomain%idNode,2,nSizeInit,CLNDomain%nElements)
+            call growElementArray(CLNDomain%Element,nSizeInit,CLNDomain%nElements)
+            !call growIntegerArray(CLNDomain%iZone,nSizeInit,CLNDomain%nElements)
+            !call growIntegerArray(CLNDomain%iLayer,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%Element%x,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%Element%y,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%z,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%Area,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%Length,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%LowestElevation,nSizeInit,CLNDomain%nElements)
+            !call growDRealArray(CLNDomain%SlopeAngle,nSizeInit,CLNDomain%nElements)
+        end if
+
+        ! generate line element incidences
+        do i=nElementsInit+1,CLNDomain%nElements
+            CLNDomain%element(i)%idZone=CLNDomain%nZones
+            CLNDomain%idNode(1,i)=i
+            CLNDomain%idNode(2,i)=i+1
+            CLNDomain%element(i)%x=(CLNDomain%node(CLNDomain%idNode(2,i))%x + CLNDomain%node(CLNDomain%idNode(1,i))%x)/2.0d0
+            CLNDomain%element(i)%y=(CLNDomain%node(CLNDomain%idNode(2,i))%y + CLNDomain%node(CLNDomain%idNode(1,i))%y)/2.0d0
+            CLNDomain%element(i)%z=(CLNDomain%node(CLNDomain%idNode(2,i))%z + CLNDomain%node(CLNDomain%idNode(1,i))%z)/2.0d0
+            CLNDomain%element(i)%Length=sqrt(       (CLNDomain%node(CLNDomain%idNode(2,i))%x -   CLNDomain%node(CLNDomain%idNode(1,i))%x)**2 + & 
+                                                    (CLNDomain%node(CLNDomain%idNode(2,i))%y -   CLNDomain%node(CLNDomain%idNode(1,i))%y)**2 + & 
+                                                    (CLNDomain%node(CLNDomain%idNode(2,i))%z -   CLNDomain%node(CLNDomain%idNode(1,i))%z)**2) 
+            CLNDomain%element(i)%LowestElevation=min (CLNDomain%node(CLNDomain%idNode(2,i))%z,    CLNDomain%node(CLNDomain%idNode(1,i))%z)
+            CLNDomain%element(i)%SlopeAngle=asin(abs (CLNDomain%node(CLNDomain%idNode(2,i))%z-    CLNDomain%node(CLNDomain%idNode(1,i))%z))* 180.0d0 * pi
+        end do
+                    
+        !CLNDomain%IsDefined=.true.
+    
+        call Msg(' ')
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',CLNDomain%nNodes
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',CLNDomain%nElements
+        call Msg(TmpSTR)
+
+
+        continue 
+    end subroutine CLNFromXYZPair
+    
+   
+    subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,GWFDomain)
         implicit none
 
         integer(i4) :: FNumMUT
         type (mesh) TMPLT
-        type (mesh) TMPLT_GWF
+        type (ModflowDomain) GWFDomain
         
         character(MAX_INST) :: instruction
         character(MAX_INST) :: zone_by_template_cmd			=   'zone by template'
@@ -4848,11 +4910,11 @@
         endif
 
         nn_temp=user_nz*TMPLT%nNodes
-        ne_temp=(user_nz-1)*TMPLT.nElements
+        ne_temp=(user_nz-1)*TMPLT%nElements
         
         ! NOTE: Option exists to search GB .grd file for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
         !blockel=.false.
-        nln=TMPLT.nNodesPerElement*2
+        nln=TMPLT%nNodesPerElement*2
 
         ! Set up arrays to store grid
 	    allocate(x(nn_temp),y(nn_temp),z(nn_temp),in(nln,ne_temp),iprp(ne_temp),ilyr(ne_temp),zi(user_nz),stat=ialloc)
@@ -4865,7 +4927,7 @@
         ilyr(:) = 0
         zi(:) = 0.0d0
 
-        if(.not. allocated(top_elev)) then  ! could have been allocated if SWF TMPLT_GWF defined
+        if(.not. allocated(top_elev)) then  ! could have been allocated if SWF GWFDomain defined
             allocate(base_elev(TMPLT%nNodes),top_elev(TMPLT%nNodes),stat=ialloc)
         else
             allocate(base_elev(TMPLT%nNodes),stat=ialloc)
@@ -4878,12 +4940,12 @@
 
 	    ! Assign xyz coordinates for top
         do j=1,TMPLT%nNodes
-            x(j)=TMPLT.x(j)
-            y(j)=TMPLT.y(j)
+            x(j)=TMPLT%node(j)%x
+            y(j)=TMPLT%node(j)%y
             z(j)=top_elev(j)
         end do
 
-        TMPLT_GWF.nZones=1
+        GWFDomain%nZones=1
         nsheet=1
 
 	    ! Define mesh layers and sublayers
@@ -4938,166 +5000,162 @@
         
         
         ! Copy the template data to the Modflow GWF data structure
-        TMPLT_GWF=TMPLT
-        TMPLT_GWF.name='TMPLT_GWF'
-        TMPLT_GWF.meshtype='UNSTRUCTURED'
+        GWFDomain%name='GWFDomain'
+        GWFDomain%meshtype='UNSTRUCTURED'
 
         
-        TMPLT_GWF.nNold=TMPLT%nNodes*nsheet
+        GWFDomain%nNodes=TMPLT%nNodes*nsheet
         
         ! coordinates
-        deallocate(TMPLT_GWF.x,TMPLT_GWF.y,TMPLT_GWF.z)
-        allocate(TMPLT_GWF.x(TMPLT_GWF.nNold),TMPLT_GWF.y(TMPLT_GWF.nNold),TMPLT_GWF.z(TMPLT_GWF.nNold),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_GWF coordinate arrays')
-        do i=1,TMPLT_GWF.nNold
-            TMPLT_GWF.x(i)= x(i)
-            TMPLT_GWF.y(i)= y(i)
-            TMPLT_GWF.z(i)= z(i)
+        !deallocate(GWFDomain%x,GWFDomain%y,GWFDomain%z)
+        !allocate(GWFDomain%x(GWFDomain%nNodes),GWFDomain%y(GWFDomain%nNodes),GWFDomain%z(GWFDomain%nNodes),stat=ialloc)
+        !call AllocChk(ialloc,'GWFDomain coordinate arrays')
+        do i=1,GWFDomain%nNodes
+            GWFDomain%x(i)= x(i)
+            GWFDomain%y(i)= y(i)
+            GWFDomain%z(i)= z(i)
         end do
         
-        TMPLT_GWF.nLayers=nsheet-1
-        TMPLT_GWF.nNodesPerElement=TMPLT.nNodesPerElement*2
-        TMPLT_GWF.nElements=TMPLT.nElements*TMPLT_GWF.nLayers
+        GWFDomain%nLayers=nsheet-1
+        GWFDomain%nNodesPerElement=TMPLT%nNodesPerElement*2
+        GWFDomain%nElements=TMPLT%nElements*GWFDomain%nLayers
         
         ! Element node lists
-        deallocate(TMPLT_GWF.iNode)
-        allocate(TMPLT_GWF.iNode(TMPLT_GWF.nNodesPerElement,TMPLT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_GWF inode array')
-        do i=1,TMPLT_GWF.nElements
-            do j=1,TMPLT_GWF.nNodesPerElement
-                TMPLT_GWF.iNode(j,i) = in(j,i) 
+        deallocate(GWFDomain%idNode)
+        allocate(GWFDomain%idNode(GWFDomain%nNodesPerElement,GWFDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain idNode array')
+        do i=1,GWFDomain%nElements
+            do j=1,GWFDomain%nNodesPerElement
+                GWFDomain%idNode(j,i) = in(j,i) 
             end do
         end do
         
         ! Element layer number
-        deallocate(TMPLT_GWF.iLayer)
-        allocate(TMPLT_GWF.iLayer(TMPLT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_GWF iLayer array')
-        do i=1,TMPLT_GWF.nElements
-            TMPLT_GWF.iLayer(i) = ilyr(i) 
+        deallocate(GWFDomain%iLayer)
+        allocate(GWFDomain%iLayer(GWFDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain iLayer array')
+        do i=1,GWFDomain%nElements
+            GWFDomain%iLayer(i) = ilyr(i) 
         end do
         
         ! Element zone number
-        deallocate(TMPLT_GWF.iZone)
-        allocate(TMPLT_GWF.iZone(TMPLT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_GWF iLayer array')
-        do i=1,TMPLT_GWF.nElements
-            TMPLT_GWF.iZone(i) = iprp(i) 
+        deallocate(GWFDomain%iZone)
+        allocate(GWFDomain%iZone(GWFDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain iLayer array')
+        do i=1,GWFDomain%nElements
+            GWFDomain%iZone(i) = iprp(i) 
         end do
         if(zone_by_template) then
-            TMPLT_GWF.nZones=TMPLT.nZones
+            GWFDomain%nZones=TMPLT%nZones
         else
-            TMPLT_GWF.nZones=nlayers
+            GWFDomain%nZones=nlayers
         end if
         
-        TMPLT_GWF%TecplotTyp='febrick'
+        GWFDomain%TecplotTyp='febrick'
 
         nz=nsheet
         zi(nsheet)=z((nsheet-1)*TMPLT%nNodes+1)
         
         
-        ! TMPLT_GWF Connection data rebuilt here (GenerateLayeredTMPLT_GWF)
-        deallocate(TMPLT_GWF.ia, &
-                 TMPLT_GWF.ConnectionList, &
-                 TMPLT_GWF.ConnectionLength, &
-                 TMPLT_GWF.PerpendicularArea, &
-                 TMPLT_GWF.ThroughFace)
+        ! GWFDomain Connection data rebuilt here (GenerateLayeredGWFDomain)
+        deallocate(GWFDomain%ia, &
+                 GWFDomain%ConnectionList, &
+                 GWFDomain%ConnectionLength, &
+                 GWFDomain%PerpendicularArea, &
+                 GWFDomain%ThroughFace)
         if(NodalControlVolume) then 
-            allocate(TMPLT_GWF.ia(TMPLT_GWF.nNold), &
-                     TMPLT_GWF.ConnectionList(MAX_CNCTS,TMPLT_GWF.nNold), &
-                     TMPLT_GWF.ConnectionLength(MAX_CNCTS,TMPLT_GWF.nNold), &
-                     TMPLT_GWF.PerpendicularArea(MAX_CNCTS,TMPLT_GWF.nNold),stat=ialloc)
+            allocate(GWFDomain%ia(GWFDomain%nNodes), &
+                     GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nNodes), &
+                     GWFDomain%ConnectionLength(MAX_CNCTS,GWFDomain%nNodes), &
+                     GWFDomain%PerpendicularArea(MAX_CNCTS,GWFDomain%nNodes),stat=ialloc)
             call AllocChk(ialloc,'GWF CellsFromNodes connection arrays')
         else    
-            allocate(TMPLT_GWF.ia(TMPLT_GWF.nElements), &
-                     TMPLT_GWF.ConnectionList(MAX_CNCTS,TMPLT_GWF.nElements),&
-                     TMPLT_GWF.ConnectionLength(MAX_CNCTS,TMPLT_GWF.nElements), &
-                     TMPLT_GWF.PerpendicularArea(MAX_CNCTS,TMPLT_GWF.nElements), &
-                     TMPLT_GWF.ThroughFace(MAX_CNCTS,TMPLT_GWF.nElements),stat=ialloc)
+            allocate(GWFDomain%ia(GWFDomain%nElements), &
+                     GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nElements),&
+                     GWFDomain%ConnectionLength(MAX_CNCTS,GWFDomain%nElements), &
+                     GWFDomain%PerpendicularArea(MAX_CNCTS,GWFDomain%nElements), &
+                     GWFDomain%ThroughFace(MAX_CNCTS,GWFDomain%nElements),stat=ialloc)
             call AllocChk(ialloc,'GWF CellsFromElements connection arrays')
         endif
 
         ! GWF mesh is not the same size as TMPLT so the connection arrays are built here
-        TMPLT_GWF.ia(:)=0
-        TMPLT_GWF.ConnectionList(:,:)=0
-        TMPLT_GWF.ConnectionLength(:,:)=0.0
-        TMPLT_GWF.PerpendicularArea(:,:)=0.0
+        GWFDomain%ia(:)=0
+        GWFDomain%ConnectionList(:,:)=0
+        GWFDomain%ConnectionLength(:,:)=0.0
+        GWFDomain%PerpendicularArea(:,:)=0.0
        
         if(NodalControlVolume) then 
-            do j=1,TMPLT_GWF.nLayers+1
+            do j=1,GWFDomain%nLayers+1
                 do i=1,TMPLT%nNodes
                     iGWF_Cell=(j-1)*TMPLT%nNodes+i
-                    TMPLT_GWF.ia(iGWF_Cell)=TMPLT.ia(i)
-                    do k=1,TMPLT.ia(i)
-                        kCell=(j-1)*TMPLT%nNodes+abs(TMPLT.ConnectionList(k,i))
+                    GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
+                    do k=1,TMPLT%ia(i)
+                        kCell=(j-1)*TMPLT%nNodes+abs(TMPLT%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
-                        TMPLT_GWF.ConnectionList(k,iGWF_Cell)=kCell
+                        GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
                     
-                        TMPLT_GWF.ConnectionLength(k,iGWF_Cell)=TMPLT.ConnectionLength(k,i)
-                        TMPLT_GWF.PerpendicularArea(k,iGWF_Cell)=TMPLT.PerpendicularArea(k,i)
+                        GWFDomain%ConnectionLength(k,iGWF_Cell)=TMPLT%ConnectionLength(k,i)
+                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=TMPLT%PerpendicularArea(k,i)
                     end do
                     
-                    if(j < TMPLT_GWF.nLayers+1) then ! downward connection
-                        TMPLT_GWF.ia(iGWF_Cell)=TMPLT_GWF.ia(iGWF_Cell)+1
+                    if(j < GWFDomain%nLayers+1) then ! downward connection
+                        GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iDown=iGWF_Cell+TMPLT%nNodes
-                        TMPLT_GWF.ConnectionList(TMPLT_GWF.ia(iGWF_Cell),iGWF_Cell)=iDown
+                        GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
                     end if
                     if(j > 1) then ! upward connection
-                        TMPLT_GWF.ia(iGWF_Cell)=TMPLT_GWF.ia(iGWF_Cell)+1
+                        GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iUp=iGWF_Cell-TMPLT%nNodes
-                        TMPLT_GWF.ConnectionList(TMPLT_GWF.ia(iGWF_Cell),iGWF_Cell)=iUp
+                        GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
                     end if
                 end do
             end do
         else 
-            do j=1,TMPLT_GWF.nLayers
-                do i=1,TMPLT.nElements
-                    iGWF_Cell=(j-1)*TMPLT.nElements+i
-                    TMPLT_GWF.ia(iGWF_Cell)=TMPLT.ia(i)
-                    do k=1,TMPLT.ia(i)
-                        kCell=(j-1)*TMPLT.nElements+abs(TMPLT.ConnectionList(k,i))
+            do j=1,GWFDomain%nLayers
+                do i=1,TMPLT%nElements
+                    iGWF_Cell=(j-1)*TMPLT%nElements+i
+                    GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
+                    do k=1,TMPLT%ia(i)
+                        kCell=(j-1)*TMPLT%nElements+abs(TMPLT%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
-                        TMPLT_GWF.ConnectionList(k,iGWF_Cell)=kCell
+                        GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
                     
-                        TMPLT_GWF.ConnectionLength(k,iGWF_Cell)=TMPLT.ConnectionLength(k,i)
-                        TMPLT_GWF.PerpendicularArea(k,iGWF_Cell)=TMPLT.PerpendicularArea(k,i)
+                        GWFDomain%ConnectionLength(k,iGWF_Cell)=TMPLT%ConnectionLength(k,i)
+                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=TMPLT%PerpendicularArea(k,i)
                         
-                        TMPLT_GWF.ThroughFace(k,iGWF_Cell)=TMPLT.ThroughFace(k,i)
+                        GWFDomain%ThroughFace(k,iGWF_Cell)=TMPLT%ThroughFace(k,i)
 
                     end do
                     
-                    if(j < TMPLT_GWF.nLayers) then ! downward connection
-                        TMPLT_GWF.ia(iGWF_Cell)=TMPLT_GWF.ia(iGWF_Cell)+1
-                        iDown=iGWF_Cell+TMPLT.nElements
-                        TMPLT_GWF.ConnectionList(TMPLT_GWF.ia(iGWF_Cell),iGWF_Cell)=iDown
+                    if(j < GWFDomain%nLayers) then ! downward connection
+                        GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
+                        iDown=iGWF_Cell+TMPLT%nElements
+                        GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
                     end if
                     if(j > 1) then ! upward connection
-                        TMPLT_GWF.ia(iGWF_Cell)=TMPLT_GWF.ia(iGWF_Cell)+1
-                        iUp=iGWF_Cell-TMPLT.nElements
-                        TMPLT_GWF.ConnectionList(TMPLT_GWF.ia(iGWF_Cell),iGWF_Cell)=iUp
+                        GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
+                        iUp=iGWF_Cell-TMPLT%nElements
+                        GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
                     end if
                 end do
             end do
         endif
         
-        deallocate(TMPLT_GWF.Element_Is)
-        allocate(TMPLT_GWF.Element_Is(TMPLT_GWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_GWF.name)//' Element_Is array')            
-        TMPLT_GWF.Element_Is(:)=0
+        GWFDomain%element%is=0
 
-        TMPLT_GWF.IsDefined=.true.
+        GWFDomain%IsDefined=.true.
         
-    end subroutine GenerateLayeredTMPLT_GWF
+    end subroutine GenerateLayeredGWFDomain
     !----------------------------------------------------------------------
-    subroutine GenerateSWFDomain(FNumMUT,TMPLT,TMPLT_SWF)
+    subroutine GenerateSWFDomain(FNumMUT,TMPLT,SWFDomain)
 	    ! Given the 2D TMPLT mesh this subroutine: 
-        !   - defines the 2D TMPLT_SWF mesh 
+        !   - defines the 2D SWFDomain mesh 
         !   - inherits face neighbour information from TMPLT
 
         implicit none
         integer(i4) :: FNumMUT
         type (mesh) TMPLT
-        type (mesh) TMPLT_SWF
+        type (ModflowDomain) SWFDomain
 
         
         character(MAX_INST) :: instruction
@@ -5111,11 +5169,10 @@
         ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
 
         ! Copy the template data to the Modflow SWF data structure
-        TMPLT_SWF=TMPLT
-        TMPLT_SWF.name='TMPLT_SWF'
-        TMPLT_SWF.meshtype='UNSTRUCTURED'
+        SWFDomain.name='SWFDomain'
+        SWFDomain.meshtype='UNSTRUCTURED'
 
-        ! Define elevation (z coordinate) of SWF TMPLT_SWF
+        ! Define elevation (z coordinate) of SWF SWFDomain
         allocate(top_elev(TMPLT%nNodes),stat=ialloc)
         call AllocChk(ialloc,'Template top elevation arrays')
 
@@ -5138,7 +5195,7 @@
             if(index(instruction, top_elevation_cmd)  /= 0) then
                 call top_elevation(FNumMUT,TMPLT)
 			    do j=1,TMPLT%nNodes
-				    TMPLT_SWF.z(j)=top_elev(j)
+				    SWFDomain.z(j)=top_elev(j)
 			    end do
 
 
@@ -5148,218 +5205,12 @@
 
         end do read_slice2lyr
         
-        TMPLT_SWF.nLayers=1
+        SWFDomain.nLayers=1
         
-        TMPLT_SWF.IsDefined=.true.
+        SWFDomain.IsDefined=.true.
         
     end subroutine GenerateSWFDomain
     
-        !----------------------------------------------------------------------
-    subroutine oldGenerateSWFDomain(FNumMUT,TMPLT,TMPLT_SWF)
-	    ! Given the 2D TMPLT mesh this subroutine: 
-        !   - defines the 2D TMPLT_SWF mesh 
-        !   - inherits face neighbour information from TMPLT
-
-        implicit none
-        integer(i4) :: FNumMUT
-        type (mesh) TMPLT
-        type (mesh) TMPLT_SWF
-
-        
-        character(MAX_INST) :: instruction
-        character(MAX_INST) :: top_elevation_cmd			    =   'top elevation'
-    
-        integer(i4) :: i, j
-        
-        continue
-
-        
-        ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
-
-        ! Copy the template data to the Modflow SWF data structure
-        TMPLT_SWF.name='TMPLT_SWF'
-        TMPLT_SWF.meshtype='UNSTRUCTURED'
-        
-        TMPLT_SWF.nNold=TMPLT%nNodes
-        allocate(TMPLT_SWF.x(TMPLT_SWF.nNold),TMPLT_SWF.y(TMPLT_SWF.nNold),TMPLT_SWF.z(TMPLT_SWF.nNold), stat=ialloc)
-        call AllocChk(ialloc,'SWF node coordinate arrays')
-        TMPLT_SWF.x(:)= TMPLT.x(:)
-        TMPLT_SWF.y(:)= TMPLT.y(:)
-
-        ! Define elevation (z coordinate) of SWF TMPLT_SWF
-        allocate(top_elev(TMPLT%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Template top elevation arrays')
-
-	    ! Process slice to layer instructions
-        read_slice2lyr: do
-            read(FNumMUT,'(a60)',iostat=status) instruction
-            if(status /= 0) exit
-
-            call LwrCse(instruction)
-
-            if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end generate swf domain instructions')
-                exit read_slice2lyr
-            else
-                call Msg('')
-                call Msg(TAB//instruction)
-            end if
-                
-
-            if(index(instruction, top_elevation_cmd)  /= 0) then
-                call top_elevation(FNumMUT,TMPLT)
-			    do j=1,TMPLT%nNodes
-				    TMPLT_SWF.z(j)=top_elev(j)
-			    end do
-
-
-            else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
-            end if
-
-        end do read_slice2lyr
-        
-        
-        
-        TMPLT_SWF.nLayers=1
-        !TMPLT_SWF.iz=0
-        !TMPLT_SWF.nodelay=TMPLT.nElements   ! number of modflow Elements per layer
-
-        
-        TMPLT_SWF.nNodesPerElement=TMPLT.nNodesPerElement
-        TMPLT_SWF.D%TecplotTyp=TMPLT.D%TecplotTyp
-        TMPLT_SWF.nElements=TMPLT.nElements
-        
-        ! Just define these for now
-        !TMPLT_SWF.ic=0
-        
-        ! Element node list
-        allocate(TMPLT_SWF.iNode(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element node list array')
-        do i=1,TMPLT_SWF.nElements
-            do j=1,TMPLT_SWF.nNodesPerElement
-                TMPLT_SWF.iNode(j,i) = TMPLT.iNode(j,i)
-            end do
-        end do
-        
-        ! Element centroid coordinates
-        allocate(TMPLT_SWF.xElement(TMPLT_SWF.nElements),TMPLT_SWF.yElement(TMPLT_SWF.nElements),TMPLT_SWF.zElement(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_SWF xyzElementarrays')
-        TMPLT_SWF.xElement(:)=TMPLT.xElement(:)
-        TMPLT_SWF.yElement(:)=TMPLT.yElement(:)
-        TMPLT_SWF.zElement(:)=TMPLT.zElement(:)
-        
-        ! Element area
-        allocate(TMPLT_SWF.ElementArea(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_SWF ElementArea')
-        TMPLT_SWF.ElementArea(:)=TMPLT.ElementArea(:)
-        
-        ! Faces
-        TMPLT_SWF.nNodesPerFace=TMPLT.nNodesPerFace
-        TMPLT_SWF.nFacesPerElement=TMPLT.nFacesPerElement
-        allocate(TMPLT_SWF.FaceCentroidX(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
-                 TMPLT_SWF.FaceCentroidY(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
-                 TMPLT_SWF.FaceCentroidZ(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), & 
-                 TMPLT_SWF.FaceHost(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
-                 TMPLT_SWF.FaceNeighbour(TMPLT_SWF.nFacesPerElement,TMPLT_SWF.nElements), &
-                 TMPLT_SWF.LocalFaceNodes(TMPLT_SWF.nNodesPerFace, TMPLT_SWF.nFacesPerElement), &
-            stat=ialloc)
-        call AllocChk(ialloc,'TMPLT_SWF Faces')
-        TMPLT_SWF.FaceCentroidX(:,:)=TMPLT.FaceCentroidX(:,:)
-        TMPLT_SWF.FaceCentroidY(:,:)=TMPLT.FaceCentroidY(:,:)
-        TMPLT_SWF.FaceCentroidZ(:,:)=TMPLT.FaceCentroidZ(:,:)
-        TMPLT_SWF.FaceHost(:,:)=TMPLT.FaceHost(:,:)
-        TMPLT_SWF.FaceNeighbour(:,:)=TMPLT.FaceNeighbour(:,:)
-        TMPLT_SWF.LocalFaceNodes(:,:)=TMPLT.LocalFaceNodes(:,:)
-        
-        ! Innercircle arrays if triangles
-        if(TMPLT%TecplotTyp == 'fetriangle') then
-            allocate(TMPLT_SWF.rCircle(TMPLT_SWF.nElements), &
-                TMPLT_SWF.xCircle(TMPLT_SWF.nElements), &
-                TMPLT_SWF.yCircle(TMPLT_SWF.nElements),stat=ialloc)
-            call AllocChk(ialloc,'TMPLT_SWF rxyCircle')
-            TMPLT_SWF.rCircle(:)=TMPLT.rCircle(:)
-            TMPLT_SWF.xCircle(:)=TMPLT.xCircle(:)
-            TMPLT_SWF.yCircle(:)=TMPLT.yCircle(:)
-        endif
-        
-        if(NodalControlVolume) then
-            ! Element xSide, ySide
-            allocate(TMPLT_SWF.xSide(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),&
-                        TMPLT_SWF.ySide(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-            call AllocChk(ialloc,'TMPLT_SWF xySide')
-            TMPLT_SWF.xSide(:,:)=TMPLT.xSide(:,:)
-            TMPLT_SWF.ySide(:,:)=TMPLT.ySide(:,:)
-        endif
-
-        ! Element side lengths
-        allocate(TMPLT_SWF.SideLength(TMPLT_SWF.nNodesPerElement,TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element SideLength array')
-        do i=1,TMPLT_SWF.nElements
-            do j=1,TMPLT_SWF.nNodesPerElement
-                TMPLT_SWF.SideLength(j,i) = TMPLT.SideLength(j,i)
-            end do
-        end do
-        
-        ! Element layer number
-        allocate(TMPLT_SWF.iLayer(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element layer number array')
-        do i=1,TMPLT_SWF.nElements
-            TMPLT_SWF.iLayer(i) = 1
-        end do
-        
-
-        ! Element zone number
-        allocate(TMPLT_SWF.iZone(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' iZone arrays')
-        do i=1,TMPLT_SWF.nElements
-            TMPLT_SWF.iZone(i) = TMPLT.iZone(i) 
-            if(TMPLT.iZone(i).gt.TMPLT_SWF.nZones) TMPLT_SWF.nZones=TMPLT.iZone(i)
-        end do
-        
-        ! TMPLT_SWF Connection data copied here (GenerateSWFDomain)
-        if(NodalControlVolume) then 
-            allocate(TMPLT_SWF.ia(TMPLT%nNodes), &
-                     TMPLT_SWF.ConnectionList(MAX_CNCTS,TMPLT%nNodes), &
-                     TMPLT_SWF.ConnectionLength(MAX_CNCTS,TMPLT%nNodes), &
-                     TMPLT_SWF.PerpendicularArea(MAX_CNCTS,TMPLT%nNodes),stat=ialloc)
-            call AllocChk(ialloc,'SWF CellsFromNodes connection arrays')
-        else    
-            allocate(TMPLT_SWF.ia(TMPLT.nElements), &
-                     TMPLT_SWF.ConnectionList(MAX_CNCTS,TMPLT.nElements),&
-                     TMPLT_SWF.ConnectionLength(MAX_CNCTS,TMPLT.nElements), &
-                     TMPLT_SWF.PerpendicularArea(MAX_CNCTS,TMPLT.nElements), &
-                     TMPLT_SWF.ThroughFace(MAX_CNCTS,TMPLT.nElements),stat=ialloc)
-            call AllocChk(ialloc,'SWF CellsFromElements connection arrays')
-        endif
-        
-        ! SWF mesh is same size as TMPLT so the connection arrays can be copied directly
-        TMPLT_SWF.ia(:)=TMPLT.ia(:)
-        TMPLT_SWF.ConnectionList(:,:)=TMPLT.ConnectionList(:,:)
-        TMPLT_SWF.ConnectionLength(:,:)=TMPLT.ConnectionLength(:,:)
-        TMPLT_SWF.PerpendicularArea(:,:)=TMPLT.PerpendicularArea(:,:)
-        TMPLT_SWF.ThroughFace(:,:)=TMPLT.ThroughFace(:,:)  ! ThroughFace for fe mesh, not new Modflow cells
-
-        
-        ! Element_Is
-        allocate(TMPLT_SWF.Element_Is(TMPLT_SWF.nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Element_Is array')            
-        TMPLT_SWF.Element_Is(:)=0
-        TMPLT_SWF.Element_Is(:)=TMPLT.Element_Is(:)
-
-        ! Node_Is
-        allocate(TMPLT_SWF.Node_Is(TMPLT_SWF.nNold),stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT_SWF.name)//' Node_Is array')            
-        TMPLT_SWF.Node_Is(:)=0
-        TMPLT_SWF.Node_Is(:)=TMPLT.Node_Is(:)
-
-        TMPLT_SWF.IsDefined=.true.
-        
-    end subroutine oldGenerateSWFDomain
-
-
-
-
     !-------------------------------------------------------------
     subroutine GenOCFile(FNumMUT,Modflow)
         implicit none
@@ -5469,8 +5320,8 @@
         write(FNum,'(a)')'ZONE t="GWF IBOUND v2" '
 
         write(FNum,'(a)') '# x, y, z, ibound'
-        do i=1, Modflow.GWF.nCells
-            write(FNum,'(4('//FMT_R8//'),i5)') Modflow.GWF.xcell(i),Modflow.GWF.ycell(i),Modflow.GWF.zcell(i),IBOUND(i)
+        do i=1, Modflow%GWF%nCells
+            write(FNum,'(4('//FMT_R8//'),i5)') Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),IBOUND(i)
         end do
    
         
@@ -5488,76 +5339,76 @@
         integer(i4) :: i, j
 
         ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.GWF.name)//'.tecplot.dat'
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%GWF%name)//'.tecplot.dat'
         
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(modflow.GWF.l_TMPLT.name)//'"'
+        write(FNum,*) 'Title = "'//trim(Modflow%GWF%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(modflow.GWF.name)//' Layer","'//trim(modflow.GWF.name)//' Zone",'
+        VarSTR='variables="X","Y","Z","'//trim(Modflow%GWF%name)//' Layer","'//trim(Modflow%GWF%name)//' Zone",'
         nVar=5
             
-        if(allocated(Modflow.GWF.Top)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Top",'
+        if(allocated(Modflow%GWF%Cell%Top)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Cell Top",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.GWF.Bottom)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Cell Bottom",'
+        if(allocated(Modflow%GWF%Cell%Bottom)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Cell Bottom",'
             nVar=nVar+1
         end if
 
-        if(allocated(Modflow.GWF.Kh)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kh",'
+        if(allocated(Modflow%GWF%Kh)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Kh",'
             nVar=nVar+1
         end if
 
-        if(allocated(Modflow.GWF.Kv)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Kv",'
+        if(allocated(Modflow%GWF%Kv)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Kv",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.GWF.Ss)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Ss",'
+        if(allocated(Modflow%GWF%Ss)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Ss",'
             nVar=nVar+1
         end if
 
-        if(allocated(Modflow.GWF.Sy)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sy",'
+        if(allocated(Modflow%GWF%Sy)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Sy",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.GWF.Alpha)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Alpha",'
+        if(allocated(Modflow%GWF%Alpha)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Alpha",'
             nVar=nVar+1
         end if
-        if(allocated(Modflow.GWF.Beta)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Beta",'
+        if(allocated(Modflow%GWF%Beta)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Beta",'
             nVar=nVar+1
         end if
-        if(allocated(Modflow.GWF.Sr)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Sr",'
-            nVar=nVar+1
-        end if
-            
-        if(allocated(Modflow.GWF.Brooks)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Brooks",'
+        if(allocated(Modflow%GWF%Sr)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Sr",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.GWF.StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.GWF.name)//' Initial head",'
+        if(allocated(Modflow%GWF%Brooks)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Brooks",'
+            nVar=nVar+1
+        end if
+            
+        if(allocated(Modflow%GWF%StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Initial head",'
             nVar=nVar+1
         end if
 
         write(FNum,'(a)') trim(VarSTR)
           
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.GWF.name)//'"  ,N=',modflow.GWF.l_TMPLT%nNodes,', E=',modflow.GWF.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(modflow.GWF.l_TMPLT%TecplotTyp)
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%GWF%name)//'"  ,N=',Modflow%GWF%nNodes,', E=',Modflow%GWF%nElements,&
+        ', datapacking=block, zonetype='//trim(Modflow%GWF%TecplotTyp)
         
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -5575,82 +5426,82 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (modflow.GWF.l_TMPLT.x(i),i=1,modflow.GWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%x(i),i=1,Modflow%GWF%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (modflow.GWF.l_TMPLT.y(i),i=1,modflow.GWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%y(i),i=1,Modflow%GWF%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (modflow.GWF.l_TMPLT.z(i),i=1,modflow.GWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
         
             
             write(FNum,'(a)') '# layer'
-            write(FNum,'(5i8)') (Modflow.GWF.iLayer(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(5i8)') (Modflow%GWF%iLayer(i),i=1,Modflow%GWF%nCells)
             write(FNum,'(a)') '# zone'
-            write(FNum,'(5i8)') (Modflow.GWF.iZone(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(5i8)') (Modflow%GWF%iZone(i),i=1,Modflow%GWF%nCells)
             write(FNum,'(a)') '# cell top'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.GWF.Top(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Top(i),i=1,Modflow%GWF%nCells)
             write(FNum,'(a)') '# cell bottom'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.GWF.Bottom(i),i=1,Modflow.GWF.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Bottom(i),i=1,Modflow%GWF%nCells)
             
-            if(allocated(Modflow.GWF.Kh)) then
+            if(allocated(Modflow%GWF%Kh)) then
                 write(FNum,'(a)') '# Kh'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Kh(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Kh(i),i=1,Modflow%GWF%nCells)
             end if
             
-            if(allocated(Modflow.GWF.Kv)) then
+            if(allocated(Modflow%GWF%Kv)) then
                 write(FNum,'(a)') '# Kv'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Kv(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Kv(i),i=1,Modflow%GWF%nCells)
             end if
             
-            if(allocated(Modflow.GWF.Ss)) then
+            if(allocated(Modflow%GWF%Ss)) then
                 write(FNum,'(a)') '# Ss'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Ss(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Ss(i),i=1,Modflow%GWF%nCells)
             end if
 
             
-            if(allocated(Modflow.GWF.Sy)) then
+            if(allocated(Modflow%GWF%Sy)) then
                 write(FNum,'(a)') '# Sy'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Sy(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Sy(i),i=1,Modflow%GWF%nCells)
             end if
 
             
-            if(allocated(Modflow.GWF.Alpha)) then
+            if(allocated(Modflow%GWF%Alpha)) then
                 write(FNum,'(a)') '# Alpha'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Alpha(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Alpha(i),i=1,Modflow%GWF%nCells)
             end if
 
             
-            if(allocated(Modflow.GWF.Beta)) then
+            if(allocated(Modflow%GWF%Beta)) then
                 write(FNum,'(a)') '# Beta'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Beta(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Beta(i),i=1,Modflow%GWF%nCells)
             end if
 
             
-            if(allocated(Modflow.GWF.Sr)) then
+            if(allocated(Modflow%GWF%Sr)) then
                 write(FNum,'(a)') '# Sr'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Sr(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Sr(i),i=1,Modflow%GWF%nCells)
             end if
 
             
-            if(allocated(Modflow.GWF.Brooks)) then
+            if(allocated(Modflow%GWF%Brooks)) then
                 write(FNum,'(a)') '# Brooks'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow.GWF.Brooks(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Brooks(i),i=1,Modflow%GWF%nCells)
             end if
 
-            if(allocated(Modflow.GWF.StartingHeads)) then
+            if(allocated(Modflow%GWF%StartingHeads)) then
                 write(FNum,'(a)') '# Initial head'
-                write(FNum,'(5('//FMT_R8//'))') (Modflow.GWF.StartingHeads(i),i=1,Modflow.GWF.nCells)
+                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%StartingHeads(i),i=1,Modflow%GWF%nCells)
             end if
 
         
         
-        do i=1,modflow.GWF.l_TMPLT.nElements
-            if(modflow.GWF.l_TMPLT.nNodesPerElement==6) then ! 6-node fetriangle, repeat nodes 3 and 6 for 8-node tecplot type febrick
-                write(FNum,'(8i8)') (modflow.GWF.l_TMPLT.iNode(j,i),j=1,3), modflow.GWF.l_TMPLT.iNode(3,i),(modflow.GWF.l_TMPLT.iNode(j,i),j=4,6), modflow.GWF.l_TMPLT.iNode(6,i) 
-            else if(modflow.GWF.l_TMPLT.nNodesPerElement==8) then ! 8-node brick 
-                write(FNum,'(8i8)') (modflow.GWF.l_TMPLT.iNode(j,i),j=1,8) 
+        do i=1,Modflow%GWF%nElements
+            if(Modflow%GWF%nNodesPerElement==6) then ! 6-node fetriangle, repeat nodes 3 and 6 for 8-node tecplot type febrick
+                write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i),j=1,3), Modflow%GWF%idNode(3,i),(Modflow%GWF%idNode(j,i),j=4,6), Modflow%GWF%idNode(6,i) 
+            else if(Modflow%GWF%nNodesPerElement==8) then ! 8-node brick 
+                write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i),j=1,8) 
             else
-                write(TmpSTR,'(i2)') modflow.GWF.l_TMPLT.nNodesPerElement
-                call ErrMsg(trim(modflow.GWF.l_TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)') Modflow%GWF%nNodesPerElement
+                call ErrMsg(trim(Modflow%GWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
         end do
        
@@ -5670,70 +5521,70 @@
         
         real(dp) :: SeparationDistance
         
-        real(dp) :: xMidpoint(domain.nNodesPerElement,domain.nElements)
-        real(dp) :: yMidpoint(domain.nNodesPerElement,domain.nElements)
-        real(dp) :: zMidpoint(domain.nNodesPerElement,domain.nElements)
+        real(dp) :: xMidpoint(domain%nNodesPerElement,domain%nElements)
+        real(dp) :: yMidpoint(domain%nNodesPerElement,domain%nElements)
+        real(dp) :: zMidpoint(domain%nNodesPerElement,domain%nElements)
 
         call StopWatch(1,'IaJa_MeshCentred')
         call Msg(' ')
-        call Msg('  Generating cell connection arrays for domain '//trim(domain.name)//'...')
+        call Msg('  Generating cell connection arrays for domain '//trim(domain%name)//'...')
 
         
-        allocate(domain.ia(domain.nElements), &
-                 domain.ConnectionList(MAX_CNCTS,domain.nElements), &
-                 domain.ThroughFace(MAX_CNCTS,domain.nElements), &
+        allocate(domain%ia(domain%nElements), &
+                 domain%ConnectionList(MAX_CNCTS,domain%nElements), &
+                 domain%ThroughFace(MAX_CNCTS,domain%nElements), &
                  stat=ialloc)
-        call AllocChk(ialloc,trim(domain.name)//' connection arrays')
+        call AllocChk(ialloc,trim(domain%name)//' connection arrays')
 
-        domain.ia=0
-        domain.ConnectionList=0
-        domain.ThroughFace=0
+        domain%ia=0
+        domain%ConnectionList=0
+        domain%ThroughFace=0
         
-        do i=1,domain.nElements   ! First element connection is to itself
-            domain.ia(i)=1
-            domain.ConnectionList(domain.ia(i),i)=-i     ! Negative entry shows start of element i list
+        do i=1,domain%nElements   ! First element connection is to itself
+            domain%ia(i)=1
+            domain%ConnectionList(domain%ia(i),i)=-i     ! Negative entry shows start of element i list
         end do
 
 
         ! Element side midpoints
-        do i=1,domain.nElements
-            do j=1,domain.nNodesPerElement
-                j1=domain.iNode(j,i)
-                if(j < domain.nNodesPerElement) then
-                    j2=domain.iNode(j+1,i)
+        do i=1,domain%nElements
+            do j=1,domain%nNodesPerElement
+                j1=domain%idNode(j,i)
+                if(j < domain%nNodesPerElement) then
+                    j2=domain%idNode(j+1,i)
                 else
-                    j2=domain.iNode(1,i)
+                    j2=domain%idNode(1,i)
                 end if
 
-                xMidpoint(j,i)=(domain.x(j1)+domain.x(j2))/2.0d0
-                yMidpoint(j,i)=(domain.y(j1)+domain.y(j2))/2.0d0
-                zMidpoint(j,i)=(domain.z(j1)+domain.z(j2))/2.0d0
+                xMidpoint(j,i)=(domain%node(j1)%x+domain%node(j2)%x)/2.0d0
+                yMidpoint(j,i)=(domain%node(j1)%y+domain%node(j2)%y)/2.0d0
+                zMidpoint(j,i)=(domain%node(j1)%z+domain%node(j2)%z)/2.0d0
 
             end do
         end do
 
 
         ! Brute force search for domain neighbours using side midpoints
-        do iEl=1,domain.nElements ! Loop over elements
-            do k=1,domain.nNodesPerElement ! Loop over nodes in element
-                iNd=domain.iNode(k,iEl)
+        do iEl=1,domain%nElements ! Loop over elements
+            do k=1,domain%nNodesPerElement ! Loop over nodes in element
+                iNd=domain%idNode(k,iEl)
 
-                do jEl=iEl+1,domain.nElements ! Loop over rest of elements
-                    do l=1,domain.nNodesPerElement ! Loop over nodes in next element
-                        jNd=domain.iNode(l,jEl)
+                do jEl=iEl+1,domain%nElements ! Loop over rest of elements
+                    do l=1,domain%nNodesPerElement ! Loop over nodes in next element
+                        jNd=domain%idNode(l,jEl)
                         SeparationDistance=sqrt((xMidpoint(k,iEl) - xMidpoint(l,jEl))**2 + &
                             (yMidpoint(k,iEl) - yMidpoint(l,jEl))**2 + &
                             (zMidpoint(k,iEl) - zMidpoint(l,jEl))**2 )
                         if(SeparationDistance < MinSeparationDistance) then
                             ! iEl is neighbour of jEl
-                            domain.ia(iEl)=domain.ia(iEl)+1
-                            domain.ConnectionList(domain.ia(iEl),iEl)=jEl
-                            domain.ThroughFace(domain.ia(iEl),iEl)=k
+                            domain%ia(iEl)=domain%ia(iEl)+1
+                            domain%ConnectionList(domain%ia(iEl),iEl)=jEl
+                            domain%ThroughFace(domain%ia(iEl),iEl)=k
                             
                             ! jEl is neighbour of iEl
-                            domain.ia(jEl)=domain.ia(jEl)+1
-                            domain.ConnectionList(domain.ia(jEl),jEl)=iEl
-                            domain.ThroughFace(domain.ia(jEl),jEl)=l
+                            domain%ia(jEl)=domain%ia(jEl)+1
+                            domain%ConnectionList(domain%ia(jEl),jEl)=iEl
+                            domain%ThroughFace(domain%ia(jEl),jEl)=l
                         endif
                     end do
                 end do
@@ -5796,11 +5647,11 @@
 		    endif
 	    end do read_zhead_pairs
 
-        do i=1,domain.nCells
+        do i=1,domain%nCells
 		    do j=1,npairs-1
-			    if(domain.zCell(i) >= zp(j) .and. domain.zCell(i) <= zp(j+1)) then  ! interpolate
-	                t=(domain.zCell(i)-zp(j))/(zp(j+1)-zp(j))
-				    domain.StartingHeads(i)=(1.0-t)*InitHead(j)+t*InitHead(j+1)
+			    if(domain%cell%z(i) >= zp(j) .and. domain%cell%z(i) <= zp(j+1)) then  ! interpolate
+	                t=(domain%cell%z(i)-zp(j))/(zp(j+1)-zp(j))
+				    domain%StartingHeads(i)=(1.0-t)*InitHead(j)+t*InitHead(j+1)
 			    end if
 		    end do
         end do
@@ -5866,18 +5717,18 @@
         end do read_DepthSaturation_pairs
         
         
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             
             !find the cell number on the surface that corresponds to cell i
-            iCell = myMOD(i,domain.nodelay)
-			depth=domain.Top(iCell)-domain.zCell(i)
+            iCell = myMOD(i,domain%nodelay)
+			depth=domain%Top(iCell)-domain%cell%z(i)
 
 			call interpol_table(npairs,dpth,satn,depth,sw)
             if(i==2001) then
             continue
             endif
             
-			domain.StartingHeads(i)=pw_from_sw(i,sw,domain)
+			domain%StartingHeads(i)=pw_from_sw(i,sw,domain)
 
         end do
         
@@ -5907,11 +5758,11 @@
         !endif
 
 
-      !  do i=1,domain.nCells
+      !  do i=1,domain%nCells
 		    !do j=1,npairs-1
-			   ! if(domain.zCell(i) >= dpth(j) .and. domain.zCell(i) <= dpth(j+1)) then  ! interpolate
-	     !           t=(domain.zCell(i)-dpth(j))/(dpth(j+1)-dpth(j))
-				  !  domain.StartingHeads(i)=(1.0-t)*satn(j)+t*satn(j+1)
+			   ! if(domain%cell%z(i) >= dpth(j) .and. domain%cell%z(i) <= dpth(j+1)) then  ! interpolate
+	     !           t=(domain%cell%z(i)-dpth(j))/(dpth(j+1)-dpth(j))
+				  !  domain%StartingHeads(i)=(1.0-t)*satn(j)+t*satn(j+1)
 			   ! end if
 		    !end do
       !  end do
@@ -5980,12 +5831,12 @@
 
 
         ! Compute effective saturation
-        se = (sw - domain.Sr(iCell)) / (c1 - domain.Sr(iCell))
+        se = (sw - domain%Sr(iCell)) / (c1 - domain%Sr(iCell))
         ! Compute some constants
-        gamma = 1.-1./domain.Beta(iCell)
+        gamma = 1.-1./domain%Beta(iCell)
         v_gamma = c1/gamma
-        v_beta  = c1/domain.Beta(iCell)
-        v_alpha = c1/domain.Alpha(iCell)
+        v_beta  = c1/domain%Beta(iCell)
+        v_alpha = c1/domain%Alpha(iCell)
 
         if (se .gt. aconstant) then ! use linear interpolation
 
@@ -6011,10 +5862,10 @@
 
         ! Substract air entry pressure (which is actually "-") and change sign
 
-       	if(UnsaturatedFunctionType(domain.iZone(iCell)) == 'Van Genuchten') then
+       	if(UnsaturatedFunctionType(domain%iZone(iCell)) == 'Van Genuchten') then
 			pw_from_sw = -pw_from_sw
-		else if(UnsaturatedFunctionType(domain.iZone(iCell)) == 'Brooks-Corey') then
-			pw_from_sw = -(pw_from_sw - domain.Brooks(iCell))
+		else if(UnsaturatedFunctionType(domain%iZone(iCell)) == 'Brooks-Corey') then
+			pw_from_sw = -(pw_from_sw - domain%Brooks(iCell))
 		endif
 
     end function pw_from_sw
@@ -6093,17 +5944,17 @@
         write(Modflow.iNAM,'(a,i4,a)') 'DISU ',Modflow.iDISU,' '//trim(Modflow.FNameDISU)
         write(Modflow.iDISU,'(a,a)') '# MODFLOW-USG DIS file written by Modflow-User-Tools version ',trim(MUTVersion)
         
-        Modflow.GWF.FNameCBB=trim(Modflow.Prefix)//'.GWF.cbb'
-        call getunit(Modflow.GWF.iCBB)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iCBB,' '//trim(Modflow.GWF.FNameCBB)
+        Modflow%GWF%FNameCBB=trim(Modflow.Prefix)//'.GWF.cbb'
+        call getunit(Modflow%GWF%iCBB)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iCBB,' '//trim(Modflow%GWF%FNameCBB)
         
-        Modflow.GWF.FNameHDS=trim(Modflow.Prefix)//'.GWF.HDS'
-        call getunit(Modflow.GWF.iHDS)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iHDS,' '//trim(Modflow.GWF.FNameHDS)
+        Modflow%GWF%FNameHDS=trim(Modflow.Prefix)//'.GWF.HDS'
+        call getunit(Modflow%GWF%iHDS)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iHDS,' '//trim(Modflow%GWF%FNameHDS)
         
-        Modflow.GWF.FNameDDN=trim(Modflow.Prefix)//'.GWF.DDN'
-        call getunit(Modflow.GWF.iDDN)
-        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow.GWF.iDDN,' '//trim(Modflow.GWF.FNameDDN)
+        Modflow%GWF%FNameDDN=trim(Modflow.Prefix)//'.GWF.DDN'
+        call getunit(Modflow%GWF%iDDN)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iDDN,' '//trim(Modflow%GWF%FNameDDN)
 
         return
     end subroutine InitializeModflowFiles
@@ -6119,108 +5970,108 @@
         ! For modflow cell connection and area calculations
         
         ! Generate cell connections manually
-        call CLN_IaJaStructure(Modflow.CLN.l_TMPLT)
+        call CLN_IaJaStructure(Modflow%CLN)
 
         ! Cell horizontal areas not used so for now set to -999
-        allocate(Modflow.CLN.CellArea(Modflow.CLN.nCells),stat=ialloc)
+        allocate(Modflow%CLN%CellArea(Modflow%CLN%nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN cell horizontal area arrays')
-        do i=1,Modflow.CLN.nCells
-            Modflow.CLN.CellArea(i)=-999.
+        do i=1,Modflow%CLN%nCells
+            Modflow%CLN%CellArea(i)=-999.
         end do
         
-        Modflow.CLN.njag = 0
-        do i=1,Modflow.CLN.nCells
-            Modflow.CLN.njag=Modflow.CLN.njag + Modflow.CLN.l_TMPLT.ia(i)
+        Modflow%CLN%njag = 0
+        do i=1,Modflow%CLN%nCells
+            Modflow%CLN%njag=Modflow%CLN%njag + Modflow%CLN%ia(i)
         end do
 
     end subroutine MeshCentredCLNCellGeometry
 
     !----------------------------------------------------------------------
-    subroutine MeshCentredGWFCellGeometry(Modflow, TMPLT_GWF,TMPLT)
+    subroutine MeshCentredGWFCellGeometry(Modflow, GWFDomain,TMPLT)
         implicit none
     
         type (ModflowProject) Modflow
         type (mesh) TMPLT
-        type (mesh) TMPLT_GWF
+        type (ModflowDomain) GWFDomain
         integer(i4) :: i, j
         
         ! For modflow cell connection and area calculations
         integer(i4) :: icell
         
-        ! use existing TMPLT.CellArea (e.g. area of triangle)  
-        allocate(Modflow.GWF.CellArea(Modflow.GWF.nCells),stat=ialloc)
+        ! use existing TMPLT%CellArea (e.g. area of triangle)  
+        allocate(Modflow%GWF%CellArea(Modflow%GWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF cell horizontal area arrays')
-        do i=1,Modflow.GWF.nCells
-            iCell = myMOD(i,TMPLT.nElements)
-            Modflow.GWF.CellArea(i)=TMPLT.ElementArea(iCell)
+        do i=1,Modflow%GWF%nCells
+            iCell = myMOD(i,TMPLT%nElements)
+            Modflow%GWF%CellArea(i)=TMPLT%Element(iCell)%xyArea
         end do
     
-        allocate(Modflow.GWF.ConnectionLength(MAX_CNCTS,Modflow.GWF.nCells), &
-                 Modflow.GWF.PerpendicularArea(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
+        allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
+                 Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF Cell connection arrays')
-        Modflow.GWF.ConnectionLength(:,:)=0.0d0
-        Modflow.GWF.PerpendicularArea(:,:)=0.0d0
+        Modflow%GWF%ConnectionLength(:,:)=0.0d0
+        Modflow%GWF%PerpendicularArea(:,:)=0.0d0
         
-        Modflow.GWF.nodelay=TMPLT.nElements
+        Modflow%GWF%nodelay=TMPLT%nElements
         
-        do i=1,Modflow.GWF.nCells
-            iCell = myMOD(i,TMPLT.nElements)
+        do i=1,Modflow%GWF%nCells
+            iCell = myMOD(i,TMPLT%nElements)
 
-            do j=2,modflow.GWF.l_TMPLT.ia(i)
+            do j=2,Modflow%GWF%ia(i)
                 ! GWF neighbour in same column (above or below)
-                if(myMOD(i,modflow.GWF.nodelay) == myMOD(modflow.GWF.l_TMPLT.ConnectionList(j,i),modflow.GWF.nodelay)) then 
-                    modflow.GWF.ConnectionLength(j,i)=(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))/2.0d0
-                    modflow.GWF.PerpendicularArea(j,i)=Modflow.GWF.CellArea(i)
+                if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then 
+                    Modflow%GWF%ConnectionLength(j,i)=(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))/2.0d0
+                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%CellArea(i)
                 
                 ! GWF neighbour in different column (adjacent)
                 else  
-                    if(TMPLT.nFacesPerElement == 3) then
-                        select case (TMPLT_GWF.ThroughFace(j,i))
+                    if(TMPLT%nFacesPerElement == 3) then
+                        select case (GWFDomain%ThroughFace(j,i))
                         case ( 1 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(1,iCell)   
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(1)   
                         case ( 2 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(2,iCell)   
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(2)   
                         case ( 3 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(3,iCell)   
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(3)   
                         end select
-                        modflow.GWF.ConnectionLength(j,i)=TMPLT.rCircle(iCell)
-                        modflow.GWF.PerpendicularArea(j,i)=modflow.GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                        Modflow%GWF%ConnectionLength(j,i)=TMPLT%Element(iCell)%rCircle
+                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
                         if(i==5) then
-                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell modflow.GWF.l_TMPLT.ConnectionList(j,i) ',modflow.GWF.l_TMPLT.ConnectionList(j,i),' j ',j
+                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
                             call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
                             call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
                             call msg(TMPStr)
                         endif
-                    else if(TMPLT.nFacesPerElement == 4) then
-                        select case (TMPLT_GWF.ThroughFace(j,i))
+                    else if(TMPLT%nFacesPerElement == 4) then
+                        select case (GWFDomain%ThroughFace(j,i))
                         case ( 1 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(1,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(1,iCell))**2 + &
-                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(1,iCell))**2)
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(1)   
+                            Modflow%GWF%ConnectionLength(j,i)=sqrt((TMPLT%Element(iCell)%x-TMPLT%FaceCentroidX(1,iCell))**2 + &
+                                                                   (TMPLT%Element(iCell)%y-TMPLT%FaceCentroidY(1,iCell))**2)
                         case ( 2 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(2,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(2,iCell))**2 + &
-                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(2,iCell))**2)
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(2)   
+                            Modflow%GWF%ConnectionLength(j,i)=sqrt((TMPLT%Element(iCell)%x-TMPLT%FaceCentroidX(2,iCell))**2 + &
+                                                                   (TMPLT%Element(iCell)%y-TMPLT%FaceCentroidY(2,iCell))**2)
                         case ( 3 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(3,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(3,iCell))**2 + &
-                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(3,iCell))**2)
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(3)
+                            Modflow%GWF%ConnectionLength(j,i)=sqrt((TMPLT%Element(iCell)%x-TMPLT%FaceCentroidX(3,iCell))**2 + &
+                                                                   (TMPLT%Element(iCell)%y-TMPLT%FaceCentroidY(3,iCell))**2)
                         case ( 4 )
-                            modflow.GWF.PerpendicularArea(j,i)=TMPLT.SideLength(4,iCell)   
-                            modflow.GWF.ConnectionLength(j,i)=sqrt((TMPLT.xElement(iCell)-TMPLT.FaceCentroidX(4,iCell))**2 + &
-                                                                   (TMPLT.yElement(iCell)-TMPLT.FaceCentroidY(4,iCell))**2)
+                            Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(4)
+                            Modflow%GWF%ConnectionLength(j,i)=sqrt((TMPLT%Element(iCell)%x-TMPLT%FaceCentroidX(4,iCell))**2 + &
+                                                                   (TMPLT%Element(iCell)%y-TMPLT%FaceCentroidY(4,iCell))**2)
                         end select
-                        modflow.GWF.PerpendicularArea(j,i)=modflow.GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
                     end if
                 end if
             end do
         end do
         
-        Modflow.GWF.njag=0
-        do i=1,Modflow.GWF.nCells
-            Modflow.GWF.njag=Modflow.GWF.njag + Modflow.GWF.l_TMPLT.ia(i)
+        Modflow%GWF%njag=0
+        do i=1,Modflow%GWF%nCells
+            Modflow%GWF%njag=Modflow%GWF%njag + Modflow%GWF%ia(i)
         end do
 
     end subroutine MeshCentredGWFCellGeometry
@@ -6232,23 +6083,21 @@
         integer(i4) :: i
 
         ! Cell horizontal areas
-        ! use existing TMPLT.CellArea (e.g. area of triangle)  
-        allocate(Modflow.SWF.CellArea(Modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF cell horizontal area arrays')
-        do i=1,Modflow.SWF.nCells
-            Modflow.SWF.CellArea(i)=Modflow.SWF.l_TMPLT.ElementArea(i)
+        ! use existing TMPLT%CellArea (e.g. area of triangle)  
+        do i=1,Modflow%SWF%nCells
+            Modflow%SWF%CellArea(i)=Modflow%SWF%Element(i)%xyArea
         end do
 
         ! Cell connection length and perpendicular area arrays
-        allocate(Modflow.SWF.ConnectionLength(MAX_CNCTS,Modflow.SWF.l_TMPLT.nElements), &
-                 Modflow.SWF.PerpendicularArea(MAX_CNCTS,Modflow.SWF.l_TMPLT.nElements),stat=ialloc)
+        allocate(Modflow%SWF%ConnectionLength(MAX_CNCTS,Modflow%SWF%nElements), &
+                 Modflow%SWF%PerpendicularArea(MAX_CNCTS,Modflow%SWF%nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:,:)= Modflow.SWF.l_TMPLT.ConnectionLength(:,:)
-        Modflow.SWF.PerpendicularArea(:,:)=Modflow.SWF.l_TMPLT.PerpendicularArea(:,:)
+        Modflow%SWF%ConnectionLength(:,:)= Modflow%SWF%ConnectionLength(:,:)
+        Modflow%SWF%PerpendicularArea(:,:)=Modflow%SWF%PerpendicularArea(:,:)
         
-        Modflow.SWF.njag=0
-        do i=1,Modflow.SWF.nCells
-            Modflow.SWF.njag=Modflow.SWF.njag + Modflow.SWF.l_TMPLT.ia(i)
+        Modflow%SWF%njag=0
+        do i=1,Modflow%SWF%nCells
+            Modflow%SWF%njag=Modflow%SWF%njag + Modflow%SWF%ia(i)
         end do
     end subroutine MeshCentredSWFCellGeometry
 
@@ -6262,88 +6111,88 @@
         integer(i4) :: i
         character(MAX_STR) :: FName
         
-        If(allocated(domain.xCell)) then
+        If(allocated(domain%cell%x)) then
             ! Write Modflow cell coordinates as tecplot scatter data
            
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_CELLS.tecplot.dat'
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_CELLS.tecplot.dat'
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
             call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' CELLS"'
+            write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' CELLS"'
 
             VarSTR='variables="X","Y","Z"'
             nVar=3
             
             write(FNum,'(a)') trim(VarSTR)
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' CELLS", datapacking=point'
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCells,', t="'//trim(domain%name)//' CELLS", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
 
-            do i=1,domain.nCells
-                write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i)
+            do i=1,domain%nCells
+                write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i)
             end do
             
             call FreeUnit(FNum)
 
-            if(domain.nCHDCells > 0) then
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_CHD.tecplot.dat'
+            if(domain%nCHDCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_CHD.tecplot.dat'
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
                 call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' CHD"'
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' CHD"'
 
                 VarSTR='variables="X","Y","Z","CHD"'
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCHDCells,', t="'//trim(domain.name)//' CHD", datapacking=point'
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCHDCells,', t="'//trim(domain%name)//' CHD", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
            
-                do i=1,domain.nCells
-                    if(bcheck(domain%cell(i)%is,ConstantHead)) write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                        domain.ConstantHead(i)
+                do i=1,domain%nCells
+                    if(bcheck(domain%cell(i)%is,ConstantHead)) write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                        domain%ConstantHead(i)
                 end do
             
                 call FreeUnit(FNum)
             end if
             
-            if(allocated(domain.recharge)) then
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_RCH.tecplot.dat'
+            if(allocated(domain%recharge)) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_RCH.tecplot.dat'
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
                 call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' RCH"'
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' RCH"'
 
                 VarSTR='variables="X","Y","Z","RCH"'
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                if(domain.Name == 'GWF') then
-                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells/domain.nLayers,', t="'//trim(domain.name)//' RCH", datapacking=point'
-                else if(domain.Name == 'SWF') then
-                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nCells,', t="'//trim(domain.name)//' RCH", datapacking=point'
-                else if(domain.Name == 'CLN') then
+                if(domain%Name == 'GWF') then
+                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCells/domain%nLayers,', t="'//trim(domain%name)//' RCH", datapacking=point'
+                else if(domain%Name == 'SWF') then
+                    write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCells,', t="'//trim(domain%name)//' RCH", datapacking=point'
+                else if(domain%Name == 'CLN') then
                     call ErrMsg('Code for ModflowDomainScatterToTecplot for CLN RCH domain required')
                 end if    
         
                 write(FNum,'(a)') trim(ZoneSTR)
            
-                do i=1,domain.nCells
-                    if(domain.Name == 'GWF') then
-                        if(Modflow.GWF.iLayer(i)==1) then
-                            write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                                domain.Recharge(i)
+                do i=1,domain%nCells
+                    if(domain%Name == 'GWF') then
+                        if(Modflow%GWF%iLayer(i)==1) then
+                            write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                                domain%Recharge(i)
                         endif
                     
-                    else if(domain.Name == 'SWF') then
-                        write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                            domain.Recharge(i)
+                    else if(domain%Name == 'SWF') then
+                        write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                            domain%Recharge(i)
                     endif
                 end do
 
@@ -6351,75 +6200,75 @@
                 call FreeUnit(FNum)
             end if
 
-            if(domain.nSWBCCells > 0) then
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_SWBC.tecplot.dat'
+            if(domain%nSWBCCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_SWBC.tecplot.dat'
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
                 call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' SWBC"'
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' SWBC"'
 
                 VarSTR='variables="X","Y","Z","SWBC"'
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nSWBCCells,', t="'//trim(domain.name)//' SWBC", datapacking=point'
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nSWBCCells,', t="'//trim(domain%name)//' SWBC", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
            
-                do i=1,domain.nCells
-                    if(bcheck(domain%cell(i)%is,CriticalDepth)) write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                        domain.CriticalDepthLength(i)
+                do i=1,domain%nCells
+                    if(bcheck(domain%cell(i)%is,CriticalDepth)) write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                        domain%CriticalDepthLength(i)
                 end do
             
                 call FreeUnit(FNum)
             end if
-            if(domain.nDRNCells > 0) then
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_DRN.tecplot.dat'
+            if(domain%nDRNCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_DRN.tecplot.dat'
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
                 call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' DRN"'
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' DRN"'
 
                 VarSTR='variables="X","Y","Z","DRN"'
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nDRNCells,', t="'//trim(domain.name)//' DRN", datapacking=point'
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nDRNCells,', t="'//trim(domain%name)//' DRN", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
            
-                do i=1,domain.nCells
-                    if(bcheck(domain%cell(i)%is,Drain)) write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                        domain.DrainConductance(i)
+                do i=1,domain%nCells
+                    if(bcheck(domain%cell(i)%is,Drain)) write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                        domain%DrainConductance(i)
                 end do
             
                 call FreeUnit(FNum)
             end if
 
-            if(domain.nWELCells > 0) then
-                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'_WEL.tecplot.dat'
+            if(domain%nWELCells > 0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_WEL.tecplot.dat'
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
                 call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-                write(FNum,'(a)') 'Title = " Modflow '//trim(domain.name)//' WEL"'
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' WEL"'
 
                 VarSTR='variables="X","Y","Z","WEL"'
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
             
-                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain.nWELCells,', t="'//trim(domain.name)//' WEL", datapacking=point'
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nWELCells,', t="'//trim(domain%name)//' WEL", datapacking=point'
         
                 write(FNum,'(a)') trim(ZoneSTR)
            
-                do i=1,domain.nCells
-                    if(bcheck(domain%cell(i)%is,Well)) write(FNum,'(4('//FMT_R8//'))') domain.xCell(i),domain.yCell(i),domain.zCell(i),&
-                        domain.PumpingRate(i)
+                do i=1,domain%nCells
+                    if(bcheck(domain%cell(i)%is,Well)) write(FNum,'(4('//FMT_R8//'))') domain%cell%x(i),domain%cell%y(i),domain%cell%z(i),&
+                        domain%PumpingRate(i)
                 end do
             
                 call FreeUnit(FNum)
@@ -6443,42 +6292,42 @@
         write(Modflow.iOBPT,'(a)') '#      nGWFObsPnt  nSWFObsPnt  nCLNObsPnt   iGWFOBS     iSWFOBS     iCLNOBS'
 
         ! Observation points
-        if(modflow.GWF.nObsPnt>0) then
-            Modflow.GWF.FNameOBS=trim(Modflow.Prefix)//'.GWF.OBS.tecplot.dat'
-            call getunit(Modflow.GWF.iOBS)
-            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.GWF.iOBS,' '//trim(Modflow.GWF.FNameOBS)
+        if(Modflow%GWF%nObsPnt>0) then
+            Modflow%GWF%FNameOBS=trim(Modflow.Prefix)//'.GWF.OBS.tecplot.dat'
+            call getunit(Modflow%GWF%iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow%GWF%iOBS,' '//trim(Modflow%GWF%FNameOBS)
         endif
         
-        if(modflow.SWF.nObsPnt>0) then
-            Modflow.SWF.FNameOBS=trim(Modflow.Prefix)//'.SWF.OBS.tecplot.dat'
-            call getunit(Modflow.SWF.iOBS)
-            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.SWF.iOBS,' '//trim(Modflow.SWF.FNameOBS)
+        if(Modflow%SWF%nObsPnt>0) then
+            Modflow%SWF%FNameOBS=trim(Modflow.Prefix)//'.SWF.OBS.tecplot.dat'
+            call getunit(Modflow%SWF%iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow%SWF%iOBS,' '//trim(Modflow%SWF%FNameOBS)
         endif
         
-        if(modflow.CLN.nObsPnt>0) then
-            Modflow.CLN.FNameOBS=trim(Modflow.Prefix)//'.CLN.OBS.tecplot.dat'
-            call getunit(Modflow.CLN.iOBS)
-            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow.CLN.iOBS,' '//trim(Modflow.CLN.FNameOBS)
+        if(Modflow%CLN%nObsPnt>0) then
+            Modflow%CLN%FNameOBS=trim(Modflow.Prefix)//'.CLN.OBS.tecplot.dat'
+            call getunit(Modflow%CLN%iOBS)
+            write(Modflow.iNAM,'(a,i4,a)') 'OBS(FORMATTED)',Modflow%CLN%iOBS,' '//trim(Modflow%CLN%FNameOBS)
         endif
         
-        write(Modflow.iOBPT,*) modflow.GWF.nObsPnt, modflow.SWF.nObsPnt, modflow.CLN.nObsPnt,Modflow.GWF.iOBS, Modflow.SWF.iOBS, Modflow.CLN.iOBS
+        write(Modflow.iOBPT,*) Modflow%GWF%nObsPnt, Modflow%SWF%nObsPnt, Modflow%CLN%nObsPnt,Modflow%GWF%iOBS, Modflow%SWF%iOBS, Modflow%CLN%iOBS
 
         ! Observation points
-        if(modflow.GWF.nObsPnt>0) then
-            do i=1,modflow.GWF.nObsPnt
-                write(Modflow.iOBPT,'(i10,2x,a)') modflow.GWF.ObsPntCell(i), trim(modflow.GWF.ObsPntName(i))
+        if(Modflow%GWF%nObsPnt>0) then
+            do i=1,Modflow%GWF%nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') Modflow%GWF%ObsPntCell(i), trim(Modflow%GWF%ObsPntName(i))
             end do
         endif
         
-        if(modflow.SWF.nObsPnt>0) then
-            do i=1,modflow.SWF.nObsPnt
-                write(Modflow.iOBPT,'(i10,2x,a)') modflow.SWF.ObsPntCell(i), trim(modflow.SWF.ObsPntName(i))
+        if(Modflow%SWF%nObsPnt>0) then
+            do i=1,Modflow%SWF%nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') Modflow%SWF%ObsPntCell(i), trim(Modflow%SWF%ObsPntName(i))
             end do
         endif
         
-        if(modflow.CLN.nObsPnt>0) then
-            do i=1,modflow.CLN.nObsPnt
-                write(Modflow.iOBPT,'(i10,2x,a)') modflow.CLN.ObsPntCell(i), trim(modflow.CLN.ObsPntName(i))
+        if(Modflow%CLN%nObsPnt>0) then
+            do i=1,Modflow%CLN%nObsPnt
+                write(Modflow.iOBPT,'(i10,2x,a)') Modflow%CLN%ObsPntCell(i), trim(Modflow%CLN%ObsPntName(i))
             end do
         endif
         
@@ -6519,7 +6368,7 @@
 		call LwrCse(Modflow.Prefix)
         call Msg('Modflow project prefix: '//Modflow.Prefix)
         
-        modflow.GWF.Name='GWF'
+        Modflow%GWF%Name='GWF'
         
         
         ! Scan file
@@ -6640,13 +6489,13 @@
         
             call Read_GWF_GSF(Modflow)
             
-            modflow.GWF%TecplotTyp='febrick'
+            Modflow%GWF%TecplotTyp='febrick'
 
         end if
 
         if(Modflow.iCLN /= 0) THEN
-            Modflow.CLN.Name='CLN'
-            modflow.CLN%TecplotTyp='felineseg'
+            Modflow%CLN%Name='CLN'
+            Modflow%CLN%TecplotTyp='felineseg'
             Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.CLN.gsf'
             inquire(file=Modflow.FNameCLN_GSF,exist=FileExists)
             if(.not. FileExists) then
@@ -6661,7 +6510,7 @@
         end if
 
         if(Modflow.iSWF /= 0) THEN
-            Modflow.SWF.name='SWF'
+            Modflow%SWF%name='SWF'
             Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.SWF.gsf'
             inquire(file=Modflow.FNameSWF_GSF,exist=FileExists)
             if(.not. FileExists) then
@@ -6673,10 +6522,10 @@
         
                 call Read_SWF_GSF(Modflow)
                 
-                if(Modflow.SWF.nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                    modflow.SWF%TecplotTyp='fetriangle'
-                else if(Modflow.SWF.nNodesPerCell==4) then ! 4-node quadrilateral
-                    modflow.SWF%TecplotTyp='fequadrilateral'
+                if(Modflow%SWF%nNodesPerCell==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                    Modflow%SWF%TecplotTyp='fetriangle'
+                else if(Modflow%SWF%nNodesPerCell==4) then ! 4-node quadrilateral
+                    Modflow%SWF%TecplotTyp='fequadrilateral'
                 end if
 
             end if
@@ -6794,8 +6643,8 @@
         call Msg(' ')
         call Msg('-------Read IBOUND and initial heads from BAS6:')
         
-        ALLOCATE (modflow.GWF.IBOUND(modflow.GWF.ncells))
-        ALLOCATE (modflow.GWF.HNEW(Modflow.GWF.nCells))
+        ALLOCATE (Modflow%GWF%IBOUND(Modflow%GWF%ncells))
+        ALLOCATE (Modflow%GWF%HNEW(Modflow%GWF%nCells))
 
         IF(IUNSTR.EQ.0)THEN
         !C10A-------FOR STRUCTURED GRIDS
@@ -6827,8 +6676,8 @@
             !C------Read rest of CLN Package file (IBOUND and initial heads)
             call Msg(' ')
             call Msg('-------Read IBOUND and initial heads from CLN:')
-            ALLOCATE (modflow.CLN.IBOUND(modflow.CLN.ncells))
-            ALLOCATE (modflow.CLN.HNEW(Modflow.CLN.nCells))
+            ALLOCATE (Modflow%CLN%IBOUND(Modflow%CLN%ncells))
+            ALLOCATE (Modflow%CLN%HNEW(Modflow%CLN%nCells))
             CALL ReadCLN_IBOUND_IHEADS(Modflow)  ! based on modflow routine CLN2BAS1AR
         end if
         
@@ -6837,8 +6686,8 @@
             !C------Read rest of SWF Package file (IBOUND and initial heads)
             call Msg(' ')
             call Msg('-------Read IBOUND and initial heads from SWF:')
-            ALLOCATE (modflow.SWF.IBOUND(modflow.SWF.ncells))
-            ALLOCATE (modflow.SWF.HNEW(Modflow.SWF.nCells))
+            ALLOCATE (Modflow%SWF%IBOUND(Modflow%SWF%ncells))
+            ALLOCATE (Modflow%SWF%HNEW(Modflow%SWF%nCells))
             CALL ReadSWF_IBOUND_IHEADS(Modflow)  ! based on modflow routine SWF2BAS1AR
         end if
         
@@ -6901,7 +6750,7 @@
         call ReadBinary_HDS_File(Modflow,Modflow.GWF)
         call ReadBinary_DDN_File(Modflow,Modflow.GWF)
         call ReadBinary_CBB_File(Modflow, Modflow.GWF)
-        if(Modflow.GWF.IsDefined) then
+        if(Modflow%GWF%IsDefined) then
             call Msg(' ')
 		    call Msg('Generating mesh-based Tecplot output files for GWF:')
             
@@ -6918,7 +6767,7 @@
             call ReadBinary_HDS_File(Modflow,Modflow.CLN)
             call ReadBinary_DDN_File(Modflow,Modflow.CLN)
             call ReadBinary_CBB_File(Modflow, Modflow.CLN)
-            if(Modflow.CLN.IsDefined) then
+            if(Modflow%CLN%IsDefined) then
     		    call Msg('Generating mesh-based Tecplot output files for CLN:')
     
                 call ModflowResultsToTecplot(Modflow,Modflow.CLN)
@@ -6934,7 +6783,7 @@
             call ReadBinary_HDS_File(Modflow,Modflow.SWF)
             call ReadBinary_DDN_File(Modflow,Modflow.SWF)
             call ReadBinary_CBB_File(Modflow, Modflow.SWF)
-            if(Modflow.SWF.IsDefined) then
+            if(Modflow%SWF%IsDefined) then
     		    call Msg('Generating mesh-based Tecplot output files for SWF:')
 
                 call ModflowResultsToTecplot(Modflow,Modflow.SWF)
@@ -6974,76 +6823,76 @@
 
 
         ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain.name)//'.tecplot.dat'
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'.tecplot.dat'
         call OpenAscii(FNum,FName)
         call Msg( 'To File: '//trim(FName))
 
         write(FNum,*) 'Title = "Modflow Project: '//trim(Modflow.Prefix)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(domain.name)//' z Cell","'//trim(domain.name)//' Layer","'//trim(domain.name)//' Ibound","'//trim(domain.name)//' Initial head",'
+        VarSTR='variables="X","Y","Z","'//trim(domain%name)//' z Cell","'//trim(domain%name)//' Layer","'//trim(domain%name)//' Ibound","'//trim(domain%name)//' Initial head",'
         nVar=7
        
-        if(allocated(domain.head)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Head",'
+        if(allocated(domain%head)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' Head",'
             nVar=nVar+1
         end if
-        if(allocated(domain.Drawdown)) then
-            if(domain.name == 'GWF') then
-                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Saturation",'
-            else if(domain.name == 'SWF') then
-                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
-            else if(domain.name == 'CLN') then
-                VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' Depth",'
+        if(allocated(domain%Drawdown)) then
+            if(domain%name == 'GWF') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' Saturation",'
+            else if(domain%name == 'SWF') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' Depth",'
+            else if(domain%name == 'CLN') then
+                VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' Depth",'
             endif
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_STORAGE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to STORAGE",'
+        if(allocated(domain%cbb_STORAGE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to STORAGE",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_CONSTANT_HEAD)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CONSTANT_HEAD",'
+        if(allocated(domain%cbb_CONSTANT_HEAD)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to CONSTANT_HEAD",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_RECHARGE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to RECHARGE",'
+        if(allocated(domain%cbb_RECHARGE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to RECHARGE",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_WELLS)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to WELLS",'
+        if(allocated(domain%cbb_WELLS)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to WELLS",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_DRAINS)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to DRAINS",'
+        if(allocated(domain%cbb_DRAINS)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to DRAINS",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_CLN)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to CLN",'
+        if(allocated(domain%cbb_CLN)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to CLN",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_SWF)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWF",'
+        if(allocated(domain%cbb_SWF)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to SWF",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_GWF)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to GWF",'
+        if(allocated(domain%cbb_GWF)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to GWF",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_FLOW_FACE)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to FLOW_FACES",'
+        if(allocated(domain%cbb_FLOW_FACE)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to FLOW_FACES",'
             nVar=nVar+1
         end if
-        if(allocated(domain.cbb_SWBC)) then
-            VarSTR=trim(VarSTR)//'"'//trim(domain.name)//' to SWBC",'
+        if(allocated(domain%cbb_SWBC)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to SWBC",'
             nVar=nVar+1
         end if
         
         
         write(FNum,'(a)') trim(VarSTR)
             
-        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
-            ',N=',domain.nNold,', E=',domain.nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
+        write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain%name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
+            ',N=',domain%nNodes,', E=',domain%nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
         
         if(NodalControlVolume) then
             call AppendAuxdata(Modflow,ZoneSTR)
@@ -7064,81 +6913,81 @@
         
 
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (domain.x(i),i=1,domain.nNold)
+        write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%x,i=1,domain%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (domain.y(i),i=1,domain.nNold)
+        write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%y,i=1,domain%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (domain.z(i),i=1,domain.nNold)
+        write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%z,i=1,domain%nNodes)
         write(FNum,'(a)') '# z cell'
-        write(FNum,'(5('//FMT_R8//'))') (domain.zCell(i),i=1,domain.nCells)
+        write(FNum,'(5('//FMT_R8//'))') (domain%cell%z(i),i=1,domain%nCells)
         write(FNum,'(a)') '# layer'
-        write(FNum,'(5i8)') (domain.iLayer(i),i=1,domain.nCells)
+        write(FNum,'(5i8)') (domain%iLayer(i),i=1,domain%nCells)
         write(FNum,'(a)') '# ibound'
-        write(FNum,'(5i8)') (domain.ibound(i),i=1,domain.nCells)
+        write(FNum,'(5i8)') (domain%ibound(i),i=1,domain%nCells)
         write(FNum,'(a)') '# hnew (Initial head)'
-        write(FNum,'(10('//FMT_R4//'))') (domain.hnew(i),i=1,domain.nCells)
+        write(FNum,'(10('//FMT_R4//'))') (domain%hnew(i),i=1,domain%nCells)
         nVarShared=7
        
-        if(allocated(domain.head)) then
+        if(allocated(domain%head)) then
             write(FNum,'(a)') '# head'
-            write(FNum,'(5('//FMT_R8//'))') (domain.head(i,1),i=1,domain.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (domain%head(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.Drawdown)) then
+        if(allocated(domain%Drawdown)) then
             write(FNum,'(a)') '# saturation'
-            write(FNum,'(10('//FMT_R4//'))') (domain.Drawdown(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%Drawdown(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_STORAGE)) then
+        if(allocated(domain%cbb_STORAGE)) then
             write(FNum,'(a)') '# cbb_STORAGE'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_STORAGE(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_STORAGE(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_CONSTANT_HEAD)) then
+        if(allocated(domain%cbb_CONSTANT_HEAD)) then
             write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_CONSTANT_HEAD(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_CONSTANT_HEAD(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_RECHARGE)) then
+        if(allocated(domain%cbb_RECHARGE)) then
             write(FNum,'(a)') '# cbb_RECHARGE'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_RECHARGE(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_RECHARGE(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_WELLS)) then
+        if(allocated(domain%cbb_WELLS)) then
             write(FNum,'(a)') '# cbb_WELLS'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_WELLS(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_WELLS(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_DRAINS)) then
+        if(allocated(domain%cbb_DRAINS)) then
             write(FNum,'(a)') '# cbb_DRAINS'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_DRAINS(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_DRAINS(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_CLN)) then
+        if(allocated(domain%cbb_CLN)) then
             write(FNum,'(a)') '# cbb_CLN'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_CLN(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_CLN(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_SWF)) then
+        if(allocated(domain%cbb_SWF)) then
             write(FNum,'(a)') '# cbb_SWF'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_SWF(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWF(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_GWF)) then
+        if(allocated(domain%cbb_GWF)) then
             write(FNum,'(a)') '# cbb_GWF'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_GWF(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_FLOW_FACE)) then
+        if(allocated(domain%cbb_FLOW_FACE)) then
             write(FNum,'(a)') '# cbb_FLOW_FACE'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_FLOW_FACE(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_FLOW_FACE(i,1),i=1,domain%nCells)
         end if
-        if(allocated(domain.cbb_SWBC)) then
+        if(allocated(domain%cbb_SWBC)) then
             write(FNum,'(a)') '# cbb_SWBC'
-            write(FNum,'(10('//FMT_R4//'))') (domain.cbb_SWBC(i,1),i=1,domain.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWBC(i,1),i=1,domain%nCells)
         end if
         
-        do i=1,domain.nElements
-            if(domain.nNodesPerCell==8) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,domain.nNodesPerCell)
-            else if(domain.nNodesPerCell==6) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3), domain.iNode(3,i),(domain.iNode(j,i),j=4,6), domain.iNode(6,i)     
-            else if(domain.nNodesPerCell==3) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,3)    
-            else if(domain.nNodesPerCell==4) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,4)    
-            else if(domain.nNodesPerCell==2) then
-                write(FNum,'(8i8)') (domain.iNode(j,i),j=1,2)    
+        do i=1,domain%nElements
+            if(domain%nNodesPerCell==8) then
+                write(FNum,'(8i8)') (domain%idNode(j,i),j=1,domain%nNodesPerCell)
+            else if(domain%nNodesPerCell==6) then
+                write(FNum,'(8i8)') (domain%idNode(j,i),j=1,3), domain%idNode(3,i),(domain%idNode(j,i),j=4,6), domain%idNode(6,i)     
+            else if(domain%nNodesPerCell==3) then
+                write(FNum,'(8i8)') (domain%idNode(j,i),j=1,3)    
+            else if(domain%nNodesPerCell==4) then
+                write(FNum,'(8i8)') (domain%idNode(j,i),j=1,4)    
+            else if(domain%nNodesPerCell==2) then
+                write(FNum,'(8i8)') (domain%idNode(j,i),j=1,2)    
             end if
         end do
         
@@ -7153,8 +7002,8 @@
         
         do j=2,Modflow.ntime
             
-            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain.name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNold,', &
-                E=',domain.nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
+            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain%name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain%nNodes,', &
+                E=',domain%nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
             
             if(NodalControlVolume) then
                 call AppendAuxdata(Modflow,ZoneSTR)
@@ -7168,60 +7017,60 @@
                     //trim(VarSharedSTR)//', CONNECTIVITYSHAREZONE=1'
             end if
         
-            if(allocated(domain.head)) then
+            if(allocated(domain%head)) then
                 write(FNum,'(a)') '# head'
-                write(FNum,'(5('//FMT_R8//'))') (domain.head(i,j),i=1,domain.nCells)
+                write(FNum,'(5('//FMT_R8//'))') (domain%head(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.Drawdown)) then
+            if(allocated(domain%Drawdown)) then
                 write(FNum,'(a)') '# saturation'
-                write(FNum,'(10('//FMT_R4//'))') (domain.Drawdown(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%Drawdown(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_STORAGE)) then
+            if(allocated(domain%cbb_STORAGE)) then
                 write(FNum,'(a)') '# cbb_STORAGE'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_STORAGE(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_STORAGE(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_CONSTANT_HEAD)) then
+            if(allocated(domain%cbb_CONSTANT_HEAD)) then
                 write(FNum,'(a)') '# cbb_CONSTANT_HEAD'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_CONSTANT_HEAD(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_CONSTANT_HEAD(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_RECHARGE)) then
+            if(allocated(domain%cbb_RECHARGE)) then
                 write(FNum,'(a)') '# cbb_RECHARGE'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_RECHARGE(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_RECHARGE(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_WELLS)) then
+            if(allocated(domain%cbb_WELLS)) then
                 write(FNum,'(a)') '# cbb_WELLS'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_WELLS(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_WELLS(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_DRAINS)) then
+            if(allocated(domain%cbb_DRAINS)) then
                 write(FNum,'(a)') '# cbb_DRAINS'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_DRAINS(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_DRAINS(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_CLN)) then
+            if(allocated(domain%cbb_CLN)) then
                 write(FNum,'(a)') '# cbb_CLN'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_CLN(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_CLN(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_SWF)) then
+            if(allocated(domain%cbb_SWF)) then
                 write(FNum,'(a)') '# cbb_SWF'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_SWF(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWF(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_GWF)) then
+            if(allocated(domain%cbb_GWF)) then
                 write(FNum,'(a)') '# cbb_GWF'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_GWF(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_FLOW_FACE)) then
+            if(allocated(domain%cbb_FLOW_FACE)) then
                 write(FNum,'(a)') '# cbb_FLOW_FACE'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_FLOW_FACE(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_FLOW_FACE(i,j),i=1,domain%nCells)
             end if
-            if(allocated(domain.cbb_SWBC)) then
+            if(allocated(domain%cbb_SWBC)) then
                 write(FNum,'(a)') '# cbb_SWBC'
-                write(FNum,'(10('//FMT_R4//'))') (domain.cbb_SWBC(i,j),i=1,domain.nCells)
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWBC(i,j),i=1,domain%nCells)
             end if
-            !write(FNum,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="GWF" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain.nNold,', E=',domain.nCells,', datapacking=block, &
+            !write(FNum,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="GWF" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain%nNodes,', E=',domain%nCells,', datapacking=block, &
             !zonetype=febrick, VARLOCATION=([4,5,6]=CELLCENTERED), VARSHARELIST=([1,2,3,4,]), CONNECTIVITYSHAREZONE=1 '
             !write(FNum,'(a)') '# head'
-            !write(FNum,'(10('//FMT_R4//'))') (domain.head(i,j),i=1,domain.nCells)
+            !write(FNum,'(10('//FMT_R4//'))') (domain%head(i,j),i=1,domain%nCells)
             !write(FNum,'(a)') '# Drawdown'
-            !write(FNum,'(10('//FMT_R4//'))') (domain.Drawdown(i,j),i=1,domain.nCells)
+            !write(FNum,'(10('//FMT_R4//'))') (domain%Drawdown(i,j),i=1,domain%nCells)
         end do
         
         call FreeUnit(FNum)
@@ -7237,48 +7086,48 @@
         integer(i4) :: i, j, nvar
         character(MAX_STR) :: FName
         
-        if(TMPLT.nNodesPerElement==3) then
-            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_CircleCentres.tecplot.dat'
+        if(TMPLT%nNodesPerElement==3) then
+            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT%name)//'_CircleCentres.tecplot.dat'
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
             call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
+            write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y","Z"'
             nVar=3
             
             write(FNum,'(a)') trim(VarSTR)
             
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Circle Centres", datapacking=point'
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT%nElements,', t="'//trim(TMPLT%name)//' Circle Centres", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
            
-            do i=1,TMPLT.nElements
-                    write(FNum,'(3('//FMT_R8//'))') TMPLT.xcircle(i),TMPLT.ycircle(i),TMPLT.zcircle(i)
+            do i=1,TMPLT%nElements
+                    write(FNum,'(3('//FMT_R8//'))') TMPLT%Element(i)%xCircle,TMPLT%Element(i)%yCircle,TMPLT%Element(i)%zCircle
             end do
 
             call FreeUnit(FNum)
             
-        else if(TMPLT.nNodesPerElement==4) then
-            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_RectangleCentres.tecplot.dat'
+        else if(TMPLT%nNodesPerElement==4) then
+            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT%name)//'_RectangleCentres.tecplot.dat'
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
             call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
+            write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y"'
             nVar=3
             
             write(FNum,'(a)') trim(VarSTR)
             
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements,', t="'//trim(TMPLT.name)//' Rectangle Centres", datapacking=point'
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT%nElements,', t="'//trim(TMPLT%name)//' Rectangle Centres", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
            
-            do i=1,TMPLT.nElements
-                    write(FNum,'(3('//FMT_R8//'))') TMPLT.xElement(i),TMPLT.yElement(i)
+            do i=1,TMPLT%nElements
+                    write(FNum,'(3('//FMT_R8//'))') TMPLT%Element(i)%x,TMPLT%Element(i)%y
             end do
 
             call FreeUnit(FNum)
@@ -7287,25 +7136,25 @@
         endif
         
         if(NodalControlVolume) then
-            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'_EdgePoints.tecplot.dat'
+            FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT%name)//'_EdgePoints.tecplot.dat'
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
             call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
-            write(FNum,'(a)') 'Title = "'//trim(TMPLT.name)//' "'
+            write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y"'
             nVar=3
             
             write(FNum,'(a)') trim(VarSTR)
             
-            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT.nElements*TMPLT.nNodesPerElement,', t="'//trim(TMPLT.name)//' Edge Points", datapacking=point'
+            write(ZoneSTR,'(a,i8,a)')'ZONE i=',TMPLT%nElements*TMPLT%nNodesPerElement,', t="'//trim(TMPLT%name)//' Edge Points", datapacking=point'
         
             write(FNum,'(a)') trim(ZoneSTR)
            
-            do i=1,TMPLT.nElements
-                    do j=1,TMPLT.nNodesPerElement
-                        write(FNum,'(3('//FMT_R4//'))') TMPLT.xSide(j,i),TMPLT.ySide(j,i)
+            do i=1,TMPLT%nElements
+                    do j=1,TMPLT%nNodesPerElement
+                        write(FNum,'(3('//FMT_R4//'))') TMPLT%xSide(j,i),TMPLT%ySide(j,i)
                     end do
             end do
 
@@ -7326,46 +7175,39 @@
 
 
         
-        if(.not. allocated(domain.Zone_Is)) then 
-            domain.nZones = 1
-            allocate(domain.Zone_Is(domain.nZones),stat=ialloc)
-            call AllocChk(ialloc,trim(domain.name)//' Zone_Is array')            
-            domain.Zone_Is(:)=0
-        else if(allocated(domain.Zone_Is)) then 
-            call growIntegerArray(domain.Zone_Is,domain.nZones,domain.nZones+1)
+        call growIntegerArray(domain%zone%is,domain%nZones,domain%nZones+1)
             
-            select case(ActiveDomain)
-            case (iGWF)
-                ! no zoned properties
-            case (iSWF)
-                call growRealArray(domain.Manning,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.DepressionStorageHeight,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.ObstructionStorageHeight,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.H1DepthForSmoothing,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.H2DepthForSmoothing,domain.nZones,domain.nZones+1)
-            case (iCLN)
-                call growIntegerArray(domain.Geometry,domain.nZones,domain.nZones+1)
-                call growIntegerArray(domain.Direction,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.CircularRadius,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.RectangularWidth,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.RectangularHeight,domain.nZones,domain.nZones+1)
-                call growRealArray(domain.LongitudinalK,domain.nZones,domain.nZones+1)
-                call growIntegerArray(domain.FlowTreatment,domain.nZones,domain.nZones+1)
-            end select
+        select case(ActiveDomain)
+        case (iGWF)
+            ! no zoned properties
+        case (iSWF)
+            call growRealArray(domain%Manning,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%DepressionStorageHeight,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%ObstructionStorageHeight,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%H1DepthForSmoothing,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%H2DepthForSmoothing,domain%nZones,domain%nZones+1)
+        case (iCLN)
+            call growIntegerArray(domain%Geometry,domain%nZones,domain%nZones+1)
+            call growIntegerArray(domain%Direction,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%CircularRadius,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%RectangularWidth,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%RectangularHeight,domain%nZones,domain%nZones+1)
+            call growRealArray(domain%LongitudinalK,domain%nZones,domain%nZones+1)
+            call growIntegerArray(domain%FlowTreatment,domain%nZones,domain%nZones+1)
+        end select
             
-            domain.nZones = domain.nZones + 1
-            domain.Zone_Is(:)=0 ! not chosen
-        end if
+        domain%nZones = domain%nZones + 1
+        domain%zone%is=0 ! not chosen
 
         ncount=0
-        do i=1,domain.nCells
+        do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain.iZone(i) = domain.nZones
+                domain%iZone(i) = domain%nZones
                 ncount=ncount+1
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain.name)//' new zone number: ',domain.nZones
+        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' new zone number: ',domain%nZones
         call Msg(trim(TmpSTR))
         write(TmpSTR,'(a,i10)') TAB//'Cells added to new zone: ',ncount
         call Msg(trim(TmpSTR))
@@ -7374,13 +7216,13 @@
     end subroutine NewZoneFromChosenCells
     
    !----------------------------------------------------------------------
-    subroutine NodeCentredGWFCellGeometry(FnumMUT,Modflow, TMPLT_GWF,TMPLT)
+    subroutine NodeCentredGWFCellGeometry(FnumMUT,Modflow, GWFDomain,TMPLT)
         implicit none
     
         integer(i4) :: FNumMUT
         type (ModflowProject) Modflow
         type (mesh) TMPLT
-        type (mesh) TMPLT_GWF
+        type (ModflowDomain) GWFDomain
         
         integer(i4) :: i, j
 
@@ -7397,62 +7239,62 @@
 
         write(FNumTecplot,*) 'Title = "Modflow GWF Cell Geometry"'
         
-        ! calculate node-centred cell area based on TMPLT.CellArea
+        ! calculate node-centred cell area based on TMPLT%CellArea
         ! do top layer first
-        allocate(Modflow.GWF.CellArea(Modflow.GWF.nCells),stat=ialloc)
+        allocate(Modflow%GWF%CellArea(Modflow%GWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF cell horizontal area arrays')
-        Modflow.GWF.CellArea(:)=0.0d0
-        do i=1,TMPLT.nElements
-            do j=1,TMPLT.nNodesPerElement
-                j1=TMPLT.iNode(j,i)
-                if(j < TMPLT.nNodesPerElement) then
-                    j2=TMPLT.iNode(j+1,i)
+        Modflow%GWF%CellArea(:)=0.0d0
+        do i=1,TMPLT%nElements
+            do j=1,TMPLT%nNodesPerElement
+                j1=TMPLT%iNode(j,i)
+                if(j < TMPLT%nNodesPerElement) then
+                    j2=TMPLT%iNode(j+1,i)
                 else
-                    j2=TMPLT.iNode(1,i)
+                    j2=TMPLT%iNode(1,i)
                 end if
                 
                 
-                if(TMPLT.nNodesPerElement == 3) then
-                    call area_triangle(TMPLT.x(j1),TMPLT.y(j1),0.0d0, &
-                            &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
-                            &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
+                if(TMPLT%nNodesPerElement == 3) then
+                    call area_triangle(TMPLT%node%x(j1),TMPLT%node%y(j1),0.0d0, &
+                            &          TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0, &
+                            &          TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.GWF.CellArea(j1)=Modflow.GWF.CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1),TMPLT.xCircle(i),TMPLT.yCircle(i),TMPLT_GWF.z(j1))
-                    if(bcheck(TMPLT.Node_is(j1),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j1),TMPLT.y(j1),TMPLT_GWF.z(j1),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1))
+                    Modflow%GWF%CellArea(j1)=Modflow%GWF%CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1),TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),GWFDomain%z(j1))
+                    if(bcheck(TMPLT%node%is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j1),TMPLT%node%y(j1),GWFDomain%z(j1),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1))
                     endif
         
-                    call area_triangle(TMPLT.x(j2),TMPLT.y(j2),0.0d0, &
-                            &          TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0, &
-                            &          TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0, &
+                    call area_triangle(TMPLT%node%x(j2),TMPLT%node%y(j2),0.0d0, &
+                            &          TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0, &
+                            &          TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.GWF.CellArea(j2)=Modflow.GWF.CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xCircle(i),TMPLT.yCircle(i),0.0d0,TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0)
-                    if(bcheck(TMPLT.Node_is(j2),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j2),TMPLT.y(j2),TMPLT_GWF.z(j2),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j2))
+                    Modflow%GWF%CellArea(j2)=Modflow%GWF%CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0,TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0)
+                    if(bcheck(TMPLT%node%is(j2),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j2),TMPLT%node%y(j2),GWFDomain%z(j2),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j2))
                     endif
                     
                 
-                else if(TMPLT.nNodesPerElement == 4) then
-                    call area_triangle(TMPLT_GWF.x(j1),TMPLT_GWF.y(j1),0.0d0, &
-                            &          TMPLT_GWF.xSide(j,i),TMPLT_GWF.ySide(j,i),0.0d0, &
-                            &          TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0, &
+                else if(TMPLT%nNodesPerElement == 4) then
+                    call area_triangle(GWFDomain%x(j1),GWFDomain%y(j1),0.0d0, &
+                            &          GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0, &
+                            &          GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.GWF.CellArea(j1)=Modflow.GWF.CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT.xSide(j,i),TMPLT.ySide(j,i),0.0d0,TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0)
-                    if(bcheck(TMPLT.Node_is(j1),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j1),TMPLT.y(j1),TMPLT_GWF.z(j1),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j1))
+                    Modflow%GWF%CellArea(j1)=Modflow%GWF%CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0,GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0)
+                    if(bcheck(TMPLT%node%is(j1),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j1),TMPLT%node%y(j1),GWFDomain%z(j1),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1))
                     endif
         
-                    call area_triangle(TMPLT_GWF.x(j2),TMPLT_GWF.y(j2),0.0d0, &
-                            &          TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0, &
-                            &          TMPLT_GWF.xSide(j,i),TMPLT_GWF.ySide(j,i),0.0d0, &
+                    call area_triangle(GWFDomain%x(j2),GWFDomain%y(j2),0.0d0, &
+                            &          GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0, &
+                            &          GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.GWF.CellArea(j2)=Modflow.GWF.CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT_GWF.xElement(i),TMPLT_GWF.yElement(i),0.0d0,TMPLT_GWF.xSide(j,i),TMPLT_GWF.ySide(j,i),0.0d0)
-                    if(bcheck(TMPLT.Node_is(j2),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT.x(j2),TMPLT.y(j2),TMPLT_GWF.z(j2),TMPLT.xSide(j,i),TMPLT.ySide(j,i),TMPLT_GWF.z(j2))
+                    Modflow%GWF%CellArea(j2)=Modflow%GWF%CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0,GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0)
+                    if(bcheck(TMPLT%node%is(j2),BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j2),TMPLT%node%y(j2),GWFDomain%z(j2),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j2))
                     endif
                 end if
                 
@@ -7464,54 +7306,54 @@
                 
         ! copy through all layers
         do i=1,TMPLT%nNodes
-            do j=2,Modflow.GWF.nLayers
+            do j=2,Modflow%GWF%nLayers
                 iCell = (j-1)*TMPLT%nNodes+i
-                Modflow.GWF.CellArea(icell)=Modflow.GWF.CellArea(i)
+                Modflow%GWF%CellArea(icell)=Modflow%GWF%CellArea(i)
             end do
         end do
         
-        ! Generate connection data from TMPLT_GWF 
-        allocate(Modflow.GWF.ConnectionLength(MAX_CNCTS,Modflow.GWF.nCells), &
-                 Modflow.GWF.PerpendicularArea(MAX_CNCTS,Modflow.GWF.nCells),stat=ialloc)
+        ! Generate connection data from GWFDomain 
+        allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
+                 Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF Cell connection arrays')
-        Modflow.GWF.ConnectionLength(:,:)=0.0d0
-        Modflow.GWF.PerpendicularArea(:,:)=0.0d0
+        Modflow%GWF%ConnectionLength(:,:)=0.0d0
+        Modflow%GWF%PerpendicularArea(:,:)=0.0d0
 
-        Modflow.GWF.nodelay=TMPLT%nNodes
-        do i=1,Modflow.GWF.nCells
-            iCell = myMOD(i,Modflow.GWF.nodelay)
+        Modflow%GWF%nodelay=TMPLT%nNodes
+        do i=1,Modflow%GWF%nCells
+            iCell = myMOD(i,Modflow%GWF%nodelay)
                    
-            do j=2,modflow.GWF.l_TMPLT.ia(i)
-                if(myMOD(i,modflow.GWF.nodelay) == myMOD(modflow.GWF.l_TMPLT.ConnectionList(j,i),modflow.GWF.nodelay)) then ! GWF neighbour in same column
-                    modflow.GWF.ConnectionLength(j,i)=Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i)
-                    modflow.GWF.PerpendicularArea(j,i)=Modflow.GWF.CellArea(i)
+            do j=2,Modflow%GWF%ia(i)
+                if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then ! GWF neighbour in same column
+                    Modflow%GWF%ConnectionLength(j,i)=Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i)
+                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%CellArea(i)
                     
                     !!!fred temp debug outputs
                     !!if(i==5) then
-                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
                     !!    call msg(TMPStr)
-                    !!    !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                    !!    !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
                     !!    !call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
                     !!    call msg(TMPStr)
                     !!endif
                 else  ! SWF or GWF neighbour in adjacent column
-                    modflow.GWF.ConnectionLength(j,i)=TMPLT_GWF.ConnectionLength(j,i)
-                    modflow.GWF.PerpendicularArea(j,i)=TMPLT_GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
+                    Modflow%GWF%ConnectionLength(j,i)=GWFDomain%ConnectionLength(j,i)
+                    Modflow%GWF%PerpendicularArea(j,i)=GWFDomain%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
                     
                     !!!fred temp debug outputs
                     !!if(i==5) then
-                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell modflow.GWF.ConnectionList(j,i) ',modflow.GWF.ConnectionList(j,i),' j ',j
+                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
                     !!    call msg(TMPStr)
-                    !!    !write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
+                    !!    !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
                     !!    !call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' TMPLT_GWF.PerpendicularArea(j,i) ',TMPLT_GWF.PerpendicularArea(j,i)
+                    !!    write(TMPStr,'(a,f15.5)') ' GWFDomain%PerpendicularArea(j,i) ',GWFDomain%PerpendicularArea(j,i)
                     !!    call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
                     !!    call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Top(i) ',Modflow.GWF.Top(i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell%Top(i) ',Modflow%GWF%Cell%Top(i)
                     !!    call msg(TMPStr)                        
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow.GWF.Bottom(i) ',Modflow.GWF.Bottom(i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell%Bottom(i) ',Modflow%GWF%Cell%Bottom(i)
                     !!    call msg(TMPStr)                        
                     !!
                     !!endif
@@ -7519,9 +7361,9 @@
             end do
         end do
         
-        Modflow.GWF.njag=0
-        do i=1,Modflow.GWF.nCells
-            Modflow.GWF.njag=Modflow.GWF.njag +Modflow.GWF.l_TMPLT.ia(i)
+        Modflow%GWF%njag=0
+        do i=1,Modflow%GWF%nCells
+            Modflow%GWF%njag=Modflow%GWF%njag +Modflow%GWF%ia(i)
         end do
 
 
@@ -7548,62 +7390,62 @@
         write(FNumTecplot,*) 'Title = "Modflow SWF Cell Geometry"'
         
         ! Cell horizontal areas
-        ! calculate node-centred cell area based on Modflow.SWF.l_TMPLT.CellArea
-        allocate(Modflow.SWF.CellArea(Modflow.SWF.l_TMPLT%nNodes),stat=ialloc)
+        ! calculate node-centred cell area based on Modflow%SWF%CellArea
+        allocate(Modflow%SWF%CellArea(Modflow%SWF%nNodes),stat=ialloc)
         call AllocChk(ialloc,'SWF cell horizontal area arrays')
-        Modflow.SWF.CellArea(:)=0.0d0
-        do i=1,Modflow.SWF.l_TMPLT.nElements
-            do j=1,Modflow.SWF.l_TMPLT.nFacesPerElement
-                j1=Modflow.SWF.l_TMPLT.iNode(Modflow.SWF.l_TMPLT.LocalFaceNodes(1,j),i)
-                j2=Modflow.SWF.l_TMPLT.iNode(Modflow.SWF.l_TMPLT.LocalFaceNodes(2,j),i)
+        Modflow%SWF%CellArea(:)=0.0d0
+        do i=1,Modflow%SWF%nElements
+            do j=1,Modflow%SWF%nFacesPerElement
+                j1=Modflow%SWF%iNode(Modflow%SWF%LocalFaceNodes(1,j),i)
+                j2=Modflow%SWF%iNode(Modflow%SWF%LocalFaceNodes(2,j),i)
                 
-                if(Modflow.SWF.l_TMPLT.nNodesPerElement == 3) then
-                    call area_triangle(Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xCircle(i),Modflow.SWF.l_TMPLT.yCircle(i),0.0d0, &
+                if(Modflow%SWF%nNodesPerElement == 3) then
+                    call area_triangle(Modflow%SWF%x(j1),Modflow%SWF%y(j1),0.0d0, &
+                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
+                            &          Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xCircle(i),Modflow.SWF.l_TMPLT.yCircle(i),Modflow.SWF.l_TMPLT.z(j1))
+                    Modflow%SWF%CellArea(j1)=Modflow%SWF%CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1),Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),Modflow%SWF%z(j1))
         
-                    call area_triangle(Modflow.SWF.l_TMPLT.x(j2),Modflow.SWF.l_TMPLT.y(j2),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xCircle(i),Modflow.SWF.l_TMPLT.yCircle(i),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),0.0d0, &
+                    call area_triangle(Modflow%SWF%x(j2),Modflow%SWF%y(j2),0.0d0, &
+                            &          Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),0.0d0, &
+                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.xCircle(i),Modflow.SWF.l_TMPLT.yCircle(i),Modflow.SWF.l_TMPLT.z(j2),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j2))
+                    Modflow%SWF%CellArea(j2)=Modflow%SWF%CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
                     
-                    if(Modflow.SWF.l_TMPLT.FaceNeighbour(j,i) == 0) then ! face on boundary
+                    if(Modflow%SWF%FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1))
+                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j2),Modflow.SWF.l_TMPLT.y(j2),Modflow.SWF.l_TMPLT.z(j2),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j2))
+                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j2),Modflow%SWF%y(j2),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
                     endif
 
-                else if(Modflow.SWF.l_TMPLT.nNodesPerElement == 4) then
-                    call area_triangle(Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xElement(i),Modflow.SWF.l_TMPLT.yElement(i),0.0d0, &
+                else if(Modflow%SWF%nNodesPerElement == 4) then
+                    call area_triangle(Modflow%SWF%x(j1),Modflow%SWF%y(j1),0.0d0, &
+                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
+                            &          Modflow%SWF%x(i),Modflow%SWF%Element%y(i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.SWF.CellArea(j1)=Modflow.SWF.CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xElement(i),Modflow.SWF.l_TMPLT.yElement(i),Modflow.SWF.l_TMPLT.z(j1))
-                    !if(bcheck(Modflow.SWF.l_TMPLT.Node_is(j1),BoundaryNode)) then 
-                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1))
+                    Modflow%SWF%CellArea(j1)=Modflow%SWF%CellArea(j1)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1),Modflow%SWF%x(i),Modflow%SWF%Element%y(i),Modflow%SWF%z(j1))
+                    !if(bcheck(Modflow%SWF%node%is(j1),BoundaryNode)) then 
+                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
                     !endif
        
-                    call area_triangle(Modflow.SWF.l_TMPLT.x(j2),Modflow.SWF.l_TMPLT.y(j2),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xElement(i),Modflow.SWF.l_TMPLT.yElement(i),0.0d0, &
-                            &          Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),0.0d0, &
+                    call area_triangle(Modflow%SWF%x(j2),Modflow%SWF%y(j2),0.0d0, &
+                            &          Modflow%SWF%x(i),Modflow%SWF%Element%y(i),0.0d0, &
+                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
                             &          TriangleArea)
-                    Modflow.SWF.CellArea(j2)=Modflow.SWF.CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.xElement(i),Modflow.SWF.l_TMPLT.yElement(i),Modflow.SWF.l_TMPLT.z(j2),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j2))
-                    !if(bcheck(Modflow.SWF.l_TMPLT.Node_is(j1),BoundaryNode)) then 
-                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1))
+                    Modflow%SWF%CellArea(j2)=Modflow%SWF%CellArea(j2)+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(i),Modflow%SWF%Element%y(i),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
+                    !if(bcheck(Modflow%SWF%node%is(j1),BoundaryNode)) then 
+                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
                     !endif
-                    if(Modflow.SWF.l_TMPLT.FaceNeighbour(j,i) == 0) then ! face on boundary
+                    if(Modflow%SWF%FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j1),Modflow.SWF.l_TMPLT.y(j1),Modflow.SWF.l_TMPLT.z(j1),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j1))
+                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow.SWF.l_TMPLT.x(j2),Modflow.SWF.l_TMPLT.y(j2),Modflow.SWF.l_TMPLT.z(j2),Modflow.SWF.l_TMPLT.xSide(j,i),Modflow.SWF.l_TMPLT.ySide(j,i),Modflow.SWF.l_TMPLT.z(j2))
+                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j2),Modflow%SWF%y(j2),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
                     endif
 
                 end if
@@ -7612,17 +7454,17 @@
         end do
         call freeunit(FNumTecplot)
         
-        ! fred can we just use Modflow.SWF.l_TMPLT.ConnectionLength etc here?
-        ! Copy ConnectionLength and PerpendicularArea from Modflow.SWF.l_TMPLT 
-        allocate(Modflow.SWF.ConnectionLength(MAX_CNCTS,Modflow.SWF.nCells), &
-                 Modflow.SWF.PerpendicularArea(MAX_CNCTS,Modflow.SWF.nCells),stat=ialloc)
+        ! fred can we just use Modflow%SWF%ConnectionLength etc here?
+        ! Copy ConnectionLength and PerpendicularArea from Modflow%SWF 
+        allocate(Modflow%SWF%ConnectionLength(MAX_CNCTS,Modflow%SWF%nCells), &
+                 Modflow%SWF%PerpendicularArea(MAX_CNCTS,Modflow%SWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow.SWF.ConnectionLength(:,:)=Modflow.SWF.l_TMPLT.ConnectionLength(:,:)
-        Modflow.SWF.PerpendicularArea(:,:)=Modflow.SWF.l_TMPLT.PerpendicularArea(:,:)
+        Modflow%SWF%ConnectionLength(:,:)=Modflow%SWF%ConnectionLength(:,:)
+        Modflow%SWF%PerpendicularArea(:,:)=Modflow%SWF%PerpendicularArea(:,:)
         
-        Modflow.SWF.njag=0
-        do i=1,Modflow.SWF.nCells
-            Modflow.SWF.njag=Modflow.SWF.njag + Modflow.SWF.l_TMPLT.ia(i)
+        Modflow%SWF%njag=0
+        do i=1,Modflow%SWF%nCells
+            Modflow%SWF%njag=Modflow%SWF%njag + Modflow%SWF%ia(i)
         end do
 
    
@@ -7641,26 +7483,26 @@
 	    integer(i4) :: iCell
 	    real(dp) :: x1,y1,z1,dist_min,f1
         
-        domain.nObsPnt=domain.nObsPnt+1
+        domain%nObsPnt=domain%nObsPnt+1
 
-        read(FNumMUT,'(a)') domain.ObsPntName(domain.nObsPnt)
-        call Msg(TAB//TAB//trim(domain.name)//' observation point name: '//trim(domain.ObsPntName(domain.nObsPnt)))
+        read(FNumMUT,'(a)') domain%ObsPntName(domain%nObsPnt)
+        call Msg(TAB//TAB//trim(domain%name)//' observation point name: '//trim(domain%ObsPntName(domain%nObsPnt)))
 
         read(FNumMut,*) x1,y1,z1
         write(TMPStr,*) TAB//TAB//'Find cell closest to user XYZ: ',x1, y1, z1
         call Msg(TMPStr)
 
         dist_min=1.0e20
-	    do i=1,domain.nCells
-		    f1=sqrt((x1-domain.xCell(i))**2+((y1-domain.yCell(i)))**2+((z1-domain.zCell(i)))**2)
+	    do i=1,domain%nCells
+		    f1=sqrt((x1-domain%cell%x(i))**2+((y1-domain%cell%y(i)))**2+((z1-domain%cell%z(i)))**2)
 		    if(f1.lt.dist_min) then
 			    iCell=i
 			    dist_min=f1
 		    endif
         end do
         
-        domain.ObsPntCell(domain.nObsPnt)=iCell
-        write(TMPStr,'(a,i10,a)') TAB//TAB//' Observation point cell: ',domain.ObsPntCell(domain.nObsPnt)
+        domain%ObsPntCell(domain%nObsPnt)=iCell
+        write(TMPStr,'(a,i10,a)') TAB//TAB//' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
         call Msg(TMPStr)
         write(TMPStr,'(a,'//FMT_R8//',a)') TAB//TAB//' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
@@ -7985,38 +7827,38 @@
         integer(i4) :: i, j
 
         ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(modflow.SWF.name)//'.tecplot.dat'
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%SWF%name)//'.tecplot.dat'
         
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(Modflow.SWF.l_TMPLT.name)//'"'
+        write(FNum,*) 'Title = "'//trim(Modflow%SWF%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(modflow.SWF.name)//' Zone","'//trim(modflow.SWF.name)//' zCell",'
+        VarSTR='variables="X","Y","Z","'//trim(Modflow%SWF%name)//' Zone","'//trim(Modflow%SWF%name)//' cell%z",'
         nVar=5
             
-        if(allocated(Modflow.SWF.Sgcl)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' SWF-GWF connection length",'
+        if(allocated(Modflow%SWF%Sgcl)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' SWF-GWF connection length",'
             nVar=nVar+1
         end if
             
-        if(allocated(Modflow.SWF.StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Initial Depth",'
+        if(allocated(Modflow%SWF%StartingHeads)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Initial Depth",'
             nVar=nVar+1
         end if
         
-        if(allocated(Modflow.SWF.CellArea)) then
-            VarSTR=trim(VarSTR)//'"'//trim(modflow.SWF.name)//' Cell area",'
+        if(allocated(Modflow%SWF%CellArea)) then
+            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Cell area",'
             nVar=nVar+1
         end if
                 
         write(FNum,'(a)') trim(VarSTR)
           
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(modflow.SWF.name)//'"  ,N=',Modflow.SWF.l_TMPLT%nNodes,', E=',Modflow.SWF.l_TMPLT.nElements,&
-        ', datapacking=block, zonetype='//trim(Modflow.SWF.l_TMPLT%TecplotTyp)
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%SWF%name)//'"  ,N=',Modflow%SWF%nNodes,', E=',Modflow%SWF%nElements,&
+        ', datapacking=block, zonetype='//trim(Modflow%SWF%TecplotTyp)
             
         if(NodalControlVolume) then
             write(FNum,'(a)') trim(ZoneSTR) 
@@ -8036,45 +7878,45 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.l_TMPLT.x(i),i=1,Modflow.SWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%x(i),i=1,Modflow%SWF%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.l_TMPLT.y(i),i=1,Modflow.SWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%y(i),i=1,Modflow%SWF%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.l_TMPLT.z(i),i=1,Modflow.SWF.l_TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
         
         write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (Modflow.SWF.iZone(i),i=1,Modflow.SWF.nCells)
+        write(FNum,'(5i8)') (Modflow%SWF%iZone(i),i=1,Modflow%SWF%nCells)
             
-        write(FNum,'(a)') '# zCell i.e. cell bottom'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.zCell(i),i=1,Modflow.SWF.nCells)
+        write(FNum,'(a)') '# cell%z i.e. cell bottom'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%cell%z(i),i=1,Modflow%SWF%nCells)
             
-        if(allocated(Modflow.SWF.Sgcl)) then
+        if(allocated(Modflow%SWF%Sgcl)) then
             write(FNum,'(a)') '# SW-GW connection length'
-            write(FNum,'(10('//FMT_R4//'))') (Modflow.SWF.Sgcl(i),i=1,Modflow.SWF.nCells)
+            write(FNum,'(10('//FMT_R4//'))') (Modflow%SWF%Sgcl(i),i=1,Modflow%SWF%nCells)
         end if
 
-        if(allocated(Modflow.SWF.StartingHeads)) then
+        if(allocated(Modflow%SWF%StartingHeads)) then
             write(FNum,'(a)') '# Starting depth'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.StartingHeads(i)-Modflow.SWF.ZCell(i),i=1,Modflow.SWF.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i)-Modflow%SWF%cell%z(i),i=1,Modflow%SWF%nCells)
         end if
 
-        if(allocated(Modflow.SWF.CellArea)) then
+        if(allocated(Modflow%SWF%CellArea)) then
             write(FNum,'(a)') '# Cell Area'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow.SWF.CellArea(i),i=1,Modflow.SWF.nCells)
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%CellArea(i),i=1,Modflow%SWF%nCells)
         end if
         
-        do i=1,Modflow.SWF.l_TMPLT.nElements
-            if(Modflow.SWF.l_TMPLT.nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (Modflow.SWF.l_TMPLT.iNode(j,i),j=1,3) !, Modflow.SWF.l_TMPLT.iNode(3,i) 
-            else if(Modflow.SWF.l_TMPLT.nNodesPerElement==4) then ! 4-node quadrilateral
-                if(Modflow.SWF.l_TMPLT.iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (Modflow.SWF.l_TMPLT.iNode(j,i),j=1,4) 
+        do i=1,Modflow%SWF%nElements
+            if(Modflow%SWF%nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
+                write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,3) !, Modflow%SWF%iNode(3,i) 
+            else if(Modflow%SWF%nNodesPerElement==4) then ! 4-node quadrilateral
+                if(Modflow%SWF%iNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,4) 
                 else
-                    write(FNum,'(8i8)') (Modflow.SWF.l_TMPLT.iNode(j,i),j=1,3), Modflow.SWF.l_TMPLT.iNode(3,i) 
+                    write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,3), Modflow%SWF%iNode(3,i) 
                 end if
             else
-                write(TmpSTR,'(i2)') Modflow.SWF.l_TMPLT.nNodesPerElement
-                call ErrMsg(trim(Modflow.SWF.l_TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)') Modflow%SWF%nNodesPerElement
+                call ErrMsg(trim(Modflow%SWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
         end do
        
@@ -8114,49 +7956,49 @@
         integer(i4) :: i, j
 
         ! Cell connection length and perpendicular area arrays
-        allocate(TMPLT.ConnectionLength(MAX_CNCTS,TMPLT.nElements), &
-                 TMPLT.PerpendicularArea(MAX_CNCTS,TMPLT.nElements),stat=ialloc)
+        allocate(TMPLT%ConnectionLength(MAX_CNCTS,TMPLT%nElements), &
+                 TMPLT%PerpendicularArea(MAX_CNCTS,TMPLT%nElements),stat=ialloc)
         call AllocChk(ialloc,'TMPLT Cell ConnectionLength, PerpendicularArea arrays')
-        TMPLT.ConnectionLength(:,:)=0.0
-        TMPLT.PerpendicularArea(:,:)=0.0
+        TMPLT%ConnectionLength(:,:)=0.0
+        TMPLT%PerpendicularArea(:,:)=0.0
 
-        do i=1,TMPLT.nElements
+        do i=1,TMPLT%nElements
                     
-            do j=2,TMPLT.ia(i)
+            do j=2,TMPLT%ia(i)
                 ! 2D TMPLT neighbours are always in an adjacent column of the mesh so use sidelength
-                if(TMPLT.nNodesPerElement == 3) then
-                    select case (TMPLT.ThroughFace(j,i))
+                if(TMPLT%nNodesPerElement == 3) then
+                    select case (TMPLT%ThroughFace(j,i))
                         case ( 1 )
-                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(1,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(1,i)   
                         case ( 2 )
-                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(2,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(2,i)   
                         case ( 3 )
-                            TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(3,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(3,i)   
                         case ( 4 )  ! must be 8-node block
                             call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
                     end select
-                    TMPLT.ConnectionLength(j,i)=TMPLT.rCircle(i)
-                    TMPLT.PerpendicularArea(j,i)=TMPLT.PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
-                else if(TMPLT.nNodesPerElement == 4) then
-                    select case (TMPLT.ThroughFace(j,i))
+                    TMPLT%ConnectionLength(j,i)=TMPLT%rCircle(i)
+                    TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
+                else if(TMPLT%nNodesPerElement == 4) then
+                    select case (TMPLT%ThroughFace(j,i))
                     case ( 1 )
-                        TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(1,i)   
-                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(1,i))**2 + &
-                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(1,i))**2)
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(1,i)   
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(1,i))**2 + &
+                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(1,i))**2)
                     case ( 2 )
-                        TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(2,i)   
-                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(2,i))**2 + &
-                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(2,i))**2)
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(2,i)   
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(2,i))**2 + &
+                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(2,i))**2)
                     case ( 3 )
-                        TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(3,i)   
-                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(3,i))**2 + &
-                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(3,i))**2)
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(3,i)   
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(3,i))**2 + &
+                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(3,i))**2)
                     case ( 4 )
-                        TMPLT.PerpendicularArea(j,i)=TMPLT.SideLength(4,i)   
-                        TMPLT.ConnectionLength(j,i)=sqrt((TMPLT.xElement(i)-TMPLT.FaceCentroidX(4,i))**2 + &
-                                                         (TMPLT.yElement(i)-TMPLT.FaceCentroidY(4,i))**2)
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(4,i)   
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(4,i))**2 + &
+                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(4,i))**2)
                     end select
-                    TMPLT.PerpendicularArea(j,i)=TMPLT.PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
+                    TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
                 end if
             end do
         end do
@@ -8193,37 +8035,37 @@
         real(dp) :: D, DC, D1, D2, RC
         
         !! For node-centred modflow cell connection and area calculations we need xSide, ySide array coordinates
-        !allocate(TMPLT.xSide(TMPLT.nNodesPerElement,TMPLT.nElements), &
-        !            TMPLT.ySide(TMPLT.nNodesPerElement,TMPLT.nElements),stat=ialloc)
+        !allocate(TMPLT%xSide(TMPLT%nNodesPerElement,TMPLT%nElements), &
+        !            TMPLT%ySide(TMPLT%nNodesPerElement,TMPLT%nElements),stat=ialloc)
         !call AllocChk(ialloc,'GB xSide, ySide')
         
         ! xSide, ySide at circle centre intersections for neighbouring elements
-        do i=1,TMPLT.nElements
-            do j=2,TMPLT.ia(i)
+        do i=1,TMPLT%nElements
+            do j=2,TMPLT%ia(i)
                 
                 ! Coordinates of face endpoints
-                xc1=TMPLT.x(TMPLT.iNode(TMPLT.ThroughFace(j,i),i))
-			    yc1=TMPLT.y(TMPLT.iNode(TMPLT.ThroughFace(j,i),i))
-                if(TMPLT.ThroughFace(j,i) < TMPLT.nNodesPerElement) then ! connect to next node
-                    xc2=TMPLT.x(TMPLT.iNode(TMPLT.ThroughFace(j,i)+1,i))
-			        yc2=TMPLT.y(TMPLT.iNode(TMPLT.ThroughFace(j,i)+1,i))
+                xc1=TMPLT%node%x(TMPLT%iNode(TMPLT%ThroughFace(j,i),i))
+			    yc1=TMPLT%node%y(TMPLT%iNode(TMPLT%ThroughFace(j,i),i))
+                if(TMPLT%ThroughFace(j,i) < TMPLT%nNodesPerElement) then ! connect to next node
+                    xc2=TMPLT%node%x(TMPLT%iNode(TMPLT%ThroughFace(j,i)+1,i))
+			        yc2=TMPLT%node%y(TMPLT%iNode(TMPLT%ThroughFace(j,i)+1,i))
                 else ! connect to node 1
-                    xc2=TMPLT.x(TMPLT.iNode(1,i))
-			        yc2=TMPLT.y(TMPLT.iNode(1,i))
+                    xc2=TMPLT%node%x(TMPLT%iNode(1,i))
+			        yc2=TMPLT%node%y(TMPLT%iNode(1,i))
                 end if
                 
-                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
+                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                     ! Coordinates of neighbour circle centres
-			        xs1=TMPLT.xCircle(i)
-			        ys1=TMPLT.yCircle(i)
-			        xs2=TMPLT.xCircle(TMPLT.Connectionlist(j,i))
-			        ys2=TMPLT.yCircle(TMPLT.Connectionlist(j,i))
-                else if (TMPLT.nNodesPerElement == 4) then ! quadrilateral 
-                    ! Coordinates of neighbour cell centre (xCell,yCell)
-			        xs1=TMPLT.xElement(i)
-			        ys1=TMPLT.yElement(i)
-			        xs2=TMPLT.xElement(TMPLT.Connectionlist(j,i))
-			        ys2=TMPLT.yElement(TMPLT.Connectionlist(j,i))
+			        xs1=TMPLT%Element%xCircle(i)
+			        ys1=TMPLT%Element%yCircle(i)
+			        xs2=TMPLT%Element%xCircle(TMPLT%Connectionlist(j,i))
+			        ys2=TMPLT%Element%yCircle(TMPLT%Connectionlist(j,i))
+                else if (TMPLT%nNodesPerElement == 4) then ! quadrilateral 
+                    ! Coordinates of neighbour cell centre (cell%x,cell%y)
+			        xs1=TMPLT%Element%x(i)
+			        ys1=TMPLT%Element%y(i)
+			        xs2=TMPLT%Element%x(TMPLT%Connectionlist(j,i))
+			        ys2=TMPLT%Element%y(TMPLT%Connectionlist(j,i))
                 endif
 			    !
 			    !  The following 6 lines determine if the two segments intersect
@@ -8233,8 +8075,8 @@
 				    rseg=1.-((yc2-yc1)*(xc2-xs2)-(xc2-xc1)*(yc2-ys2))/del
 				    rcut=1.-((ys2-ys1)*(xs2-xc2)-(xs2-xs1)*(ys2-yc2))/del2
 				    if (rseg.ge.0.0  .AND. rseg.le.1.0 .AND. rcut.ge.0.0 .AND. rcut.le.1.0)    then
-					    TMPLT%element(i)%xTangent(TMPLT.ThroughFace(j,i))=xs1*(1.0-rseg)+xs2*rseg
-					    TMPLT%element(i)%yTangent(TMPLT.ThroughFace(j,i))=ys1*(1.0-rseg)+ys2*rseg
+					    TMPLT%element(i)%xTangent(TMPLT%ThroughFace(j,i))=xs1*(1.0-rseg)+xs2*rseg
+					    TMPLT%element(i)%yTangent(TMPLT%ThroughFace(j,i))=ys1*(1.0-rseg)+ys2*rseg
                     else
                         call ErrMsg('Lines do not intersect')
                     end if
@@ -8243,27 +8085,27 @@
             end do
         end do
         
-        do i=1,TMPLT.nElements
-            do j=1,TMPLT.nFacesPerElement
-                j1=TMPLT.iNode(TMPLT.LocalFaceNodes(1,j),i)
-                j2=TMPLT.iNode(TMPLT.LocalFaceNodes(2,j),i)
+        do i=1,TMPLT%nElements
+            do j=1,TMPLT%nFacesPerElement
+                j1=TMPLT%iNode(TMPLT%LocalFaceNodes(1,j),i)
+                j2=TMPLT%iNode(TMPLT%LocalFaceNodes(2,j),i)
                 
-                if(TMPLT.FaceNeighbour(j,i) == 0) then ! face on boundary
+                if(TMPLT%FaceNeighbour(j,i) == 0) then ! face on boundary
                 
-                    if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
+                    if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                         ! xSide, ySide at circle tangent for boundary element sides
-                        RC=TMPLT.rCircle(i)
-                        DC=sqrt((TMPLT.xCircle(i)-TMPLT.x(j1))**2+(TMPLT.yCircle(i)-TMPLT.y(j1))**2)
-                        D=TMPLT.SideLength(j,i)
+                        RC=TMPLT%rCircle(i)
+                        DC=sqrt((TMPLT%Element%xCircle(i)-TMPLT%node%x(j1))**2+(TMPLT%Element%yCircle(i)-TMPLT%node%y(j1))**2)
+                        D=TMPLT%Element%SideLength(j,i)
                         D1=sqrt(DC*DC-RC*RC)
                         D2=D-D1
                 
-                        TMPLT.xSide(j,i)=TMPLT.x(j1)+(TMPLT.x(j2)-TMPLT.x(j1))*D1/D
-                        TMPLT.ySide(j,i)=TMPLT.y(j1)+(TMPLT.y(j2)-TMPLT.y(j1))*D1/D
-                    else if(TMPLT.nNodesPerElement == 4) then ! quadrilateral 
+                        TMPLT%xSide(j,i)=TMPLT%node%x(j1)+(TMPLT%node%x(j2)-TMPLT%node%x(j1))*D1/D
+                        TMPLT%ySide(j,i)=TMPLT%node%y(j1)+(TMPLT%node%y(j2)-TMPLT%node%y(j1))*D1/D
+                    else if(TMPLT%nNodesPerElement == 4) then ! quadrilateral 
                         ! xSide, ySide at midpoint of boundary element sides
-                        TMPLT.xSide(j,i)=(TMPLT.x(j1)+TMPLT.x(j2))/2.0d0
-                        TMPLT.ySide(j,i)=(TMPLT.y(j1)+TMPLT.y(j2))/2.0d0
+                        TMPLT%xSide(j,i)=(TMPLT%node%x(j1)+TMPLT%node%x(j2))/2.0d0
+                        TMPLT%ySide(j,i)=(TMPLT%node%y(j1)+TMPLT%node%y(j2))/2.0d0
                     end if
                     
                 end if
@@ -8273,7 +8115,7 @@
         
         call Msg(' ')
         call Msg('In routine IaJa_CellGeometry_NodeCentred ')
-        call Msg('  Generating cell connection arrays for TMPLT '//trim(TMPLT.name)//'...')
+        call Msg('  Generating cell connection arrays for TMPLT '//trim(TMPLT%name)//'...')
         
         ConnectionList_TMP(:,:)=0
         ConnectionLength_TMP(:,:)=0
@@ -8285,72 +8127,72 @@
         end do
 
         ! Loop in order around nodes in element and form cell connection lists
-        do i=1,TMPLT.nElements
-            do j=1,TMPLT.nNodesPerElement
-                jNode=TMPLT.iNode(j,i)
-                if(j == TMPLT.nNodesPerElement) then
-                    kNode=TMPLT.iNode(1,i)
+        do i=1,TMPLT%nElements
+            do j=1,TMPLT%nNodesPerElement
+                jNode=TMPLT%iNode(j,i)
+                if(j == TMPLT%nNodesPerElement) then
+                    kNode=TMPLT%iNode(1,i)
                 else
-                    kNode=TMPLT.iNode(J+1,i)
+                    kNode=TMPLT%iNode(J+1,i)
                 end if
                 
                 ! jnode 
                 ia_TMP(jNode)=ia_TMP(jNode)+1
                 ConnectionList_TMP(ia_TMP(jNode),jNode)=kNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                FractionSide=sqrt((TMPLT.x(jNode)-TMPLT.xSide(j,i))**2+(TMPLT.y(jNode)-TMPLT.ySide(j,i))**2)/TMPLT.SideLength(j,i)
-                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT.SideLength(j,i)
-                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
-                    if(TMPLT.ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xcircle(TMPLT.ConnectionList(j,i)))**2+(TMPLT.ycircle(i)-TMPLT.ycircle(TMPLT.ConnectionList(j,i)))**2)
+                FractionSide=sqrt((TMPLT%node%x(jNode)-TMPLT%xSide(j,i))**2+(TMPLT%node%y(jNode)-TMPLT%ySide(j,i))**2)/TMPLT%Element%SideLength(j,i)
+                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT%Element%SideLength(j,i)
+                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
+                    if(TMPLT%ConnectionList(j,i) > 0) then
+                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%Element%xCircle(TMPLT%ConnectionList(j,i)))**2+(TMPLT%Element%yCircle(i)-TMPLT%Element%yCircle(TMPLT%ConnectionList(j,i)))**2)
                     else
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xside(j,i))**2+(TMPLT.ycircle(i)-TMPLT.yside(j,i))**2)
+                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%xside(j,i))**2+(TMPLT%Element%yCircle(i)-TMPLT%yside(j,i))**2)
                     endif    
                 else
-                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT.SideLength(j,i)
+                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT%Element%SideLength(j,i)
                 endif
 
                 ! knode 
                 ia_TMP(kNode)=ia_TMP(kNode)+1
                 ConnectionList_TMP(ia_TMP(kNode),kNode)=jNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT.SideLength(j,i)
-                if(TMPLT.nNodesPerElement == 3) then ! fetriangles 
-                    if(TMPLT.ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xcircle(TMPLT.ConnectionList(j,i)))**2+(TMPLT.ycircle(i)-TMPLT.ycircle(TMPLT.ConnectionList(j,i)))**2)
+                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT%Element%SideLength(j,i)
+                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
+                    if(TMPLT%ConnectionList(j,i) > 0) then
+                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%Element%xCircle(TMPLT%ConnectionList(j,i)))**2+(TMPLT%Element%yCircle(i)-TMPLT%Element%yCircle(TMPLT%ConnectionList(j,i)))**2)
                     else
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT.xcircle(i)-TMPLT.xSide(j,i))**2+(TMPLT.ycircle(i)-TMPLT.ySide(j,i))**2)
+                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%xSide(j,i))**2+(TMPLT%Element%yCircle(i)-TMPLT%ySide(j,i))**2)
                     endif
                 else
-                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT.SideLength(j,i)
+                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT%Element%SideLength(j,i)
                 endif
             end do
         end do
         
         ! Sort cell connection list, remove duplicates and determine ia
-        deallocate(TMPLT.ia, TMPLT.ConnectionList)
-        allocate(TMPLT.ia(TMPLT%nNodes), &
-                 TMPLT.ConnectionList(MAX_CNCTS,TMPLT%nNodes), &
-                 TMPLT.ConnectionLength(MAX_CNCTS,TMPLT%nNodes), &
-                 TMPLT.PerpendicularArea(MAX_CNCTS,TMPLT%nNodes), stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT.name)//' node-centred ia arrays')
-        TMPLT.ia(:)=0.
-        TMPLT.ConnectionList(:,:)=0.
-        TMPLT.ConnectionLength(:,:)=0.0
-        TMPLT.PerpendicularArea(:,:)=0.0
+        deallocate(TMPLT%ia, TMPLT%ConnectionList)
+        allocate(TMPLT%ia(TMPLT%nNodes), &
+                 TMPLT%ConnectionList(MAX_CNCTS,TMPLT%nNodes), &
+                 TMPLT%ConnectionLength(MAX_CNCTS,TMPLT%nNodes), &
+                 TMPLT%PerpendicularArea(MAX_CNCTS,TMPLT%nNodes), stat=ialloc)
+        call AllocChk(ialloc,trim(TMPLT%name)//' node-centred ia arrays')
+        TMPLT%ia(:)=0.
+        TMPLT%ConnectionList(:,:)=0.
+        TMPLT%ConnectionLength(:,:)=0.0
+        TMPLT%PerpendicularArea(:,:)=0.0
 
         
         do i=1,TMPLT%nNodes
             call indexx_int(MAX_CNCTS,ConnectionList_TMP(:,i),iSort)
-            TMPLT.ia(i)=1
-            TMPLT.ConnectionList(1,i)=i
+            TMPLT%ia(i)=1
+            TMPLT%ConnectionList(1,i)=i
             do j=2,MAX_CNCTS
                 if(ConnectionList_TMP(isort(j),i) == 0) cycle
                 if(ConnectionList_TMP(isort(j),i) == abs(ConnectionList_TMP(isort(j-1),i)) ) cycle  
-                TMPLT.ia(i)=TMPLT.ia(i)+1
-                TMPLT.ConnectionList(TMPLT.ia(i),i)=ConnectionList_TMP(isort(j),i)
-                TMPLT.ConnectionLength(TMPLT.ia(i),i)=ConnectionLength_TMP(isort(j),i)
-                TMPLT.PerpendicularArea(TMPLT.ia(i),i)=PerpendicularArea_TMP(isort(j),i)
+                TMPLT%ia(i)=TMPLT%ia(i)+1
+                TMPLT%ConnectionList(TMPLT%ia(i),i)=ConnectionList_TMP(isort(j),i)
+                TMPLT%ConnectionLength(TMPLT%ia(i),i)=ConnectionLength_TMP(isort(j),i)
+                TMPLT%PerpendicularArea(TMPLT%ia(i),i)=PerpendicularArea_TMP(isort(j),i)
             end do
         end do
            
@@ -8367,27 +8209,27 @@
         integer(i4) :: i, j
 
         ! tecplot output file
-        FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT.name)//'.tecplot.dat'
+        FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT%name)//'.tecplot.dat'
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
         call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
 
-        write(FNum,*) 'Title = "'//trim(TMPLT.name)//'"'
+        write(FNum,*) 'Title = "'//trim(TMPLT%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(TMPLT.name)//' Zone","'//trim(TMPLT.name)//' Element Area",'
+        VarSTR='variables="X","Y","Z","'//trim(TMPLT%name)//' Zone","'//trim(TMPLT%name)//' Element Area",'
         nVar=5
 
-        if(allocated(TMPLT.rCircle)) then
-            VarSTR=trim(VarSTR)//'"'//trim(TMPLT.name)//'Inner circle radius",'
+        if(allocated(TMPLT%rCircle)) then
+            VarSTR=trim(VarSTR)//'"'//trim(TMPLT%name)//'Inner circle radius",'
             nVar=nVar+1
         end if
             
         write(FNum,'(a)') trim(VarSTR)
 
 
-        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(TMPLT.name)//'"  ,N=',TMPLT%nNodes,', E=',TMPLT.nElements,&
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(TMPLT%name)//'"  ,N=',TMPLT%nNodes,', E=',TMPLT%nElements,&
         ', datapacking=block, zonetype='//trim(TMPLT%TecplotTyp)
         
         CellCenteredSTR=', VARLOCATION=([4,5'
@@ -8401,36 +8243,36 @@
         write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
 
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT.x(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%x(i),i=1,TMPLT%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT.y(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%y(i),i=1,TMPLT%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT.z(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%z(i),i=1,TMPLT%nNodes)
         
         write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (TMPLT.iZone(i),i=1,TMPLT.nElements)
+        write(FNum,'(5i8)') (TMPLT%iZone(i),i=1,TMPLT%nElements)
             
         write(FNum,'(a)') '# element area'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT.ElementArea(i),i=1,TMPLT.nElements)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%ElementArea(i),i=1,TMPLT%nElements)
             
-        if(allocated(TMPLT.rCircle)) then
+        if(allocated(TMPLT%rCircle)) then
             write(FNum,'(a)') '# circle radius'
-            write(FNum,'(5('//FMT_R8//'))') (TMPLT.rCircle(i),i=1,TMPLT.nElements)
+            write(FNum,'(5('//FMT_R8//'))') (TMPLT%rCircle(i),i=1,TMPLT%nElements)
         end if
             
         
-        do i=1,TMPLT.nElements
-            if(TMPLT.nNodesPerElement==3) then ! 3-node triangle
-                write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3)
-            else if(TMPLT.nNodesPerElement==4) then ! 4-node quadrilateral
-                if(TMPLT.iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,4) 
+        do i=1,TMPLT%nElements
+            if(TMPLT%nNodesPerElement==3) then ! 3-node triangle
+                write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,3)
+            else if(TMPLT%nNodesPerElement==4) then ! 4-node quadrilateral
+                if(TMPLT%iNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,4) 
                 else
-                    write(FNum,'(8i8)') (TMPLT.iNode(j,i),j=1,3), TMPLT.iNode(3,i) 
+                    write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,3), TMPLT%iNode(3,i) 
                 end if
             else
-                write(TmpSTR,'(i2)')TMPLT.nNodesPerElement
-                call ErrMsg(trim(TMPLT.name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                write(TmpSTR,'(i2)')TMPLT%nNodesPerElement
+                call ErrMsg(trim(TMPLT%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
             end if
 
         end do
@@ -8448,29 +8290,29 @@
         integer(i4) :: i
  	
         !------------------- CHD file
-        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! maximum number of CHD cells in any stress period 
-        write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! number of CHD cells to read
+        write(modflow.iCHD,*) Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells ! maximum number of CHD cells in any stress period 
+        write(modflow.iCHD,*) Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells ! number of CHD cells to read
             
-        if(allocated(modflow.GWF.ConstantHead)) then
-            do i=1,modflow.GWF.nCells
-                if(bcheck(Modflow.GWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') i,modflow.GWF.ConstantHead(i)
+        if(allocated(Modflow%GWF%ConstantHead)) then
+            do i=1,Modflow%GWF%nCells
+                if(bcheck(Modflow%GWF%Cell%is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') i,Modflow%GWF%ConstantHead(i)
                 end if
             end do
         end if
             
-        if(allocated(modflow.CLN.ConstantHead)) then
-            do i=1,modflow.CLN.nCells
-                if(bcheck(Modflow.CLN.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow.GWF.nCells+i,modflow.CLN.ConstantHead(i)
+        if(allocated(Modflow%CLN%ConstantHead)) then
+            do i=1,Modflow%CLN%nCells
+                if(bcheck(Modflow%CLN%Cell%is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+i,Modflow%CLN%ConstantHead(i)
                 end if
             end do
         end if
         
-        if(allocated(modflow.SWF.ConstantHead)) then
-            do i=1,modflow.SWF.nCells
-                if(bcheck(Modflow.SWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.ConstantHead(i)
+        if(allocated(Modflow%SWF%ConstantHead)) then
+            do i=1,Modflow%SWF%nCells
+                if(bcheck(Modflow%SWF%Cell%is(i),ConstantHead)) then
+                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+Modflow%CLN%nCells+i,Modflow%SWF%ConstantHead(i)
                 end if
             end do
         end if
@@ -8486,93 +8328,93 @@
         integer(i4) :: i, j, k
         character(MAX_STR) :: OutputLine
         
-        Modflow.CLN.NCLNGWC=Modflow.CLN.nCells  ! assume for now that all cln cells are connected to underlying gwf cells
+        Modflow%CLN%NCLNGWC=Modflow%CLN%nCells  ! assume for now that all cln cells are connected to underlying gwf cells
 
         write(Modflow.iCLN,'(a)') '#1.    NCLN, ICLNNDS, ICLNCB,  ICLNHD,  ICLNDD,   ICLNIB,  NCLNGWC,  NCONDUITYP'
         write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
-                                        Modflow.CLN.nCells, &   !ICLNNDS
-                                        Modflow.CLN.iCBB, &     !ICLNCB
-                                        Modflow.CLN.iHDS,&      !ICLNHD
-                                        Modflow.CLN.iDDN,&      !ICLNDD
+                                        Modflow%CLN%nCells, &   !ICLNNDS
+                                        Modflow%CLN%iCBB, &     !ICLNCB
+                                        Modflow%CLN%iHDS,&      !ICLNHD
+                                        Modflow%CLN%iDDN,&      !ICLNDD
                                         0,&                     !ICLNIB, if 0 CLN IBOUND array not written 
-                                        Modflow.CLN.NCLNGWC,&   !NCLNGWC 
-                                        Modflow.CLN.NCONDUITYP  !NCONDUITYP
-        if(Modflow.CLN.NRECTYP > 0) then
+                                        Modflow%CLN%NCLNGWC,&   !NCLNGWC 
+                                        Modflow%CLN%NCONDUITYP  !NCONDUITYP
+        if(Modflow%CLN%NRECTYP > 0) then
             write(tmpSTR,'(a,i9)') ',        rectangular', &   !IFNO
-                                        Modflow.CLN.NRECTYP  !NRECTYP 
+                                        Modflow%CLN%NRECTYP  !NRECTYP 
             OutputLine=trim(OutputLine)//trim(tmpSTR)
         endif
         write(Modflow.iCLN,'(a)') trim(OutputLine)
         
-        write(Modflow.iCLN,'(i9)') Modflow.CLN.njag
+        write(Modflow.iCLN,'(i9)') Modflow%CLN%njag
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
-        write(Modflow.iCLN,'(10i4)') (Modflow.CLN.l_TMPLT.ia(i),i=1,modflow.CLN.nCells)
+        write(Modflow.iCLN,'(10i4)') (Modflow%CLN%ia(i),i=1,Modflow%CLN%nCells)
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
-        do i=1,modflow.GWF.nCells
-            write(Modflow.iCLN,'(20i8)') (abs(modflow.CLN.l_TMPLT.ConnectionList(j,i)),j=1,modflow.CLN.l_TMPLT.ia(i))
+        do i=1,Modflow%GWF%nCells
+            write(Modflow.iCLN,'(20i8)') (abs(Modflow%CLN%ConnectionList(j,i)),j=1,Modflow%CLN%ia(i))
         end do
         
         write(Modflow.iCLN,'(a)') '# IFNO,          IFTYP,        IFDIR,   FLENG,         FELEV,         FANGLE,     IFLIN, ICCWADI'
-        do i=1,modflow.CLN.nCells
+        do i=1,Modflow%CLN%nCells
             write(Modflow.iCLN,'(i5,5('//FMT_R4//'),2i5)') i, & !IFNO
             Modflow%CLN%cell(i)%idZone, & !IFTYP
-            modflow.CLN.Direction(Modflow%CLN%cell(i)%idZone), & !IFDIR
-            Modflow.CLN.l_TMPLT.Length(i), & !FLENG
-            Modflow.CLN.l_TMPLT.LowestElevation(i), & !FELEV
-            Modflow.CLN.l_TMPLT.SlopeAngle(i), & !FANGLE
-            Modflow.CLN.FlowTreatment(Modflow%CLN%cell(i)%idZone), & !IFLIN
+            Modflow%CLN%Direction(Modflow%CLN%cell(i)%idZone), & !IFDIR
+            Modflow%CLN%Length(i), & !FLENG
+            Modflow%CLN%LowestElevation(i), & !FELEV
+            Modflow%CLN%SlopeAngle(i), & !FANGLE
+            Modflow%CLN%FlowTreatment(Modflow%CLN%cell(i)%idZone), & !IFLIN
             0   ! ICCWADI 
         end do
 
         write(Modflow.iCLN,'(a)') '# IFNOD IGWNOD IFCON    FSKIN      FLENGW      FANISO  ICGWADI'
-        do i=1,modflow.CLN.nCells
+        do i=1,Modflow%CLN%nCells
             write(Modflow.iCLN,'(3i5,3('//FMT_R4//'),i5)') i, & !IFNO
             i, & !IGWNOD
             3, & !IFCON
             1.e-20, & !FSKIN
-            Modflow.CLN.l_TMPLT.Length(i), & !FLENGW
+            Modflow%CLN%Length(i), & !FLENGW
             1.00, & !FANISO
             0   ! ICGWADI 
         end do
 
 
-        if(Modflow.CLN.NCONDUITYP>0) then
+        if(Modflow%CLN%NCONDUITYP>0) then
             write(Modflow.iCLN,'(a)') '# ICONDUITYP   FRAD         CONDUITK'
-            do i=1,modflow.CLN.NZones
-                if(modflow.CLN.Geometry(i) == 1) then 
-                    write(Modflow.iCLN,'(i5,3x,2('//FMT_R4//'))') i, modflow.CLN.CircularRadius(i), modflow.CLN.LongitudinalK(i)
+            do i=1,Modflow%CLN%NZones
+                if(Modflow%CLN%Geometry(i) == 1) then 
+                    write(Modflow.iCLN,'(i5,3x,2('//FMT_R4//'))') i, Modflow%CLN%CircularRadius(i), Modflow%CLN%LongitudinalK(i)
                 endif
             end do
         endif
         
-        if(Modflow.CLN.NRECTYP>0) then
+        if(Modflow%CLN%NRECTYP>0) then
             write(Modflow.iCLN,'(a)') '# IRECTYP    FLENGTH        FHEIGHT       CONDUITK'
-            do i=1,modflow.CLN.NZones
-                if(modflow.CLN.Geometry(i) == 2) then 
-                    write(Modflow.iCLN,'(i5,3x,3('//FMT_R4//'))') i, modflow.CLN.RectangularWidth(i),modflow.CLN.RectangularHeight(i), modflow.CLN.LongitudinalK(i)
+            do i=1,Modflow%CLN%NZones
+                if(Modflow%CLN%Geometry(i) == 2) then 
+                    write(Modflow.iCLN,'(i5,3x,3('//FMT_R4//'))') i, Modflow%CLN%RectangularWidth(i),Modflow%CLN%RectangularHeight(i), Modflow%CLN%LongitudinalK(i)
                 endif
             end do
         endif
         
         ! fix here YJP
-        if(.not. allocated(modflow.CLN.ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
-            allocate(modflow.CLN.ibound(modflow.CLN.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%CLN%ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
+            allocate(Modflow%CLN%ibound(Modflow%CLN%nCells),stat=ialloc)
             call AllocChk(ialloc,'CLN Cell ibound array')            
-            modflow.CLN.ibound(:)=1
+            Modflow%CLN%ibound(:)=1
         end if
-        do i=1,Modflow.CLN.nCells
-            if(bcheck(modflow.CLN.Cell_is(i),inactive)) modflow.CLN.ibound(i)=0
+        do i=1,Modflow%CLN%nCells
+            if(bcheck(Modflow%CLN%Cell%is(i),inactive)) Modflow%CLN%ibound(i)=0
         enddo
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
-        write(Modflow.iCLN,'(10i3)') (modflow.CLN.ibound(k),k=1,Modflow.CLN.nCells)
+        write(Modflow.iCLN,'(10i3)') (Modflow%CLN%ibound(k),k=1,Modflow%CLN%nCells)
         
-        if(.not. allocated(modflow.CLN.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
-            allocate(modflow.CLN.StartingHeads(modflow.CLN.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%CLN%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
+            allocate(Modflow%CLN%StartingHeads(Modflow%CLN%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
-            modflow.CLN.StartingHeads(:)=modflow.CLN.zcell(:)+1.0e-4
+            Modflow%CLN%StartingHeads(:)=Modflow%CLN%cell%z(:)+1.0e-4
         end if
         write(Modflow.iCLN,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iCLN,'(5(1ES20.8))') (modflow.CLN.StartingHeads(i),i=1,modflow.CLN.nCells)
+        write(Modflow.iCLN,'(5(1ES20.8))') (Modflow%CLN%StartingHeads(i),i=1,Modflow%CLN%nCells)
         
         !------------------- Initialize and write write CLN_GSF file
         Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.cln.gsf'
@@ -8581,12 +8423,12 @@
         call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN_GSF))
         write(Modflow.iCLN_GSF,'(a,a)') '# MODFLOW-USG Grid Specification File (CLN_GSF) Package written by Modflow-User-Tools version ',trim(MUTVersion)
         
-        write(Modflow.iCLN_GSF,'(a)') trim(Modflow.CLN.l_TMPLT.meshtype)
-        write(Modflow.iCLN_GSF,*) Modflow.CLN.nCells, Modflow.CLN.nLayers, Modflow.CLN.iz, Modflow.CLN.ic
-        write(Modflow.iCLN_GSF,*) Modflow.CLN.nNold
-        write(Modflow.iCLN_GSF,*) (Modflow.CLN.l_TMPLT.x(i),Modflow.CLN.l_TMPLT.y(i),Modflow.CLN.l_TMPLT.z(i),i=1,Modflow.CLN.nNold)
-        do i=1,Modflow.CLN.nCells
-            write(Modflow.iCLN_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow.CLN.xCell(i),Modflow.CLN.yCell(i),Modflow.CLN.zCell(i),Modflow.CLN.iLayer(i),Modflow.CLN.nNodesPerCell,(Modflow.CLN.l_TMPLT.iNode(j,i),j=1,Modflow.CLN.nNodesPerCell)
+        write(Modflow.iCLN_GSF,'(a)') trim(Modflow%CLN%meshtype)
+        write(Modflow.iCLN_GSF,*) Modflow%CLN%nCells, Modflow%CLN%nLayers, Modflow%CLN%iz, Modflow%CLN%ic
+        write(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
+        write(Modflow.iCLN_GSF,*) (Modflow%CLN%x(i),Modflow%CLN%y(i),Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
+        do i=1,Modflow%CLN%nCells
+            write(Modflow.iCLN_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%CLN%cell%x(i),Modflow%CLN%cell%y(i),Modflow%CLN%cell%z(i),Modflow%CLN%iLayer(i),Modflow%CLN%nNodesPerCell,(Modflow%CLN%iNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
         end do
  
     end subroutine WriteCLNFiles
@@ -8600,29 +8442,29 @@
         integer(i4) :: i
  	
         !------------------- DRN file
-        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! maximum number of DRN cells in any stress period 
-        write(modflow.iDRN,*) modflow.GWF.nDRNCells+modflow.CLN.nDRNCells+modflow.SWF.nDRNCells ! number of DRN cells to read
+        write(modflow.iDRN,*) Modflow%GWF%nDRNCells+Modflow%CLN%nDRNCells+Modflow%SWF%nDRNCells ! maximum number of DRN cells in any stress period 
+        write(modflow.iDRN,*) Modflow%GWF%nDRNCells+Modflow%CLN%nDRNCells+Modflow%SWF%nDRNCells ! number of DRN cells to read
             
-        if(allocated(modflow.GWF.DrainConductance)) then
-            do i=1,modflow.GWF.nCells
-                if(bcheck(Modflow.GWF.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') i,modflow.GWF.DrainElevation(i),modflow.GWF.DrainConductance(i)
+        if(allocated(Modflow%GWF%DrainConductance)) then
+            do i=1,Modflow%GWF%nCells
+                if(bcheck(Modflow%GWF%Cell%is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') i,Modflow%GWF%DrainElevation(i),Modflow%GWF%DrainConductance(i)
                 end if
             end do
         end if
             
-        if(allocated(modflow.CLN.DrainConductance)) then
-            do i=1,modflow.CLN.nCells
-                if(bcheck(Modflow.CLN.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow.GWF.nCells+i,modflow.CLN.DrainElevation(i),modflow.CLN.DrainConductance(i)
+        if(allocated(Modflow%CLN%DrainConductance)) then
+            do i=1,Modflow%CLN%nCells
+                if(bcheck(Modflow%CLN%Cell%is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow%GWF%nCells+i,Modflow%CLN%DrainElevation(i),Modflow%CLN%DrainConductance(i)
                 end if
             end do
         end if
         
-        if(allocated(modflow.SWF.DrainConductance)) then
-            do i=1,modflow.SWF.nCells
-                if(bcheck(Modflow.SWF.Cell_Is(i),Drain)) then
-                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.DrainElevation(i),modflow.SWF.DrainConductance(i)
+        if(allocated(Modflow%SWF%DrainConductance)) then
+            do i=1,Modflow%SWF%nCells
+                if(bcheck(Modflow%SWF%Cell%is(i),Drain)) then
+                    write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow%GWF%nCells+Modflow%CLN%nCells+i,Modflow%SWF%DrainElevation(i),Modflow%SWF%DrainConductance(i)
                 end if
             end do
         end if
@@ -8652,37 +8494,37 @@
         modflow.free=.true.
         modflow.richards=.true.
 
-        if(.not. allocated(modflow.GWF.ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
-            allocate(modflow.GWF.ibound(modflow.GWF.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
+            allocate(Modflow%GWF%ibound(Modflow%GWF%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell ibound array')            
-            modflow.GWF.ibound(:)=1
+            Modflow%GWF%ibound(:)=1
         end if
-        do i=1,Modflow.GWF.nCells
-            if(bcheck(modflow.GWF.Cell_is(i),inactive)) modflow.GWF.ibound(i)=0
+        do i=1,Modflow%GWF%nCells
+            if(bcheck(Modflow%GWF%Cell%is(i),inactive)) Modflow%GWF%ibound(i)=0
         enddo
         !write(Modflow.iBAS6,'(a)') 'CONSTANT   1                               IBOUND'
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
+        do i=1,Modflow%GWF%nLayers
             write(TmpSTR,'(i5)') i
             write(Modflow.iBAS6,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.GWF.nodelay-1
-            write(Modflow.iBAS6,'(10i3)') (modflow.GWF.ibound(k),k=nStrt,nEnd)
+            nEnd = nStrt + Modflow%GWF%nodelay-1
+            write(Modflow.iBAS6,'(10i3)') (Modflow%GWF%ibound(k),k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
         
-        write(Modflow.iBAS6,'('//FMT_R8//')') modflow.GWF.StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
+        write(Modflow.iBAS6,'('//FMT_R8//')') Modflow%GWF%StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
 
-        if(.not. allocated(modflow.GWF.StartingHeads)) then ! Assume 2.78 m for abdul for now'
-            allocate(modflow.GWF.StartingHeads(modflow.GWF.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%StartingHeads)) then ! Assume 2.78 m for abdul for now'
+            allocate(Modflow%GWF%StartingHeads(Modflow%GWF%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
-            modflow.GWF.StartingHeads(:)=1.5d0 !2.78d0
+            Modflow%GWF%StartingHeads(:)=1.5d0 !2.78d0
         end if
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
+        do i=1,Modflow%GWF%nLayers
             write(TmpSTR,'(i5)') i
             write(Modflow.iBAS6,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Starting Heads Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.GWF.nodelay-1
-            write(Modflow.iBAS6,'(5('//FMT_R8//'))') (modflow.GWF.StartingHeads(k),k=nStrt,nEnd)
+            nEnd = nStrt + Modflow%GWF%nodelay-1
+            write(Modflow.iBAS6,'(5('//FMT_R8//'))') (Modflow%GWF%StartingHeads(k),k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
 
@@ -8690,39 +8532,39 @@
         !------------------- DISU file
 
         write(Modflow.iDISU,'(a)') '#1.   NODES    NLAY     NJAG     IVSD     NPER    ITMUNI   LENUNI   IDSYMRD'
-        write(Modflow.iDISU,'(10i9)') Modflow.GWF.nCells, Modflow.GWF.nLayers, Modflow.GWF.njag, IVSD, Modflow.nPeriods, &
+        write(Modflow.iDISU,'(10i9)') Modflow%GWF%nCells, Modflow%GWF%nLayers, Modflow%GWF%njag, IVSD, Modflow.nPeriods, &
             Modflow.TimeUnits, Modflow.LengthUnits , 0
             
-        write(Modflow.iDISU,'(10i4)') (modflow.GWF.Laybcd(i),i=1,Modflow.GWF.nLayers)
+        write(Modflow.iDISU,'(10i4)') (Modflow%GWF%Laybcd(i),i=1,Modflow%GWF%nLayers)
             
-        write(Modflow.iDISU,'(a,i10,a)') 'CONSTANT ',modflow.GWF.nodelay,'    NODELAY'
+        write(Modflow.iDISU,'(a,i10,a)') 'CONSTANT ',Modflow%GWF%nodelay,'    NODELAY'
             
             
         !write(FNum,'(a)') 'OPEN/CLOSE OpenClose_CellTopElev.in   1.000000e+00  (FREE)  1   Top elevation'
         !FNameOpenClose='OpenClose_CellTopElev.in'
         !call OpenAscii(FNumOpenClose,FNameOpenClose)
         !nStrt=1
-        !do k = 1,modflow.GWF.nLayers
-        !    nEnd = nStrt + modflow.GWF.nodelay
-        !    write(FNumOpenClose,*) (modflow.GWF.top(i),i=nStrt,nEnd)
+        !do k = 1,Modflow%GWF%nLayers
+        !    nEnd = nStrt + Modflow%GWF%nodelay
+        !    write(FNumOpenClose,*) (Modflow%GWF%Cell%Top(i),i=nStrt,nEnd)
         !end do
         !close(FNumOpenClose)
             
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
+        do i=1,Modflow%GWF%nLayers
             write(TmpSTR,'(i5)') i
             write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Top elevation Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.GWF.nodelay-1
-            write(Modflow.iDISU,'(5('//FMT_R8//'))') (modflow.GWF.top(k),k=nStrt,nEnd)
+            nEnd = nStrt + Modflow%GWF%nodelay-1
+            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Top(k),k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
             
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
+        do i=1,Modflow%GWF%nLayers
             write(TmpSTR,'(i5)') i
             write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Bottom elevation Layer '//trim(TmpSTR)
-            nEnd = nStrt + modflow.GWF.nodelay-1
-            write(Modflow.iDISU,'(5('//FMT_R8//'))') (modflow.GWF.bottom(k),k=nStrt,nEnd)
+            nEnd = nStrt + Modflow%GWF%nodelay-1
+            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Bottom(k),k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
             
@@ -8731,35 +8573,35 @@
             do i=1,1
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
-                nEnd = nStrt + modflow.GWF.nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (modflow.GWF.CellArea(k),k=nStrt,nEnd)
+                nEnd = nStrt + Modflow%GWF%nodelay-1
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%CellArea(k),k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         else
-            do i=1,Modflow.GWF.nLayers
+            do i=1,Modflow%GWF%nLayers
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
-                nEnd = nStrt + modflow.GWF.nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (modflow.GWF.CellArea(k),k=nStrt,nEnd)
+                nEnd = nStrt + Modflow%GWF%nodelay-1
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%CellArea(k),k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         end if
         
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
-        write(Modflow.iDISU,'(10i4)') (modflow.GWF.l_TMPLT.ia(i),i=1,modflow.GWF.nCells)
+        write(Modflow.iDISU,'(10i4)') (Modflow%GWF%ia(i),i=1,Modflow%GWF%nCells)
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
-        do i=1,modflow.GWF.nCells
-            write(Modflow.iDISU,'(20i8)') (abs(modflow.GWF.l_TMPLT.ConnectionList(j,i)),j=1,modflow.GWF.l_TMPLT.ia(i))
+        do i=1,Modflow%GWF%nCells
+            write(Modflow.iDISU,'(20i8)') (abs(Modflow%GWF%ConnectionList(j,i)),j=1,Modflow%GWF%ia(i))
         end do
         
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CLN()'
-        do i=1,modflow.GWF.nCells
-            write(Modflow.iDISU,'(10('//FMT_R8//'))') (modflow.GWF.ConnectionLength(j,i),j=1,modflow.GWF.l_TMPLT.ia(i))
+        do i=1,Modflow%GWF%nCells
+            write(Modflow.iDISU,'(10('//FMT_R8//'))') (Modflow%GWF%ConnectionLength(j,i),j=1,Modflow%GWF%ia(i))
         end do
         
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  PerpendicularArea FAHL()'
-        do i=1,modflow.GWF.nCells
-            write(Modflow.iDISU,'(10('//FMT_R8//'))') (modflow.GWF.PerpendicularArea(j,i),j=1,modflow.GWF.l_TMPLT.ia(i))
+        do i=1,Modflow%GWF%nCells
+            write(Modflow.iDISU,'(10('//FMT_R8//'))') (Modflow%GWF%PerpendicularArea(j,i),j=1,Modflow%GWF%ia(i))
         end do
         
         do i=1,Modflow.nPeriods
@@ -8768,130 +8610,130 @@
 
         !------------------- LPF file
         write(Modflow.iLPF,'(a)') '#1a. ILPFCB      HDRY         NPLPF   IKCFLAG     Options'
-        write(Modflow.iLPF,'(i9,'//FMT_R4//',2i9,a)') Modflow.GWF.iCBB, -1.000000e+30, 0, 0, '        CONSTANTCV NOVFC'
+        write(Modflow.iLPF,'(i9,'//FMT_R4//',2i9,a)') Modflow%GWF%iCBB, -1.000000e+30, 0, 0, '        CONSTANTCV NOVFC'
 
         ! Layer type: Assume type 4 (i.e. convertible, with transmissivity computed using upstream water-table depth
-        if(.not. allocated(modflow.GWF.LayTyp)) then 
-            allocate(modflow.GWF.LayTyp(modflow.GWF.nLayers),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%LayTyp)) then 
+            allocate(Modflow%GWF%LayTyp(Modflow%GWF%nLayers),stat=ialloc)
             call AllocChk(ialloc,'Layer type array')
             if(.not. modflow.SaturatedFlow) then
-                modflow.GWF.LayTyp(:) = 4
+                Modflow%GWF%LayTyp(:) = 4
             else
-                modflow.GWF.LayTyp(:) = 0
+                Modflow%GWF%LayTyp(:) = 0
             endif
             
         end if
-        write(Modflow.iLPF,'(40i2)') (modflow.GWF.LayTyp(k),k=1,modflow.GWF.nlayers)
+        write(Modflow.iLPF,'(40i2)') (Modflow%GWF%LayTyp(k),k=1,Modflow%GWF%nlayers)
 
         ! Layer average: Assume 0, harmonic mean 
-        if(.not. allocated(modflow.GWF.LayAvg)) then 
-            allocate(modflow.GWF.LayAvg(modflow.GWF.nLayers),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%LayAvg)) then 
+            allocate(Modflow%GWF%LayAvg(Modflow%GWF%nLayers),stat=ialloc)
             call AllocChk(ialloc,'Layer averaging method array')            
-            modflow.GWF.LayAvg(:) = 0
+            Modflow%GWF%LayAvg(:) = 0
         end if
-        write(Modflow.iLPF,'(40i2)') (modflow.GWF.LayAvg(k),k=1,modflow.GWF.nlayers)
+        write(Modflow.iLPF,'(40i2)') (Modflow%GWF%LayAvg(k),k=1,Modflow%GWF%nlayers)
 
         ! Chani: Assume 1.0, If Chani is greater than 0, then Chani is the horizontal anisotropy for the entire layer.
-        if(.not. allocated(modflow.GWF.Chani)) then 
-            allocate(modflow.GWF.Chani(modflow.GWF.nLayers),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%Chani)) then 
+            allocate(Modflow%GWF%Chani(Modflow%GWF%nLayers),stat=ialloc)
             call AllocChk(ialloc,'Layer horizontal anisotropy array')            
-            modflow.GWF.Chani(:) = 1.0d0
+            Modflow%GWF%Chani(:) = 1.0d0
         end if
-        write(Modflow.iLPF,'(5('//FMT_R8//'))') (modflow.GWF.Chani(k),k=1,modflow.GWF.nlayers)
+        write(Modflow.iLPF,'(5('//FMT_R8//'))') (Modflow%GWF%Chani(k),k=1,Modflow%GWF%nlayers)
 
         ! LayVka: Assume 0, indicates VKA is vertical hydraulic conductivity
-        if(.not. allocated(modflow.GWF.LayVka)) then 
-            allocate(modflow.GWF.LayVka(modflow.GWF.nLayers),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%LayVka)) then 
+            allocate(Modflow%GWF%LayVka(Modflow%GWF%nLayers),stat=ialloc)
             call AllocChk(ialloc,'Layer vertical K array')            
-            modflow.GWF.LayVka(:) = 0
+            Modflow%GWF%LayVka(:) = 0
         end if
-        write(Modflow.iLPF,'(40i2)') (modflow.GWF.LayVka(k),k=1,modflow.GWF.nlayers)
+        write(Modflow.iLPF,'(40i2)') (Modflow%GWF%LayVka(k),k=1,Modflow%GWF%nlayers)
 
         ! LayWet: Assume 0, indicates wetting is inactive
-        if(.not. allocated(modflow.GWF.LayWet)) then 
-            allocate(modflow.GWF.LayWet(modflow.GWF.nLayers),stat=ialloc)
+        if(.not. allocated(Modflow%GWF%LayWet)) then 
+            allocate(Modflow%GWF%LayWet(Modflow%GWF%nLayers),stat=ialloc)
             call AllocChk(ialloc,'Layer vertical K array')            
-            modflow.GWF.LayWet(:) = 0
+            Modflow%GWF%LayWet(:) = 0
         end if
-        write(Modflow.iLPF,'(40i2)') (modflow.GWF.LayWet(k),k=1,modflow.GWF.nlayers)
+        write(Modflow.iLPF,'(40i2)') (Modflow%GWF%LayWet(k),k=1,Modflow%GWF%nlayers)
         
         nStrt=1
-        do i=1,Modflow.GWF.nLayers
-            nEnd = nStrt + modflow.GWF.nodelay-1
+        do i=1,Modflow%GWF%nLayers
+            nEnd = nStrt + Modflow%GWF%nodelay-1
 
-            if(.not. allocated(modflow.GWF.Kh)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
-                allocate(modflow.GWF.Kh(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Kh)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
+                allocate(Modflow%GWF%Kh(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Kh array')            
-                modflow.GWF.Kh(:)=31.536D0
+                Modflow%GWF%Kh(:)=31.536D0
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Kh '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Kh(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Kh(k),k=nStrt,nEnd)
 
 
-            if(.not. allocated(modflow.GWF.Kv)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
-                allocate(modflow.GWF.Kv(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Kv)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
+                allocate(Modflow%GWF%Kv(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Kv array')            
-                modflow.GWF.Kv(:)=31.536D0
+                Modflow%GWF%Kv(:)=31.536D0
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Kv '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Kv(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Kv(k),k=nStrt,nEnd)
 
-            if(.not. allocated(modflow.GWF.Ss)) then ! Assume 1.2e-7 (Borden Sand from Abdul problem)'
-                allocate(modflow.GWF.Ss(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Ss)) then ! Assume 1.2e-7 (Borden Sand from Abdul problem)'
+                allocate(Modflow%GWF%Ss(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Ss array')            
-                modflow.GWF.Ss(:)=1.0D-5
+                Modflow%GWF%Ss(:)=1.0D-5
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Ss '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Ss(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Ss(k),k=nStrt,nEnd)
 
-            if(.not. allocated(modflow.GWF.Sy)) then ! Assume 0.34 (Borden Sand from Abdul problem)''
-                allocate(modflow.GWF.Sy(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Sy)) then ! Assume 0.34 (Borden Sand from Abdul problem)''
+                allocate(Modflow%GWF%Sy(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Sy array')            
-                modflow.GWF.Sy(:)=0.01D0
+                Modflow%GWF%Sy(:)=0.01D0
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Sy '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Sy(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Sy(k),k=nStrt,nEnd)
 
-            if(.not. allocated(modflow.GWF.Alpha)) then ! Assume 1.8 (Borden Sand from InHM PM.DBS file)''
-                allocate(modflow.GWF.Alpha(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Alpha)) then ! Assume 1.8 (Borden Sand from InHM PM.DBS file)''
+                allocate(Modflow%GWF%Alpha(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Alpha array')            
-                modflow.GWF.Alpha(:)=3.34D-2
+                Modflow%GWF%Alpha(:)=3.34D-2
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Alpha '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Alpha(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Alpha(k),k=nStrt,nEnd)
 
-            if(.not. allocated(modflow.GWF.Beta)) then ! Assume 5.8 (Borden Sand from InHM PM.DBS file)''
-                allocate(modflow.GWF.Beta(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Beta)) then ! Assume 5.8 (Borden Sand from InHM PM.DBS file)''
+                allocate(Modflow%GWF%Beta(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Beta array')            
-                modflow.GWF.Beta(:)=1.982D0
+                Modflow%GWF%Beta(:)=1.982D0
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Beta '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Beta(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Beta(k),k=nStrt,nEnd)
 
-            if(.not. allocated(modflow.GWF.Sr)) then ! Assume 0.18 (Borden Sand from Abdul mprops S-R table)''
-                allocate(modflow.GWF.Sr(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Sr)) then ! Assume 0.18 (Borden Sand from Abdul mprops S-R table)''
+                allocate(Modflow%GWF%Sr(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Sr array')            
-                modflow.GWF.Sr(:)=2.771D-1
+                Modflow%GWF%Sr(:)=2.771D-1
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Sr '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Sr(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Sr(k),k=nStrt,nEnd)
 
 
-            if(.not. allocated(modflow.GWF.Brooks)) then ! Assume -1.0 (Brooks from hillslope example problem)''
-                allocate(modflow.GWF.Brooks(modflow.GWF.nCells),stat=ialloc)
+            if(.not. allocated(Modflow%GWF%Brooks)) then ! Assume -1.0 (Brooks from hillslope example problem)''
+                allocate(Modflow%GWF%Brooks(Modflow%GWF%nCells),stat=ialloc)
                 call AllocChk(ialloc,'Cell Brooks array')            
-                modflow.GWF.Brooks(:)=5.037D0
+                Modflow%GWF%Brooks(:)=5.037D0
             end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Brooks '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (modflow.GWF.Brooks(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Brooks(k),k=nStrt,nEnd)
 
             nStrt=nEnd+1
         end do
@@ -8930,9 +8772,9 @@
         !------------------- OC file
         write(Modflow.iOC,'(a,i5)') 'ATSA NPTIMES',modflow.nOutputTimes
         write(Modflow.iOC,*) (modflow.OutputTimes(i),i=1,modflow.nOutputTimes)
-        write(Modflow.iOC,'(a,i5)') 'HEAD SAVE UNIT ',modflow.GWF.iHDS
+        write(Modflow.iOC,'(a,i5)') 'HEAD SAVE UNIT ',Modflow%GWF%iHDS
         write(Modflow.iOC,'(a,i5)') 'HEAD PRINT FORMAT 0'
-        write(Modflow.iOC,'(a,i5)') 'DRAWDOWN SAVE UNIT ',modflow.GWF.iDDN
+        write(Modflow.iOC,'(a,i5)') 'DRAWDOWN SAVE UNIT ',Modflow%GWF%iDDN
         write(Modflow.iOC,'(a,i5)') 'DRAWDOWN PRINT FORMAT 0'
         do i=1,modflow.nPeriods
             write(Modflow.iOC,'(a,i5)') 'PERIOD ',i
@@ -8953,23 +8795,23 @@
         if(NodalControlVolume) then
             !------------------- GSF file for nodal control volume
             write(Modflow.iGSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
-            write(Modflow.iGSF,*) modflow.GWF.l_TMPLT.nElements, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
-            write(Modflow.iGSF,*) Modflow.GWF.nNold
-            write(Modflow.iGSF,*) (modflow.GWF.l_TMPLT.x(i),modflow.GWF.l_TMPLT.y(i),modflow.GWF.l_TMPLT.z(i),i=1,modflow.GWF.l_TMPLT%nNodes)
-            do i=1,modflow.GWF.l_TMPLT.nElements
-                write(Modflow.iGSF,'(12i10)') i,modflow.GWF.l_TMPLT.nNodesPerElement,(modflow.GWF.l_TMPLT.iNode(j,i),j=1,modflow.GWF.l_TMPLT.nNodesPerElement)
+            write(Modflow.iGSF,*) Modflow%GWF%nElements, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
+            write(Modflow.iGSF,*) Modflow%GWF%nNodes
+            write(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+            do i=1,Modflow%GWF%nElements
+                write(Modflow.iGSF,'(12i10)') i,Modflow%GWF%nNodesPerElement,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerElement)
             end do
-            do i=1,Modflow.GWF.nCells
-                write(Modflow.iGSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i)
+            do i=1,Modflow%GWF%nCells
+                write(Modflow.iGSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i)
             end do
         else
             !------------------- GSF file for elemental control volume
-            write(Modflow.iGSF,'(a)') trim(modflow.GWF.l_TMPLT.meshtype)
-            write(Modflow.iGSF,*) Modflow.GWF.nCells, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
-            write(Modflow.iGSF,*) Modflow.GWF.nNold
-            write(Modflow.iGSF,*) (modflow.GWF.l_TMPLT.x(i),modflow.GWF.l_TMPLT.y(i),modflow.GWF.l_TMPLT.z(i),i=1,modflow.GWF.l_TMPLT%nNodes)
-            do i=1,Modflow.GWF.nCells
-                write(Modflow.iGSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i),Modflow.GWF.nNodesPerCell,(Modflow.GWF.iNode(j,i),j=1,Modflow.GWF.nNodesPerCell)
+            write(Modflow.iGSF,'(a)') trim(Modflow%GWF%meshtype)
+            write(Modflow.iGSF,*) Modflow%GWF%nCells, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
+            write(Modflow.iGSF,*) Modflow%GWF%nNodes
+            write(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+            do i=1,Modflow%GWF%nCells
+                write(Modflow.iGSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i),Modflow%GWF%nNodesPerCell,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
         end if
         
@@ -8985,73 +8827,73 @@
         integer(i4) :: i, j, k
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
-        write(Modflow.iSWF,'(10i9)') Modflow.SWF.nCells, & ! NSWFNDS 
-            Modflow.SWF.njag, & ! NJA_SWF
-            Modflow.SWF.nCells, & ! NSWFGWC, assume for now all swf cells are connected to underlying gwf
-            modflow.SWF.nZones, & ! NSWFTYP
-            Modflow.SWF.iCBB, & ! ISWFCB
-            Modflow.SWF.iHDS, & ! ISWFHD
-            Modflow.SWF.iDDN, & ! ISWFDD
+        write(Modflow.iSWF,'(10i9)') Modflow%SWF%nCells, & ! NSWFNDS 
+            Modflow%SWF%njag, & ! NJA_SWF
+            Modflow%SWF%nCells, & ! NSWFGWC, assume for now all swf cells are connected to underlying gwf
+            Modflow%SWF%nZones, & ! NSWFTYP
+            Modflow%SWF%iCBB, & ! ISWFCB
+            Modflow%SWF%iHDS, & ! ISWFHD
+            Modflow%SWF%iDDN, & ! ISWFDD
             0 ! ISWFIB
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
-        write(Modflow.iSWF,'(10i4)') (modflow.SWF.l_TMPLT.ia(i),i=1,modflow.SWF.nCells)
+        write(Modflow.iSWF,'(10i4)') (Modflow%SWF%ia(i),i=1,Modflow%SWF%nCells)
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
-        do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,*) (abs(modflow.SWF.l_TMPLT.ConnectionList(j,i)),j=1,modflow.SWF.l_TMPLT.ia(i))
+        do i=1,Modflow%SWF%nCells
+            write(Modflow.iSWF,*) (abs(Modflow%SWF%ConnectionList(j,i)),j=1,Modflow%SWF%ia(i))
         end do
         
         write(Modflow.iSWF,'(a)') '#    IFNO    IFTYP            FAREA               FELEV        ISSWADI'
-        do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(2i9,2('//FMT_R8//'),i9)') i, 1, modflow.SWF.CellArea(i), modflow.SWF.zCell(i),0
+        do i=1,Modflow%SWF%nCells
+            write(Modflow.iSWF,'(2i9,2('//FMT_R8//'),i9)') i, 1, Modflow%SWF%CellArea(i), Modflow%SWF%cell%z(i),0
         end do
 
         write(Modflow.iSWF,'(a)') '#    IFNO   IFGWNO       IFCON                 SGCL          SGCAREA       ISGWADI'
-        do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(2i9,3x,i9,'//FMT_R4//','//FMT_R8//',i9)') i, i, 1, modflow.SWF.sgcl(i), modflow.SWF.CellArea(i), 0
+        do i=1,Modflow%SWF%nCells
+            write(Modflow.iSWF,'(2i9,3x,i9,'//FMT_R4//','//FMT_R8//',i9)') i, i, 1, Modflow%SWF%sgcl(i), Modflow%SWF%CellArea(i), 0
         end do
 
         write(Modflow.iSWF,'(a)') '# ISWFTYP               SMANN                SWFH1                SWFH2'
-        do i=1,modflow.SWF.nZones
-            write(Modflow.iSWF,'(i5,3x,3('//FMT_R8//'))') i,  modflow.swf.manning(i),  modflow.swf.H1DepthForSmoothing(i),  modflow.swf.H2DepthForSmoothing(i)
+        do i=1,Modflow%SWF%nZones
+            write(Modflow.iSWF,'(i5,3x,3('//FMT_R8//'))') i,  Modflow%SWF%manning(i),  Modflow%SWF%H1DepthForSmoothing(i),  Modflow%SWF%H2DepthForSmoothing(i)
         end do
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CLN()'
-        do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(10('//FMT_R8//'))') (modflow.SWF.ConnectionLength(j,i),j=1,modflow.SWF.l_TMPLT.ia(i))
+        do i=1,Modflow%SWF%nCells
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (Modflow%SWF%ConnectionLength(j,i),j=1,Modflow%SWF%ia(i))
         end do
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  PerpendicularArea FAHL()'
-        do i=1,modflow.SWF.nCells
-            write(Modflow.iSWF,'(10('//FMT_R8//'))') (modflow.SWF.PerpendicularArea(j,i),j=1,modflow.SWF.l_TMPLT.ia(i))
+        do i=1,Modflow%SWF%nCells
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (Modflow%SWF%PerpendicularArea(j,i),j=1,Modflow%SWF%ia(i))
         end do
 
         ! fix here YJP
-        if(.not. allocated(modflow.SWF.ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
-            allocate(modflow.SWF.ibound(modflow.SWF.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%SWF%ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
+            allocate(Modflow%SWF%ibound(Modflow%SWF%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell ibound array')            
-            modflow.SWF.ibound(:)=1
+            Modflow%SWF%ibound(:)=1
         end if
-        do i=1,Modflow.SWF.nCells
-            if(bcheck(modflow.SWF.Cell_is(i),inactive)) modflow.SWF.ibound(i)=0
+        do i=1,Modflow%SWF%nCells
+            if(bcheck(Modflow%SWF%Cell%is(i),inactive)) Modflow%SWF%ibound(i)=0
         enddo
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
-        write(Modflow.iSWF,'(10i3)') (modflow.SWF.ibound(k),k=1,Modflow.SWF.nCells)
+        write(Modflow.iSWF,'(10i3)') (Modflow%SWF%ibound(k),k=1,Modflow%SWF%nCells)
         
-        if(.not. allocated(modflow.SWF.StartingHeads)) then ! Assume equal to zcell i.e. depth zero + 1e-4'
-            allocate(modflow.SWF.StartingHeads(modflow.SWF.nCells),stat=ialloc)
+        if(.not. allocated(Modflow%SWF%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
+            allocate(Modflow%SWF%StartingHeads(Modflow%SWF%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
-            modflow.SWF.StartingHeads(:)=modflow.SWF.zcell(:)+1.0d-4
+            Modflow%SWF%StartingHeads(:)=Modflow%SWF%cell%z(:)+1.0d-4
         end if
         write(Modflow.iSWF,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iSWF,'(5('//FMT_R8//'))') (modflow.SWF.StartingHeads(i),i=1,modflow.SWF.nCells)
+        write(Modflow.iSWF,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i),i=1,Modflow%SWF%nCells)
         
         !------------------- SWBC file
-        if(allocated(modflow.SWF.CriticalDepthLength)) then
-            write(Modflow.iSWBC,*) modflow.swf.nSWBCCells, modflow.swf.iCBB  ! set nrchop default to 4
+        if(allocated(Modflow%SWF%CriticalDepthLength)) then
+            write(Modflow.iSWBC,*) Modflow%SWF%nSWBCCells, Modflow%SWF%iCBB  ! set nrchop default to 4
             write(Modflow.iSWBC,*) 1  ! reuse bc data from last stress period if negative
-            do i=1,modflow.SWF.nCells
-                if(bcheck(modflow.SWF.Cell_Is(i),CriticalDepth)) then
-                    write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+modflow.GWF.nCells+modflow.CLN.nCells, modflow.SWF.CriticalDepthLength(i)
+            do i=1,Modflow%SWF%nCells
+                if(bcheck(Modflow%SWF%Cell%is(i),CriticalDepth)) then
+                    write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%CriticalDepthLength(i)
                 end if
             end do
         end if
@@ -9065,24 +8907,24 @@
         if(NodalControlVolume) then
             !------------------- write non-standard SWF_GSF file
             write(Modflow.iSWF_GSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
-            write(Modflow.iSWF_GSF,*) Modflow.SWF.l_TMPLT.nElements, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
-            write(Modflow.iSWF_GSF,*) Modflow.SWF.nNold
-            write(Modflow.iSWF_GSF,*) (Modflow.SWF.l_TMPLT.x(i),Modflow.SWF.l_TMPLT.y(i),Modflow.SWF.l_TMPLT.z(i),i=1,Modflow.SWF.nNold)
-            do i=1,Modflow.SWF.l_TMPLT.nElements
-                write(Modflow.iSWF_GSF,'(12i10)') i,Modflow.SWF.l_TMPLT.nNodesPerElement,(Modflow.SWF.l_TMPLT.iNode(j,i),j=1,Modflow.SWF.l_TMPLT.nNodesPerElement)
+            write(Modflow.iSWF_GSF,*) Modflow%SWF%nElements, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
+            write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
+            write(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+            do i=1,Modflow%SWF%nElements
+                write(Modflow.iSWF_GSF,'(12i10)') i,Modflow%SWF%nNodesPerElement,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerElement)
             end do
-            do i=1,Modflow.SWF.nCells
-                write(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i)
+            do i=1,Modflow%SWF%nCells
+                write(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i)
             end do
 
         else 
             !------------------- write SWF_GSF file
-            write(Modflow.iSWF_GSF,'(a)') trim(Modflow.SWF.l_TMPLT.meshtype)
-            write(Modflow.iSWF_GSF,*) Modflow.SWF.nCells, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
-            write(Modflow.iSWF_GSF,*) Modflow.SWF.nNold
-            write(Modflow.iSWF_GSF,*) (Modflow.SWF.l_TMPLT.x(i),Modflow.SWF.l_TMPLT.y(i),Modflow.SWF.l_TMPLT.z(i),i=1,Modflow.SWF.nNold)
-            do i=1,Modflow.SWF.nCells
-                write(Modflow.iSWF_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow.SWF.xCell(i),Modflow.SWF.yCell(i),Modflow.SWF.zCell(i),Modflow.SWF.iLayer(i),Modflow.SWF.nNodesPerCell,(Modflow.SWF.iNode(j,i),j=1,Modflow.SWF.nNodesPerCell)
+            write(Modflow.iSWF_GSF,'(a)') trim(Modflow%SWF%meshtype)
+            write(Modflow.iSWF_GSF,*) Modflow%SWF%nCells, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
+            write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
+            write(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+            do i=1,Modflow%SWF%nCells
+                write(Modflow.iSWF_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%SWF%cell%x(i),Modflow%SWF%cell%y(i),Modflow%SWF%cell%z(i),Modflow%SWF%iLayer(i),Modflow%SWF%nNodesPerCell,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
         end if
         
@@ -9539,41 +9381,41 @@
       !IF(FILTYP.EQ.'DATA(BINARY)') THEN
          call LwrCse(FNAME(1:IFLEN))
          if(index(FNAME(1:IFLEN),'cln.hds') /= 0) then
-             modflow.CLN.iHDS=IU
+             Modflow%CLN%iHDS=IU
              file_open_flag(IU)=.true.
-             modflow.CLN.FNameHDS=FNAME(1:IFLEN)
+             Modflow%CLN%FNameHDS=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'swf.hds') /= 0) then
-             modflow.SWF.iHDS=IU
+             Modflow%SWF%iHDS=IU
              file_open_flag(IU)=.true.
-             modflow.SWF.FNameHDS=FNAME(1:IFLEN)
+             Modflow%SWF%FNameHDS=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'gwf.hds') /= 0) then
-             modflow.GWF.iHDS=IU
+             Modflow%GWF%iHDS=IU
              file_open_flag(IU)=.true.
-             modflow.GWF.FNameHDS=FNAME(1:IFLEN)
+             Modflow%GWF%FNameHDS=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'cln.ddn') /= 0) then
-             modflow.CLN.iDDN=IU
+             Modflow%CLN%iDDN=IU
              file_open_flag(IU)=.true.
-             modflow.CLN.FNameDDN=FNAME(1:IFLEN)
+             Modflow%CLN%FNameDDN=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'swf.ddn') /= 0) then
-             modflow.SWF.iDDN=IU
+             Modflow%SWF%iDDN=IU
              file_open_flag(IU)=.true.
-             modflow.SWF.FNameDDN=FNAME(1:IFLEN)
+             Modflow%SWF%FNameDDN=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'gwf.ddn') /= 0) then
-             modflow.GWF.iDDN=IU
+             Modflow%GWF%iDDN=IU
              file_open_flag(IU)=.true.
-             modflow.GWF.FNameDDN=FNAME(1:IFLEN)
+             Modflow%GWF%FNameDDN=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'cln.cbb') /= 0) then
-             modflow.CLN.iCBB=IU
+             Modflow%CLN%iCBB=IU
              file_open_flag(IU)=.true.
-             modflow.CLN.FNameCBB=FNAME(1:IFLEN)
+             Modflow%CLN%FNameCBB=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'swf.cbb') /= 0) then
-             modflow.SWF.iCBB=IU
+             Modflow%SWF%iCBB=IU
              file_open_flag(IU)=.true.
-             modflow.SWF.FNameCBB=FNAME(1:IFLEN)
+             Modflow%SWF%FNameCBB=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'gwf.cbb') /= 0) then
-             modflow.GWF.iCBB=IU
+             Modflow%GWF%iCBB=IU
              file_open_flag(IU)=.true.
-             modflow.GWF.FNameCBB=FNAME(1:IFLEN)
+             Modflow%GWF%FNameCBB=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'.sms') /= 0) then
              modflow.FNameSMS=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'.oc') /= 0) then
@@ -10657,7 +10499,7 @@
         !
               ALLOCATE(LAYFLG(6,NLAY))
               ALLOCATE(HK(NODES))
-              ALLOCATE(modflow.GWF.Kh(NODES))
+              ALLOCATE(Modflow%GWF%Kh(NODES))
               ALLOCATE(VKA(NODES))
               IF(NCNFBD.GT.0) THEN
                  ALLOCATE(VKCB(NODES))
@@ -10761,7 +10603,7 @@
                 CALL SGWF2LPFU1G(IN,NPHK,NPHANI,NPVK,NPVANI,NPSS,NPSY,NPVKCB,&
                  STOTXT,NOPCHK)
               end if
-              modflow.GWF.Kh=hk
+              Modflow%GWF%Kh=hk
         
 !        !--------------------------------------------------------------------------------
 !        !8------SET INITIAL  GRID-BLOCK SATURATED THICKNESS FRACTIONS AND TRANSMISSIVITY WHEN NEEDED
@@ -10884,8 +10726,8 @@
       end if
       
       do n=1,NCLNNDS
-        modflow.CLN.ibound(n)=ibound(NODES+n)
-        modflow.CLN.hnew(n)=hnew(NODES+n)
+        Modflow%CLN%ibound(n)=ibound(NODES+n)
+        Modflow%CLN%hnew(n)=hnew(NODES+n)
       end do
 !!
 !!4-----SET VOLUMETRIC FRACTIONS FOR CLN-NODES IN SATURATION ARRAY
@@ -10992,8 +10834,8 @@
       end if
       
       do n=1,NSWFNDS
-        modflow.SWF.ibound(n)=ibound(NODES+NCLNNDS+n)
-        modflow.SWF.hnew(n)=hnew(NODES+NCLNNDS+n)
+        Modflow%SWF%ibound(n)=ibound(NODES+NCLNNDS+n)
+        Modflow%SWF%hnew(n)=hnew(NODES+NCLNNDS+n)
       end do
 !!
 !!4-----SET VOLUMETRIC FRACTIONS FOR CLN-NODES IN SATURATION ARRAY
@@ -14660,21 +14502,21 @@
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
 
-        allocate(domain.head(domain.nCells,Modflow.ntime))
+        allocate(domain%head(domain%nCells,Modflow.ntime))
         
         call msg(' ')
-        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain.name)//' head data from unit ',domain.iHDS,' file '//trim(domain.FNameHDS)
+        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain%name)//' head data from unit ',domain%iHDS,' file '//trim(domain%FNameHDS)
         call msg(TmpSTR)
-        if(domain.name=='GWF') then
+        if(domain%name=='GWF') then
             call msg('    Period      Step     Layer      Time Cell1Head            Name')
             do i=1,Modflow.ntime
                 DO K=1,NLAY
                     NNDLAY = NODLAY(K)
                     NSTRT = NODLAY(K-1)+1
                     NDSLAY = NNDLAY - NODLAY(K-1)          
-                    CALL ULASAVURD(domain.head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                        TOTIMREAD,NSTRT,NNDLAY,ILAY,domain.iHDS,NODES)
-                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.head(1,i),TEXT
+                    CALL ULASAVURD(domain%head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
+                        TOTIMREAD,NSTRT,NNDLAY,ILAY,domain%iHDS,NODES)
+                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain%head(1,i),TEXT
                     call msg(TmpSTR)
                 END DO
             end do
@@ -14682,13 +14524,13 @@
             call msg('    Period      Step      Time Cell1Head            Name')
             do i=1,Modflow.ntime
                 IDUM = 1
-                CALL ULASAVRD(domain.head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                    TOTIMREAD,domain.ncells,IDUM,IDUM,domain.iHDS)
+                CALL ULASAVRD(domain%head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
+                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iHDS)
           
 !                CALL ULASAV(BUFF(1),TEXT,KSTP,KPER,PERTIM,TOTIM,NCLNNDS,
 !1         1,1,ICLNHD)
 
-          WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.head(1,i),TEXT
+          WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain%head(1,i),TEXT
                 call msg(TmpSTR)
             end do
         end if
@@ -14709,21 +14551,21 @@
         type (ModflowProject) Modflow
         type(ModflowDomain) domain
 
-        allocate(domain.Drawdown(domain.nCells,Modflow.ntime))
+        allocate(domain%Drawdown(domain%nCells,Modflow.ntime))
         
         call msg(' ')
-        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain.name)//' saturation data from unit ',domain.iDDN,' file '//trim(domain.FNameDDN)
+        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain%name)//' saturation data from unit ',domain%iDDN,' file '//trim(domain%FNameDDN)
         call msg(TmpSTR)
-        if(domain.name=='GWF') then
+        if(domain%name=='GWF') then
             call msg('    Period      Step     Layer      Time  Cell1Sat           Name')
             do i=1,Modflow.ntime
                 DO K=1,NLAY
                     NNDLAY = NODLAY(K)
                     NSTRT = NODLAY(K-1)+1
                     NDSLAY = NNDLAY - NODLAY(K-1)          
-                    CALL ULASAVURD(domain.Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                        TOTIMREAD,NSTRT,NNDLAY,ILAY,domain.iDDN,NODES)
-                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain.Drawdown(1,i),TEXT
+                    CALL ULASAVURD(domain%Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
+                        TOTIMREAD,NSTRT,NNDLAY,ILAY,domain%iDDN,NODES)
+                    WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain%Drawdown(1,i),TEXT
                     call msg(TmpSTR)
                 END DO
             end do
@@ -14731,9 +14573,9 @@
             call msg('    Period      Step      Time  Cell1Sat            Name')
             do i=1,Modflow.ntime
                 IDUM = 1
-                CALL ULASAVRD(domain.Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                    TOTIMREAD,domain.ncells,IDUM,IDUM,domain.iDDN)
-                WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain.Drawdown(1,i),TEXT
+                CALL ULASAVRD(domain%Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
+                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iDDN)
+                WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain%Drawdown(1,i),TEXT
                 call msg(TmpSTR)
             end do
         end if
@@ -14761,15 +14603,15 @@
         type (ModflowDomain) domain
 
 
-        FNum=domain.iCBB
+        FNum=domain%iCBB
         
         call msg(' ')
-        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain.name)//' cell-by-cell flow data from unit ',domain.iCBB,' file '//trim(domain.FNameCBB)
+        write(TmpSTR,'(a,i5,a)')'Reading '//trim(domain%name)//' cell-by-cell flow data from unit ',domain%iCBB,' file '//trim(domain%FNameCBB)
         call msg(TmpSTR)
         
         ! Count cbb components
         call msg('   Component       Name')
-        domain.nComp=0
+        domain%nComp=0
         Component2: do 
                 read(FNum,iostat=status) KSTP,KPER,TEXT,NVAL,idum,ICODE
                 
@@ -14784,9 +14626,9 @@
                     deallocate(dummy)
 
                     if(CompName(1)==text) exit
-                    domain.nComp=domain.nComp+1
-                    CompName(domain.nComp)=text
-                    write(TmpSTR,*) domain.nComp,CompName(domain.nComp)
+                    domain%nComp=domain%nComp+1
+                    CompName(domain%nComp)=text
+                    write(TmpSTR,*) domain%nComp,CompName(domain%nComp)
                     call Msg(TmpSTR)
 
                     cycle
@@ -14798,7 +14640,7 @@
         rewind(FNum)
         call msg('    Period      Step      NVAL     ICODE            Name')
         do j=1,modflow.ntime
-            do k=1,domain.nComp
+            do k=1,domain%nComp
                 read(FNum,err=9300,end=1000) KSTP,KPER,TEXT,NVAL,idum,ICODE
                 WRITE(TmpSTR,'(4(i10),(a))') KPER,KSTP,NVAL,ICODE,TEXT
                 call Msg(TmpSTR)
@@ -14811,15 +14653,15 @@
                        index(TEXT,'FLOW CLN FACE') .ne. 0 .or. &
                        index(TEXT,'FLOW SWF FACE') .ne. 0) then
                         if(j==1) then
-                            allocate(domain.Cbb_FLOW_FACE(NVAL,Modflow.ntime))
-                            domain.Cbb_FLOW_FACE=0
+                            allocate(domain%Cbb_FLOW_FACE(NVAL,Modflow.ntime))
+                            domain%Cbb_FLOW_FACE=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.Cbb_FLOW_FACE(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%Cbb_FLOW_FACE(I,j),I=1,NVAL)
                         !rmax=-1e20
                         !rmin=1e20
                         !do i=1,nval
-                        !    rmax=max(rmax,domain.Cbb_FLOW_FACE(I,ntime))
-                        !    rmin=min(rmin,domain.Cbb_FLOW_FACE(I,ntime))
+                        !    rmax=max(rmax,domain%Cbb_FLOW_FACE(I,ntime))
+                        !    rmin=min(rmin,domain%Cbb_FLOW_FACE(I,ntime))
                         !end do
                         !write(*,*) text
                         !write(*,*) nval
@@ -14827,70 +14669,70 @@
                         !write(*,*) rmax
                     else if(index(text,'STORAGE') .ne.0) then
                         if(j==1) THEN
-                            allocate(domain.cbb_STORAGE(NVAL,Modflow.ntime))
-                            domain.cbb_STORAGE=0
+                            allocate(domain%cbb_STORAGE(NVAL,Modflow.ntime))
+                            domain%cbb_STORAGE=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_STORAGE(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_STORAGE(I,j),I=1,NVAL)
 
                     else if(index(text,'CONSTANT HEAD') .ne.0 .or. &
                             index(text,'CLN CONST HEAD') .ne.0 .or. &
                             index(text,'SWF CONST HEAD') .ne.0) then
                         if(j==1) THEN
-	                        allocate(domain.cbb_CONSTANT_HEAD(NVAL,Modflow.ntime))
-                            domain.cbb_CONSTANT_HEAD=0
+	                        allocate(domain%cbb_CONSTANT_HEAD(NVAL,Modflow.ntime))
+                            domain%cbb_CONSTANT_HEAD=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_CONSTANT_HEAD(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_CONSTANT_HEAD(I,j),I=1,NVAL)
                             
                     else if(index(text,'RECHARGE') .ne.0) then
                         if(j==1) THEN
-	                        allocate(domain.cbb_RECHARGE(NVAL,Modflow.ntime))
-                            domain.cbb_RECHARGE=0
+	                        allocate(domain%cbb_RECHARGE(NVAL,Modflow.ntime))
+                            domain%cbb_RECHARGE=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_RECHARGE(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_RECHARGE(I,j),I=1,NVAL)
                             
                     else if(index(text,'WELLS') .ne.0) then
                         if(j==1) THEN
-	                        allocate(domain.cbb_WELLS(NVAL,Modflow.ntime))
-                            domain.cbb_WELLS=0
+	                        allocate(domain%cbb_WELLS(NVAL,Modflow.ntime))
+                            domain%cbb_WELLS=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_WELLS(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_WELLS(I,j),I=1,NVAL)
                             
                     else if(index(text,'DRAINS') .ne.0) then
                         if(j==1) THEN
-	                            allocate(domain.cbb_DRAINS(NVAL,Modflow.ntime))
-                                domain.cbb_DRAINS=0
+	                            allocate(domain%cbb_DRAINS(NVAL,Modflow.ntime))
+                                domain%cbb_DRAINS=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_DRAINS(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_DRAINS(I,j),I=1,NVAL)
                             
                     else if(index(text,'CLN') .ne.0) then
                         if(j==1) THEN
-	                            allocate(domain.cbb_CLN(NVAL,Modflow.ntime))
-                                domain.cbb_CLN=0
+	                            allocate(domain%cbb_CLN(NVAL,Modflow.ntime))
+                                domain%cbb_CLN=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_CLN(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_CLN(I,j),I=1,NVAL)
                             
                     else if(index(text,'SWF') .ne.0) then
                         if(j==1) THEN
-	                            allocate(domain.cbb_SWF(NVAL,Modflow.ntime))
-                                domain.cbb_SWF=0
+	                            allocate(domain%cbb_SWF(NVAL,Modflow.ntime))
+                                domain%cbb_SWF=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_SWF(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_SWF(I,j),I=1,NVAL)
                     else if(index(text,'GWF') .ne.0) then
                         if(j==1) THEN
-	                            allocate(domain.cbb_GWF(NVAL,Modflow.ntime))
-                                domain.cbb_GWF=0
+	                            allocate(domain%cbb_GWF(NVAL,Modflow.ntime))
+                                domain%cbb_GWF=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_GWF(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_GWF(I,j),I=1,NVAL)
 
                     else if(index(text,'SWBC') .ne.0) then
                         if(j==1) THEN
-	                            allocate(domain.cbb_SWBC(NVAL,Modflow.ntime))
-                                domain.cbb_SWBC=0
+	                            allocate(domain%cbb_SWBC(NVAL,Modflow.ntime))
+                                domain%cbb_SWBC=0
                         end if
-                        read(FNum,err=9400,end=9400) (domain.cbb_SWBC(I,j),I=1,NVAL)
+                        read(FNum,err=9400,end=9400) (domain%cbb_SWBC(I,j),I=1,NVAL)
 
                     else 
-                        call ErrMsg(trim(domain.FNameCBB)//': TEXT variable '//text//' not currently recognized ')
+                        call ErrMsg(trim(domain%FNameCBB)//': TEXT variable '//text//' not currently recognized ')
                     end if
                 else if(ICODE .eq. -1) then
                     call Msg( 'The budget data is written in the compact budget style.')
@@ -15192,8 +15034,8 @@
         end if
 
         do n=1,NODES
-            modflow.GWF.ibound(n)=ibound(n)
-            modflow.GWF.hnew(n)=hnew(n)
+            Modflow%GWF%ibound(n)=ibound(n)
+            Modflow%GWF%hnew(n)=hnew(n)
         end do
 
         
@@ -15983,7 +15825,7 @@
         ASWFNDS(I,2) = IFTYP
         ASWFNDS(I,3) = FAREA
         ASWFNDS(I,4) = FELEV
-        modflow.SWF.zCell(i)=FELEV
+        Modflow%SWF%cell%z(i)=FELEV
         ISSWADISWF(I) = ISSWADI
       end do
 !----------------------------------------------------------------------------------------
@@ -16698,59 +16540,59 @@
             exit
         end do
 
-        read(Modflow.iGSF,'(a)') Modflow.GWF.meshtype
-        if(Modflow.GWF.meshtype=='UNSTRUCTURED(NODALCONTROLVOLUME)') then
+        read(Modflow.iGSF,'(a)') Modflow%GWF%meshtype
+        if(Modflow%GWF%meshtype=='UNSTRUCTURED(NODALCONTROLVOLUME)') then
             NodalControlVolume=.true.
-            read(Modflow.iGSF,*) Modflow.GWF.nElements, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
-            read(Modflow.iGSF,*) Modflow.GWF.nNold
-            Modflow.GWF.nCells=Modflow.GWF.nNold
+            read(Modflow.iGSF,*) Modflow%GWF%nElements, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
+            read(Modflow.iGSF,*) Modflow%GWF%nNodes
+            Modflow%GWF%nCells=Modflow%GWF%nNodes
         else
-            read(Modflow.iGSF,*) Modflow.GWF.nElements, Modflow.GWF.nLayers, Modflow.GWF.iz, Modflow.GWF.ic
-            read(Modflow.iGSF,*) Modflow.GWF.nNold
-            Modflow.GWF.nCells=Modflow.GWF.nElements
+            read(Modflow.iGSF,*) Modflow%GWF%nElements, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
+            read(Modflow.iGSF,*) Modflow%GWF%nNodes
+            Modflow%GWF%nCells=Modflow%GWF%nElements
         end if
 
         
         
-        allocate(Modflow.GWF.x(Modflow.GWF.nNold),Modflow.GWF.y(Modflow.GWF.nNold),Modflow.GWF.z(Modflow.GWF.nNold), stat=ialloc)
+        allocate(Modflow%GWF%x(Modflow%GWF%nNodes),Modflow%GWF%y(Modflow%GWF%nNodes),Modflow%GWF%z(Modflow%GWF%nNodes), stat=ialloc)
         call AllocChk(ialloc,'GWF node coordinate arrays')
-        Modflow.GWF.x = 0 ! automatic initialization
-        Modflow.GWF.y = 0 ! automatic initialization
-        Modflow.GWF.z = 0 ! automatic initialization
+        Modflow%GWF%x = 0 ! automatic initialization
+        Modflow%GWF%y = 0 ! automatic initialization
+        Modflow%GWF%z = 0 ! automatic initialization
         
-        read(Modflow.iGSF,*) (Modflow.GWF.x(i),Modflow.GWF.y(i),Modflow.GWF.z(i),i=1,Modflow.GWF.nNold)
+        read(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
 
-        ! determine the number of nodes per cell (Modflow.GWF.nNodesPerCell)
+        ! determine the number of nodes per cell (Modflow%GWF%nNodesPerCell)
         if(NodalControlVolume) then
-            read(Modflow.iGSF,*) i1,Modflow.GWF.nNodesPerCell
+            read(Modflow.iGSF,*) i1,Modflow%GWF%nNodesPerCell
         else
-            read(Modflow.iGSF,*) i1,r1,r2,r3,i2,Modflow.GWF.nNodesPerCell
+            read(Modflow.iGSF,*) i1,r1,r2,r3,i2,Modflow%GWF%nNodesPerCell
         endif
         backspace(Modflow.iGSF)
  
-        allocate(Modflow.GWF.iNode(Modflow.GWF.nNodesPerCell,Modflow.GWF.nElements),stat=ialloc)
+        allocate(Modflow%GWF%iNode(Modflow%GWF%nNodesPerCell,Modflow%GWF%nElements),stat=ialloc)
         call AllocChk(ialloc,'GWF iNode arrays')
         
-        allocate(Modflow.GWF.xCell(Modflow.GWF.nCells),Modflow.GWF.yCell(Modflow.GWF.nCells),Modflow.GWF.zCell(Modflow.GWF.nCells),Modflow.GWF.iLayer(Modflow.GWF.nCells),stat=ialloc)
+        allocate(Modflow%GWF%cell%x(Modflow%GWF%nCells),Modflow%GWF%cell%y(Modflow%GWF%nCells),Modflow%GWF%cell%z(Modflow%GWF%nCells),Modflow%GWF%iLayer(Modflow%GWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'GWF cell coordinate arrays')
-        Modflow.GWF.xCell(:)=-999.
-        Modflow.GWF.yCell(:)=-999.
-        Modflow.GWF.zCell(:)=-999.
-        Modflow.GWF.iLayer(:)=-999
-        Modflow.GWF.iNode = 0 ! automatic initialization
+        Modflow%GWF%cell%x(:)=-999.
+        Modflow%GWF%cell%y(:)=-999.
+        Modflow%GWF%cell%z(:)=-999.
+        Modflow%GWF%iLayer(:)=-999
+        Modflow%GWF%iNode = 0 ! automatic initialization
         
         if(NodalControlVolume) then
-            do i=1,Modflow.GWF.nElements
-                read(Modflow.iGSF,*) i1,Modflow.GWF.nNodesPerCell,(Modflow.GWF.iNode(j,i),j=1,Modflow.GWF.nNodesPerCell)
+            do i=1,Modflow%GWF%nElements
+                read(Modflow.iGSF,*) i1,Modflow%GWF%nNodesPerCell,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
-            do i=1,Modflow.GWF.nCells
-                read(Modflow.iGSF,*) i1,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i)
+            do i=1,Modflow%GWF%nCells
+                read(Modflow.iGSF,*) i1,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i)
             end do
         else
-            do i=1,Modflow.GWF.nElements
-                !read(Modflow.iGSF,*) i1,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i),i2,&
-                !    (Modflow.GWF.iNode(j,i),j=1,Modflow.GWF.nNodesPerCell)
-                read(Modflow.iGSF,*) i1,Modflow.GWF.xCell(i),Modflow.GWF.yCell(i),Modflow.GWF.zCell(i),Modflow.GWF.iLayer(i),i3,(Modflow.GWF.iNode(j,i),j=1,Modflow.GWF.nNodesPerCell)
+            do i=1,Modflow%GWF%nElements
+                !read(Modflow.iGSF,*) i1,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i),i2,&
+                !    (Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
+                read(Modflow.iGSF,*) i1,Modflow%GWF%cell%x(i),Modflow%GWF%cell%y(i),Modflow%GWF%cell%z(i),Modflow%GWF%iLayer(i),i3,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
         endif
             
@@ -16758,12 +16600,12 @@
 
 	    call freeunit(Modflow.iGSF)
         
-        Modflow.GWF.IsDefined=.true.
-        allocate(modflow.GWF.Cell_Is(modflow.GWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF Cell_Is array')            
-        modflow.GWF.Cell_Is(:)=0
+        Modflow%GWF%IsDefined=.true.
+        allocate(Modflow%GWF%Cell%is(Modflow%GWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,'GWF Cell%is array')            
+        Modflow%GWF%Cell%is(:)=0
     
-        write(TmpSTR,'(i10)') Modflow.GWF.nCells 
+        write(TmpSTR,'(i10)') Modflow%GWF%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
 
 	    return
@@ -16789,41 +16631,41 @@
             exit
         end do
 
-        read(Modflow.iCLN_GSF,*) Modflow.CLN.meshtype
-        read(Modflow.iCLN_GSF,*) Modflow.CLN.nCells, Modflow.CLN.nLayers, Modflow.CLN.iz, Modflow.CLN.ic
-        read(Modflow.iCLN_GSF,*) Modflow.CLN.nNold
-        Modflow.CLN.nElements=Modflow.CLN.nCells
+        read(Modflow.iCLN_GSF,*) Modflow%CLN%meshtype
+        read(Modflow.iCLN_GSF,*) Modflow%CLN%nCells, Modflow%CLN%nLayers, Modflow%CLN%iz, Modflow%CLN%ic
+        read(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
+        Modflow%CLN%nElements=Modflow%CLN%nCells
 
-        allocate(Modflow.CLN.x(Modflow.CLN.nNold),Modflow.CLN.y(Modflow.CLN.nNold),Modflow.CLN.z(Modflow.CLN.nNold), stat=ialloc)
+        allocate(Modflow%CLN%x(Modflow%CLN%nNodes),Modflow%CLN%y(Modflow%CLN%nNodes),Modflow%CLN%z(Modflow%CLN%nNodes), stat=ialloc)
         call AllocChk(ialloc,'CLN node coordinate arrays')
-        Modflow.CLN.x = 0 ! automatic initialization
-        Modflow.CLN.y = 0 ! automatic initialization
-        Modflow.CLN.z = 0 ! automatic initialization
+        Modflow%CLN%x = 0 ! automatic initialization
+        Modflow%CLN%y = 0 ! automatic initialization
+        Modflow%CLN%z = 0 ! automatic initialization
         
-        read(Modflow.iCLN_GSF,*) (Modflow.CLN.x(i),Modflow.CLN.y(i),Modflow.CLN.z(i),i=1,Modflow.CLN.nNold)
+        read(Modflow.iCLN_GSF,*) (Modflow%CLN%x(i),Modflow%CLN%y(i),Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
 
-        ! determine the number of nodes per cell (Modflow.CLN.nNodesPerCell)
-        read(Modflow.iCLN_GSF,*) i1,r1,r2,r3,i2,Modflow.CLN.nNodesPerCell
+        ! determine the number of nodes per cell (Modflow%CLN%nNodesPerCell)
+        read(Modflow.iCLN_GSF,*) i1,r1,r2,r3,i2,Modflow%CLN%nNodesPerCell
         backspace(Modflow.iCLN_GSF)
 
-        allocate(Modflow.CLN.iNode(Modflow.CLN.nNodesPerCell,Modflow.CLN.nCells),stat=ialloc)
+        allocate(Modflow%CLN%iNode(Modflow%CLN%nNodesPerCell,Modflow%CLN%nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN iNode array')
         
-        allocate(Modflow.CLN.xCell(Modflow.CLN.nCells),Modflow.CLN.yCell(Modflow.CLN.nCells),Modflow.CLN.zCell(Modflow.CLN.nCells),Modflow.CLN.iLayer(Modflow.CLN.nCells),stat=ialloc)
+        allocate(Modflow%CLN%cell%x(Modflow%CLN%nCells),Modflow%CLN%cell%y(Modflow%CLN%nCells),Modflow%CLN%cell%z(Modflow%CLN%nCells),Modflow%CLN%iLayer(Modflow%CLN%nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN cell coordinate arrays')
 
-        Modflow.CLN.iNode = 0 ! automatic initialization
-        do i=1,Modflow.CLN.nCells
-            read(Modflow.iCLN_GSF,*) i1,Modflow.CLN.xCell(i),Modflow.CLN.yCell(i),Modflow.CLN.zCell(i),Modflow.CLN.iLayer(i),i2,(Modflow.CLN.iNode(j,i),j=1,Modflow.CLN.nNodesPerCell)
+        Modflow%CLN%iNode = 0 ! automatic initialization
+        do i=1,Modflow%CLN%nCells
+            read(Modflow.iCLN_GSF,*) i1,Modflow%CLN%cell%x(i),Modflow%CLN%cell%y(i),Modflow%CLN%cell%z(i),Modflow%CLN%iLayer(i),i2,(Modflow%CLN%iNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
         end do
 	    call freeunit(Modflow.iCLN_GSF)
         
-        Modflow.CLN.IsDefined=.true.
-        allocate(Modflow.CLN.Cell_Is(Modflow.CLN.nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN Cell_Is array')            
-        Modflow.CLN.Cell_Is(:)=0
+        Modflow%CLN%IsDefined=.true.
+        allocate(Modflow%CLN%Cell%is(Modflow%CLN%nCells),stat=ialloc)
+        call AllocChk(ialloc,'CLN Cell%is array')            
+        Modflow%CLN%Cell%is(:)=0
 
-        write(TmpSTR,'(i10)') Modflow.CLN.nCells 
+        write(TmpSTR,'(i10)') Modflow%CLN%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
 
         return
@@ -16850,68 +16692,68 @@
             exit
         end do
 
-        read(Modflow.iSWF_GSF,'(a)') Modflow.SWF.meshtype
+        read(Modflow.iSWF_GSF,'(a)') Modflow%SWF%meshtype
         
-        if(Modflow.SWF.meshtype=='UNSTRUCTURED(NODALCONTROLVOLUME)') then
+        if(Modflow%SWF%meshtype=='UNSTRUCTURED(NODALCONTROLVOLUME)') then
             NodalControlVolume=.true.
-            read(Modflow.iSWF_GSF,*) Modflow.SWF.nElements, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
-            read(Modflow.iSWF_GSF,*) Modflow.SWF.nNold
-            Modflow.SWF.nCells=Modflow.SWF.nNold
+            read(Modflow.iSWF_GSF,*) Modflow%SWF%nElements, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
+            read(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
+            Modflow%SWF%nCells=Modflow%SWF%nNodes
         else
-            read(Modflow.iSWF_GSF,*) Modflow.SWF.nElements, Modflow.SWF.nLayers, Modflow.SWF.iz, Modflow.SWF.ic
-            read(Modflow.iSWF_GSF,*) Modflow.SWF.nNold
-            Modflow.SWF.nCells=Modflow.SWF.nElements
+            read(Modflow.iSWF_GSF,*) Modflow%SWF%nElements, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
+            read(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
+            Modflow%SWF%nCells=Modflow%SWF%nElements
         end if
        
         
-        allocate(Modflow.SWF.x(Modflow.SWF.nNold),Modflow.SWF.y(Modflow.SWF.nNold),Modflow.SWF.z(Modflow.SWF.nNold), stat=ialloc)
+        allocate(Modflow%SWF%x(Modflow%SWF%nNodes),Modflow%SWF%y(Modflow%SWF%nNodes),Modflow%SWF%z(Modflow%SWF%nNodes), stat=ialloc)
         call AllocChk(ialloc,'SWF node coordinate arrays')
-        Modflow.SWF.x = 0 ! automatic initialization
-        Modflow.SWF.y = 0 ! automatic initialization
-        Modflow.SWF.z = 0 ! automatic initialization
+        Modflow%SWF%x = 0 ! automatic initialization
+        Modflow%SWF%y = 0 ! automatic initialization
+        Modflow%SWF%z = 0 ! automatic initialization
         
-        read(Modflow.iSWF_GSF,*) (Modflow.SWF.x(i),Modflow.SWF.y(i),Modflow.SWF.z(i),i=1,Modflow.SWF.nNold)
+        read(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
         
-        ! determine the number of nodes per cell (Modflow.SWF.nNodesPerCell)
+        ! determine the number of nodes per cell (Modflow%SWF%nNodesPerCell)
         if(NodalControlVolume) then
-            read(Modflow.iSWF_GSF,*) i1,Modflow.SWF.nNodesPerCell
+            read(Modflow.iSWF_GSF,*) i1,Modflow%SWF%nNodesPerCell
         else
-            read(Modflow.iSWF_GSF,*) i1,r1,r2,r3,i2,Modflow.SWF.nNodesPerCell
+            read(Modflow.iSWF_GSF,*) i1,r1,r2,r3,i2,Modflow%SWF%nNodesPerCell
         endif
         backspace(Modflow.iSWF_GSF)
-        allocate(Modflow.SWF.iNode(Modflow.SWF.nNodesPerCell,Modflow.SWF.nElements),stat=ialloc)
+        allocate(Modflow%SWF%iNode(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF iNode arrays')
-        Modflow.SWF.iNode = 0 ! automatic initialization
+        Modflow%SWF%iNode = 0 ! automatic initialization
 
-        allocate(Modflow.SWF.xCell(Modflow.SWF.nCells),Modflow.SWF.yCell(Modflow.SWF.nCells),Modflow.SWF.zCell(Modflow.SWF.nCells),Modflow.SWF.iLayer(Modflow.SWF.nCells),stat=ialloc)
+        allocate(Modflow%SWF%cell%x(Modflow%SWF%nCells),Modflow%SWF%cell%y(Modflow%SWF%nCells),Modflow%SWF%cell%z(Modflow%SWF%nCells),Modflow%SWF%iLayer(Modflow%SWF%nCells),stat=ialloc)
         call AllocChk(ialloc,'SWF xyz cell, iLayer arrays')
-        Modflow.SWF.xCell(:)=-999.
-        Modflow.SWF.yCell(:)=-999.
-        Modflow.SWF.zCell(:)=-999.
-        Modflow.SWF.iLayer(:)=-999
+        Modflow%SWF%cell%x(:)=-999.
+        Modflow%SWF%cell%y(:)=-999.
+        Modflow%SWF%cell%z(:)=-999.
+        Modflow%SWF%iLayer(:)=-999
         
         if(NodalControlVolume) then
-            do i=1,Modflow.SWF.nElements
-                read(Modflow.iSWF_GSF,'(12i10)') i1,Modflow.SWF.nNodesPerCell,(Modflow.SWF.iNode(j,i),j=1,Modflow.SWF.nNodesPerCell)
+            do i=1,Modflow%SWF%nElements
+                read(Modflow.iSWF_GSF,'(12i10)') i1,Modflow%SWF%nNodesPerCell,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
-            do i=1,Modflow.SWF.nCells
-                read(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i1,Modflow.SWF.xCell(i),Modflow.SWF.yCell(i),Modflow.SWF.zCell(i),Modflow.SWF.iLayer(i)
+            do i=1,Modflow%SWF%nCells
+                read(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i1,Modflow%SWF%cell%x(i),Modflow%SWF%cell%y(i),Modflow%SWF%cell%z(i),Modflow%SWF%iLayer(i)
             end do
 
         else
-            do i=1,Modflow.SWF.nElements
-                read(Modflow.iSWF_GSF,*) i1,Modflow.SWF.xCell(i),Modflow.SWF.yCell(i),Modflow.SWF.zCell(i),Modflow.SWF.iLayer(i),i3,(Modflow.SWF.iNode(j,i),j=1,Modflow.SWF.nNodesPerCell)
+            do i=1,Modflow%SWF%nElements
+                read(Modflow.iSWF_GSF,*) i1,Modflow%SWF%cell%x(i),Modflow%SWF%cell%y(i),Modflow%SWF%cell%z(i),Modflow%SWF%iLayer(i),i3,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
         end if
 	    call freeunit(Modflow.iSWF_GSF)
         
-        Modflow.SWF.IsDefined=.true.
+        Modflow%SWF%IsDefined=.true.
 
-        write(TmpSTR,'(i10)') Modflow.SWF.nCells 
+        write(TmpSTR,'(i10)') Modflow%SWF%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
-        allocate(modflow.SWF.Cell_Is(modflow.SWF.nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell_Is array')            
-        modflow.SWF.Cell_Is(:)=0
+        allocate(Modflow%SWF%Cell%is(Modflow%SWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,'SWF Cell%is array')            
+        Modflow%SWF%Cell%is(:)=0
     
     
 
