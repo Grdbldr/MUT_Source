@@ -13,21 +13,19 @@ module GB
         
         integer(i4) :: FNumMUT
         
-        character(128) :: GBPrefix
+        character(128) :: GBPathToFile
 
         integer(i4) :: i,j
         real(dp) :: x(3),y(3)
         real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
         
         
-        !rgm oct-95  added this so only grid builder prefix needed
-        !     prefix of grid files
-        read(FNumMut,'(a80)') GBPrefix
-        GBMesh%Name=TRIM(GBPrefix)
+        read(FNumMut,'(a80)') GBPathToFile
+        GBMesh%Name=TRIM(GBPathToFile)
 
-        inquire(file=trim(GBprefix)//'.grd',exist=FileExists)
+        inquire(file=trim(GBPathToFile)//'.grd',exist=FileExists)
         if(.not. FileExists) then
-            call ErrMsg('File not found: '//trim(GBprefix)//'.grd')
+            call ErrMsg('File not found: '//trim(GBPathToFile)//'.grd')
         end if
 
         GBMesh%nNodesPerElement=3
@@ -36,7 +34,7 @@ module GB
         
         !     NODE COORDINATES
 	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.xyc',form='unformatted')
+        open(itmp,file=trim(GBPathToFile)//'.xyc',form='unformatted')
         read(itmp) GBMesh%nNodes
     
         
@@ -50,7 +48,7 @@ module GB
 
         !     ELEMENT INCIDENCES
 	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.in3',form='unformatted')
+        open(itmp,file=trim(GBPathToFile)//'.in3',form='unformatted')
         read(itmp) GBMesh%nElements
 
         allocate(GBMesh%Element(GBMesh%nElements), GBMesh%idNode(GBMesh%nNodesPerElement,GBMesh%nElements), stat=ialloc)
@@ -62,7 +60,7 @@ module GB
 
         !     Element zone numbers
 	    call getunit(itmp)
-        open(itmp,file=trim(GBprefix)//'.ean',form='unformatted')  ! ean contains GB element area(aka zone) numbers 
+        open(itmp,file=trim(GBPathToFile)//'.ean',form='unformatted')  ! ean contains GB element area(aka zone) numbers 
         read(itmp) (GBMesh%Element(i)%idZone,i=1,GBMesh%nElements)
 	    call freeunit(itmp)
         GBMesh%nZones=maxval(GBMesh%Element%idZone)
@@ -94,15 +92,11 @@ module GB
             GBMesh%Element(i)%y=yc
             GBMesh%Element(i)%z=zc/3
             GBMesh%Element(i)%zCircle=zc/3
-           
         end do
-                    
         
         if(EnableTecplotOutput) then
             call GBToTecplot(GBMesh)
         endif
-        
-
 
         return
     end subroutine ReadGridBuilderMesh

@@ -308,8 +308,6 @@
         type(ModflowDomain) CLN
         type(ModflowDomain) SWF
         
-        type(mesh) TMPLT2D
-        
         character(128) :: MUTPrefix
         character(128) :: Prefix='Modflow'
         
@@ -1963,7 +1961,6 @@
         character(*) :: prefix
         type (ModflowProject) Modflow
         type (mesh) TMPLT
-        type (mesh) TMPLT2D
         
         integer(i4) :: i
         
@@ -2095,8 +2092,9 @@
                 call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
                 
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
-                call ReadGridBuilderMesh(FNumMut,TMPLT2D)
-                !call MeshFromGb(FnumMUT,TMPLT2D)
+                call ReadGridBuilderMesh(FNumMut,TMPLT)
+                TMPLT.Name='TMPLT'
+                !call MeshFromGb(FnumMUT,TMPLT)
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
             
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
@@ -2598,7 +2596,11 @@
         else
             Modflow%GWF%nCells=GWFDomain%nElements
             Modflow%GWF%nLayers=GWFDomain%nLayers
-        end if            
+        end if       
+        
+        allocate(GWFDomain%cell(GWFDomain%nCells),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain cell array')
+
         
         Modflow%GWF%nNodesPerCell=GWFDomain%nNodesPerElement
 
@@ -4989,9 +4991,11 @@
         ! Copy the template data to the Modflow GWF data structure
         GWFDomain%name='GWFDomain'
         GWFDomain%meshtype='UNSTRUCTURED'
-
-        
         GWFDomain%nNodes=TMPLT%nNodes*nsheet
+        
+        allocate(GWFDomain%node(GWFDomain%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain node array')
+
         
         ! coordinates
         !deallocate(GWFDomain%x,GWFDomain%y,GWFDomain%z)
@@ -5007,8 +5011,12 @@
         GWFDomain%nNodesPerElement=TMPLT%nNodesPerElement*2
         GWFDomain%nElements=TMPLT%nElements*GWFDomain%nLayers
         
+        allocate(GWFDomain%element(GWFDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,'GWFDomain element array')
+
+        
         ! Element node lists
-        deallocate(GWFDomain%idNode)
+        !deallocate(GWFDomain%idNode)
         allocate(GWFDomain%idNode(GWFDomain%nNodesPerElement,GWFDomain%nElements),stat=ialloc)
         call AllocChk(ialloc,'GWFDomain idNode array')
         do i=1,GWFDomain%nElements
@@ -5040,11 +5048,11 @@
         
         
         ! GWFDomain Connection data rebuilt here (GenerateLayeredGWFDomain)
-        deallocate(GWFDomain%ia, &
-                 GWFDomain%ConnectionList, &
-                 GWFDomain%ConnectionLength, &
-                 GWFDomain%PerpendicularArea, &
-                 GWFDomain%ThroughFace)
+        !deallocate(GWFDomain%ia, &
+        !         GWFDomain%ConnectionList, &
+        !         GWFDomain%ConnectionLength, &
+        !         GWFDomain%PerpendicularArea, &
+        !         GWFDomain%ThroughFace)
         if(NodalControlVolume) then 
             allocate(GWFDomain%ia(GWFDomain%nNodes), &
                      GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nNodes), &
@@ -5153,6 +5161,10 @@
         ! Copy the template data to the Modflow SWF data structure
         SWFDomain.name='SWFDomain'
         SWFDomain.meshtype='UNSTRUCTURED'
+        
+        allocate(SWFDomain%node(TMPLT%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'SWFDomain node array')
+
 
         ! Define elevation (z coordinate) of SWF SWFDomain
         allocate(top_elev(TMPLT%nNodes),stat=ialloc)
