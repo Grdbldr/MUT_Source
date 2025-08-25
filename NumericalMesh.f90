@@ -50,19 +50,6 @@ module NumericalMesh
 
     end type element    
     
-    type cell 
-        real(dp) :: x
-        real(dp) :: y
-        real(dp) :: z
-        real(dp) :: area   ! area of the cell in xy plane
-        real(dp) :: top    ! top elevation of the cell 
-        real(dp) :: bottom ! bottom elevation of the cell
-        character(len=:), allocatable :: name
-        integer(i4) :: id
-        integer(i4) :: is
-        integer(i4) :: idZone
-        integer(i4) :: iLayer ! layer number for extruded mesh
-    end type cell 
     
     type zone 
         character(len=:), allocatable :: name
@@ -96,9 +83,6 @@ module NumericalMesh
         real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
         integer(i4), allocatable :: ThroughFace(:,:)  ! connected through face  (MAX_CNCTS,nCells)
 
-        integer(i4) :: nCells ! number of cells in mesh
-        type(cell), allocatable :: cell(:) ! array of cells
-        integer(i4) :: nNodesPerCell ! number of nodes in cell
         
         logical :: FacesCalculated = .false.
         integer(i4) :: nFaces  = 0

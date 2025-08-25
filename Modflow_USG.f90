@@ -163,9 +163,41 @@
 
     ! Added for Modflow-USG Tools
     
+    type cell 
+        real(dp) :: x
+        real(dp) :: y
+        real(dp) :: z
+        real(dp) :: area   ! area of the cell in xy plane
+        real(dp) :: top    ! top elevation of the cell 
+        real(dp) :: bottom ! bottom elevation of the cell
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: is
+        integer(i4) :: idZone
+        integer(i4) :: iLayer ! layer number for extruded mesh
+        
+        ! GWF cell properties 
+        real(sp) :: Kh
+        real(sp) :: Kv
+        real(sp) :: Ss
+        real(sp) :: Sy
+        real(sp) :: Alpha
+        real(sp) :: Beta
+        real(sp) :: Sr
+        real(sp) :: Brooks
+        real(sp) :: StartingHeads
+
+
+    end type cell 
+
 
     type,  extends(mesh)  :: ModflowDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
+        
+        integer(i4) :: nCells ! number of cells in mesh
+        type(cell), allocatable :: cell(:) ! array of cells
+        integer(i4) :: nNodesPerCell ! number of nodes in cell
+
         
         
         logical :: IsDefined=.false.      ! this type of domain has been defined 
@@ -194,11 +226,6 @@
         
         real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
         integer(i4) :: nSWBCCells=0        
-        
-        ! of size nNodes
-        real(dp), allocatable :: x(:) 
-        real(dp), allocatable :: y(:)
-        real(dp), allocatable :: z(:)
         
         integer(i4), allocatable :: ibound(:)
         integer(i4), allocatable :: laybcd(:)  ! size nLayers, non-zero value indicates layer has a quasi-3D confining bed below
@@ -242,16 +269,6 @@
         
         real(sp), allocatable :: laycbd(:)
         
-        ! GWF properties (cell-based)
-        real(sp), allocatable :: Kh(:)
-        real(sp), allocatable :: Kv(:)
-        real(sp), allocatable :: Ss(:)
-        real(sp), allocatable :: Sy(:)
-        real(sp), allocatable :: Alpha(:)
-        real(sp), allocatable :: Beta(:)
-        real(sp), allocatable :: Sr(:)
-        real(sp), allocatable :: Brooks(:)
-
         ! CLN properties (zoned)
         integer(i4), allocatable    :: Geometry(:)           ! circular or rectangular
         integer(i4), allocatable    :: Direction(:)          ! vertical, horizontal or angled
@@ -702,7 +719,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Alpha(i)=value
+                domain%cell(i)%Alpha=value
             end if
         end do
     
@@ -724,7 +741,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Beta(i)=value
+                domain%cell(i)%Beta=value
             end if
         end do
     
@@ -746,7 +763,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Brooks(i)=value
+                domain%cell(i)%Brooks=value
             end if
         end do
     
@@ -1008,7 +1025,7 @@
         
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Kh(i)=value
+                domain%cell(i)%Kh=value
             end if
         end do
     
@@ -1029,7 +1046,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Kv(i)=value
+                domain%cell(i)%Kv=value
             end if
         end do
     
@@ -1184,19 +1201,19 @@
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
                 if(domain%name == 'GWF') then
-                    domain%Kh(i)=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain%Kv(i)=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain%Ss(i)=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
-                    domain%Sy(i)=SpecificYield(iMaterial)                                           ! -
-                    domain%Alpha(i)=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
-                    domain%Beta(i)=Beta(iMaterial)                                                  ! -
-                    domain%Sr(i)=Sr(iMaterial)                                                      ! -
+                    domain%cell(i)%Kh=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain%cell(i)%Kv=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
+                    domain%cell(i)%Ss=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
+                    domain%cell(i)%Sy=SpecificYield(iMaterial)                                           ! -
+                    domain%cell(i)%Alpha=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
+                    domain%cell(i)%Beta=Beta(iMaterial)                                                  ! -
+                    domain%cell(i)%Sr=Sr(iMaterial)                                                      ! -
                     
                     select case(UnsaturatedFunctionType(iMaterial))
                     case ('Van Genuchten')
-                        domain%Brooks(i)= -BrooksCoreyExponent(iMaterial)
+                        domain%cell(i)%Brooks= -BrooksCoreyExponent(iMaterial)
                     case ('Brooks-Corey')
-                        domain%Brooks(i)=BrooksCoreyExponent(iMaterial)
+                        domain%cell(i)%Brooks=BrooksCoreyExponent(iMaterial)
                     case default
                         call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
                     end select
@@ -1839,7 +1856,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Sr(i)=value
+                domain%cell(i)%Sr=value
             end if
         end do
     
@@ -1861,7 +1878,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Ss(i)=value
+                domain%cell(i)%Ss=value
             end if
         end do
     
@@ -1928,7 +1945,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Sy(i)=value
+                domain%cell(i)%Sy=value
             end if
         end do
     
@@ -2593,18 +2610,18 @@
                     icell=icell+1
                     iNode=i+(j-1)*TMPLT%nNodes
                     Modflow%GWF%cell(iCell)%x=GWFDomain%node(iNode)%x
-                    Modflow%GWF%cell(iCell)%y=GWFDomain%y(iNode) 
-                    Modflow%GWF%cell(icell)%z=GWFDomain%z(iNode)
+                    Modflow%GWF%cell(iCell)%y=GWFDomain%node(iNode)%y
+                    Modflow%GWF%cell(icell)%z=GWFDomain%node(iNode)%z
                     
                     if(j==1) then
-                        Modflow%GWF%Cell(icell)%Top=GWFDomain%z(iNode) 
-                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%z(iNode)+GWFDomain%z(iNode+TMPLT%nNodes))/2.0d0
+                        Modflow%GWF%Cell(icell)%Top=GWFDomain%node(iNode)%z
+                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%node(iNode)%z+GWFDomain%node(iNode+TMPLT%nNodes)%z)/2.0d0
                     else if(j==GWFDomain%nLayers+1) then
-                        Modflow%GWF%Cell(icell)%Top=(GWFDomain%z(iNode)+GWFDomain%z(iNode-TMPLT%nNodes))/2.0d0
-                        Modflow%GWF%Cell(icell)%Bottom=GWFDomain%z(iNode) 
+                        Modflow%GWF%Cell(icell)%Top=   (GWFDomain%node(iNode)%z+GWFDomain%node(iNode-TMPLT%nNodes)%z)/2.0d0
+                        Modflow%GWF%Cell(icell)%Bottom=GWFDomain%node(iNode)%z 
                     else
-                        Modflow%GWF%Cell(icell)%Top=(GWFDomain%z(iNode)+GWFDomain%z(iNode-TMPLT%nNodes))/2.0d0
-                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%z(iNode)+GWFDomain%z(iNode+TMPLT%nNodes))/2.0d0
+                        Modflow%GWF%Cell(icell)%Top=   (GWFDomain%node(iNode)%z+GWFDomain%node(iNode-TMPLT%nNodes)%z)/2.0d0
+                        Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%node(iNode)%z+GWFDomain%node(iNode+TMPLT%nNodes)%z)/2.0d0
                     end if
                 end do
             end do
@@ -2617,7 +2634,7 @@
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0
                 do j=1,Modflow%GWF%nNodesPerCell
-                    zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
+                    zc=zc+GWFDomain%node(GWFDomain%idNode(j,i))%z
                 end do
                 Modflow%GWF%cell(i)%z=zc/GWFDomain%nNodesPerElement
             end do
@@ -2636,14 +2653,14 @@
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=4,6
-                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
+                        zc=zc+GWFDomain%node(GWFDomain%idNode(j,i))%z
                     end do
                     Modflow%GWF%Cell(i)%Top=zc/3
         
                     ! zc from centroid of the iNode array z-coordinates for bottom face
                     zc=0.0
                     do j=1,3
-                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
+                        zc=zc+GWFDomain%node(GWFDomain%idNode(j,i))%z
                     end do
                     Modflow%GWF%Cell(i)%Bottom=zc/3
             
@@ -2651,14 +2668,14 @@
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=5,8
-                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
+                        zc=zc+GWFDomain%node(GWFDomain%idNode(j,i))%z
                     end do
                     Modflow%GWF%Cell(i)%Top=zc/4
         
                     ! zc from centroid of the iNode array z-coordinates for top face
                     zc=0.0
                     do j=1,4
-                        zc=zc+GWFDomain%z(GWFDomain%idNode(j,i))
+                        zc=zc+GWFDomain%node(GWFDomain%idNode(j,i))%z
                     end do
                     Modflow%GWF%Cell(i)%Bottom=zc/4
                 end if
@@ -2718,21 +2735,15 @@
         end if
         
         ! Modflow GWF material properties (cell-based)
-        allocate(Modflow%GWF%Kh(Modflow%GWF%nCells),Modflow%GWF%Kv(Modflow%GWF%nCells), &
-            Modflow%GWF%Ss(Modflow%GWF%nCells),Modflow%GWF%Sy(Modflow%GWF%nCells),&
-            Modflow%GWF%Alpha(Modflow%GWF%nCells),Modflow%GWF%Beta(Modflow%GWF%nCells),Modflow%GWF%Sr(Modflow%GWF%nCells), &
-            Modflow%GWF%Brooks(Modflow%GWF%nCells),Modflow%GWF%StartingHeads(Modflow%GWF%nCells), &
-            stat=ialloc)
-        call AllocChk(ialloc,'GWF cell material property arrays')            
-        Modflow%GWF%Kh(:)=-999.d0
-        Modflow%GWF%Kh(:)=-999.d0
-        Modflow%GWF%Ss(:)=-999.d0
-        Modflow%GWF%Sy(:)=-999.d0
-        Modflow%GWF%Alpha(:)=-999.d0
-        Modflow%GWF%Beta(:)=-999.d0
-        Modflow%GWF%Sr(:)=-999.d0
-        Modflow%GWF%Brooks(:)=-999.d0
-        Modflow%GWF%StartingHeads(:)=-999.d0
+        Modflow%GWF%cell%Kh=-999.d0
+        Modflow%GWF%cell%Kh=-999.d0
+        Modflow%GWF%cell%Ss=-999.d0
+        Modflow%GWF%cell%Sy=-999.d0
+        Modflow%GWF%cell%Alpha=-999.d0
+        Modflow%GWF%cell%Beta=-999.d0
+        Modflow%GWF%cell%Sr=-999.d0
+        Modflow%GWF%cell%Brooks=-999.d0
+        Modflow%GWF%cell%StartingHeads=-999.d0
 
         Modflow%GWF%Cell%is=0
     
@@ -4429,11 +4440,11 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%x(i),i=1,Modflow%CLN%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%node(i)%x,i=1,Modflow%CLN%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%y(i),i=1,Modflow%CLN%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%node(i)%y,i=1,Modflow%CLN%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%node(i)%z,i=1,Modflow%CLN%nNodes)
         
         write(FNum,'(a)') '# zone'
         write(FNum,'(5i8)') (Modflow%CLN%cell(i)%idZone,i=1,Modflow%CLN%nCells)
@@ -5003,9 +5014,9 @@
         !allocate(GWFDomain%x(GWFDomain%nNodes),GWFDomain%y(GWFDomain%nNodes),GWFDomain%z(GWFDomain%nNodes),stat=ialloc)
         !call AllocChk(ialloc,'GWFDomain coordinate arrays')
         do i=1,GWFDomain%nNodes
-            GWFDomain%x(i)= x(i)
-            GWFDomain%y(i)= y(i)
-            GWFDomain%z(i)= z(i)
+            GWFDomain%node(i)%x= x(i)
+            GWFDomain%node(i)%y= y(i)
+            GWFDomain%node(i)%z= z(i)
         end do
         
         GWFDomain%nLayers=nsheet-1
@@ -5182,7 +5193,7 @@
             if(index(instruction, top_elevation_cmd)  /= 0) then
                 call top_elevation(FNumMUT,TMPLT)
 			    do j=1,TMPLT%nNodes
-				    SWFDomain.z(j)=top_elev(j)
+				    SWFDomain%node(j)%z=top_elev(j)
 			    end do
 
 
@@ -5339,58 +5350,38 @@
         VarSTR='variables="X","Y","Z","'//trim(Modflow%GWF%name)//' Layer","'//trim(Modflow%GWF%name)//' Zone",'
         nVar=5
             
-        if(allocated(Modflow%GWF%Cell)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Cell Top",'
             nVar=nVar+1
-        end if
             
-        if(allocated(Modflow%GWF%Cell)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Cell Bottom",'
             nVar=nVar+1
-        end if
 
-        if(allocated(Modflow%GWF%Kh)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Kh",'
             nVar=nVar+1
-        end if
 
-        if(allocated(Modflow%GWF%Kv)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Kv",'
             nVar=nVar+1
-        end if
             
-        if(allocated(Modflow%GWF%Ss)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Ss",'
             nVar=nVar+1
-        end if
 
-        if(allocated(Modflow%GWF%Sy)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Sy",'
             nVar=nVar+1
-        end if
             
-        if(allocated(Modflow%GWF%Alpha)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Alpha",'
             nVar=nVar+1
-        end if
-        if(allocated(Modflow%GWF%Beta)) then
+        
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Beta",'
             nVar=nVar+1
-        end if
-        if(allocated(Modflow%GWF%Sr)) then
+
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Sr",'
             nVar=nVar+1
-        end if
             
-        if(allocated(Modflow%GWF%Brooks)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Brooks",'
             nVar=nVar+1
-        end if
             
-        if(allocated(Modflow%GWF%StartingHeads)) then
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Initial head",'
             nVar=nVar+1
-        end if
 
         write(FNum,'(a)') trim(VarSTR)
           
@@ -5413,11 +5404,11 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%x(i),i=1,Modflow%GWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%x,i=1,Modflow%GWF%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%y(i),i=1,Modflow%GWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%y,i=1,Modflow%GWF%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%z,i=1,Modflow%GWF%nNodes)
         
             
             write(FNum,'(a)') '# layer'
@@ -5429,55 +5420,37 @@
             write(FNum,'(a)') '# cell bottom'
             write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%Cell(i)%Bottom,i=1,Modflow%GWF%nCells)
             
-            if(allocated(Modflow%GWF%Kh)) then
                 write(FNum,'(a)') '# Kh'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Kh(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Kh,i=1,Modflow%GWF%nCells)
             
-            if(allocated(Modflow%GWF%Kv)) then
                 write(FNum,'(a)') '# Kv'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Kv(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Kv,i=1,Modflow%GWF%nCells)
             
-            if(allocated(Modflow%GWF%Ss)) then
                 write(FNum,'(a)') '# Ss'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Ss(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Ss,i=1,Modflow%GWF%nCells)
 
             
-            if(allocated(Modflow%GWF%Sy)) then
                 write(FNum,'(a)') '# Sy'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Sy(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Sy,i=1,Modflow%GWF%nCells)
 
             
-            if(allocated(Modflow%GWF%Alpha)) then
                 write(FNum,'(a)') '# Alpha'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Alpha(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Alpha,i=1,Modflow%GWF%nCells)
 
             
-            if(allocated(Modflow%GWF%Beta)) then
                 write(FNum,'(a)') '# Beta'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Beta(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Beta,i=1,Modflow%GWF%nCells)
 
             
-            if(allocated(Modflow%GWF%Sr)) then
                 write(FNum,'(a)') '# Sr'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Sr(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Sr,i=1,Modflow%GWF%nCells)
 
             
-            if(allocated(Modflow%GWF%Brooks)) then
                 write(FNum,'(a)') '# Brooks'
-                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Brooks(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(10('//FMT_R4//'))') (Modflow%GWF%Cell(i)%Brooks,i=1,Modflow%GWF%nCells)
 
-            if(allocated(Modflow%GWF%StartingHeads)) then
                 write(FNum,'(a)') '# Initial head'
-                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%StartingHeads(i),i=1,Modflow%GWF%nCells)
-            end if
+                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%Cell(i)%StartingHeads,i=1,Modflow%GWF%nCells)
 
         
         
@@ -5818,12 +5791,12 @@
 
 
         ! Compute effective saturation
-        se = (sw - domain%Sr(iCell)) / (c1 - domain%Sr(iCell))
+        se = (sw - domain%Cell(iCell)%Sr) / (c1 - domain%Cell(iCell)%Sr)
         ! Compute some constants
-        gamma = 1.-1./domain%Beta(iCell)
+        gamma = 1.-1./domain%Cell(iCell)%Beta
         v_gamma = c1/gamma
-        v_beta  = c1/domain%Beta(iCell)
-        v_alpha = c1/domain%Alpha(iCell)
+        v_beta  = c1/domain%Cell(iCell)%Beta
+        v_alpha = c1/domain%Cell(iCell)%Alpha
 
         if (se .gt. aconstant) then ! use linear interpolation
 
@@ -5960,8 +5933,6 @@
         call CLN_IaJaStructure(Modflow%CLN)
 
         ! Cell horizontal areas not used so for now set to -999
-        allocate(Modflow%CLN%CellArea(Modflow%CLN%nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN cell horizontal area arrays')
         do i=1,Modflow%CLN%nCells
             Modflow%CLN%Cell(i)%Area=-999.
         end do
@@ -5986,8 +5957,6 @@
         integer(i4) :: icell
         
         ! use existing TMPLT%CellArea (e.g. area of triangle)  
-        allocate(Modflow%GWF%CellArea(Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF cell horizontal area arrays')
         do i=1,Modflow%GWF%nCells
             iCell = myMOD(i,TMPLT%nElements)
             Modflow%GWF%Cell(i)%Area=TMPLT%Element(iCell)%xyArea
@@ -6007,7 +5976,7 @@
             do j=2,Modflow%GWF%ia(i)
                 ! GWF neighbour in same column (above or below)
                 if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then 
-                    Modflow%GWF%ConnectionLength(j,i)=(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))/2.0d0
+                    Modflow%GWF%ConnectionLength(j,i)=(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)/2.0d0
                     Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%Area
                 
                 ! GWF neighbour in different column (adjacent)
@@ -6022,7 +5991,7 @@
                             Modflow%GWF%PerpendicularArea(j,i)=TMPLT%Element(iCell)%SideLength(3)   
                         end select
                         Modflow%GWF%ConnectionLength(j,i)=TMPLT%Element(iCell)%rCircle
-                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
+                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)
                         if(i==5) then
                             write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
                             call msg(TMPStr)
@@ -6050,7 +6019,7 @@
                             Modflow%GWF%ConnectionLength(j,i)=sqrt((TMPLT%Element(iCell)%x-TMPLT%FaceCentroidX(4,iCell))**2 + &
                                                                    (TMPLT%Element(iCell)%y-TMPLT%FaceCentroidY(4,iCell))**2)
                         end select
-                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
+                        Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)
                     end if
                 end if
             end do
@@ -6098,7 +6067,7 @@
         integer(i4) :: i
         character(MAX_STR) :: FName
         
-        If(allocated(domain%cell%x)) then
+        If(allocated(domain%cell)) then
             ! Write Modflow cell coordinates as tecplot scatter data
            
                 FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_CELLS.tecplot.dat'
@@ -6172,7 +6141,7 @@
            
                 do i=1,domain%nCells
                     if(domain%Name == 'GWF') then
-                        if(Modflow%GWF%iLayer(i)==1) then
+                        if(Modflow%GWF%cell(i)%iLayer==1) then
                             write(FNum,'(4('//FMT_R8//'))') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
                                 domain%Recharge(i)
                         endif
@@ -6908,7 +6877,7 @@
         write(FNum,'(a)') '# z cell'
         write(FNum,'(5('//FMT_R8//'))') (domain%cell(i)%z,i=1,domain%nCells)
         write(FNum,'(a)') '# layer'
-        write(FNum,'(5i8)') (domain%iLayer(i),i=1,domain%nCells)
+        write(FNum,'(5i8)') (domain%cell(i)%iLayer,i=1,domain%nCells)
         write(FNum,'(a)') '# ibound'
         write(FNum,'(5i8)') (domain%ibound(i),i=1,domain%nCells)
         write(FNum,'(a)') '# hnew (Initial head)'
@@ -7141,7 +7110,7 @@
            
             do i=1,TMPLT%nElements
                     do j=1,TMPLT%nNodesPerElement
-                        write(FNum,'(3('//FMT_R4//'))') TMPLT%xSide(j,i),TMPLT%ySide(j,i)
+                        write(FNum,'(3('//FMT_R4//'))') TMPLT%element(i)%xSide(j),TMPLT%element(i)%ySide(j)
                     end do
             end do
 
@@ -7162,26 +7131,26 @@
 
 
         
-        call growIntegerArray(domain%zone%is,domain%nZones,domain%nZones+1)
-            
-        select case(ActiveDomain)
-        case (iGWF)
-            ! no zoned properties
-        case (iSWF)
-            call growRealArray(domain%Manning,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%DepressionStorageHeight,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%ObstructionStorageHeight,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%H1DepthForSmoothing,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%H2DepthForSmoothing,domain%nZones,domain%nZones+1)
-        case (iCLN)
-            call growIntegerArray(domain%Geometry,domain%nZones,domain%nZones+1)
-            call growIntegerArray(domain%Direction,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%CircularRadius,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%RectangularWidth,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%RectangularHeight,domain%nZones,domain%nZones+1)
-            call growRealArray(domain%LongitudinalK,domain%nZones,domain%nZones+1)
-            call growIntegerArray(domain%FlowTreatment,domain%nZones,domain%nZones+1)
-        end select
+        !call growIntegerArray(domain%zone%is,domain%nZones,domain%nZones+1)
+        !    
+        !select case(ActiveDomain)
+        !case (iGWF)
+        !    ! no zoned properties
+        !case (iSWF)
+        !    call growRealArray(domain%Manning,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%DepressionStorageHeight,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%ObstructionStorageHeight,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%H1DepthForSmoothing,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%H2DepthForSmoothing,domain%nZones,domain%nZones+1)
+        !case (iCLN)
+        !    call growIntegerArray(domain%Geometry,domain%nZones,domain%nZones+1)
+        !    call growIntegerArray(domain%Direction,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%CircularRadius,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%RectangularWidth,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%RectangularHeight,domain%nZones,domain%nZones+1)
+        !    call growRealArray(domain%LongitudinalK,domain%nZones,domain%nZones+1)
+        !    call growIntegerArray(domain%FlowTreatment,domain%nZones,domain%nZones+1)
+        !end select
             
         domain%nZones = domain%nZones + 1
         domain%zone%is=0 ! not chosen
@@ -7189,7 +7158,7 @@
         ncount=0
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%iZone(i) = domain%nZones
+                domain%cell(i)%idZone = domain%nZones
                 ncount=ncount+1
             end if
         end do
@@ -7228,60 +7197,66 @@
         
         ! calculate node-centred cell area based on TMPLT%CellArea
         ! do top layer first
-        allocate(Modflow%GWF%CellArea(Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF cell horizontal area arrays')
-        Modflow%GWF%CellArea(:)=0.0d0
+        Modflow%GWF%Cell%Area=0.0d0
         do i=1,TMPLT%nElements
             do j=1,TMPLT%nNodesPerElement
-                j1=TMPLT%iNode(j,i)
+                j1=TMPLT%idNode(j,i)
                 if(j < TMPLT%nNodesPerElement) then
-                    j2=TMPLT%iNode(j+1,i)
+                    j2=TMPLT%idNode(j+1,i)
                 else
-                    j2=TMPLT%iNode(1,i)
+                    j2=TMPLT%idNode(1,i)
                 end if
                 
                 
                 if(TMPLT%nNodesPerElement == 3) then
-                    call area_triangle(TMPLT%node%x(j1),TMPLT%node%y(j1),0.0d0, &
-                            &          TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0, &
-                            &          TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0, &
+                    call area_triangle(TMPLT%node(j1)%x,            TMPLT%node(j1)%y,           0.0d0, &
+                            &          TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
+                            &          TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%CellArea(j1)=Modflow%GWF%CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1),TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),GWFDomain%z(j1))
-                    if(bcheck(TMPLT%node%is(j1),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j1),TMPLT%node%y(j1),GWFDomain%z(j1),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1))
+                    Modflow%GWF%Cell(j1)%Area=Modflow%GWF%Cell(j1)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  GWFDomain%node(j1)%z, &
+                                                           TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   GWFDomain%node(j1)%z)
+                    if(bcheck(TMPLT%node(j1)%is,BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node(j1)%x,         TMPLT%node(j1)%y,         GWFDomain%node(j1)%z, &
+                                                               TMPLT%Element(i)%xSide(j),TMPLT%Element(i)%ySide(j),GWFDomain%node(j1)%z)
                     endif
         
-                    call area_triangle(TMPLT%node%x(j2),TMPLT%node%y(j2),0.0d0, &
-                            &          TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0, &
-                            &          TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0, &
+                    call area_triangle(TMPLT%node(j2)%x,            TMPLT%node(j2)%y,           0.0d0, &
+                            &          TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
+                            &          TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%CellArea(j2)=Modflow%GWF%CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element%xCircle(i),TMPLT%Element%yCircle(i),0.0d0,TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0)
-                    if(bcheck(TMPLT%node%is(j2),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j2),TMPLT%node%y(j2),GWFDomain%z(j2),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j2))
+                    Modflow%GWF%Cell(j2)%Area=Modflow%GWF%Cell(j2)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
+                                                           TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0)
+                    if(bcheck(TMPLT%node(j2)%is,BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node(j2)%x,            TMPLT%node(j2)%y,          GWFDomain%node(j2)%z, &
+                                                               TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j), GWFDomain%node(j2)%z)
                     endif
                     
                 
                 else if(TMPLT%nNodesPerElement == 4) then
-                    call area_triangle(GWFDomain%x(j1),GWFDomain%y(j1),0.0d0, &
-                            &          GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0, &
-                            &          GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0, &
+                    call area_triangle(GWFDomain%node(j1)%x,            GWFDomain%node(j1)%y,           0.0d0, &
+                            &          GWFDomain%Element(i)%xSide(j),   GWFDomain%Element(i)%ySide(j),  0.0d0, &
+                            &          GWFDomain%Element(i)%x,          GWFDomain%Element(i)%y,         0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%CellArea(j1)=Modflow%GWF%CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%xSide(j,i),TMPLT%ySide(j,i),0.0d0,GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0)
-                    if(bcheck(TMPLT%node%is(j1),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j1),TMPLT%node%y(j1),GWFDomain%z(j1),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j1))
+                    Modflow%GWF%Cell(j1)%Area=Modflow%GWF%Cell(j1)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
+                                                           GWFDomain%Element(i)%x,      GWFDomain%Element(i)%y,     0.0d0)
+                    if(bcheck(TMPLT%node(j1)%is,BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node(j1)%x,         TMPLT%node(j1)%y,         GWFDomain%node(j1)%z, &
+                                                               TMPLT%Element(i)%xSide(j),TMPLT%Element(i)%ySide(j),GWFDomain%node(j1)%z)
                     endif
         
-                    call area_triangle(GWFDomain%x(j2),GWFDomain%y(j2),0.0d0, &
-                            &          GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0, &
-                            &          GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0, &
+                    call area_triangle(GWFDomain%node(j2)%x,         GWFDomain%node(j2)%y,         0.0d0, &
+                            &          GWFDomain%Element(i)%x,       GWFDomain%Element(i)%y,       0.0d0, &
+                            &          GWFDomain%Element(i)%xSide(j),GWFDomain%Element(i)%ySide(j),0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%CellArea(j2)=Modflow%GWF%CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,GWFDomain%Element%x(i),GWFDomain%Element%y(i),0.0d0,GWFDomain%xSide(j,i),GWFDomain%ySide(j,i),0.0d0)
-                    if(bcheck(TMPLT%node%is(j2),BoundaryNode)) then 
-                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node%x(j2),TMPLT%node%y(j2),GWFDomain%z(j2),TMPLT%xSide(j,i),TMPLT%ySide(j,i),GWFDomain%z(j2))
+                    Modflow%GWF%Cell(j2)%Area=Modflow%GWF%Cell(j2)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,GWFDomain%Element(i)%x,       GWFDomain%Element(i)%y,       0.0d0, &
+                                                           GWFDomain%Element(i)%xSide(j),GWFDomain%Element(i)%ySide(j),0.0d0)
+                    if(bcheck(TMPLT%node(j2)%is,BoundaryNode)) then 
+                        call Line3DSegment_Tecplot(FNumTecplot,TMPLT%node(j2)%x,         TMPLT%node(j2)%y,         GWFDomain%node(j2)%z, &
+                                                               TMPLT%Element(i)%xSide(j),TMPLT%Element(i)%ySide(j),GWFDomain%node(j2)%z)
                     endif
                 end if
                 
@@ -7295,7 +7270,7 @@
         do i=1,TMPLT%nNodes
             do j=2,Modflow%GWF%nLayers
                 iCell = (j-1)*TMPLT%nNodes+i
-                Modflow%GWF%CellArea(icell)=Modflow%GWF%Cell(i)%Area
+                Modflow%GWF%Cell(icell)%Area=Modflow%GWF%Cell(i)%Area
             end do
         end do
         
@@ -7312,7 +7287,7 @@
                    
             do j=2,Modflow%GWF%ia(i)
                 if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then ! GWF neighbour in same column
-                    Modflow%GWF%ConnectionLength(j,i)=Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i)
+                    Modflow%GWF%ConnectionLength(j,i)=Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom
                     Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%Area
                     
                     !!!fred temp debug outputs
@@ -7326,7 +7301,7 @@
                     !!endif
                 else  ! SWF or GWF neighbour in adjacent column
                     Modflow%GWF%ConnectionLength(j,i)=GWFDomain%ConnectionLength(j,i)
-                    Modflow%GWF%PerpendicularArea(j,i)=GWFDomain%PerpendicularArea(j,i)*(Modflow%GWF%Cell%Top(i)-Modflow%GWF%Cell%Bottom(i))
+                    Modflow%GWF%PerpendicularArea(j,i)=GWFDomain%PerpendicularArea(j,i)*(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)
                     
                     !!!fred temp debug outputs
                     !!if(i==5) then
@@ -7338,9 +7313,9 @@
                     !!    call msg(TMPStr)
                     !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
                     !!    call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell%Top(i) ',Modflow%GWF%Cell%Top(i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Top ',Modflow%GWF%Cell(i)%Top
                     !!    call msg(TMPStr)                        
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell%Bottom(i) ',Modflow%GWF%Cell%Bottom(i)
+                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Bottom ',Modflow%GWF%Cell(i)%Bottom
                     !!    call msg(TMPStr)                        
                     !!
                     !!endif
@@ -7378,61 +7353,69 @@
         
         ! Cell horizontal areas
         ! calculate node-centred cell area based on Modflow%SWF%CellArea
-        allocate(Modflow%SWF%CellArea(Modflow%SWF%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'SWF cell horizontal area arrays')
-        Modflow%SWF%CellArea(:)=0.0d0
+        Modflow%SWF%Cell%Area=0.0d0
         do i=1,Modflow%SWF%nElements
             do j=1,Modflow%SWF%nFacesPerElement
-                j1=Modflow%SWF%iNode(Modflow%SWF%LocalFaceNodes(1,j),i)
-                j2=Modflow%SWF%iNode(Modflow%SWF%LocalFaceNodes(2,j),i)
+                j1=Modflow%SWF%idNode(Modflow%SWF%LocalFaceNodes(1,j),i)
+                j2=Modflow%SWF%idNode(Modflow%SWF%LocalFaceNodes(2,j),i)
                 
                 if(Modflow%SWF%nNodesPerElement == 3) then
-                    call area_triangle(Modflow%SWF%x(j1),Modflow%SWF%y(j1),0.0d0, &
-                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
-                            &          Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j1)%x,               Modflow%SWF%node(j1)%y,                  0.0d0, &
+                            &          Modflow%SWF%element(i)%xSide(j), Modflow%SWF%element(i)%ySide(j),    0.0d0, &
+                            &          Modflow%SWF%element(i)%xCircle,  Modflow%SWF%element(i)%yCircle,     0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%CellArea(j1)=Modflow%SWF%CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1),Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),Modflow%SWF%z(j1))
+                    Modflow%SWF%cell(j1)%Area=Modflow%SWF%cell(j1)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot, &
+                        Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z, &
+                        Modflow%SWF%element(i)%xCircle,     Modflow%SWF%element(i)%yCircle,     Modflow%SWF%node(j1)%z)
         
-                    call area_triangle(Modflow%SWF%x(j2),Modflow%SWF%y(j2),0.0d0, &
-                            &          Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),0.0d0, &
-                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j2)%x,               Modflow%SWF%node(j2)%y,                  0.0d0, &
+                            &          Modflow%SWF%element(i)%xCircle,  Modflow%SWF%element(i)%yCircle,     0.0d0, &
+                            &          Modflow%SWF%element(i)%xSide(j), Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%CellArea(j2)=Modflow%SWF%CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xCircle(i),Modflow%SWF%yCircle(i),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
+                    Modflow%SWF%cell(j2)%Area=Modflow%SWF%cell(j2)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot, &
+                        Modflow%SWF%element(i)%xCircle,     Modflow%SWF%element(i)%yCircle,     Modflow%SWF%node(j2)%z, &
+                        Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     
                     if(Modflow%SWF%FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
+                        call Line3DSegment_Tecplot(FNumTecplot, &
+                            Modflow%SWF%node(j1)%x,                  Modflow%SWF%node(j1)%y,                  Modflow%SWF%node(j1)%z, &
+                            Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z)
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j2),Modflow%SWF%y(j2),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
+                        call Line3DSegment_Tecplot(FNumTecplot, &
+                            Modflow%SWF%node(j2)%x,                  Modflow%SWF%node(j2)%y,                  Modflow%SWF%node(j2)%z, &
+                            Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     endif
 
                 else if(Modflow%SWF%nNodesPerElement == 4) then
-                    call area_triangle(Modflow%SWF%x(j1),Modflow%SWF%y(j1),0.0d0, &
-                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
-                            &          Modflow%SWF%x(i),Modflow%SWF%Element%y(i),0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j1)%x,                   Modflow%SWF%node(j1)%y,                  0.0d0, &
+                            &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
+                            &          Modflow%SWF%element(i)%x,Modflow%SWF%Element(i)%y,0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%CellArea(j1)=Modflow%SWF%CellArea(j1)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1),Modflow%SWF%x(i),Modflow%SWF%Element%y(i),Modflow%SWF%z(j1))
-                    !if(bcheck(Modflow%SWF%node%is(j1),BoundaryNode)) then 
-                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
-                    !endif
+                    Modflow%SWF%cell(j1)%Area=Modflow%SWF%cell(j1)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot, &
+                        Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z,&
+                        Modflow%SWF%x(i),                   Modflow%SWF%Element%y(i),           Modflow%SWF%node(j1)%z)
        
-                    call area_triangle(Modflow%SWF%x(j2),Modflow%SWF%y(j2),0.0d0, &
-                            &          Modflow%SWF%x(i),Modflow%SWF%Element%y(i),0.0d0, &
-                            &          Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j2)%x,                   Modflow%SWF%node(j2)%y,                  0.0d0, &
+                            &          Modflow%SWF%x(i),                    Modflow%SWF%Element%y(i),           0.0d0, &
+                            &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%CellArea(j2)=Modflow%SWF%CellArea(j2)+TriangleArea
-                    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(i),Modflow%SWF%Element%y(i),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
-                    !if(bcheck(Modflow%SWF%node%is(j1),BoundaryNode)) then 
-                    !    call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
-                    !endif
+                    Modflow%SWF%cell(j2)%Area=Modflow%SWF%cell(j2)%Area+TriangleArea
+                    call Line3DSegment_Tecplot(FNumTecplot,&
+                        Modflow%SWF%x(i),                   Modflow%SWF%Element%y(i),           Modflow%SWF%node(j2)%z, &
+                        Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     if(Modflow%SWF%FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j1),Modflow%SWF%y(j1),Modflow%SWF%z(j1),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j1))
+                        call Line3DSegment_Tecplot(FNumTecplot, &
+                            Modflow%SWF%node(j1)%x,                  Modflow%SWF%node(j1)%y,                  Modflow%SWF%node(j1)%z, &
+                            Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z)
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
-                        call Line3DSegment_Tecplot(FNumTecplot,Modflow%SWF%x(j2),Modflow%SWF%y(j2),Modflow%SWF%z(j2),Modflow%SWF%xSide(j,i),Modflow%SWF%ySide(j,i),Modflow%SWF%z(j2))
+                        call Line3DSegment_Tecplot(FNumTecplot, &
+                            Modflow%SWF%node(j2)%x,                  Modflow%SWF%node(j2)%y,                  Modflow%SWF%node(j2)%z, &
+                            Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     endif
 
                 end if
@@ -8533,7 +8516,7 @@
         !nStrt=1
         !do k = 1,Modflow%GWF%nLayers
         !    nEnd = nStrt + Modflow%GWF%nodelay
-        !    write(FNumOpenClose,*) (Modflow%GWF%Cell%Top(i),i=nStrt,nEnd)
+        !    write(FNumOpenClose,*) (Modflow%GWF%Cell(i)%Top,i=nStrt,nEnd)
         !end do
         !close(FNumOpenClose)
             
