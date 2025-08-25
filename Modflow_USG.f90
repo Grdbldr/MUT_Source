@@ -7390,16 +7390,16 @@
                     endif
 
                 else if(Modflow%SWF%nNodesPerElement == 4) then
-                    call area_triangle(Modflow%SWF%node(j1)%x,                   Modflow%SWF%node(j1)%y,                  0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j1)%x,                   Modflow%SWF%node(j1)%y,        0.0d0, &
                             &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          Modflow%SWF%element(i)%x,Modflow%SWF%Element(i)%y,0.0d0, &
                             &          TriangleArea)
                     Modflow%SWF%cell(j1)%Area=Modflow%SWF%cell(j1)%Area+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z,&
-                        Modflow%SWF%x(i),                   Modflow%SWF%Element%y(i),           Modflow%SWF%node(j1)%z)
+                        Modflow%SWF%Element(i)%x,           Modflow%SWF%Element(i)%y,           Modflow%SWF%node(j1)%z)
        
-                    call area_triangle(Modflow%SWF%node(j2)%x,                   Modflow%SWF%node(j2)%y,                  0.0d0, &
+                    call area_triangle(Modflow%SWF%node(j2)%x,              Modflow%SWF%node(j2)%y,             0.0d0, &
                             &          Modflow%SWF%x(i),                    Modflow%SWF%Element%y(i),           0.0d0, &
                             &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
