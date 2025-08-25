@@ -2791,25 +2791,6 @@
             end do
         end if
         
-        !! Modflow SWF node coordinates 
-        !allocate(Modflow%SWF%x(Modflow%SWF%nNodes),Modflow%SWF%y(Modflow%SWF%nNodes),Modflow%SWF%z(Modflow%SWF%nNodes),stat=ialloc)
-        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Node coordinate arrays')
-        !do i=1,Modflow%SWF%nNodes
-        !    Modflow%SWF%x(i)=Modflow%SWF%x(i)
-        !    Modflow%SWF%y(i)=Modflow%SWF%y(i)
-        !    Modflow%SWF%z(i)=Modflow%SWF%z(i)
-        !end do
-
-        !    ! Element node list
-        !allocate(Modflow%SWF%idNode(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
-        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Cell node list array')
-        !Modflow%SWF%iNode(:,:) = Modflow%SWF%iNode(:,:)
-        !
-        !! Element side lengths
-        !allocate(Modflow%SWF%SideLength(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
-        !call AllocChk(ialloc,trim(Modflow%SWF%name)//' Cell SideLength array')
-        !Modflow%SWF%SideLength(:,:) = Modflow%SWF%SideLength(:,:)
-               
         ! Modflow SWF cell layer number
         do i=1,Modflow%SWF%nCells
             Modflow%SWF%cell(i)%iLayer = 1
@@ -7400,21 +7381,21 @@
                         Modflow%SWF%Element(i)%x,           Modflow%SWF%Element(i)%y,           Modflow%SWF%node(j1)%z)
        
                     call area_triangle(Modflow%SWF%node(j2)%x,              Modflow%SWF%node(j2)%y,             0.0d0, &
-                            &          Modflow%SWF%x(i),                    Modflow%SWF%Element%y(i),           0.0d0, &
+                            &          Modflow%SWF%Element(i)%x,            Modflow%SWF%Element(i)%y,           0.0d0, &
                             &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
                     Modflow%SWF%cell(j2)%Area=Modflow%SWF%cell(j2)%Area+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,&
-                        Modflow%SWF%x(i),                   Modflow%SWF%Element%y(i),           Modflow%SWF%node(j2)%z, &
+                        Modflow%SWF%Element(i)%x,           Modflow%SWF%Element(i)%y,           Modflow%SWF%node(j2)%z, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     if(Modflow%SWF%FaceNeighbour(j,i) == 0) then ! face on boundary
                         write(FNumTecplot,'(a,i5)') '# boundary j1',j1
                         call Line3DSegment_Tecplot(FNumTecplot, &
-                            Modflow%SWF%node(j1)%x,                  Modflow%SWF%node(j1)%y,                  Modflow%SWF%node(j1)%z, &
+                            Modflow%SWF%node(j1)%x,             Modflow%SWF%node(j1)%y,             Modflow%SWF%node(j1)%z, &
                             Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z)
                         write(FNumTecplot,'(a,i5)') '# boundary j2',j2
                         call Line3DSegment_Tecplot(FNumTecplot, &
-                            Modflow%SWF%node(j2)%x,                  Modflow%SWF%node(j2)%y,                  Modflow%SWF%node(j2)%z, &
+                            Modflow%SWF%node(j2)%x,             Modflow%SWF%node(j2)%y,             Modflow%SWF%node(j2)%z, &
                             Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
                     endif
 
@@ -7810,20 +7791,14 @@
         VarSTR='variables="X","Y","Z","'//trim(Modflow%SWF%name)//' Zone","'//trim(Modflow%SWF%name)//' cell%z",'
         nVar=5
             
-        if(allocated(Modflow%SWF%Sgcl)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' SWF-GWF connection length",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' SWF-GWF connection length",'
+        nVar=nVar+1
             
-        if(allocated(Modflow%SWF%StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Initial Depth",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Initial Depth",'
+        nVar=nVar+1
         
-        if(allocated(Modflow%SWF%CellArea)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Cell area",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Cell area",'
+        nVar=nVar+1
                 
         write(FNum,'(a)') trim(VarSTR)
           
@@ -7848,41 +7823,35 @@
         end if
         
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%x(i),i=1,Modflow%SWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%node(i)%x,i=1,Modflow%SWF%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%y(i),i=1,Modflow%SWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%node(i)%y,i=1,Modflow%SWF%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
         
         write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (Modflow%SWF%iZone(i),i=1,Modflow%SWF%nCells)
+        write(FNum,'(5i8)') (Modflow%SWF%cell(i)%idZone,i=1,Modflow%SWF%nCells)
             
         write(FNum,'(a)') '# cell%z i.e. cell bottom'
         write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
             
-        if(allocated(Modflow%SWF%Sgcl)) then
-            write(FNum,'(a)') '# SW-GW connection length'
-            write(FNum,'(10('//FMT_R4//'))') (Modflow%SWF%Sgcl(i),i=1,Modflow%SWF%nCells)
-        end if
+        write(FNum,'(a)') '# SW-GW connection length'
+        write(FNum,'(10('//FMT_R4//'))') (Modflow%SWF%Sgcl(i),i=1,Modflow%SWF%nCells)
 
-        if(allocated(Modflow%SWF%StartingHeads)) then
-            write(FNum,'(a)') '# Starting depth'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i)-Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
-        end if
+        write(FNum,'(a)') '# Starting depth'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i)-Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
 
-        if(allocated(Modflow%SWF%CellArea)) then
-            write(FNum,'(a)') '# Cell Area'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%Cell(i)%Area,i=1,Modflow%SWF%nCells)
-        end if
+        write(FNum,'(a)') '# Cell Area'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%Cell(i)%Area,i=1,Modflow%SWF%nCells)
         
         do i=1,Modflow%SWF%nElements
             if(Modflow%SWF%nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,3) !, Modflow%SWF%iNode(3,i) 
+                write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,3) !, Modflow%SWF%iNode(3,i) 
             else if(Modflow%SWF%nNodesPerElement==4) then ! 4-node quadrilateral
-                if(Modflow%SWF%iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,4) 
+                if(Modflow%SWF%idNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,4) 
                 else
-                    write(FNum,'(8i8)') (Modflow%SWF%iNode(j,i),j=1,3), Modflow%SWF%iNode(3,i) 
+                    write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,3), Modflow%SWF%idNode(3,i) 
                 end if
             else
                 write(TmpSTR,'(i2)') Modflow%SWF%nNodesPerElement
@@ -7939,32 +7908,32 @@
                 if(TMPLT%nNodesPerElement == 3) then
                     select case (TMPLT%ThroughFace(j,i))
                         case ( 1 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(1,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(1)   
                         case ( 2 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(2,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(2)   
                         case ( 3 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(3,i)   
+                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(3)   
                         case ( 4 )  ! must be 8-node block
                             call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
                     end select
-                    TMPLT%ConnectionLength(j,i)=TMPLT%rCircle(i)
+                    TMPLT%ConnectionLength(j,i)=TMPLT%Element(i)%rCircle
                     TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
                 else if(TMPLT%nNodesPerElement == 4) then
                     select case (TMPLT%ThroughFace(j,i))
                     case ( 1 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(1,i)   
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(1)   
                         TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(1,i))**2 + &
                                                          (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(1,i))**2)
                     case ( 2 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(2,i)   
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(2)   
                         TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(2,i))**2 + &
                                                          (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(2,i))**2)
                     case ( 3 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(3,i)   
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(3)   
                         TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(3,i))**2 + &
                                                          (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(3,i))**2)
                     case ( 4 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element%SideLength(4,i)   
+                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(4)   
                         TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(4,i))**2 + &
                                                          (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(4,i))**2)
                     end select
@@ -8879,7 +8848,7 @@
             write(Modflow.iSWF_GSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nElements, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
-            write(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+            write(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
             do i=1,Modflow%SWF%nElements
                 write(Modflow.iSWF_GSF,'(12i10)') i,Modflow%SWF%nNodesPerElement,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerElement)
             end do
@@ -8892,7 +8861,7 @@
             write(Modflow.iSWF_GSF,'(a)') trim(Modflow%SWF%meshtype)
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nCells, Modflow%SWF%nLayers, Modflow%SWF%iz, Modflow%SWF%ic
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
-            write(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+            write(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
             do i=1,Modflow%SWF%nCells
                 write(Modflow.iSWF_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%iLayer(i),Modflow%SWF%nNodesPerCell,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
@@ -16682,7 +16651,7 @@
         Modflow%SWF%y = 0 ! automatic initialization
         Modflow%SWF%z = 0 ! automatic initialization
         
-        read(Modflow.iSWF_GSF,*) (Modflow%SWF%x(i),Modflow%SWF%y(i),Modflow%SWF%z(i),i=1,Modflow%SWF%nNodes)
+        read(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
         
         ! determine the number of nodes per cell (Modflow%SWF%nNodesPerCell)
         if(NodalControlVolume) then
