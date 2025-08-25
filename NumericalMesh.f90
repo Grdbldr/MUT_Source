@@ -88,9 +88,9 @@ module NumericalMesh
         integer(i4) :: nNodesPerElement ! number of nodes in element
         integer(i4), allocatable :: idNode(:,:) ! array of local node ids for elements
         
-        ! Cell connection 
+        ! Element or cell connection 
         integer(i4) :: njag      ! total number of connections for mesh
-        integer(i4), allocatable :: ia(:)      ! size nElements, number of connections/Element
+        integer(i4), allocatable :: ia(:)      ! number of connectionsper element or cell
         integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
         real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
         real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
