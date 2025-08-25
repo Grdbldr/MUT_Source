@@ -186,8 +186,11 @@
         real(sp) :: Sr
         real(sp) :: Brooks
         real(sp) :: StartingHeads
-
-
+        
+        ! GWF cell properties 
+        real(dp) :: Length          
+        real(dp) :: LowestElevation
+        real(dp) :: SlopeAngle
     end type cell 
 
 
@@ -2093,7 +2096,7 @@
                 
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
                 call ReadGridBuilderMesh(FNumMut,TMPLT2D)
-                call MeshFromGb(FnumMUT,TMPLT2D)
+                !call MeshFromGb(FnumMUT,TMPLT2D)
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
             
             else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
@@ -2108,10 +2111,10 @@
                 call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
                 JustBuilt=.true.
             
-            else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
-                ! Build the 2D template mesh from a grdbldr 2D mesh
-                call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            !else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
+            !    ! Build the 2D template mesh from a grdbldr 2D mesh
+            !    call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
            
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
                 call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
@@ -2642,7 +2645,7 @@
         
         !
         !! Element node list
-        !Modflow%GWF%iNode(:,:) = GWFDomain%iNode(:,:)
+        !Modflow%GWF%idNode(:,:) = GWFDomain%idNode(:,:)
 
         ! Element top and bottom
         if(.not. NodalControlVolume) then
@@ -4450,7 +4453,7 @@
         
         do i=1,Modflow%CLN%nElements
             if(Modflow%CLN%nNodesPerElement==2) then ! 2-node line, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (Modflow%CLN%idNode(j,i),j=1,2) !, Modflow%CLN%iNode(3,i) 
+                write(FNum,'(8i8)') (Modflow%CLN%idNode(j,i),j=1,2) !, Modflow%CLN%idNode(3,i) 
             else
                 write(TmpSTR,'(i2)') Modflow%CLN%nNodesPerElement
                 call ErrMsg(trim(Modflow%CLN%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
@@ -4821,9 +4824,9 @@
             CLNDomain%element%z=0.0d0
             CLNDomain%element%Area=0.0d0
             CLNDomain%element%xyArea=0.0d0
-            CLNDomain%element%Length=-999.0d0
-            CLNDomain%element%LowestElevation=-999.0d0
-            CLNDomain%element%SlopeAngle=-999.0d0
+            CLNDomain%cell%Length=-999.0d0
+            CLNDomain%cell%LowestElevation=-999.0d0
+            CLNDomain%cell%SlopeAngle=-999.0d0
         else
             nSizeInit=CLNDomain%nElements
             CLNDomain%nElements=CLNDomain%nNodes-1
@@ -4848,11 +4851,11 @@
             CLNDomain%element(i)%x=(CLNDomain%node(CLNDomain%idNode(2,i))%x + CLNDomain%node(CLNDomain%idNode(1,i))%x)/2.0d0
             CLNDomain%element(i)%y=(CLNDomain%node(CLNDomain%idNode(2,i))%y + CLNDomain%node(CLNDomain%idNode(1,i))%y)/2.0d0
             CLNDomain%element(i)%z=(CLNDomain%node(CLNDomain%idNode(2,i))%z + CLNDomain%node(CLNDomain%idNode(1,i))%z)/2.0d0
-            CLNDomain%element(i)%Length=sqrt(       (CLNDomain%node(CLNDomain%idNode(2,i))%x -   CLNDomain%node(CLNDomain%idNode(1,i))%x)**2 + & 
+            CLNDomain%cell(i)%Length=sqrt(       (CLNDomain%node(CLNDomain%idNode(2,i))%x -   CLNDomain%node(CLNDomain%idNode(1,i))%x)**2 + & 
                                                     (CLNDomain%node(CLNDomain%idNode(2,i))%y -   CLNDomain%node(CLNDomain%idNode(1,i))%y)**2 + & 
                                                     (CLNDomain%node(CLNDomain%idNode(2,i))%z -   CLNDomain%node(CLNDomain%idNode(1,i))%z)**2) 
-            CLNDomain%element(i)%LowestElevation=min (CLNDomain%node(CLNDomain%idNode(2,i))%z,    CLNDomain%node(CLNDomain%idNode(1,i))%z)
-            CLNDomain%element(i)%SlopeAngle=asin(abs (CLNDomain%node(CLNDomain%idNode(2,i))%z-    CLNDomain%node(CLNDomain%idNode(1,i))%z))* 180.0d0 * pi
+            CLNDomain%cell(i)%LowestElevation=min (CLNDomain%node(CLNDomain%idNode(2,i))%z,    CLNDomain%node(CLNDomain%idNode(1,i))%z)
+            CLNDomain%cell(i)%SlopeAngle=asin(abs (CLNDomain%node(CLNDomain%idNode(2,i))%z-    CLNDomain%node(CLNDomain%idNode(1,i))%z))* 180.0d0 * pi
         end do
                     
         !CLNDomain%IsDefined=.true.
@@ -7846,7 +7849,7 @@
         
         do i=1,Modflow%SWF%nElements
             if(Modflow%SWF%nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
-                write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,3) !, Modflow%SWF%iNode(3,i) 
+                write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,3) !, Modflow%SWF%idNode(3,i) 
             else if(Modflow%SWF%nNodesPerElement==4) then ! 4-node quadrilateral
                 if(Modflow%SWF%idNode(4,i) > 0) then
                     write(FNum,'(8i8)') (Modflow%SWF%idNode(j,i),j=1,4) 
@@ -7922,20 +7925,20 @@
                     select case (TMPLT%ThroughFace(j,i))
                     case ( 1 )
                         TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(1)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(1,i))**2 + &
-                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(1,i))**2)
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(1,i))**2 + &
+                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(1,i))**2)
                     case ( 2 )
                         TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(2)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(2,i))**2 + &
-                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(2,i))**2)
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(2,i))**2 + &
+                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(2,i))**2)
                     case ( 3 )
                         TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(3)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(3,i))**2 + &
-                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(3,i))**2)
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(3,i))**2 + &
+                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(3,i))**2)
                     case ( 4 )
                         TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(4)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element%x(i)-TMPLT%FaceCentroidX(4,i))**2 + &
-                                                         (TMPLT%Element%y(i)-TMPLT%FaceCentroidY(4,i))**2)
+                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(4,i))**2 + &
+                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(4,i))**2)
                     end select
                     TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
                 end if
@@ -7983,28 +7986,28 @@
             do j=2,TMPLT%ia(i)
                 
                 ! Coordinates of face endpoints
-                xc1=TMPLT%node%x(TMPLT%iNode(TMPLT%ThroughFace(j,i),i))
-			    yc1=TMPLT%node%y(TMPLT%iNode(TMPLT%ThroughFace(j,i),i))
+                xc1=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i),i))%x
+			    yc1=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i),i))%y
                 if(TMPLT%ThroughFace(j,i) < TMPLT%nNodesPerElement) then ! connect to next node
-                    xc2=TMPLT%node%x(TMPLT%iNode(TMPLT%ThroughFace(j,i)+1,i))
-			        yc2=TMPLT%node%y(TMPLT%iNode(TMPLT%ThroughFace(j,i)+1,i))
+                    xc2=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i)+1,i))%x
+			        yc2=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i)+1,i))%y
                 else ! connect to node 1
-                    xc2=TMPLT%node%x(TMPLT%iNode(1,i))
-			        yc2=TMPLT%node%y(TMPLT%iNode(1,i))
+                    xc2=TMPLT%node(TMPLT%idNode(1,i))%x
+			        yc2=TMPLT%node(TMPLT%idNode(1,i))%y
                 end if
                 
                 if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                     ! Coordinates of neighbour circle centres
-			        xs1=TMPLT%Element%xCircle(i)
-			        ys1=TMPLT%Element%yCircle(i)
-			        xs2=TMPLT%Element%xCircle(TMPLT%Connectionlist(j,i))
-			        ys2=TMPLT%Element%yCircle(TMPLT%Connectionlist(j,i))
+			        xs1=TMPLT%Element(i)%xCircle
+			        ys1=TMPLT%Element(i)%yCircle
+			        xs2=TMPLT%Element(TMPLT%Connectionlist(j,i))%xCircle
+			        ys2=TMPLT%Element(TMPLT%Connectionlist(j,i))%yCircle
                 else if (TMPLT%nNodesPerElement == 4) then ! quadrilateral 
                     ! Coordinates of neighbour cell centre (cell%x,cell%y)
-			        xs1=TMPLT%Element%x(i)
-			        ys1=TMPLT%Element%y(i)
-			        xs2=TMPLT%Element%x(TMPLT%Connectionlist(j,i))
-			        ys2=TMPLT%Element%y(TMPLT%Connectionlist(j,i))
+			        xs1=TMPLT%Element(i)%x
+			        ys1=TMPLT%Element(i)%y
+			        xs2=TMPLT%Element(TMPLT%Connectionlist(j,i))%x
+			        ys2=TMPLT%Element(TMPLT%Connectionlist(j,i))%y
                 endif
 			    !
 			    !  The following 6 lines determine if the two segments intersect
@@ -8026,25 +8029,25 @@
         
         do i=1,TMPLT%nElements
             do j=1,TMPLT%nFacesPerElement
-                j1=TMPLT%iNode(TMPLT%LocalFaceNodes(1,j),i)
-                j2=TMPLT%iNode(TMPLT%LocalFaceNodes(2,j),i)
+                j1=TMPLT%idNode(TMPLT%LocalFaceNodes(1,j),i)
+                j2=TMPLT%idNode(TMPLT%LocalFaceNodes(2,j),i)
                 
                 if(TMPLT%FaceNeighbour(j,i) == 0) then ! face on boundary
                 
                     if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                         ! xSide, ySide at circle tangent for boundary element sides
-                        RC=TMPLT%rCircle(i)
-                        DC=sqrt((TMPLT%Element%xCircle(i)-TMPLT%node%x(j1))**2+(TMPLT%Element%yCircle(i)-TMPLT%node%y(j1))**2)
-                        D=TMPLT%Element%SideLength(j,i)
+                        RC=TMPLT%Element(i)%rCircle
+                        DC=sqrt((TMPLT%Element(i)%xCircle-TMPLT%node(j1)%x)**2+(TMPLT%Element(i)%yCircle-TMPLT%node(j1)%y)**2)
+                        D=TMPLT%Element(i)%SideLength(j)
                         D1=sqrt(DC*DC-RC*RC)
                         D2=D-D1
                 
-                        TMPLT%xSide(j,i)=TMPLT%node%x(j1)+(TMPLT%node%x(j2)-TMPLT%node%x(j1))*D1/D
-                        TMPLT%ySide(j,i)=TMPLT%node%y(j1)+(TMPLT%node%y(j2)-TMPLT%node%y(j1))*D1/D
+                        TMPLT%element(i)%xSide(j)=TMPLT%node(j1)%x+(TMPLT%node(j2)%x-TMPLT%node(j1)%x)*D1/D
+                        TMPLT%element(i)%ySide(j)=TMPLT%node(j1)%y+(TMPLT%node(j2)%y-TMPLT%node(j1)%y)*D1/D
                     else if(TMPLT%nNodesPerElement == 4) then ! quadrilateral 
                         ! xSide, ySide at midpoint of boundary element sides
-                        TMPLT%xSide(j,i)=(TMPLT%node%x(j1)+TMPLT%node%x(j2))/2.0d0
-                        TMPLT%ySide(j,i)=(TMPLT%node%y(j1)+TMPLT%node%y(j2))/2.0d0
+                        TMPLT%element(i)%xSide(j)=(TMPLT%node(j1)%x+TMPLT%node(j2)%x)/2.0d0
+                        TMPLT%element(i)%ySide(j)=(TMPLT%node(j1)%y+TMPLT%node(j2)%y)/2.0d0
                     end if
                     
                 end if
@@ -8068,42 +8071,50 @@
         ! Loop in order around nodes in element and form cell connection lists
         do i=1,TMPLT%nElements
             do j=1,TMPLT%nNodesPerElement
-                jNode=TMPLT%iNode(j,i)
+                jNode=TMPLT%idNode(j,i)
                 if(j == TMPLT%nNodesPerElement) then
-                    kNode=TMPLT%iNode(1,i)
+                    kNode=TMPLT%idNode(1,i)
                 else
-                    kNode=TMPLT%iNode(J+1,i)
+                    kNode=TMPLT%idNode(J+1,i)
                 end if
                 
                 ! jnode 
                 ia_TMP(jNode)=ia_TMP(jNode)+1
                 ConnectionList_TMP(ia_TMP(jNode),jNode)=kNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                FractionSide=sqrt((TMPLT%node%x(jNode)-TMPLT%xSide(j,i))**2+(TMPLT%node%y(jNode)-TMPLT%ySide(j,i))**2)/TMPLT%Element%SideLength(j,i)
-                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT%Element%SideLength(j,i)
+                FractionSide=sqrt((TMPLT%node(jNode)%x-TMPLT%element(i)%xSide(j))**2+(TMPLT%node(jNode)%y-TMPLT%element(i)%ySide(j))**2)/TMPLT%Element(i)%SideLength(j)
+                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT%Element(i)%SideLength(j)
                 if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                     if(TMPLT%ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%Element%xCircle(TMPLT%ConnectionList(j,i)))**2+(TMPLT%Element%yCircle(i)-TMPLT%Element%yCircle(TMPLT%ConnectionList(j,i)))**2)
+                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
+                            (TMPLT%Element(i)%xCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%xCircle)**2+ &
+                            (TMPLT%Element(i)%yCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%yCircle)**2)
                     else
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%xside(j,i))**2+(TMPLT%Element%yCircle(i)-TMPLT%yside(j,i))**2)
+                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
+                            (TMPLT%Element(i)%xCircle-TMPLT%element(i)%xSide(j))**2+ &
+                            (TMPLT%Element(i)%yCircle-TMPLT%element(i)%ySide(j))**2)
                     endif    
                 else
-                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT%Element%SideLength(j,i)
+                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT%Element(i)%SideLength(j)
                 endif
 
                 ! knode 
                 ia_TMP(kNode)=ia_TMP(kNode)+1
                 ConnectionList_TMP(ia_TMP(kNode),kNode)=jNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT%Element%SideLength(j,i)
+                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT%Element(i)%SideLength(j)
                 if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
                     if(TMPLT%ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%Element%xCircle(TMPLT%ConnectionList(j,i)))**2+(TMPLT%Element%yCircle(i)-TMPLT%Element%yCircle(TMPLT%ConnectionList(j,i)))**2)
+                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
+                            (TMPLT%Element(i)%xCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%xCircle)**2+ &
+                            (TMPLT%Element(i)%yCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%yCircle)**2)
                     else
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt((TMPLT%Element%xCircle(i)-TMPLT%xSide(j,i))**2+(TMPLT%Element%yCircle(i)-TMPLT%ySide(j,i))**2)
+                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
+                            (TMPLT%Element(i)%xCircle-TMPLT%element(i)%xSide(j))**2+ &
+                            (TMPLT%Element(i)%yCircle-TMPLT%element(i)%ySide(j))**2)
                     endif
                 else
-                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT%Element%SideLength(j,i)
+                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT%Element(i)%SideLength(j)
                 endif
             end do
         end do
@@ -8160,7 +8171,7 @@
         VarSTR='variables="X","Y","Z","'//trim(TMPLT%name)//' Zone","'//trim(TMPLT%name)//' Element Area",'
         nVar=5
 
-        if(allocated(TMPLT%rCircle)) then
+        if(TMPLT%TecplotTyp=='fetriangle') then
             VarSTR=trim(VarSTR)//'"'//trim(TMPLT%name)//'Inner circle radius",'
             nVar=nVar+1
         end if
@@ -8182,32 +8193,32 @@
         write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
 
         write(FNum,'(a)') '# x'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%x(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node(i)%x,i=1,TMPLT%nNodes)
         write(FNum,'(a)') '# y'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%y(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node(i)%y,i=1,TMPLT%nNodes)
         write(FNum,'(a)') '# z'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node%z(i),i=1,TMPLT%nNodes)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%node(i)%z,i=1,TMPLT%nNodes)
         
         write(FNum,'(a)') '# zone'
-        write(FNum,'(5i8)') (TMPLT%iZone(i),i=1,TMPLT%nElements)
+        write(FNum,'(5i8)') (TMPLT%element(i)%idZone,i=1,TMPLT%nElements)
             
         write(FNum,'(a)') '# element area'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT%ElementArea(i),i=1,TMPLT%nElements)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%Element(i)%Area,i=1,TMPLT%nElements)
             
-        if(allocated(TMPLT%rCircle)) then
+        if(TMPLT%TecplotTyp=='fetriangle') then
             write(FNum,'(a)') '# circle radius'
-            write(FNum,'(5('//FMT_R8//'))') (TMPLT%rCircle(i),i=1,TMPLT%nElements)
+            write(FNum,'(5('//FMT_R8//'))') (TMPLT%Element(i)%rCircle,i=1,TMPLT%nElements)
         end if
             
         
         do i=1,TMPLT%nElements
             if(TMPLT%nNodesPerElement==3) then ! 3-node triangle
-                write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,3)
+                write(FNum,'(8i8)') (TMPLT%idNode(j,i),j=1,3)
             else if(TMPLT%nNodesPerElement==4) then ! 4-node quadrilateral
-                if(TMPLT%iNode(4,i) > 0) then
-                    write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,4) 
+                if(TMPLT%idNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (TMPLT%idNode(j,i),j=1,4) 
                 else
-                    write(FNum,'(8i8)') (TMPLT%iNode(j,i),j=1,3), TMPLT%iNode(3,i) 
+                    write(FNum,'(8i8)') (TMPLT%idNode(j,i),j=1,3), TMPLT%idNode(3,i) 
                 end if
             else
                 write(TmpSTR,'(i2)')TMPLT%nNodesPerElement
@@ -8234,7 +8245,7 @@
             
         if(allocated(Modflow%GWF%ConstantHead)) then
             do i=1,Modflow%GWF%nCells
-                if(bcheck(Modflow%GWF%Cell%is(i),ConstantHead)) then
+                if(bcheck(Modflow%GWF%Cell(i)%is,ConstantHead)) then
                     write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') i,Modflow%GWF%ConstantHead(i)
                 end if
             end do
@@ -8242,7 +8253,7 @@
             
         if(allocated(Modflow%CLN%ConstantHead)) then
             do i=1,Modflow%CLN%nCells
-                if(bcheck(Modflow%CLN%Cell%is(i),ConstantHead)) then
+                if(bcheck(Modflow%CLN%Cell(i)%is,ConstantHead)) then
                     write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+i,Modflow%CLN%ConstantHead(i)
                 end if
             end do
@@ -8250,7 +8261,7 @@
         
         if(allocated(Modflow%SWF%ConstantHead)) then
             do i=1,Modflow%SWF%nCells
-                if(bcheck(Modflow%SWF%Cell%is(i),ConstantHead)) then
+                if(bcheck(Modflow%SWF%Cell(i)%is,ConstantHead)) then
                     write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+Modflow%CLN%nCells+i,Modflow%SWF%ConstantHead(i)
                 end if
             end do
@@ -8298,9 +8309,9 @@
             write(Modflow.iCLN,'(i5,5('//FMT_R4//'),2i5)') i, & !IFNO
             Modflow%CLN%cell(i)%idZone, & !IFTYP
             Modflow%CLN%Direction(Modflow%CLN%cell(i)%idZone), & !IFDIR
-            Modflow%CLN%Length(i), & !FLENG
-            Modflow%CLN%LowestElevation(i), & !FELEV
-            Modflow%CLN%SlopeAngle(i), & !FANGLE
+            Modflow%CLN%cell(i)%Length, & !FLENG
+            Modflow%CLN%cell(i)%LowestElevation, & !FELEV
+            Modflow%CLN%cell(i)%SlopeAngle, & !FANGLE
             Modflow%CLN%FlowTreatment(Modflow%CLN%cell(i)%idZone), & !IFLIN
             0   ! ICCWADI 
         end do
@@ -8311,7 +8322,7 @@
             i, & !IGWNOD
             3, & !IFCON
             1.e-20, & !FSKIN
-            Modflow%CLN%Length(i), & !FLENGW
+            Modflow%CLN%cell(i)%Length, & !FLENGW
             1.00, & !FANISO
             0   ! ICGWADI 
         end do
@@ -8342,7 +8353,7 @@
             Modflow%CLN%ibound(:)=1
         end if
         do i=1,Modflow%CLN%nCells
-            if(bcheck(Modflow%CLN%Cell%is(i),inactive)) Modflow%CLN%ibound(i)=0
+            if(bcheck(Modflow%CLN%Cell(i)%is,inactive)) Modflow%CLN%ibound(i)=0
         enddo
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
         write(Modflow.iCLN,'(10i3)') (Modflow%CLN%ibound(k),k=1,Modflow%CLN%nCells)
@@ -8350,7 +8361,7 @@
         if(.not. allocated(Modflow%CLN%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
             allocate(Modflow%CLN%StartingHeads(Modflow%CLN%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
-            Modflow%CLN%StartingHeads(:)=Modflow%CLN%cell%z(:)+1.0e-4
+            Modflow%CLN%StartingHeads=Modflow%CLN%cell%z+1.0e-4
         end if
         write(Modflow.iCLN,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
         write(Modflow.iCLN,'(5(1ES20.8))') (Modflow%CLN%StartingHeads(i),i=1,Modflow%CLN%nCells)
@@ -8365,9 +8376,10 @@
         write(Modflow.iCLN_GSF,'(a)') trim(Modflow%CLN%meshtype)
         write(Modflow.iCLN_GSF,*) Modflow%CLN%nCells, Modflow%CLN%nLayers, Modflow%CLN%iz, Modflow%CLN%ic
         write(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
-        write(Modflow.iCLN_GSF,*) (Modflow%CLN%x(i),Modflow%CLN%y(i),Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
+        write(Modflow.iCLN_GSF,*) (Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nNodes)
         do i=1,Modflow%CLN%nCells
-            write(Modflow.iCLN_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,Modflow%CLN%iLayer(i),Modflow%CLN%nNodesPerCell,(Modflow%CLN%iNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
+            write(Modflow.iCLN_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z, &
+                Modflow%CLN%cell(i)%iLayer,Modflow%CLN%nNodesPerCell,(Modflow%CLN%idNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
         end do
  
     end subroutine WriteCLNFiles
@@ -8386,7 +8398,7 @@
             
         if(allocated(Modflow%GWF%DrainConductance)) then
             do i=1,Modflow%GWF%nCells
-                if(bcheck(Modflow%GWF%Cell%is(i),Drain)) then
+                if(bcheck(Modflow%GWF%Cell(i)%is,Drain)) then
                     write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') i,Modflow%GWF%DrainElevation(i),Modflow%GWF%DrainConductance(i)
                 end if
             end do
@@ -8394,7 +8406,7 @@
             
         if(allocated(Modflow%CLN%DrainConductance)) then
             do i=1,Modflow%CLN%nCells
-                if(bcheck(Modflow%CLN%Cell%is(i),Drain)) then
+                if(bcheck(Modflow%CLN%Cell(i)%is,Drain)) then
                     write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow%GWF%nCells+i,Modflow%CLN%DrainElevation(i),Modflow%CLN%DrainConductance(i)
                 end if
             end do
@@ -8402,7 +8414,7 @@
         
         if(allocated(Modflow%SWF%DrainConductance)) then
             do i=1,Modflow%SWF%nCells
-                if(bcheck(Modflow%SWF%Cell%is(i),Drain)) then
+                if(bcheck(Modflow%SWF%Cell(i)%is,Drain)) then
                     write(modflow.iDRN,'(i8,2x,2('//FMT_R8//'))') Modflow%GWF%nCells+Modflow%CLN%nCells+i,Modflow%SWF%DrainElevation(i),Modflow%SWF%DrainConductance(i)
                 end if
             end do
@@ -8439,7 +8451,7 @@
             Modflow%GWF%ibound(:)=1
         end if
         do i=1,Modflow%GWF%nCells
-            if(bcheck(Modflow%GWF%Cell%is(i),inactive)) Modflow%GWF%ibound(i)=0
+            if(bcheck(Modflow%GWF%Cell(i)%is,inactive)) Modflow%GWF%ibound(i)=0
         enddo
         !write(Modflow.iBAS6,'(a)') 'CONSTANT   1                               IBOUND'
         nStrt=1
@@ -8494,7 +8506,7 @@
             write(TmpSTR,'(i5)') i
             write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Top elevation Layer '//trim(TmpSTR)
             nEnd = nStrt + Modflow%GWF%nodelay-1
-            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Top(k),k=nStrt,nEnd)
+            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell(k)%Top,k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
             
@@ -8503,7 +8515,7 @@
             write(TmpSTR,'(i5)') i
             write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Bottom elevation Layer '//trim(TmpSTR)
             nEnd = nStrt + Modflow%GWF%nodelay-1
-            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell%Bottom(k),k=nStrt,nEnd)
+            write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%Cell(k)%Bottom,k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
             
@@ -8513,7 +8525,7 @@
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
                 nEnd = nStrt + Modflow%GWF%nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%CellArea(k),k=nStrt,nEnd)
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%Area,k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         else
@@ -8521,7 +8533,7 @@
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
                 nEnd = nStrt + Modflow%GWF%nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%CellArea(k),k=nStrt,nEnd)
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%Area,k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         end if
@@ -8600,79 +8612,79 @@
         do i=1,Modflow%GWF%nLayers
             nEnd = nStrt + Modflow%GWF%nodelay-1
 
-            if(.not. allocated(Modflow%GWF%Kh)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
-                allocate(Modflow%GWF%Kh(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Kh array')            
-                Modflow%GWF%Kh(:)=31.536D0
-            end if
+            !if(.not. allocated(Modflow%GWF%Kh)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
+            !    allocate(Modflow%GWF%Kh(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Kh array')            
+            !    Modflow%GWF%Kh(:)=31.536D0
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Kh '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Kh(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Kh,k=nStrt,nEnd)
 
 
-            if(.not. allocated(Modflow%GWF%Kv)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
-                allocate(Modflow%GWF%Kv(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Kv array')            
-                Modflow%GWF%Kv(:)=31.536D0
-            end if
+            !if(.not. allocated(Modflow%GWF%Kv)) then ! Assume 1e-5 m/s (Borden Sand from Abdul problem)'
+            !    allocate(Modflow%GWF%Kv(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Kv array')            
+            !    Modflow%GWF%Kv(:)=31.536D0
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Kv '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Kv(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Kv,k=nStrt,nEnd)
 
-            if(.not. allocated(Modflow%GWF%Ss)) then ! Assume 1.2e-7 (Borden Sand from Abdul problem)'
-                allocate(Modflow%GWF%Ss(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Ss array')            
-                Modflow%GWF%Ss(:)=1.0D-5
-            end if
+            !if(.not. allocated(Modflow%GWF%Ss)) then ! Assume 1.2e-7 (Borden Sand from Abdul problem)'
+            !    allocate(Modflow%GWF%Ss(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Ss array')            
+            !    Modflow%GWF%Ss(:)=1.0D-5
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Ss '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Ss(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Ss,k=nStrt,nEnd)
 
-            if(.not. allocated(Modflow%GWF%Sy)) then ! Assume 0.34 (Borden Sand from Abdul problem)''
-                allocate(Modflow%GWF%Sy(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Sy array')            
-                Modflow%GWF%Sy(:)=0.01D0
-            end if
+            !if(.not. allocated(Modflow%GWF%Sy)) then ! Assume 0.34 (Borden Sand from Abdul problem)''
+            !    allocate(Modflow%GWF%Sy(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Sy array')            
+            !    Modflow%GWF%Sy(:)=0.01D0
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Sy '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Sy(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Sy,k=nStrt,nEnd)
 
-            if(.not. allocated(Modflow%GWF%Alpha)) then ! Assume 1.8 (Borden Sand from InHM PM.DBS file)''
-                allocate(Modflow%GWF%Alpha(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Alpha array')            
-                Modflow%GWF%Alpha(:)=3.34D-2
-            end if
+            !if(.not. allocated(Modflow%GWF%Alpha)) then ! Assume 1.8 (Borden Sand from InHM PM.DBS file)''
+            !    allocate(Modflow%GWF%Alpha(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Alpha array')            
+            !    Modflow%GWF%Alpha(:)=3.34D-2
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Alpha '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Alpha(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Alpha,k=nStrt,nEnd)
 
-            if(.not. allocated(Modflow%GWF%Beta)) then ! Assume 5.8 (Borden Sand from InHM PM.DBS file)''
-                allocate(Modflow%GWF%Beta(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Beta array')            
-                Modflow%GWF%Beta(:)=1.982D0
-            end if
+            !if(.not. allocated(Modflow%GWF%Beta)) then ! Assume 5.8 (Borden Sand from InHM PM.DBS file)''
+            !    allocate(Modflow%GWF%Beta(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Beta array')            
+            !    Modflow%GWF%Beta(:)=1.982D0
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Beta '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Beta(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Beta,k=nStrt,nEnd)
 
-            if(.not. allocated(Modflow%GWF%Sr)) then ! Assume 0.18 (Borden Sand from Abdul mprops S-R table)''
-                allocate(Modflow%GWF%Sr(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Sr array')            
-                Modflow%GWF%Sr(:)=2.771D-1
-            end if
+            !if(.not. allocated(Modflow%GWF%Sr)) then ! Assume 0.18 (Borden Sand from Abdul mprops S-R table)''
+            !    allocate(Modflow%GWF%Sr(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Sr array')            
+            !    Modflow%GWF%Sr(:)=2.771D-1
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Sr '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Sr(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Sr,k=nStrt,nEnd)
 
 
-            if(.not. allocated(Modflow%GWF%Brooks)) then ! Assume -1.0 (Brooks from hillslope example problem)''
-                allocate(Modflow%GWF%Brooks(Modflow%GWF%nCells),stat=ialloc)
-                call AllocChk(ialloc,'Cell Brooks array')            
-                Modflow%GWF%Brooks(:)=5.037D0
-            end if
+            !if(.not. allocated(Modflow%GWF%Brooks)) then ! Assume -1.0 (Brooks from hillslope example problem)''
+            !    allocate(Modflow%GWF%Brooks(Modflow%GWF%nCells),stat=ialloc)
+            !    call AllocChk(ialloc,'Cell Brooks array')            
+            !    Modflow%GWF%Brooks(:)=5.037D0
+            !end if
             write(TmpSTR,'(i5)') i
             write(Modflow.iLPF,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Brooks '//trim(TmpSTR)
-            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%Brooks(k),k=nStrt,nEnd)
+            write(Modflow.iLPF,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Brooks,k=nStrt,nEnd)
 
             nStrt=nEnd+1
         end do
@@ -8736,21 +8748,21 @@
             write(Modflow.iGSF,'(a)') 'UNSTRUCTURED(NODALCONTROLVOLUME)'
             write(Modflow.iGSF,*) Modflow%GWF%nElements, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
             write(Modflow.iGSF,*) Modflow%GWF%nNodes
-            write(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+            write(Modflow.iGSF,*) (Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,i=1,Modflow%GWF%nNodes)
             do i=1,Modflow%GWF%nElements
-                write(Modflow.iGSF,'(12i10)') i,Modflow%GWF%nNodesPerElement,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerElement)
+                write(Modflow.iGSF,'(12i10)') i,Modflow%GWF%nNodesPerElement,(Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerElement)
             end do
             do i=1,Modflow%GWF%nCells
-                write(Modflow.iGSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i)
+                write(Modflow.iGSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer
             end do
         else
             !------------------- GSF file for elemental control volume
             write(Modflow.iGSF,'(a)') trim(Modflow%GWF%meshtype)
             write(Modflow.iGSF,*) Modflow%GWF%nCells, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
             write(Modflow.iGSF,*) Modflow%GWF%nNodes
-            write(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+            write(Modflow.iGSF,*) (Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,i=1,Modflow%GWF%nNodes)
             do i=1,Modflow%GWF%nCells
-                write(Modflow.iGSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i),Modflow%GWF%nNodesPerCell,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
+                write(Modflow.iGSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer,Modflow%GWF%nNodesPerCell,(Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
         end if
         
@@ -8813,7 +8825,7 @@
             Modflow%SWF%ibound(:)=1
         end if
         do i=1,Modflow%SWF%nCells
-            if(bcheck(Modflow%SWF%Cell%is(i),inactive)) Modflow%SWF%ibound(i)=0
+            if(bcheck(Modflow%SWF%Cell(i)%is,inactive)) Modflow%SWF%ibound(i)=0
         enddo
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
         write(Modflow.iSWF,'(10i3)') (Modflow%SWF%ibound(k),k=1,Modflow%SWF%nCells)
@@ -8821,7 +8833,7 @@
         if(.not. allocated(Modflow%SWF%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
             allocate(Modflow%SWF%StartingHeads(Modflow%SWF%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell starting heads array')            
-            Modflow%SWF%StartingHeads(:)=Modflow%SWF%cell%z(:)+1.0d-4
+            Modflow%SWF%StartingHeads=Modflow%SWF%cell%z+1.0d-4
         end if
         write(Modflow.iSWF,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
         write(Modflow.iSWF,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i),i=1,Modflow%SWF%nCells)
@@ -8831,7 +8843,7 @@
             write(Modflow.iSWBC,*) Modflow%SWF%nSWBCCells, Modflow%SWF%iCBB  ! set nrchop default to 4
             write(Modflow.iSWBC,*) 1  ! reuse bc data from last stress period if negative
             do i=1,Modflow%SWF%nCells
-                if(bcheck(Modflow%SWF%Cell%is(i),CriticalDepth)) then
+                if(bcheck(Modflow%SWF%Cell(i)%is,CriticalDepth)) then
                     write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%CriticalDepthLength(i)
                 end if
             end do
@@ -8850,10 +8862,10 @@
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
             write(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
             do i=1,Modflow%SWF%nElements
-                write(Modflow.iSWF_GSF,'(12i10)') i,Modflow%SWF%nNodesPerElement,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerElement)
+                write(Modflow.iSWF_GSF,'(12i10)') i,Modflow%SWF%nNodesPerElement,(Modflow%SWF%idNode(j,i),j=1,Modflow%SWF%nNodesPerElement)
             end do
             do i=1,Modflow%SWF%nCells
-                write(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i)
+                write(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer
             end do
 
         else 
@@ -8863,7 +8875,8 @@
             write(Modflow.iSWF_GSF,*) Modflow%SWF%nNodes
             write(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
             do i=1,Modflow%SWF%nCells
-                write(Modflow.iSWF_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%iLayer(i),Modflow%SWF%nNodesPerCell,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
+                write(Modflow.iSWF_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z, &
+                    Modflow%SWF%cell(i)%iLayer,Modflow%SWF%nNodesPerCell,(Modflow%SWF%idNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
         end if
         
@@ -10438,7 +10451,7 @@
         !
               ALLOCATE(LAYFLG(6,NLAY))
               ALLOCATE(HK(NODES))
-              ALLOCATE(Modflow%GWF%Kh(NODES))
+              !ALLOCATE(Modflow%GWF%Kh(NODES))
               ALLOCATE(VKA(NODES))
               IF(NCNFBD.GT.0) THEN
                  ALLOCATE(VKCB(NODES))
@@ -10542,7 +10555,7 @@
                 CALL SGWF2LPFU1G(IN,NPHK,NPHANI,NPVK,NPVANI,NPSS,NPSY,NPVKCB,&
                  STOTXT,NOPCHK)
               end if
-              Modflow%GWF%Kh=hk
+              Modflow%GWF%cell%Kh=hk
         
 !        !--------------------------------------------------------------------------------
 !        !8------SET INITIAL  GRID-BLOCK SATURATED THICKNESS FRACTIONS AND TRANSMISSIVITY WHEN NEEDED
@@ -16493,13 +16506,11 @@
 
         
         
-        allocate(Modflow%GWF%x(Modflow%GWF%nNodes),Modflow%GWF%y(Modflow%GWF%nNodes),Modflow%GWF%z(Modflow%GWF%nNodes), stat=ialloc)
-        call AllocChk(ialloc,'GWF node coordinate arrays')
-        Modflow%GWF%x = 0 ! automatic initialization
-        Modflow%GWF%y = 0 ! automatic initialization
-        Modflow%GWF%z = 0 ! automatic initialization
+        Modflow%GWF%cell%x = 0 ! automatic initialization
+        Modflow%GWF%cell%y = 0 ! automatic initialization
+        Modflow%GWF%cell%z = 0 ! automatic initialization
         
-        read(Modflow.iGSF,*) (Modflow%GWF%x(i),Modflow%GWF%y(i),Modflow%GWF%z(i),i=1,Modflow%GWF%nNodes)
+        read(Modflow.iGSF,*) (Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,i=1,Modflow%GWF%nNodes)
 
         ! determine the number of nodes per cell (Modflow%GWF%nNodesPerCell)
         if(NodalControlVolume) then
@@ -16509,29 +16520,28 @@
         endif
         backspace(Modflow.iGSF)
  
-        allocate(Modflow%GWF%iNode(Modflow%GWF%nNodesPerCell,Modflow%GWF%nElements),stat=ialloc)
+        allocate(Modflow%GWF%idNode(Modflow%GWF%nNodesPerCell,Modflow%GWF%nElements),stat=ialloc)
         call AllocChk(ialloc,'GWF iNode arrays')
         
-        allocate(Modflow%GWF%cell%x(Modflow%GWF%nCells),Modflow%GWF%cell%y(Modflow%GWF%nCells),Modflow%GWF%cell%z(Modflow%GWF%nCells),Modflow%GWF%iLayer(Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF cell coordinate arrays')
-        Modflow%GWF%cell%x(:)=-999.
-        Modflow%GWF%cell%y(:)=-999.
-        Modflow%GWF%cell%z(:)=-999.
-        Modflow%GWF%iLayer(:)=-999
-        Modflow%GWF%iNode = 0 ! automatic initialization
+        Modflow%GWF%cell%x=-999.
+        Modflow%GWF%cell%y=-999.
+        Modflow%GWF%cell%z=-999.
+        Modflow%GWF%cell%iLayer=-999
+        Modflow%GWF%idNode = 0 ! automatic initialization
         
         if(NodalControlVolume) then
             do i=1,Modflow%GWF%nElements
-                read(Modflow.iGSF,*) i1,Modflow%GWF%nNodesPerCell,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
+                read(Modflow.iGSF,*) i1,Modflow%GWF%nNodesPerCell,(Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
             do i=1,Modflow%GWF%nCells
-                read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i)
+                read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer
             end do
         else
             do i=1,Modflow%GWF%nElements
-                !read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i),i2,&
-                !    (Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
-                read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%iLayer(i),i3,(Modflow%GWF%iNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
+                !read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer,i2,&
+                !    (Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
+                read(Modflow.iGSF,*) i1,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z, &
+                    Modflow%GWF%cell(i)%iLayer,i3,(Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
         endif
             
@@ -16540,9 +16550,7 @@
 	    call freeunit(Modflow.iGSF)
         
         Modflow%GWF%IsDefined=.true.
-        allocate(Modflow%GWF%Cell%is(Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF Cell%is array')            
-        Modflow%GWF%Cell%is(:)=0
+        Modflow%GWF%Cell%is=0
     
         write(TmpSTR,'(i10)') Modflow%GWF%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
@@ -16575,34 +16583,28 @@
         read(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
         Modflow%CLN%nElements=Modflow%CLN%nCells
 
-        allocate(Modflow%CLN%x(Modflow%CLN%nNodes),Modflow%CLN%y(Modflow%CLN%nNodes),Modflow%CLN%z(Modflow%CLN%nNodes), stat=ialloc)
-        call AllocChk(ialloc,'CLN node coordinate arrays')
-        Modflow%CLN%x = 0 ! automatic initialization
-        Modflow%CLN%y = 0 ! automatic initialization
-        Modflow%CLN%z = 0 ! automatic initialization
+        Modflow%CLN%cell%x = 0 ! automatic initialization
+        Modflow%CLN%cell%y = 0 ! automatic initialization
+        Modflow%CLN%cell%z = 0 ! automatic initialization
         
-        read(Modflow.iCLN_GSF,*) (Modflow%CLN%x(i),Modflow%CLN%y(i),Modflow%CLN%z(i),i=1,Modflow%CLN%nNodes)
+        read(Modflow.iCLN_GSF,*) (Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nNodes)
 
         ! determine the number of nodes per cell (Modflow%CLN%nNodesPerCell)
         read(Modflow.iCLN_GSF,*) i1,r1,r2,r3,i2,Modflow%CLN%nNodesPerCell
         backspace(Modflow.iCLN_GSF)
 
-        allocate(Modflow%CLN%iNode(Modflow%CLN%nNodesPerCell,Modflow%CLN%nCells),stat=ialloc)
+        allocate(Modflow%CLN%idNode(Modflow%CLN%nNodesPerCell,Modflow%CLN%nCells),stat=ialloc)
         call AllocChk(ialloc,'CLN iNode array')
         
-        allocate(Modflow%CLN%cell%x(Modflow%CLN%nCells),Modflow%CLN%cell%y(Modflow%CLN%nCells),Modflow%CLN%cell%z(Modflow%CLN%nCells),Modflow%CLN%iLayer(Modflow%CLN%nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN cell coordinate arrays')
 
-        Modflow%CLN%iNode = 0 ! automatic initialization
+        Modflow%CLN%idNode = 0 ! automatic initialization
         do i=1,Modflow%CLN%nCells
-            read(Modflow.iCLN_GSF,*) i1,Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,Modflow%CLN%iLayer(i),i2,(Modflow%CLN%iNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
+            read(Modflow.iCLN_GSF,*) i1,Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,Modflow%CLN%cell(i)%iLayer,i2,(Modflow%CLN%idNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
         end do
 	    call freeunit(Modflow.iCLN_GSF)
         
         Modflow%CLN%IsDefined=.true.
-        allocate(Modflow%CLN%Cell%is(Modflow%CLN%nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN Cell%is array')            
-        Modflow%CLN%Cell%is(:)=0
+        Modflow%CLN%Cell%is=0
 
         write(TmpSTR,'(i10)') Modflow%CLN%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
@@ -16645,11 +16647,9 @@
         end if
        
         
-        allocate(Modflow%SWF%x(Modflow%SWF%nNodes),Modflow%SWF%y(Modflow%SWF%nNodes),Modflow%SWF%z(Modflow%SWF%nNodes), stat=ialloc)
-        call AllocChk(ialloc,'SWF node coordinate arrays')
-        Modflow%SWF%x = 0 ! automatic initialization
-        Modflow%SWF%y = 0 ! automatic initialization
-        Modflow%SWF%z = 0 ! automatic initialization
+        Modflow%SWF%cell%x = 0 ! automatic initialization
+        Modflow%SWF%cell%y = 0 ! automatic initialization
+        Modflow%SWF%cell%z = 0 ! automatic initialization
         
         read(Modflow.iSWF_GSF,*) (Modflow%SWF%node(i)%x,Modflow%SWF%node(i)%y,Modflow%SWF%node(i)%z,i=1,Modflow%SWF%nNodes)
         
@@ -16660,28 +16660,26 @@
             read(Modflow.iSWF_GSF,*) i1,r1,r2,r3,i2,Modflow%SWF%nNodesPerCell
         endif
         backspace(Modflow.iSWF_GSF)
-        allocate(Modflow%SWF%iNode(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
+        allocate(Modflow%SWF%idNode(Modflow%SWF%nNodesPerCell,Modflow%SWF%nElements),stat=ialloc)
         call AllocChk(ialloc,'SWF iNode arrays')
-        Modflow%SWF%iNode = 0 ! automatic initialization
+        Modflow%SWF%idNode = 0 ! automatic initialization
 
-        allocate(Modflow%SWF%cell%x(Modflow%SWF%nCells),Modflow%SWF%cell%y(Modflow%SWF%nCells),Modflow%SWF%cell%z(Modflow%SWF%nCells),Modflow%SWF%iLayer(Modflow%SWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF xyz cell, iLayer arrays')
-        Modflow%SWF%cell%x(:)=-999.
-        Modflow%SWF%cell%y(:)=-999.
-        Modflow%SWF%cell%z(:)=-999.
-        Modflow%SWF%iLayer(:)=-999
+        Modflow%SWF%cell%x=-999.
+        Modflow%SWF%cell%y=-999.
+        Modflow%SWF%cell%z=-999.
+        Modflow%SWF%cell%iLayer=-999
         
         if(NodalControlVolume) then
             do i=1,Modflow%SWF%nElements
-                read(Modflow.iSWF_GSF,'(12i10)') i1,Modflow%SWF%nNodesPerCell,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
+                read(Modflow.iSWF_GSF,'(12i10)') i1,Modflow%SWF%nNodesPerCell,(Modflow%SWF%idNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
             do i=1,Modflow%SWF%nCells
-                read(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i1,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%iLayer(i)
+                read(Modflow.iSWF_GSF,'(i10,3('//FMT_R4//'),i10)') i1,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%cell(i)%iLayer
             end do
 
         else
             do i=1,Modflow%SWF%nElements
-                read(Modflow.iSWF_GSF,*) i1,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%iLayer(i),i3,(Modflow%SWF%iNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
+                read(Modflow.iSWF_GSF,*) i1,Modflow%SWF%cell(i)%x,Modflow%SWF%cell(i)%y,Modflow%SWF%cell(i)%z,Modflow%SWF%cell(i)%iLayer,i3,(Modflow%SWF%idNode(j,i),j=1,Modflow%SWF%nNodesPerCell)
             end do
         end if
 	    call freeunit(Modflow.iSWF_GSF)
@@ -16690,9 +16688,7 @@
 
         write(TmpSTR,'(i10)') Modflow%SWF%nCells 
         call Msg('Number of Cells: '//trim(TmpSTR))
-        allocate(Modflow%SWF%Cell%is(Modflow%SWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell%is array')            
-        Modflow%SWF%Cell%is(:)=0
+        Modflow%SWF%Cell%is=0
     
     
 

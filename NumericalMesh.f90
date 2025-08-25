@@ -44,10 +44,6 @@ module NumericalMesh
         real(dp) :: SideLength(4) ! length of sides if triangle or rectangle
         
        
-        real(dp) :: Length          ! property of CLN cell
-        real(dp) :: LowestElevation
-        real(dp) :: SlopeAngle
-
     end type element    
     
     
