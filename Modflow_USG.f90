@@ -167,14 +167,18 @@
         real(dp) :: x
         real(dp) :: y
         real(dp) :: z
-        real(dp) :: area   ! area of the cell in xy plane
-        real(dp) :: top    ! top elevation of the cell 
-        real(dp) :: bottom ! bottom elevation of the cell
+        real(dp) :: Area   ! true area of the cell (currently not used)
+        real(dp) :: xyArea   ! area of the cell in xy plane
+        real(dp) :: Top    ! top elevation of the cell 
+        real(dp) :: Bottom ! bottom elevation of the cell
         character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
         integer(i4) :: idZone
         integer(i4) :: iLayer ! layer number for extruded mesh
+        
+        ! General cell properties used buy all domain type
+        real(dp) :: StartingHeads           ! STRT in modflow i.e. initial heads
         
         ! GWF cell properties 
         real(sp) :: Kh
@@ -185,7 +189,11 @@
         real(sp) :: Beta
         real(sp) :: Sr
         real(sp) :: Brooks
-        real(sp) :: StartingHeads
+        
+        ! SWF cell properties 
+        real(sp) :: Sgcl                    ! SWF-GWF connection length
+        real(dp) :: CriticalDepthLength     ! SWBC assigned critical depth boundary cell length value
+
         
         ! GWF cell properties 
         real(dp) :: Length          
@@ -213,7 +221,7 @@
         integer(i4) :: NCONDUITYP   ! number of circular CLN's
         integer(i4) :: NRECTYP      ! number of rectangular CLN's
         
-        real(dp), allocatable :: StartingHeads(:)   ! STRT in modflow i.e. initial heads
+        !real(dp), allocatable :: StartingHeads(:)   ! STRT in modflow i.e. initial heads
         integer(i4) :: nCHDCells=0        
         real(dp), allocatable :: ConstantHead(:)  ! CHD assigned head value
 
@@ -227,7 +235,7 @@
         integer(i4) :: nWELCells=0        
         real(dp), allocatable :: PumpingRate(:)  ! WEL assigned Pumping Rate value
         
-        real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
+        !real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
         integer(i4) :: nSWBCCells=0        
         
         integer(i4), allocatable :: ibound(:)
@@ -282,7 +290,7 @@
         integer(i4), allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
 
         ! SWF properties (zoned)
-        real(sp), allocatable :: Sgcl(:)   ! SWF-GWF connection length
+        !real(sp), allocatable :: Sgcl(:)   ! SWF-GWF connection length
         real(sp), allocatable :: Manning(:)   ! Manning's coefficient of friction
         real(sp), allocatable :: DepressionStorageHeight(:)
         real(sp), allocatable :: ObstructionStorageHeight(:)
@@ -845,7 +853,7 @@
                                     endif
                                     AddToLength=sqrt((domain%node(j1)%x - domain%element(k)%xTangent(j))**2 + &
                                                      (domain%node(j1)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j1) - domain%xSide(j,k))**2)
-                                    domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+AddToLength
+                                    domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
                                 endif
                                 if(j2==i) then ! this node represents a chosen cell 
                                     if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
@@ -854,7 +862,7 @@
                                     endif
                                     AddToLength=sqrt((domain%node(j2)%x - domain%element(k)%xTangent(j))**2 + &
                                                      (domain%node(j2)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j2) - domain%xSide(j,k))**2)
-                                    domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+AddToLength
+                                    domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
                                 endif
                             endif
                         enddo 
@@ -870,7 +878,7 @@
                                 call set(domain%cell(i)%is,CriticalDepth)
                                 domain%nSWBCCells=domain%nSWBCCells+1
                             endif
-                            domain%CriticalDepthLength(i)=domain%CriticalDepthLength(i)+domain%Element(i)%SideLength(j)
+                            domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+domain%Element(i)%SideLength(j)
                         endif
                     enddo
                 endif
@@ -909,7 +917,7 @@
                 if(bcheck(domain%cell(i)%is,chosen)) then
                     call set(domain%cell(i)%is,CriticalDepth)
                     domain%nSWBCCells=domain%nSWBCCells+1
-                    domain%CriticalDepthLength(i)=SQRT(domain%Element(i)%xyArea)
+                    domain%cell(i)%CriticalDepthLength=SQRT(domain%Element(i)%xyArea)
                 endif
             end do
         else    
@@ -917,7 +925,7 @@
                 if(bcheck(domain%cell(i)%is,chosen)) then
                     call set(domain%cell(i)%is,CriticalDepth)
                     domain%nSWBCCells=domain%nSWBCCells+1
-                    domain%CriticalDepthLength(i)=SQRT(domain%Element(i)%xyArea)
+                    domain%cell(i)%CriticalDepthLength=SQRT(domain%Element(i)%xyArea)
                     
                 end if
             end do
@@ -1835,7 +1843,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%Sgcl(i)=value
+                domain%cell(i)%Sgcl=value
             end if
         end do
     
@@ -1902,7 +1910,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%StartingHeads(i)=domain%cell(i)%z+value
+                domain%cell(i)%StartingHeads=domain%cell(i)%z+value
             end if
         end do
     
@@ -1924,7 +1932,7 @@
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%StartingHeads(i)=value
+                domain%cell(i)%StartingHeads=value
             end if
         end do
     
@@ -2542,11 +2550,9 @@
         !end if
         
         ! Modflow CLN material properties (cell-based)
-        allocate(Modflow%CLN%Sgcl(Modflow%CLN%nCells),Modflow%CLN%CriticalDepthLength(Modflow%CLN%nCells),Modflow%CLN%StartingHeads(Modflow%CLN%nCells),stat=ialloc)
-        call AllocChk(ialloc,'CLN cell material property arrays')    
-        Modflow%CLN%Sgcl(:)=0.001
-        Modflow%CLN%CriticalDepthLength(:)=0.d0
-        Modflow%CLN%StartingHeads(:)=-999.d0
+        Modflow%CLN%cell%Sgcl=0.001
+        Modflow%CLN%cell%CriticalDepthLength=0.d0
+        Modflow%CLN%cell%StartingHeads=-999.d0
         
         ! Modflow CLN material properties (zone-based)
        allocate(Modflow%CLN%Geometry(Modflow%CLN%nZones), &                    
@@ -2824,11 +2830,9 @@
         end if
         
         ! Modflow SWF material properties (cell-based)
-        allocate(Modflow%SWF%Sgcl(Modflow%SWF%nCells),Modflow%SWF%CriticalDepthLength(Modflow%SWF%nCells),Modflow%SWF%StartingHeads(Modflow%SWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF cell material property arrays')    
-        Modflow%SWF%Sgcl(:)=0.001d0
-        Modflow%SWF%CriticalDepthLength(:)=0.d0
-        Modflow%SWF%StartingHeads(:)=-999.d0
+        Modflow%SWF%cell%Sgcl=0.001d0
+        Modflow%SWF%cell%CriticalDepthLength=0.d0
+        Modflow%SWF%cell%StartingHeads=-999.d0
         
         ! Modflow SWF material properties (zone-based)
        allocate(Modflow%SWF%Manning(Modflow%SWF%nZones), &                   
@@ -3677,11 +3681,11 @@
         call Msg(' ')
         call Msg('  Generating cell connection arrays for domain '//trim(CLNDomain%name)//'...')
         
-        allocate(CLNDomain%ia(CLNDomain%nElements), &
-                 CLNDomain%ConnectionList(MAX_CNCTS,CLNDomain%nElements),stat=ialloc)
-        call AllocChk(ialloc,trim(CLNDomain%name)//'CLN iConnectionList arrays')
-        CLNDomain%ia(:)=0
-        CLNDomain%ConnectionLength(:,:)=0
+        !allocate(CLNDomain%ia(CLNDomain%nElements), &
+        !         CLNDomain%ConnectionList(MAX_CNCTS,CLNDomain%nElements),stat=ialloc)
+        !call AllocChk(ialloc,trim(CLNDomain%name)//'CLN iConnectionList arrays')
+        CLNDomain%ia=0
+        !CLNDomain%element%ConnectionLength=0
         
         do i=1,CLNDomain%nElements   ! First element connection is to itself
             CLNDomain%ia(i)=1
@@ -4388,20 +4392,14 @@
         VarSTR='variables="X","Y","Z","'//trim(Modflow%CLN%name)//' Zone","'//trim(Modflow%CLN%name)//' cell%z",'
         nVar=5
             
-        if(allocated(Modflow%CLN%Sgcl)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' CLN-GWF connection length",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' CLN-GWF connection length",'
+        nVar=nVar+1
             
-        if(allocated(Modflow%CLN%StartingHeads)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Initial Depth",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Initial Depth",'
+        nVar=nVar+1
         
-        if(allocated(Modflow%CLN%Cell)) then
-            VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Cell area",'
-            nVar=nVar+1
-        end if
+        VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Cell area",'
+        nVar=nVar+1
                 
         write(FNum,'(a)') trim(VarSTR)
           
@@ -4438,20 +4436,14 @@
         write(FNum,'(a)') '# cell%z i.e. cell bottom'
         write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nCells)
             
-        if(allocated(Modflow%CLN%Sgcl)) then
-            write(FNum,'(a)') '# SW-GW connection length'
-            write(FNum,'(10('//FMT_R4//'))') (Modflow%CLN%Sgcl(i),i=1,Modflow%CLN%nCells)
-        end if
+        write(FNum,'(a)') '# SW-GW connection length'
+        write(FNum,'(10('//FMT_R4//'))') (Modflow%CLN%cell(i)%Sgcl,i=1,Modflow%CLN%nCells)
 
-        if(allocated(Modflow%CLN%StartingHeads)) then
-            write(FNum,'(a)') '# Starting depth'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%StartingHeads(i)-Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nCells)
-        end if
+        write(FNum,'(a)') '# Starting depth'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%cell(i)%StartingHeads-Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nCells)
 
-        if(allocated(Modflow%CLN%Cell)) then
-            write(FNum,'(a)') '# Cell Area'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%Cell(i)%Area,i=1,Modflow%CLN%nCells)
-        end if
+        write(FNum,'(a)') '# Cell Area'
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%Cell(i)%Area,i=1,Modflow%CLN%nCells)
         
         do i=1,Modflow%CLN%nElements
             if(Modflow%CLN%nNodesPerElement==2) then ! 2-node line, repeat node 3 for 4-node tecplot type fequadrilateral
@@ -5607,7 +5599,7 @@
 		    do j=1,npairs-1
 			    if(domain%cell(i)%z >= zp(j) .and. domain%cell(i)%z <= zp(j+1)) then  ! interpolate
 	                t=(domain%cell(i)%z-zp(j))/(zp(j+1)-zp(j))
-				    domain%StartingHeads(i)=(1.0-t)*InitHead(j)+t*InitHead(j+1)
+				    domain%cell(i)%StartingHeads=(1.0-t)*InitHead(j)+t*InitHead(j+1)
 			    end if
 		    end do
         end do
@@ -5684,7 +5676,7 @@
             continue
             endif
             
-			domain%StartingHeads(i)=pw_from_sw(i,sw,domain)
+			domain%cell(i)%StartingHeads=pw_from_sw(i,sw,domain)
 
         end do
         
@@ -5718,7 +5710,7 @@
 		    !do j=1,npairs-1
 			   ! if(domain%cell(i)%z >= dpth(j) .and. domain%cell(i)%z <= dpth(j+1)) then  ! interpolate
 	     !           t=(domain%cell(i)%z-dpth(j))/(dpth(j+1)-dpth(j))
-				  !  domain%StartingHeads(i)=(1.0-t)*satn(j)+t*satn(j+1)
+				  !  domain%cell(i)%StartingHeads=(1.0-t)*satn(j)+t*satn(j+1)
 			   ! end if
 		    !end do
       !  end do
@@ -5958,9 +5950,9 @@
             Modflow%GWF%Cell(i)%Area=TMPLT%Element(iCell)%xyArea
         end do
     
-        allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
-                 Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF Cell connection arrays')
+        !allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
+        !         Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
+        !call AllocChk(ialloc,'GWF Cell connection arrays')
         Modflow%GWF%ConnectionLength(:,:)=0.0d0
         Modflow%GWF%PerpendicularArea(:,:)=0.0d0
         
@@ -6171,7 +6163,7 @@
            
                 do i=1,domain%nCells
                     if(bcheck(domain%cell(i)%is,CriticalDepth)) write(FNum,'(4('//FMT_R8//'))') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
-                        domain%CriticalDepthLength(i)
+                        domain%cell(i)%CriticalDepthLength
                 end do
             
                 call FreeUnit(FNum)
@@ -7851,10 +7843,10 @@
         write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
             
         write(FNum,'(a)') '# SW-GW connection length'
-        write(FNum,'(10('//FMT_R4//'))') (Modflow%SWF%Sgcl(i),i=1,Modflow%SWF%nCells)
+        write(FNum,'(10('//FMT_R4//'))') (Modflow%SWF%cell(i)%Sgcl,i=1,Modflow%SWF%nCells)
 
         write(FNum,'(a)') '# Starting depth'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i)-Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%cell(i)%StartingHeads-Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
 
         write(FNum,'(a)') '# Cell Area'
         write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%Cell(i)%Area,i=1,Modflow%SWF%nCells)
@@ -8370,13 +8362,8 @@
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
         write(Modflow.iCLN,'(10i3)') (Modflow%CLN%ibound(k),k=1,Modflow%CLN%nCells)
         
-        if(.not. allocated(Modflow%CLN%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
-            allocate(Modflow%CLN%StartingHeads(Modflow%CLN%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell starting heads array')            
-            Modflow%CLN%StartingHeads=Modflow%CLN%cell%z+1.0e-4
-        end if
         write(Modflow.iCLN,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iCLN,'(5(1ES20.8))') (Modflow%CLN%StartingHeads(i),i=1,Modflow%CLN%nCells)
+        write(Modflow.iCLN,'(5(1ES20.8))') (Modflow%CLN%cell(i)%StartingHeads,i=1,Modflow%CLN%nCells)
         
         !------------------- Initialize and write write CLN_GSF file
         Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.cln.gsf'
@@ -8475,19 +8462,14 @@
             nStrt=nEnd+1
         end do
         
-        write(Modflow.iBAS6,'('//FMT_R8//')') Modflow%GWF%StartingHeads(1)  ! hnoflo, head value to be printed for no-flow cells
+        write(Modflow.iBAS6,'('//FMT_R8//')') Modflow%GWF%cell(1)%StartingHeads  ! hnoflo, head value to be printed for no-flow cells
 
-        if(.not. allocated(Modflow%GWF%StartingHeads)) then ! Assume 2.78 m for abdul for now'
-            allocate(Modflow%GWF%StartingHeads(Modflow%GWF%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell starting heads array')            
-            Modflow%GWF%StartingHeads(:)=1.5d0 !2.78d0
-        end if
         nStrt=1
         do i=1,Modflow%GWF%nLayers
             write(TmpSTR,'(i5)') i
             write(Modflow.iBAS6,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Starting Heads Layer '//trim(TmpSTR)
             nEnd = nStrt + Modflow%GWF%nodelay-1
-            write(Modflow.iBAS6,'(5('//FMT_R8//'))') (Modflow%GWF%StartingHeads(k),k=nStrt,nEnd)
+            write(Modflow.iBAS6,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%StartingHeads,k=nStrt,nEnd)
             nStrt=nEnd+1
         end do
 
@@ -8812,7 +8794,7 @@
 
         write(Modflow.iSWF,'(a)') '#    IFNO   IFGWNO       IFCON                 SGCL          SGCAREA       ISGWADI'
         do i=1,Modflow%SWF%nCells
-            write(Modflow.iSWF,'(2i9,3x,i9,'//FMT_R4//','//FMT_R8//',i9)') i, i, 1, Modflow%SWF%sgcl(i), Modflow%SWF%Cell(i)%Area, 0
+            write(Modflow.iSWF,'(2i9,3x,i9,'//FMT_R4//','//FMT_R8//',i9)') i, i, 1, Modflow%SWF%cell(i)%Sgcl, Modflow%SWF%Cell(i)%Area, 0
         end do
 
         write(Modflow.iSWF,'(a)') '# ISWFTYP               SMANN                SWFH1                SWFH2'
@@ -8842,21 +8824,16 @@
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  IBOUND'
         write(Modflow.iSWF,'(10i3)') (Modflow%SWF%ibound(k),k=1,Modflow%SWF%nCells)
         
-        if(.not. allocated(Modflow%SWF%StartingHeads)) then ! Assume equal to cell%z i.e. depth zero + 1e-4'
-            allocate(Modflow%SWF%StartingHeads(Modflow%SWF%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell starting heads array')            
-            Modflow%SWF%StartingHeads=Modflow%SWF%cell%z+1.0d-4
-        end if
         write(Modflow.iSWF,'(a)') 'INTERNAL  1.000000e+000  (FREE)  -1  Starting Heads()'
-        write(Modflow.iSWF,'(5('//FMT_R8//'))') (Modflow%SWF%StartingHeads(i),i=1,Modflow%SWF%nCells)
+        write(Modflow.iSWF,'(5('//FMT_R8//'))') (Modflow%SWF%cell(i)%StartingHeads,i=1,Modflow%SWF%nCells)
         
         !------------------- SWBC file
-        if(allocated(Modflow%SWF%CriticalDepthLength)) then
+        if(Modflow%SWF%nSWBCCells > 0) then
             write(Modflow.iSWBC,*) Modflow%SWF%nSWBCCells, Modflow%SWF%iCBB  ! set nrchop default to 4
             write(Modflow.iSWBC,*) 1  ! reuse bc data from last stress period if negative
             do i=1,Modflow%SWF%nCells
                 if(bcheck(Modflow%SWF%Cell(i)%is,CriticalDepth)) then
-                    write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%CriticalDepthLength(i)
+                    write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%cell(i)%CriticalDepthLength
                 end if
             end do
         end if
