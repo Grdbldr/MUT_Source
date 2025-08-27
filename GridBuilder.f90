@@ -39,7 +39,7 @@ module GB
     
         
         allocate(GBMesh%node(GBMesh%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d node arrays')
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d node array')
         GBMesh%node(:)%x = 0 ! automatic initialization
         GBMesh%node(:)%y = 0 ! automatic initialization
         GBMesh%node(:)%z = 0 ! automatic initialization
@@ -52,7 +52,7 @@ module GB
         read(itmp) GBMesh%nElements
 
         allocate(GBMesh%Element(GBMesh%nElements), GBMesh%idNode(GBMesh%nNodesPerElement,GBMesh%nElements), stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d element, idNode arrays')
         GBMesh%Element(:)%idZone = 0 ! automatic initialization
         GBMesh%idNode(:,:) = 0 ! automatic initialization
         read(itmp) (GBMesh%idNode(1,i),GBMesh%idNode(2,i),GBMesh%idNode(3,i), i=1,GBMesh%nElements)
@@ -64,6 +64,8 @@ module GB
         read(itmp) (GBMesh%Element(i)%idZone,i=1,GBMesh%nElements)
 	    call freeunit(itmp)
         GBMesh%nZones=maxval(GBMesh%Element%idZone)
+        allocate(GBMesh%Zone(GBMesh%nZones),stat=ialloc)
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d zone array')
         
         do i=1,GBMesh%nElements
             ! xc and yc from circumcircles

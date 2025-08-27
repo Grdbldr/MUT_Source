@@ -205,7 +205,7 @@
     type,  extends(mesh)  :: ModflowDomain
         ! common to all types of domains: GWF, CLN, SWF, ...
         
-        integer(i4) :: nCells ! number of cells in mesh
+        integer(i4) :: nCells ! number of cells in domain
         type(cell), allocatable :: cell(:) ! array of cells
         integer(i4) :: nNodesPerCell ! number of nodes in cell
 
@@ -2777,7 +2777,11 @@
         else
             Modflow%SWF%nCells=Modflow%SWF%nElements
             Modflow%SWF%nodelay=Modflow%SWF%nElements
-        end if            
+        end if   
+        
+        allocate(Modflow%SWF%cell(Modflow%SWF%nCells),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%SWF cell array')
+
         
         Modflow%SWF%nNodesPerCell=Modflow%SWF%nNodesPerElement
 
@@ -4884,6 +4888,9 @@
         
         integer(i4) :: iGWF_Cell, kCell, iDown, iUp
         
+        GWFDomain.mesh=TMPLT
+
+        
         if(TMPLT%nNodes < 1000) then
             user_nz=1000
         else
@@ -4926,7 +4933,6 @@
             z(j)=top_elev(j)
         end do
 
-        GWFDomain%nZones=1
         nsheet=1
 
 	    ! Define mesh layers and sublayers
@@ -4985,14 +4991,9 @@
         GWFDomain%meshtype='UNSTRUCTURED'
         GWFDomain%nNodes=TMPLT%nNodes*nsheet
         
-        allocate(GWFDomain%node(GWFDomain%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'GWFDomain node array')
-
         
         ! coordinates
-        !deallocate(GWFDomain%x,GWFDomain%y,GWFDomain%z)
-        !allocate(GWFDomain%x(GWFDomain%nNodes),GWFDomain%y(GWFDomain%nNodes),GWFDomain%z(GWFDomain%nNodes),stat=ialloc)
-        !call AllocChk(ialloc,'GWFDomain coordinate arrays')
+        call GrowNodeArray(GWFDomain%Node,TMPLT%nNodes,GWFDomain%nNodes)
         do i=1,GWFDomain%nNodes
             GWFDomain%node(i)%x= x(i)
             GWFDomain%node(i)%y= y(i)
@@ -5003,12 +5004,11 @@
         GWFDomain%nNodesPerElement=TMPLT%nNodesPerElement*2
         GWFDomain%nElements=TMPLT%nElements*GWFDomain%nLayers
         
-        allocate(GWFDomain%element(GWFDomain%nElements),stat=ialloc)
-        call AllocChk(ialloc,'GWFDomain element array')
+        call GrowElementArray(GWFDomain%Element,TMPLT%nElements,GWFDomain%nElements)
 
         
         ! Element node lists
-        !deallocate(GWFDomain%idNode)
+        deallocate(GWFDomain%idNode)
         allocate(GWFDomain%idNode(GWFDomain%nNodesPerElement,GWFDomain%nElements),stat=ialloc)
         call AllocChk(ialloc,'GWFDomain idNode array')
         do i=1,GWFDomain%nElements
@@ -5018,7 +5018,6 @@
         end do
         
         ! Element layer number
-        call AllocChk(ialloc,'GWFDomain iLayer array')
         do i=1,GWFDomain%nElements
             GWFDomain%element(i)%iLayer = ilyr(i) 
         end do
@@ -5031,6 +5030,9 @@
             GWFDomain%nZones=TMPLT%nZones
         else
             GWFDomain%nZones=nlayers
+            deallocate(GWFDomain%Zone)
+            allocate(GWFDomain%Zone(GWFDomain%nZones),stat=ialloc)
+            call AllocChk(ialloc,'GWFDomain zone array')
         end if
         
         GWFDomain%TecplotTyp='febrick'
@@ -5040,11 +5042,11 @@
         
         
         ! GWFDomain Connection data rebuilt here (GenerateLayeredGWFDomain)
-        !deallocate(GWFDomain%ia, &
-        !         GWFDomain%ConnectionList, &
-        !         GWFDomain%ConnectionLength, &
-        !         GWFDomain%PerpendicularArea, &
-        !         GWFDomain%ThroughFace)
+        deallocate(GWFDomain%ia, &
+                 GWFDomain%ConnectionList, &
+                 GWFDomain%ConnectionLength, &
+                 GWFDomain%PerpendicularArea, &
+                 GWFDomain%ThroughFace)
         if(NodalControlVolume) then 
             allocate(GWFDomain%ia(GWFDomain%nNodes), &
                      GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nNodes), &
@@ -5150,12 +5152,11 @@
         
         ! Option exists to search GB .grd for string "T  ! treat as rectangles" then set up as 4-node rectangular elements 
 
-        ! Copy the template data to the Modflow SWF data structure
+        ! Copy the template mesh to the Modflow SWF data mesh
+        SWFDomain.mesh=TMPLT
+        
         SWFDomain.name='SWFDomain'
         SWFDomain.meshtype='UNSTRUCTURED'
-        
-        allocate(SWFDomain%node(TMPLT%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'SWFDomain node array')
 
 
         ! Define elevation (z coordinate) of SWF SWFDomain
@@ -6032,13 +6033,6 @@
             Modflow%SWF%Cell(i)%Area=Modflow%SWF%Element(i)%xyArea
         end do
 
-        ! Cell connection length and perpendicular area arrays
-        allocate(Modflow%SWF%ConnectionLength(MAX_CNCTS,Modflow%SWF%nElements), &
-                 Modflow%SWF%PerpendicularArea(MAX_CNCTS,Modflow%SWF%nElements),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow%SWF%ConnectionLength(:,:)= Modflow%SWF%ConnectionLength(:,:)
-        Modflow%SWF%PerpendicularArea(:,:)=Modflow%SWF%PerpendicularArea(:,:)
-        
         Modflow%SWF%njag=0
         do i=1,Modflow%SWF%nCells
             Modflow%SWF%njag=Modflow%SWF%njag + Modflow%SWF%ia(i)
@@ -7411,14 +7405,6 @@
             end do
         end do
         call freeunit(FNumTecplot)
-        
-        ! fred can we just use Modflow%SWF%ConnectionLength etc here?
-        ! Copy ConnectionLength and PerpendicularArea from Modflow%SWF 
-        allocate(Modflow%SWF%ConnectionLength(MAX_CNCTS,Modflow%SWF%nCells), &
-                 Modflow%SWF%PerpendicularArea(MAX_CNCTS,Modflow%SWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'SWF Cell connection length, perpendicular area array')
-        Modflow%SWF%ConnectionLength(:,:)=Modflow%SWF%ConnectionLength(:,:)
-        Modflow%SWF%PerpendicularArea(:,:)=Modflow%SWF%PerpendicularArea(:,:)
         
         Modflow%SWF%njag=0
         do i=1,Modflow%SWF%nCells

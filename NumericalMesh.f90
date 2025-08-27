@@ -248,6 +248,33 @@ module NumericalMesh
         call move_alloc (iTMP, iArray)
         
     end subroutine GrowElementArray
+    !----------------------------------------------------------------------
+    subroutine GrowNodeArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        type(node), allocatable :: iArray(:)
+        type(node), allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowNodeArray
+    !----------------------------------------------------------------------
+    subroutine GrowZoneArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        type(zone), allocatable :: iArray(:)
+        type(zone), allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowZoneArray
+    !----------------------------------------------------------------------
     subroutine InnerCircle(x,y,area,xc,yc,radius,lseg,aseg,dseg)
         implicit none
 
