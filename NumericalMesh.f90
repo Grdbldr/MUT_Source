@@ -56,7 +56,7 @@ module NumericalMesh
     type mesh
         character(len=:), allocatable :: name
         integer(i4) :: id
-        character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
+        !character(128) :: ElementType      ! eg triangle, quadrilateral, prism, block etc
         character(MAX_LBL) :: STR_LengthUnit
   
         character(40) :: TecplotTyp ! element typ eg fetriangle, fequadrilateral, feblock etc

@@ -61,10 +61,10 @@ Module MeshGeneration
     end subroutine list_file_elevation
     
     !----------------------------------------------------------------------
-    subroutine GenerateUniformRectangles(FNum,TMPLT)
+    subroutine GenerateUniformRectangles(FNum,U_RECT_2D)
         implicit none
         integer(i4) :: FNum
-        type(mesh) TMPLT
+        type(mesh) U_RECT_2D
 
 
         integer(i4) :: i, j, k
@@ -75,11 +75,12 @@ Module MeshGeneration
         real(sp), allocatable :: xi(:)
         real(sp), allocatable :: yi(:)
 
-        TMPLT%name='TMPLT'
+        U_RECT_2D%name='U_RECT_2D'
 
         !     generate uniform rectangles
-        TMPLT%nNodesPerElement=4
-        TMPLT%TecplotTyp='fequadrilateral'
+        U_RECT_2D%nNodesPerElement=4
+        U_RECT_2D%Element%Typ='rectangle'
+        U_RECT_2D%TecplotTyp='fequadrilateral'
 
 
         !     xl, yl are grid lengths in x- and y-directions
@@ -118,32 +119,32 @@ Module MeshGeneration
         end do
 
         !     generate 2D slice first
-        TMPLT%nNodes=nx*ny
-        allocate(TMPLT%node(TMPLT%nNodes),stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d node arrays')
-        TMPLT%node(:)%x = 0 ! automatic initialization
-        TMPLT%node(:)%y = 0 ! automatic initialization
-        TMPLT%node(:)%z = 0 ! automatic initialization
+        U_RECT_2D%nNodes=nx*ny
+        allocate(U_RECT_2D%node(U_RECT_2D%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'U_RECT_2D%node array')
+        U_RECT_2D%node%x = 0 ! automatic initialization
+        U_RECT_2D%node%y = 0 ! automatic initialization
+        U_RECT_2D%node%z = 0 ! automatic initialization
         
-        TMPLT%nElements=(nx-1)*(ny-1)
-        allocate(TMPLT%Element(TMPLT%nElements), TMPLT%idNode(TMPLT%nNodesPerElement,TMPLT%nElements), stat=ialloc)
-        call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
-        TMPLT%Element(:)%idZone = 0 ! automatic initialization
-        TMPLT%idNode(:,:) = 0 ! automatic initialization
-        TMPLT%element%iLayer = 0
-        TMPLT%element%x=0.0d0
-        TMPLT%element%y=0.0d0
-        TMPLT%element%z=0.0d0
-        TMPLT%element%Area=0.0d0
-        TMPLT%element%xyArea=0.0d0
+        U_RECT_2D%nElements=(nx-1)*(ny-1)
+        allocate(U_RECT_2D%Element(U_RECT_2D%nElements), U_RECT_2D%idNode(U_RECT_2D%nNodesPerElement,U_RECT_2D%nElements), stat=ialloc)
+        call AllocChk(ialloc,'U_RECT_2D%Element array')
+        U_RECT_2D%Element%idZone = 0 ! automatic initialization
+        U_RECT_2D%idNode = 0 ! automatic initialization
+        U_RECT_2D%element%iLayer = 0
+        U_RECT_2D%element%x=0.0d0
+        U_RECT_2D%element%y=0.0d0
+        U_RECT_2D%element%z=0.0d0
+        U_RECT_2D%element%Area=0.0d0
+        U_RECT_2D%element%xyArea=0.0d0
         
         !     generate 2D node coordinates
         nn2d=0
         do i=1,ny
             do j=1,nx
                 nn2d=nn2d+1
-                TMPLT%node(nn2d)%x=xi(j)
-                TMPLT%node(nn2d)%y=yi(i)
+                U_RECT_2D%node(nn2d)%x=xi(j)
+                U_RECT_2D%node(nn2d)%y=yi(i)
             end do
         end do
 
@@ -153,43 +154,46 @@ Module MeshGeneration
             k=1+(i-1)*nx
             do j=1,nx-1
                 ne2d=ne2d+1
-                TMPLT%idNode(1,ne2d)=k
-                TMPLT%idNode(2,ne2d)=k+1
-                TMPLT%idNode(3,ne2d)=k+nx+1
-                TMPLT%idNode(4,ne2d)=k+nx
-                TMPLT%element(ne2d)%idZone = 1
-                TMPLT%element(ne2d)%iLayer = 1
+                U_RECT_2D%idNode(1,ne2d)=k
+                U_RECT_2D%idNode(2,ne2d)=k+1
+                U_RECT_2D%idNode(3,ne2d)=k+nx+1
+                U_RECT_2D%idNode(4,ne2d)=k+nx
+                U_RECT_2D%element(ne2d)%idZone = 1
+                U_RECT_2D%element(ne2d)%iLayer = 1
                 k=k+1
             end do
         end do
 
-        do i=1,TMPLT%nElements
-            TMPLT%element(i)%xyArea=  (TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x) * &
-                                      (TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(1,i))%y)
-            TMPLT%element(i)%x=(TMPLT%node(TMPLT%idNode(2,i))%x + TMPLT%node(TMPLT%idNode(1,i))%x)/2.0d0
-            TMPLT%element(i)%y=(TMPLT%node(TMPLT%idNode(3,i))%y + TMPLT%node(TMPLT%idNode(1,i))%y)/2.0d0
+        do i=1,U_RECT_2D%nElements
+            U_RECT_2D%element(i)%xyArea=  (U_RECT_2D%node(U_RECT_2D%idNode(2,i))%x - U_RECT_2D%node(U_RECT_2D%idNode(1,i))%x) * &
+                                      (U_RECT_2D%node(U_RECT_2D%idNode(3,i))%y - U_RECT_2D%node(U_RECT_2D%idNode(1,i))%y)
+            U_RECT_2D%element(i)%x=(U_RECT_2D%node(U_RECT_2D%idNode(2,i))%x + U_RECT_2D%node(U_RECT_2D%idNode(1,i))%x)/2.0d0
+            U_RECT_2D%element(i)%y=(U_RECT_2D%node(U_RECT_2D%idNode(3,i))%y + U_RECT_2D%node(U_RECT_2D%idNode(1,i))%y)/2.0d0
             
-            TMPLT%element(i)%SideLength(1)=abs(TMPLT%node(TMPLT%idNode(2,i))%x - TMPLT%node(TMPLT%idNode(1,i))%x)
-            TMPLT%element(i)%SideLength(2)=abs(TMPLT%node(TMPLT%idNode(3,i))%y - TMPLT%node(TMPLT%idNode(2,i))%y)
-            TMPLT%element(i)%SideLength(3)=abs(TMPLT%node(TMPLT%idNode(4,i))%x - TMPLT%node(TMPLT%idNode(3,i))%x)
-            TMPLT%element(i)%SideLength(4)=abs(TMPLT%node(TMPLT%idNode(1,i))%y - TMPLT%node(TMPLT%idNode(4,i))%y)
+            U_RECT_2D%element(i)%SideLength(1)=abs(U_RECT_2D%node(U_RECT_2D%idNode(2,i))%x - U_RECT_2D%node(U_RECT_2D%idNode(1,i))%x)
+            U_RECT_2D%element(i)%SideLength(2)=abs(U_RECT_2D%node(U_RECT_2D%idNode(3,i))%y - U_RECT_2D%node(U_RECT_2D%idNode(2,i))%y)
+            U_RECT_2D%element(i)%SideLength(3)=abs(U_RECT_2D%node(U_RECT_2D%idNode(4,i))%x - U_RECT_2D%node(U_RECT_2D%idNode(3,i))%x)
+            U_RECT_2D%element(i)%SideLength(4)=abs(U_RECT_2D%node(U_RECT_2D%idNode(1,i))%y - U_RECT_2D%node(U_RECT_2D%idNode(4,i))%y)
 
 
         end do
                     
-        TMPLT%nZones=1
-        TMPLT%Element%idZone = 1 ! automatic initialization
+        U_RECT_2D%nZones=1
+        U_RECT_2D%Element%idZone = 1 ! automatic initialization
+        allocate(U_RECT_2D%Zone(U_RECT_2D%nZones),stat=ialloc)
+        call AllocChk(ialloc,'U_RECT_2D%Zone array')
 
-        !TMPLT%IsDefined=.true.
+        U_RECT_2D%Element%is=0
         
-        !allocate(TMPLT%element%is(TMPLT%nElements),stat=ialloc)
-        !call AllocChk(ialloc,'TMPLT element%is array')            
-        TMPLT%Element%is=0
+        !if(EnableTecplotOutput) then
+        !    call GBToTecplot(U_RECT_2D)
+        !endif
+
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT%nNodes
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',U_RECT_2D%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT%nElements
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',U_RECT_2D%nElements
         call Msg(TmpSTR)
         return
     end subroutine GenerateUniformRectangles

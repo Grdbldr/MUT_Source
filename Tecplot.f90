@@ -15,7 +15,6 @@ module Tecplot !
         
         logical :: IsDefined=.false.      ! this type of domain has been defined 
         character(128) :: MeshType      ! structured or unstructured?
-        !character(128) :: ElementType      ! for tecplot, febrick (GWF), fequadrilateral(SWF), felineseg(CLN)
 
         character(11) :: Name='none'
             

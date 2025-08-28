@@ -3685,9 +3685,9 @@
         call Msg(' ')
         call Msg('  Generating cell connection arrays for domain '//trim(CLNDomain%name)//'...')
         
-        !allocate(CLNDomain%ia(CLNDomain%nElements), &
-        !         CLNDomain%ConnectionList(MAX_CNCTS,CLNDomain%nElements),stat=ialloc)
-        !call AllocChk(ialloc,trim(CLNDomain%name)//'CLN iConnectionList arrays')
+        allocate(CLNDomain%ia(CLNDomain%nElements), &
+                 CLNDomain%ConnectionList(MAX_CNCTS,CLNDomain%nElements),stat=ialloc)
+        call AllocChk(ialloc,trim(CLNDomain%name)//'CLN iConnectionList arrays')
         CLNDomain%ia=0
         !CLNDomain%element%ConnectionLength=0
         
@@ -4685,7 +4685,12 @@
 
         end do read_Instructions
         
-        !CLNDomain.IsDefined=.true.
+        CLNDomain%Element%idZone = 1 ! automatic initialization
+        allocate(CLNDomain%Zone(CLNDomain%nZones),stat=ialloc)
+        call AllocChk(ialloc,'CLNDomain%Zone array')
+
+        
+        CLNDomain.IsDefined=.true.
         
         !allocate(CLNDomain.element%is(CLNDomain.nElements),stat=ialloc)
         !call AllocChk(ialloc,trim(CLNDomain.name)//' element%is array')            
@@ -4732,7 +4737,7 @@
         
         if(.not. allocated(CLNDomain%node)) then  
             allocate(CLNDomain%node(nSizeInit),stat=ialloc)
-	        call AllocChk(ialloc,'CLNDomain node array')
+	        call AllocChk(ialloc,'CLNDomain%node array')
 	        CLNDomain%node%x = -999.0d0
 	        CLNDomain%node%y = -999.0d0
 	        CLNDomain%node%z = -999.0d0
@@ -4749,6 +4754,15 @@
  		read(FNum,*) nCells
         write(TmpSTR,'(a, i8)') 'Number of new CLN cells: ',nCells 
         call Msg(TAB//trim(TmpSTR))
+        
+        if(.not. allocated(CLNDomain%cell)) then  
+            allocate(CLNDomain%cell(nCells),stat=ialloc)
+	        call AllocChk(ialloc,'CLNDomain%cell array')
+	        !CLNDomain%node%x = -999.0d0
+	        !CLNDomain%node%y = -999.0d0
+	        !CLNDomain%node%z = -999.0d0
+        endif
+
         
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
         write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
@@ -4770,11 +4784,7 @@
             if(CLNDomain%nNodes > nSizeInit) then
                 nodeTMP(1:nSizeInit) = CLNDomain%node
                 call move_alloc (nodeTMP, CLNDomain%node)
-                !yiTMP (1:nSizeInit) = CLNDomain%node%y 
-                !call move_alloc (yiTMP, CLNDomain%node%y)
-                !ziTMP (1:nSizeInit) = CLNDomain%node%z 
-                !call move_alloc (ziTMP, CLNDomain%node%z)
-                
+               
                 nSizeInit=nSizeInit*2
 	            allocate(nodeTMP(nSizeInit*2),stat=ialloc)
 	            call AllocChk(ialloc,'nodeTMP arrays')
@@ -4802,13 +4812,6 @@
         
         nodeTMP(1:nSizeInit) = CLNDomain%node
         call move_alloc (nodeTMP, CLNDomain%node)
-
-        !xiTMP (1:nSizeInit) = CLNDomain%node%x 
-        !call move_alloc (xiTMP, CLNDomain%node%x)
-        !yiTMP (1:nSizeInit) = CLNDomain%node%y 
-        !call move_alloc (yiTMP, CLNDomain%node%y)
-        !ziTMP (1:nSizeInit) = CLNDomain%node%z 
-        !call move_alloc (ziTMP, CLNDomain%node%z)
         
         if(.not. allocated(CLNDomain%element)) then  
             CLNDomain%nElements=CLNDomain%nNodes-1
@@ -4830,15 +4833,6 @@
             CLNDomain%nElements=CLNDomain%nNodes-1
             call growInteger2dArray(CLNDomain%idNode,2,nSizeInit,CLNDomain%nElements)
             call growElementArray(CLNDomain%Element,nSizeInit,CLNDomain%nElements)
-            !call growIntegerArray(CLNDomain%iZone,nSizeInit,CLNDomain%nElements)
-            !call growIntegerArray(CLNDomain%iLayer,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%Element%x,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%Element%y,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%z,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%Area,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%Length,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%LowestElevation,nSizeInit,CLNDomain%nElements)
-            !call growDRealArray(CLNDomain%SlopeAngle,nSizeInit,CLNDomain%nElements)
         end if
 
         ! generate line element incidences
