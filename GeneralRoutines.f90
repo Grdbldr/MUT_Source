@@ -5,9 +5,9 @@ module GeneralRoutines    !### bit setting routines
     implicit none
     
     #ifdef _DEBUG   
-        character(37) :: MUTVersion=' 1.65 DEBUG'
+        character(37) :: MUTVersion=' 1.66 DEBUG'
     #else
-        character(37) :: MUTVersion=' 1.65 RELEASE'
+        character(37) :: MUTVersion=' 1.66 RELEASE'
     #endif
 
 
@@ -61,7 +61,7 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
-    logical :: EnableTecplotOutput = .false.
+    logical :: EnableTecplotOutput = .true.
 
 
     

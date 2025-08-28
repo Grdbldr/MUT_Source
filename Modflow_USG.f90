@@ -20,7 +20,7 @@
     
     ! By default, Tecplot output is disabled
     ! This option enables Tecplot output
-    character(MAX_INST) :: EnableTecplotOutput_CMD='enable tecplot output'
+    character(MAX_INST) :: DisableTecplotOutput_CMD='disable tecplot output'
     
     
     ! --------------------------------------------------Mesh definition section
@@ -2058,9 +2058,9 @@
                 Modflow.SaturatedFlow=.true.
                 call Msg(TAB//'*** Saturated flow approach is used ')
 
-            elseif (index(instruction, EnableTecplotOutput_CMD)  /= 0) then
-                EnableTecplotOutput=.true.
-                call Msg(TAB//'*** Tecplot Output Enabled')
+            elseif (index(instruction, DisableTecplotOutput_CMD)  /= 0) then
+                EnableTecplotOutput=.false.
+                call Msg(TAB//'*** Tecplot Output Disabled')
 
                 
             ! Units set assignment
@@ -2800,7 +2800,7 @@
                 ! zc from centroid of the iNode array coordinates
                 zc=0.0d0
                 do j=1,Modflow%SWF%nNodesPerCell
-                    zc=zc+Modflow%SWF%cell(Modflow%SWF%idNode(j,i))%z
+                    zc=zc+Modflow%SWF%Node(Modflow%SWF%idNode(j,i))%z
                 end do
                 Modflow%SWF%cell(i)%z=zc/float(Modflow%SWF%nNodesPerCell)
             end do
@@ -16478,9 +16478,16 @@
             read(Modflow.iGSF,*) Modflow%GWF%nNodes
             Modflow%GWF%nCells=Modflow%GWF%nElements
         end if
+        
+        allocate(Modflow%GWF%node(Modflow%GWF%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%GWF%node array')
+        
+        allocate(Modflow%GWF%element(Modflow%GWF%nelements),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%GWF%element array')
 
-        
-        
+        allocate(Modflow%GWF%cell(Modflow%GWF%ncells),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%GWF%cell array')
+
         Modflow%GWF%cell%x = 0 ! automatic initialization
         Modflow%GWF%cell%y = 0 ! automatic initialization
         Modflow%GWF%cell%z = 0 ! automatic initialization
@@ -16621,6 +16628,14 @@
             Modflow%SWF%nCells=Modflow%SWF%nElements
         end if
        
+        allocate(Modflow%SWF%node(Modflow%SWF%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%SWF%node array')
+        
+        allocate(Modflow%SWF%element(Modflow%SWF%nelements),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%SWF%element array')
+
+        allocate(Modflow%SWF%cell(Modflow%SWF%ncells),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%SWF%cell array')
         
         Modflow%SWF%cell%x = 0 ! automatic initialization
         Modflow%SWF%cell%y = 0 ! automatic initialization
