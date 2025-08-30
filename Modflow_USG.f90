@@ -8734,7 +8734,7 @@
             write(Modflow.iGSF,'(a)') trim(Modflow%GWF%meshtype)
             write(Modflow.iGSF,*) Modflow%GWF%nCells, Modflow%GWF%nLayers, Modflow%GWF%iz, Modflow%GWF%ic
             write(Modflow.iGSF,*) Modflow%GWF%nNodes
-            write(Modflow.iGSF,*) (Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,i=1,Modflow%GWF%nNodes)
+            write(Modflow.iGSF,*) (Modflow%GWF%node(i)%x,Modflow%GWF%node(i)%y,Modflow%GWF%node(i)%z,i=1,Modflow%GWF%nNodes)
             do i=1,Modflow%GWF%nCells
                 write(Modflow.iGSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,Modflow%GWF%cell(i)%iLayer,Modflow%GWF%nNodesPerCell,(Modflow%GWF%idNode(j,i),j=1,Modflow%GWF%nNodesPerCell)
             end do
@@ -14434,13 +14434,19 @@
                 DO K=1,NLAY
                     NNDLAY = NODLAY(K)
                     NSTRT = NODLAY(K-1)+1
-                    NDSLAY = NNDLAY - NODLAY(K-1)          
+                    NDSLAY = NNDLAY - NODLAY(K-1) 
+                    
+                    if(i==9) then
+                        continue
+                    end if
                     CALL ULASAVURD(domain%head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
                         TOTIMREAD,NSTRT,NNDLAY,ILAY,domain%iHDS,NODES)
                     WRITE(TmpSTR,'(3(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,K,TOTIMREAD,domain%head(1,i),TEXT
                     call msg(TmpSTR)
                 END DO
             end do
+            
+            continue
         else
             call msg('    Period      Step      Time Cell1Head            Name')
             do i=1,Modflow.ntime
