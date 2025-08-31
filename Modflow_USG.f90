@@ -7246,6 +7246,8 @@
                 end do
             end if
             CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+            
+            ZoneSTR = trim(ZoneSTR)//trim(CellCenteredSTR)
 
             call AppendAuxdata(Modflow,ZoneSTR)
             write(FNum,'(a)') trim(ZoneSTR)
