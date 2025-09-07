@@ -5,9 +5,9 @@ module GeneralRoutines    !### bit setting routines
     implicit none
     
     #ifdef _DEBUG   
-        character(37) :: MUTVersion=' 1.66 DEBUG'
+        character(37) :: MUTVersion=' 1.67 DEBUG'
     #else
-        character(37) :: MUTVersion=' 1.66 RELEASE'
+        character(37) :: MUTVersion=' 1.67 RELEASE'
     #endif
 
 
