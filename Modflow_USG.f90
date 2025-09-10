@@ -31,6 +31,7 @@
     character(MAX_INST) :: UnitsLength_CMD	        =   'units of length'
     
     !---------------------------------------------------Database
+    character(MAX_INST) :: LocalUserbin_CMD	        =   'use local databases'
     character(MAX_INST) :: SMS_Database_CMD	        =   'sms database'
     character(MAX_INST) :: GWFMaterialsDatabase_CMD	=   'gwf materials database'
     character(MAX_INST) :: CLNMaterialsDatabase_CMD	=   'cln materials database'
@@ -82,24 +83,33 @@
     
 
     !---------------------------------------------------Assign initial conditions
-    character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	    =   'gwf initial head'
-    character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD  =   'gwf initial head function of z' 
-    character(MAX_INST) :: InitialHeadFromDepthSatToGWF_CMD  =   'gwf initial head from depth-saturation table' 
-    character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	    =   'swf initial depth'
-    character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	    =   'cln initial depth'
+    character(MAX_INST) :: AssignStartingHeadtoGWF_CMD	                =   'gwf initial head'
+    character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD              =   'gwf initial head function of z' 
+    character(MAX_INST) :: InitialHeadFromDepthSatToGWF_CMD             =   'gwf initial head from depth-saturation table' 
+    character(MAX_INST) :: GWFInitialHeadFromTecplotFile_CMD	        =   'gwf initial head from tecplot file'
+    character(MAX_INST) :: GWFInitialHeadEqualsSurfaceElevation_CMD	    =   'gwf initial head equals surface elevation'
+
+    character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	                =   'swf initial depth'
+    character(MAX_INST) :: SWFInitialHeadFromTecplotFile_CMD	        =   'swf initial head from tecplot file'
+    
+    
+
+    
+    character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	                =   'cln initial depth'
     
     !---------------------------------------------------Boundary conditions
-    character(MAX_INST) :: AssignCHDtoGWF_CMD		    =   'gwf constant head'
-    character(MAX_INST) :: AssignDRNtoGWF_CMD		    =   'gwf drain'
-    character(MAX_INST) :: AssignRCHtoGWF_CMD		    =   'gwf recharge'
-    character(MAX_INST) :: AssignWELtoGWF_CMD		    =   'gwf well'
-    character(MAX_INST) :: AssignCHDtoSWF_CMD		    =   'swf constant head'
-    character(MAX_INST) :: AssignRCHtoSWF_CMD		    =   'swf recharge'
-    character(MAX_INST) :: AssignWELtoSWF_CMD		    =   'swf well'
-    character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD	        =   'swf critical depth'
+    character(MAX_INST) :: AssignCHDtoGWF_CMD		            =   'gwf constant head'
+    character(MAX_INST) :: AssignDRNtoGWF_CMD		            =   'gwf drain'
+    character(MAX_INST) :: AssignRCHtoGWF_CMD		            =   'gwf recharge'
+    character(MAX_INST) :: AssignWELtoGWF_CMD		            =   'gwf well'
+    character(MAX_INST) :: AssignCHDtoSWF_CMD		            =   'swf constant head'
+    character(MAX_INST) :: AssignRCHtoSWF_CMD		            =   'swf recharge'
+    character(MAX_INST) :: AssignTransientRCHtoSWF_CMD          =   'swf transient recharge'
+    character(MAX_INST) :: AssignWELtoSWF_CMD		            =   'swf well'
+    character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD         =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
-    character(MAX_INST) :: AssignCHDtoCLN_CMD           =   'cln constant head'
-    character(MAX_INST) :: AssignWELtoCLN_CMD		    =   'cln well'
+    character(MAX_INST) :: AssignCHDtoCLN_CMD                   =   'cln constant head'
+    character(MAX_INST) :: AssignWELtoCLN_CMD		            =   'cln well'
     
     !---------------------------------------------------GWF Properties
     character(MAX_INST) :: AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
@@ -426,6 +436,11 @@
         character(128) :: FNameRCH
         integer(i4) :: iRCH
         
+        !RST file for transient recharge
+        character(128) :: FNameRTS
+        integer(i4) :: iRTS
+        
+        
         ! RIV file
         character(128) :: FNameRIV
         integer(i4) :: iRIV
@@ -485,7 +500,7 @@
         integer(i4) ::iBCF6
         integer(i4) ::iEVS 
         integer(i4) ::iGHB 
-        integer(i4) ::iRTS 
+        !integer(i4) ::iRTS 
         integer(i4) ::iTIB 
         integer(i4) ::iDPF 
         integer(i4) ::iPCB 
@@ -1707,6 +1722,84 @@
     end subroutine AssignRCHtoDomain
     
     !----------------------------------------------------------------------
+    subroutine AssignTransientRCHtoDomain(FNumMUT,modflow,domain) 
+        implicit none
+
+        integer(i4) :: FNumMUT
+        type (ModflowProject) modflow
+        type (ModflowDomain) Domain
+        
+        integer(i4) :: i
+        real(dp) :: rech
+        integer(i4) :: nRCHoption
+        
+        read(FNumMUT,'(a)') modflow.FNameRTS
+        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
+		call Msg(trim(TmpSTR))
+        read(FNumMUT,*) nRCHoption
+        write(TmpSTR,'(a,'//FMT_R8//')') TAB//'Assigning '//domain.name//' recharge option: ',nRCHoption
+		call Msg(trim(TmpSTR))
+        domain.nRCHoption=nRCHoption
+        IF(nRCHoption.EQ.1) then
+            call Msg(TAB//'Option 1 -- recharge to top layer')
+        else IF(nRCHoption.EQ.2) then
+            call Msg(TAB//'option 2 -- recharge to one specified node in each vertical column') 
+        else IF(nRCHoption.EQ.3) then
+            call Msg(TAB//'Option 3 -- recharge to highest active node in each vertical column')
+        else IF(nRCHoption.EQ.4) then
+            call Msg(TAB//'Option 4 -- recharge to swf domain on top of each vertical column')
+        endif
+
+        
+        if(.not. allocated(domain.Recharge)) then ! 
+            allocate(domain.Recharge(domain.nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell recharge array')            
+            domain.Recharge(:)=-999.d0
+        end if
+        
+        do i=1,domain.nCells
+            call set(domain.Cell_Is(i),Recharge)
+            domain.Recharge(i)=0.0d0
+        end do
+        
+        if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
+            Modflow.FNameRCH=trim(Modflow.Prefix)//'.rch'
+            call OpenAscii(Modflow.iRCH,Modflow.FNameRCH)
+            call OpenAscii(Modflow.iRTS,Modflow.FNameRTS)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
+            write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
+            write(Modflow.iNAM,'(a,i4,a)') 'RTS  ',Modflow.iRTS,' '//trim(Modflow.FNameRTS)
+            write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
+            write(Modflow.iRCH,*) domain.nRCHoption, domain.iCBB, 'RTS 1'
+            write(modflow.iRCH,*) 1, 'INRCHZONES 1'   ! inrech, defaults to read one layer of recharge values
+            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
+            if(domain.name == 'GWF') then
+                do i=1,domain.nCells
+                    if(Modflow.GWF.iLayer(i)==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+                    endif
+                end do
+            else if(domain.name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            endif                
+
+
+        else
+            write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
+            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
+            if(domain.name == 'GWF') then
+                do i=1,domain.nCells
+                    if(Modflow.GWF.iLayer(i)==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+                    endif
+                end do
+            else if(domain.name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            endif                
+        end if
+    end subroutine AssignTransientRCHtoDomain
+    !----------------------------------------------------------------------
     subroutine AssignWELtoDomain(FNumMUT,modflow,domain) 
         implicit none
 
@@ -2073,32 +2166,37 @@
                 
                 
                 
-            ! SMS parameter set assignment
+            ! Databases
+            else if(index(instruction, LocalUserbin_CMD)  /= 0) then
+                LocalUserbin=.true.
+                read(FnumMUT,'(a)') LocalUserbinPath
+                call msg(TAB//'Path to local database files: '//trim(LocalUserbinPath))
+    
             else if(index(instruction, SMS_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DefineUserbin(USERBIN)
                 call DB_ReadSMS(trim(USERBIN)//'\'//trim(FName)) 
             else if(index(instruction, SMSParamterSetNumber_CMD)  /= 0) then
                 call SMSParamterSetNumber(FnumMUT)
             
             else if(index(instruction, GWFMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DefineUserbin(USERBIN)
                 call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
 
             else if(index(instruction, CLNMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DefineUserbin(USERBIN)
                 call DB_ReadCLNMaterials(trim(USERBIN)//'\'//trim(FName)) 
             
             else if(index(instruction, SWFMaterialsDatabase_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DefineUserbin(USERBIN)
                 call DB_ReadSWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
             
             else if(index(instruction, ET_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
-                call GET_ENVIRONMENT_VARIABLE('USERBIN',USERBIN)
+                call DefineUserbin(USERBIN)
                 call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
                 
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
@@ -2406,8 +2504,14 @@
                 call AssignSrtoDomain(FnumMUT,modflow.GWF)
             else if(index(instruction, AssignBrookstoGWF_CMD)  /= 0) then
                 call AssignBrookstoDomain(FnumMUT,modflow.GWF)
+
             else if(index(instruction, AssignStartingheadtoGWF_CMD)  /= 0) then
                 call AssignStartingHeadtoDomain(FnumMUT,modflow.GWF)
+            else if(index(instruction, GWFInitialHeadFromTecplotFile_CMD)  /= 0) then
+                call GWFInitialHeadFromTecplotFile(FnumMUT,modflow.GWF)
+            else if(index(instruction, GWFInitialHeadEqualsSurfaceElevation_CMD)  /= 0) then
+                call GWFInitialHeadEqualsSurfaceElevation(modflow.GWF)
+
             else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
                 call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
             else if(index(instruction, InitialHeadFromDepthSatToGWF_CMD)  /= 0) then
@@ -2424,8 +2528,12 @@
                 call AssignMaterialtoSWF(FnumMUT,modflow.SWF)
             else if(index(instruction, AssignSgcltoSWF_CMD)  /= 0) then
                 call AssignSgcltoDomain(FnumMUT,modflow.SWF)
+            
             else if(index(instruction, AssignStartingDepthtoSWF_CMD)  /= 0) then
                 call AssignStartingDepthtoDomain(FnumMUT,modflow.SWF)
+            else if(index(instruction, SWFInitialHeadFromTecplotFile_CMD)  /= 0) then
+                call SWFInitialHeadFromTecplotFile(FnumMUT,modflow.SWF)
+            
             else if(index(instruction, AssignManningtoSWF_CMD)  /= 0) then
                 call AssignManningtoSWF(FnumMUT,modflow.SWF)
             else if(index(instruction, AssignDepressiontoSWF_CMD)  /= 0) then
@@ -2448,8 +2556,12 @@
             ! SWF boundary contitions
             else if(index(instruction, AssignCHDtoSWF_CMD)  /= 0) then
                 call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            
             else if(index(instruction, AssignRCHtoSWF_CMD)  /= 0) then
                 call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            else if(index(instruction, AssignTransientRCHtoSWF_CMD)  /= 0) then
+                call AssignTransientRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            
             else if(index(instruction, AssignWELtoSWF_CMD)  /= 0) then
                 call AssignWELtoDomain(FnumMUT,Modflow,Modflow.SWF)
             else if(index(instruction, AssignCriticalDepthtoSWF_CMD)  /= 0) then
@@ -5603,6 +5715,59 @@
 
     end subroutine GWF_IBOUNDv2_ToTecplot
 
+
+!-------------------------------------------------------------
+    subroutine GWFInitialHeadEqualsSurfaceElevation(domain)
+        implicit none
+
+        type (ModflowDomain) domain
+        
+        integer :: i, modi, nsurf
+        
+        do i=1,domain.nCells
+			modi=mod(i,domain.nodelay)
+			if (modi==0) modi=domain.nodelay
+			nsurf = modi 
+
+			domain.StartingHeads(i) = domain.Top(nsurf)
+		end do
+
+                
+    end subroutine GWFInitialHeadEqualsSurfaceElevation
+!-------------------------------------------------------------
+    subroutine GWFInitialHeadFromTecplotFile(FnumMUT,domain)
+        implicit none
+
+        type (ModflowDomain) domain
+        
+        integer :: i
+        
+        integer(i4) :: FnumMUT
+        integer(i4) :: FNumRestart
+        character(MAX_STR) :: FNameRestart
+        
+        character(4000) :: line
+
+        read(FnumMUT,'(a)') FNameRestart
+        call OpenAscii(FNumRestart,FNameRestart)
+        call Msg( 'GWF restart from tecplot file: '//trim(FNameRestart))
+
+        FindStartString: do
+            read(FNumRestart,'(a)',iostat=status) line
+            if(status /= 0) return
+            
+            if(index(line,'DT=(SINGLE )').gt.0) then
+                read(FNumRestart,*) (domain.StartingHeads(i),i=1,domain.nCells)
+                call Msg('First 10 starting heads:')
+                do i=1,10
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain.StartingHeads(i)
+                    call Msg(trim(TmpSTR))
+                end do
+                exit FindStartString
+            end if
+        end do FindStartString
+                
+    end subroutine GWFInitialHeadFromTecplotFile
     !-------------------------------------------------------------
     subroutine GWFToTecplot(Modflow)
         implicit none
@@ -6310,14 +6475,6 @@
                         end select
                         modflow.GWF.ConnectionLength(j,i)=TMPLT.rCircle(iCell)
                         modflow.GWF.PerpendicularArea(j,i)=modflow.GWF.PerpendicularArea(j,i)*(Modflow.GWF.Top(i)-Modflow.GWF.Bottom(i))
-                        if(i==5) then
-                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell modflow.GWF.l_TMPLT.ConnectionList(j,i) ',modflow.GWF.l_TMPLT.ConnectionList(j,i),' j ',j
-                            call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.ConnectionLength(j,i) ',modflow.GWF.ConnectionLength(j,i)
-                            call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' modflow.GWF.PerpendicularArea(j,i) ',modflow.GWF.PerpendicularArea(j,i)
-                            call msg(TMPStr)
-                        endif
                     else if(TMPLT.nFacesPerElement == 4) then
                         select case (TMPLT_GWF.ThroughFace(j,i))
                         case ( 1 )
@@ -8166,6 +8323,40 @@
         end do read_StressPeriod_instructions
     end subroutine StressPeriod
 
+    !-------------------------------------------------------------
+    subroutine SWFInitialHeadFromTecplotFile(FnumMUT,domain)
+        implicit none
+
+        type (ModflowDomain) domain
+        
+        integer :: i
+        
+        integer(i4) :: FnumMUT
+        integer(i4) :: FNumRestart
+        character(MAX_STR) :: FNameRestart
+        
+        character(4000) :: line
+
+        read(FnumMUT,'(a)') FNameRestart
+        call OpenAscii(FNumRestart,FNameRestart)
+        call Msg( 'SWF restart from tecplot file: '//trim(FNameRestart))
+
+        FindStartString: do
+            read(FNumRestart,'(a)',iostat=status) line
+            if(status /= 0) return
+            
+            if(index(line,'DT=(SINGLE )').gt.0) then
+                read(FNumRestart,*) (domain.StartingHeads(i),i=1,domain.nCells)
+                call Msg('First 10 starting heads:')
+                do i=1,10
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain.StartingHeads(i)
+                    call Msg(trim(TmpSTR))
+                end do
+                exit FindStartString
+            end if
+        end do FindStartString
+                
+    end subroutine SWFInitialHeadFromTecplotFile
     !-------------------------------------------------------------
     subroutine SWFToTecplot(Modflow)
         implicit none

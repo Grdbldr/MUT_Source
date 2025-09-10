@@ -4,7 +4,7 @@ module GeneralRoutines    !### bit setting routines
     use ifwin, only : GetCurrentDirectory
     implicit none
     
-    character(37) :: MUTVersion=' 1.63 BETA'
+    character(37) :: MUTVersion=' 1.64 BETA'
 
 
     
@@ -24,6 +24,8 @@ module GeneralRoutines    !### bit setting routines
     integer(i4), parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
 
     character(MAX_STR) :: USERBIN
+    logical :: LocalUserbin = .false.
+    character(MAX_STR) :: LocalUserbinPath
     
     character(MAX_STR) :: AStr
     character(1), parameter :: BLANK=' '
@@ -4140,7 +4142,19 @@ module GeneralRoutines    !### bit setting routines
 
 
     contains
+    
+    !---------------------------------------------- USERBIN routine
+    subroutine DefineUserbin(str) !--- Message to file and display. Stop.
+    	character(*) :: str
+        
+        if(LocalUserbin) then
+            str=LocalUserbinPath
+        else
+            call GET_ENVIRONMENT_VARIABLE('USERBIN',str)
+        end if
+    end subroutine DefineUserbin
 
+ 
 
     !---------------------------------------------- Message routines
     subroutine ErrMsg(str) !--- Message to file and display. Stop.
@@ -4602,7 +4616,7 @@ module GeneralRoutines    !### bit setting routines
                         len=len_trim(line_i)
 
                         if(line_i(1:1) == '!' .or. len == 0) then  ! a comment or blank line, do nothing
-                            call Msg('   '//line_i(:len))
+                            !call Msg('   '//line_i(:len))
 
                         else ! instruction or data, write to nout
                             write(nout,'(a)') trim(line_i)
