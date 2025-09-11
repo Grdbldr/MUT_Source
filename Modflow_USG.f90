@@ -1746,15 +1746,15 @@
         endif
 
         
-        if(.not. allocated(domain.Recharge)) then ! 
-            allocate(domain.Recharge(domain.nCells),stat=ialloc)
+        if(.not. allocated(domain%Recharge)) then ! 
+            allocate(domain%Recharge(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell recharge array')            
-            domain.Recharge(:)=-999.d0
+            domain%Recharge(:)=-999.d0
         end if
         
-        do i=1,domain.nCells
-            call set(domain.Cell_Is(i),Recharge)
-            domain.Recharge(i)=0.0d0
+        do i=1,domain%nCells
+            call set(domain%cell(i)%is,Recharge)
+            domain%Recharge(i)=rech
         end do
         
         if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
@@ -1769,28 +1769,28 @@
             write(Modflow.iRCH,*) domain.nRCHoption, domain.iCBB, 'RTS 1'
             write(modflow.iRCH,*) 1, 'INRCHZONES ',1165    ! inrech (defaults to read one layer of recharge values), 'INRCHZONES ',1165 (defaults to read current size of rainfall.rts)
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain.name == 'GWF') then
-                do i=1,domain.nCells
-                    if(Modflow.GWF.iLayer(i)==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+            if(domain%name == 'GWF') then
+                do i=1,domain%nCells
+                    if(Modflow%GWF%cell(i)%iLayer==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain.name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            else if(domain%name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
             endif                
 
 
         else
-            write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
+             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain.name == 'GWF') then
-                do i=1,domain.nCells
-                    if(Modflow.GWF.iLayer(i)==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain.recharge(i)
+            if(domain%name == 'GWF') then
+                do i=1,domain%nCells
+                    if(Modflow%GWF%cell(i)%iLayer==1) then
+                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain.name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain.recharge(i),i=1,domain.nCells)
+            else if(domain%name == 'SWF') then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
             endif                
         end if
     end subroutine AssignTransientRCHtoDomain
@@ -5431,12 +5431,12 @@
         
         integer :: i, modi, nsurf
         
-        do i=1,domain.nCells
-			modi=mod(i,domain.nodelay)
-			if (modi==0) modi=domain.nodelay
+        do i=1,domain%nCells
+			modi=mod(i,domain%nodelay)
+			if (modi==0) modi=domain%nodelay
 			nsurf = modi 
 
-			domain.StartingHeads(i) = domain.Top(nsurf)
+			domain%cell(i)%StartingHeads = domain%cell(nsurf)%Top
 		end do
 
                 
@@ -5464,10 +5464,10 @@
             if(status /= 0) return
             
             if(index(line,'DT=(SINGLE )').gt.0) then
-                read(FNumRestart,*) (domain.StartingHeads(i),i=1,domain.nCells)
+                read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
                 do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain.StartingHeads(i)
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do
                 exit FindStartString
@@ -6140,14 +6140,15 @@
                         end select
                         Modflow%GWF%ConnectionLength(j,i)=TMPLT%Element(iCell)%rCircle
                         Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%PerpendicularArea(j,i)*(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)
-                        if(i==5) then
-                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
-                            call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
-                            call msg(TMPStr)
-                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
-                            call msg(TMPStr)
-                        endif
+                        !!!fred temp debug outputs
+                        !!if(i==5) then
+                        !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'Connection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
+                        !!    call msg(TMPStr)
+                        !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
+                        !!    call msg(TMPStr)
+                        !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
+                        !!    call msg(TMPStr)
+                        !!endif
                     else if(TMPLT%nFacesPerElement == 4) then
                         select case (GWFDomain%ThroughFace(j,i))
                         case ( 1 )
@@ -7944,10 +7945,10 @@
             if(status /= 0) return
             
             if(index(line,'DT=(SINGLE )').gt.0) then
-                read(FNumRestart,*) (domain.StartingHeads(i),i=1,domain.nCells)
+                read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
                 do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain.StartingHeads(i)
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do
                 exit FindStartString
@@ -8387,7 +8388,7 @@
         write(FNum,'(5i8)') (TMPLT%element(i)%idZone,i=1,TMPLT%nElements)
             
         write(FNum,'(a)') '# element area'
-        write(FNum,'(5('//FMT_R8//'))') (TMPLT%Element(i)%Area,i=1,TMPLT%nElements)
+        write(FNum,'(5('//FMT_R8//'))') (TMPLT%Element(i)%xyArea,i=1,TMPLT%nElements)
             
         if(TMPLT%TecplotTyp=='fetriangle') then
             write(FNum,'(a)') '# circle radius'

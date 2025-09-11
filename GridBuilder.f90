@@ -159,7 +159,7 @@ module GB
         write(FNum,'(5i8)') (GB_TRI_2D%Element(i)%idZone,i=1,GB_TRI_2D%nElements)
             
         write(FNum,'(a)') '# element area'
-        write(FNum,'(5('//FMT_R8//'))') (GB_TRI_2D%Element(i)%Area,i=1,GB_TRI_2D%nElements)
+        write(FNum,'(5('//FMT_R8//'))') (GB_TRI_2D%Element(i)%xyArea,i=1,GB_TRI_2D%nElements)
                     
         write(FNum,'(a)') '# circle radius'
         write(FNum,'(5('//FMT_R8//'))') (GB_TRI_2D%Element(i)%rCircle,i=1,GB_TRI_2D%nElements)
