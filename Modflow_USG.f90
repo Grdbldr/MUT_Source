@@ -16689,11 +16689,11 @@
         allocate(Modflow%GWF%cell(Modflow%GWF%ncells),stat=ialloc)
         call AllocChk(ialloc,'Modflow%GWF%cell array')
 
-        Modflow%GWF%cell%x = 0 ! automatic initialization
-        Modflow%GWF%cell%y = 0 ! automatic initialization
-        Modflow%GWF%cell%z = 0 ! automatic initialization
+        Modflow%GWF%node%x = 0 ! automatic initialization
+        Modflow%GWF%node%y = 0 ! automatic initialization
+        Modflow%GWF%node%z = 0 ! automatic initialization
         
-        read(Modflow.iGSF,*) (Modflow%GWF%cell(i)%x,Modflow%GWF%cell(i)%y,Modflow%GWF%cell(i)%z,i=1,Modflow%GWF%nNodes)
+        read(Modflow.iGSF,*) (Modflow%GWF%node(i)%x,Modflow%GWF%node(i)%y,Modflow%GWF%node(i)%z,i=1,Modflow%GWF%nNodes)
 
         ! determine the number of nodes per cell (Modflow%GWF%nNodesPerCell)
         if(NodalControlVolume) then
