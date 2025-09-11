@@ -1772,7 +1772,7 @@
             write(Modflow.iNAM,'(a,i4,a)') 'RTS  ',Modflow.iRTS,' '//trim(Modflow.FNameRTS)
             write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
             write(Modflow.iRCH,*) domain.nRCHoption, domain.iCBB, 'RTS 1'
-            write(modflow.iRCH,*) 1, 'INRCHZONES 1'   ! inrech, defaults to read one layer of recharge values
+            write(modflow.iRCH,*) 1, 'INRCHZONES ',1165    ! inrech (defaults to read one layer of recharge values), 'INRCHZONES ',1165 (defaults to read current size of rainfall.rts)
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
             if(domain.name == 'GWF') then
                 do i=1,domain.nCells
