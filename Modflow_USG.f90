@@ -2649,10 +2649,10 @@
         end do
 
 
-        !! Cell zone number
-        !do i=1,Modflow%CLN%nCells
-        !    Modflow%CLN%cell(i)%idZone=Modflow%CLN%iZone(i)
-        !end do
+        ! Cell zone number
+        do i=1,Modflow%CLN%nCells
+            Modflow%CLN%cell(i)%idZone=Modflow%CLN%Element(i)%idZone
+        end do
         
         ! Cell Geometry
         !if(NodalControlVolume) then
@@ -4765,7 +4765,7 @@
         
 	    ! Build a single tecplot file which can have multiple CLN's
         CLNDomain%name='CLNDomain'
-        !CLNDomain.meshtype='UNSTRUCTURED'
+        CLNDomain.meshtype='UNSTRUCTURED'
         CLNDomain%nZones=0
         CLNDomain%nNodesPerElement=2
         CLNDomain%TecplotTyp='felineseg'
@@ -5537,6 +5537,8 @@
         ', datapacking=block, zonetype='//trim(Modflow%GWF%TecplotTyp)
         
         if(NodalControlVolume) then
+            call AppendAuxdata(Modflow,ZoneSTR)
+
             write(FNum,'(a)') trim(ZoneSTR) 
         else
             CellCenteredSTR=', VARLOCATION=([4'
@@ -8556,7 +8558,7 @@
         write(Modflow.iCLN_GSF,'(a)') trim(Modflow%CLN%meshtype)
         write(Modflow.iCLN_GSF,*) Modflow%CLN%nCells, Modflow%CLN%nLayers, Modflow%CLN%iz, Modflow%CLN%ic
         write(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
-        write(Modflow.iCLN_GSF,*) (Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nNodes)
+        write(Modflow.iCLN_GSF,*) (Modflow%CLN%node(i)%x,Modflow%CLN%node(i)%y,Modflow%CLN%node(i)%z,i=1,Modflow%CLN%nNodes)
         do i=1,Modflow%CLN%nCells
             write(Modflow.iCLN_GSF,'(i10,2x,3('//FMT_R4//'),2x,2i10,10i10)') i,Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z, &
                 Modflow%CLN%cell(i)%iLayer,Modflow%CLN%nNodesPerCell,(Modflow%CLN%idNode(j,i),j=1,Modflow%CLN%nNodesPerCell)
@@ -16765,12 +16767,21 @@
         read(Modflow.iCLN_GSF,*) Modflow%CLN%nCells, Modflow%CLN%nLayers, Modflow%CLN%iz, Modflow%CLN%ic
         read(Modflow.iCLN_GSF,*) Modflow%CLN%nNodes
         Modflow%CLN%nElements=Modflow%CLN%nCells
-
-        Modflow%CLN%cell%x = 0 ! automatic initialization
-        Modflow%CLN%cell%y = 0 ! automatic initialization
-        Modflow%CLN%cell%z = 0 ! automatic initialization
         
-        read(Modflow.iCLN_GSF,*) (Modflow%CLN%cell(i)%x,Modflow%CLN%cell(i)%y,Modflow%CLN%cell(i)%z,i=1,Modflow%CLN%nNodes)
+        allocate(Modflow%CLN%node(Modflow%CLN%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%CLN%node array')
+        
+        allocate(Modflow%CLN%element(Modflow%CLN%nelements),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%CLN%element array')
+
+        allocate(Modflow%CLN%cell(Modflow%CLN%ncells),stat=ialloc)
+        call AllocChk(ialloc,'Modflow%CLN%cell array')
+
+        Modflow%CLN%node%x = 0 ! automatic initialization
+        Modflow%CLN%node%y = 0 ! automatic initialization
+        Modflow%CLN%node%z = 0 ! automatic initialization
+
+        read(Modflow.iCLN_GSF,*) (Modflow%CLN%node(i)%x,Modflow%CLN%node(i)%y,Modflow%CLN%node(i)%z,i=1,Modflow%CLN%nNodes)
 
         ! determine the number of nodes per cell (Modflow%CLN%nNodesPerCell)
         read(Modflow.iCLN_GSF,*) i1,r1,r2,r3,i2,Modflow%CLN%nNodesPerCell

@@ -4,10 +4,11 @@ module GeneralRoutines    !### bit setting routines
     use ifwin, only : GetCurrentDirectory
     implicit none
     
+    !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG   
-        character(37) :: MUTVersion=' 1.68 DEBUG'
+        character(37) :: MUTVersion=' 1.68 DEBUG modularization'
     #else
-        character(37) :: MUTVersion=' 1.68 RELEASE'
+        character(37) :: MUTVersion=' 1.68 RELEASE modularization'
     #endif
 
 
