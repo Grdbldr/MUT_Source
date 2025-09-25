@@ -295,6 +295,8 @@ Module MeshGeneration
                     
         TMPLT%nZones=1
         TMPLT%Element%idZone = 1 ! automatic initialization
+        allocate(TMPLT%Zone(TMPLT%nZones),stat=ialloc)
+        call AllocChk(ialloc,'TMPLT%Zone array')
 
         !TMPLT%IsDefined=.true.
         
