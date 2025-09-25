@@ -7,6 +7,9 @@ module GeneralRoutines    !### bit setting routines
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG   
         character(37) :: MUTVersion=' 1.68 DEBUG modularization'
+        integer(i4) :: iDBG
+        character(9) :: FNameDBG='debug.txt'
+
     #else
         character(37) :: MUTVersion=' 1.68 RELEASE modularization'
     #endif
@@ -4268,7 +4271,7 @@ module GeneralRoutines    !### bit setting routines
         integer(i4) :: nSizeIn, nSizeOut
         
         allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
         iTMP(1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -4281,7 +4284,7 @@ module GeneralRoutines    !### bit setting routines
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(iTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowInteger2dArray iTMP array')
         iTMP (:,1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -4294,7 +4297,7 @@ module GeneralRoutines    !### bit setting routines
         integer(i4) :: nSizeIn, nSizeOut
         
         allocate(rTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowRealArray rTMP array')
         rTMP (1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
@@ -4307,7 +4310,7 @@ module GeneralRoutines    !### bit setting routines
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowReal2dArray rTMP array')
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
@@ -4334,7 +4337,7 @@ module GeneralRoutines    !### bit setting routines
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowDReal2dArray rTMP array')
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         

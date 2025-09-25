@@ -15,7 +15,7 @@ module MUT  !### Modflow-USG Tools
     integer(i4) :: FnumUserMUT
     character(40) :: prefix = ''
     integer(i4)	:: l_prfx  = 0
-
+    
     character(MAX_LBL) :: DirName ! directory name
 
     contains
@@ -35,6 +35,11 @@ module MUT  !### Modflow-USG Tools
     subroutine OpenMUT  !--- Modflow user tools  .mut
 
         write(*,'(a)')  'MUT version '//MUTVersion
+        
+        #ifdef _DEBUG   
+            call openascii(iDBG,FNameDBG)
+        #endif
+
 
         ! open the user MUT input file
         call EnterPrefix(prefix,l_prfx,FnumUserMUT,'mut')

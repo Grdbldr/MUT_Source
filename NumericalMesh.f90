@@ -36,8 +36,8 @@ module NumericalMesh
         real(dp) :: yCircle
         real(dp) :: zCircle
         real(dp) :: rCircle     ! triangle inner circle radius
-        real(dp) :: xTangent(3) ! triangle inner circle radius tangent to side
-        real(dp) :: yTangent(3)         
+        !real(dp) :: xTangent(3) ! triangle inner circle radius tangent to side
+        !real(dp) :: yTangent(3)         
         
         real(dp) :: xSide(4)      ! x coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) 
         real(dp) :: ySide(4)      ! y coordinate of either: inner circle radius tangent to side (triangles) or, midpoint(rectangles) 
@@ -75,8 +75,6 @@ module NumericalMesh
         integer(i4) :: njag      ! total number of connections for mesh
         integer(i4), allocatable :: ia(:)      ! number of connectionsper element or cell
         integer(i4), allocatable :: ConnectionList(:,:)    ! connected to cell list (MAX_CNCTS,nCells)
-        real(dp), allocatable :: ConnectionLength(:,:)    ! variable CLN in modflow, not to be confused with CLN (Connected Linear Network)
-        real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
         integer(i4), allocatable :: ThroughFace(:,:)  ! connected through face  (MAX_CNCTS,nCells)
 
         
@@ -102,6 +100,7 @@ module NumericalMesh
     end type mesh
 
     contains
+
 
     !----------------------------------------------------------------------
     subroutine BuildFaceTopologyFrommesh(D)
@@ -243,7 +242,7 @@ module NumericalMesh
         integer(i4) :: nSizeIn, nSizeOut
         
         allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowElementArray iTMP array')
         iTMP(1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -256,7 +255,7 @@ module NumericalMesh
         integer(i4) :: nSizeIn, nSizeOut
         
         allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowNodeArray iTMP array')
         iTMP(1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -269,7 +268,7 @@ module NumericalMesh
         integer(i4) :: nSizeIn, nSizeOut
         
         allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowZoneArray iTMP array')
         iTMP(1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         

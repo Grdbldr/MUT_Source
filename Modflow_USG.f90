@@ -218,6 +218,10 @@
         integer(i4) :: nCells ! number of cells in domain
         type(cell), allocatable :: cell(:) ! array of cells
         integer(i4) :: nNodesPerCell ! number of nodes in cell
+        
+        real(dp), allocatable :: ConnectionLength(:,:)    ! variable named CLN in modflow, not to be confused with CLN (Connected Linear Network)
+        real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
+
 
         
         
@@ -866,8 +870,8 @@
                                         call set(domain%cell(i)%is,CriticalDepth)
                                         domain%nSWBCCells=domain%nSWBCCells+1
                                     endif
-                                    AddToLength=sqrt((domain%node(j1)%x - domain%element(k)%xTangent(j))**2 + &
-                                                     (domain%node(j1)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j1) - domain%xSide(j,k))**2)
+                                    AddToLength=sqrt((domain%node(j1)%x - domain%element(k)%xSide(j))**2 + &
+                                                     (domain%node(j1)%y - domain%element(k)%ySide(j))**2) ! + (domain%node%x(j1) - domain%xSide(j,k))**2)
                                     domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
                                 endif
                                 if(j2==i) then ! this node represents a chosen cell 
@@ -875,8 +879,8 @@
                                         call set(domain%cell(i)%is,CriticalDepth)
                                         domain%nSWBCCells=domain%nSWBCCells+1
                                     endif
-                                    AddToLength=sqrt((domain%node(j2)%x - domain%element(k)%xTangent(j))**2 + &
-                                                     (domain%node(j2)%y - domain%element(k)%yTangent(j))**2) ! + (domain%node%x(j2) - domain%xSide(j,k))**2)
+                                    AddToLength=sqrt((domain%node(j2)%x - domain%element(k)%xSide(j))**2 + &
+                                                     (domain%node(j2)%y - domain%element(k)%ySide(j))**2) ! + (domain%node%x(j2) - domain%xSide(j,k))**2)
                                     domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
                                 endif
                             endif
@@ -2728,7 +2732,7 @@
             Modflow%GWF%Cell%Bottom=0.0d0
 
             icell=0
-            do j=1,GWFDomain%nLayers+1
+            do j=1,Modflow%GWF%nLayers
                 do i=1,TMPLT%nNodes
                     icell=icell+1
                     iNode=i+(j-1)*TMPLT%nNodes
@@ -2739,7 +2743,7 @@
                     if(j==1) then
                         Modflow%GWF%Cell(icell)%Top=GWFDomain%node(iNode)%z
                         Modflow%GWF%Cell(icell)%Bottom=(GWFDomain%node(iNode)%z+GWFDomain%node(iNode+TMPLT%nNodes)%z)/2.0d0
-                    else if(j==GWFDomain%nLayers+1) then
+                    else if(j==Modflow%GWF%nLayers) then
                         Modflow%GWF%Cell(icell)%Top=   (GWFDomain%node(iNode)%z+GWFDomain%node(iNode-TMPLT%nNodes)%z)/2.0d0
                         Modflow%GWF%Cell(icell)%Bottom=GWFDomain%node(iNode)%z 
                     else
@@ -4997,6 +5001,15 @@
         GWFDomain.mesh=TMPLT
 
         
+        if(.not. NodalControlVolume) then
+            call CellGeometry_MeshCentred(GWFDomain) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
+        else
+            call IaJa_CellGeometry_NodeCentred(GWFDomain) ! Convert mesh-centred TMPLT cell connection data to node-centred
+            TMPLT.ia=GWFDomain.ia
+        endif
+
+
+        
         if(TMPLT%nNodes < 1000) then
             user_nz=1000
         else
@@ -5148,44 +5161,31 @@
         
         
         ! GWFDomain Connection data rebuilt here (GenerateLayeredGWFDomain)
-        deallocate(GWFDomain%ia, &
-                 GWFDomain%ConnectionList, &
-                 GWFDomain%ConnectionLength, &
-                 GWFDomain%PerpendicularArea, &
-                 GWFDomain%ThroughFace)
         if(NodalControlVolume) then 
-            allocate(GWFDomain%ia(GWFDomain%nNodes), &
-                     GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nNodes), &
-                     GWFDomain%ConnectionLength(MAX_CNCTS,GWFDomain%nNodes), &
-                     GWFDomain%PerpendicularArea(MAX_CNCTS,GWFDomain%nNodes),stat=ialloc)
-            call AllocChk(ialloc,'GWF CellsFromNodes connection arrays')
+            call growIntegerArray(GWFDomain%ia,TMPLT%nNodes,GWFDomain%nNodes)
+            call GrowInteger2dArray(GWFDomain%ConnectionList,MAX_CNCTS,TMPLT%nNodes,GWFDomain%nNodes)
+            call GrowDReal2dArray(GWFDomain%ConnectionLength,MAX_CNCTS,TMPLT%nNodes,GWFDomain%nNodes)
+            call GrowDReal2dArray(GWFDomain%PerpendicularArea,MAX_CNCTS,TMPLT%nNodes,GWFDomain%nNodes)
         else    
-            allocate(GWFDomain%ia(GWFDomain%nElements), &
-                     GWFDomain%ConnectionList(MAX_CNCTS,GWFDomain%nElements),&
-                     GWFDomain%ConnectionLength(MAX_CNCTS,GWFDomain%nElements), &
-                     GWFDomain%PerpendicularArea(MAX_CNCTS,GWFDomain%nElements), &
-                     GWFDomain%ThroughFace(MAX_CNCTS,GWFDomain%nElements),stat=ialloc)
-            call AllocChk(ialloc,'GWF CellsFromElements connection arrays')
+            call growIntegerArray(GWFDomain%ia,TMPLT%nElements,GWFDomain%nElements)
+            call GrowInteger2dArray(GWFDomain%ConnectionList,MAX_CNCTS,TMPLT%nElements,GWFDomain%nElements)
+            call GrowDReal2dArray(GWFDomain%ConnectionLength,MAX_CNCTS,TMPLT%nElements,GWFDomain%nElements)
+            call GrowDReal2dArray(GWFDomain%PerpendicularArea,MAX_CNCTS,TMPLT%nElements,GWFDomain%nElements)
+            call GrowInteger2dArray(GWFDomain%ThroughFace,MAX_CNCTS,TMPLT%nElements,GWFDomain%nElements)
         endif
 
-        ! GWF mesh is not the same size as TMPLT so the connection arrays are built here
-        GWFDomain%ia(:)=0
-        GWFDomain%ConnectionList(:,:)=0
-        GWFDomain%ConnectionLength(:,:)=0.0
-        GWFDomain%PerpendicularArea(:,:)=0.0
-       
         if(NodalControlVolume) then 
             do j=1,GWFDomain%nLayers+1
                 do i=1,TMPLT%nNodes
                     iGWF_Cell=(j-1)*TMPLT%nNodes+i
                     GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
-                    do k=1,TMPLT%ia(i)
-                        kCell=(j-1)*TMPLT%nNodes+abs(TMPLT%ConnectionList(k,i))
+                    do k=1,GWFDomain%ia(i)
+                        kCell=(j-1)*TMPLT%nNodes+abs(GWFDomain%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                         GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
                     
-                        GWFDomain%ConnectionLength(k,iGWF_Cell)=TMPLT%ConnectionLength(k,i)
-                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=TMPLT%PerpendicularArea(k,i)
+                        GWFDomain%ConnectionLength(k,iGWF_Cell)=GWFDomain%ConnectionLength(k,i)
+                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=GWFDomain%PerpendicularArea(k,i)
                     end do
                     
                     if(j < GWFDomain%nLayers+1) then ! downward connection
@@ -5201,19 +5201,30 @@
                 end do
             end do
         else 
+            #ifdef _DEBUG 
+                write(iDBG,*) 'GenerateLayeredGWFDomain, ConnectionList'
+            #endif
+
             do j=1,GWFDomain%nLayers
+
                 do i=1,TMPLT%nElements
                     iGWF_Cell=(j-1)*TMPLT%nElements+i
                     GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
-                    do k=1,TMPLT%ia(i)
-                        kCell=(j-1)*TMPLT%nElements+abs(TMPLT%ConnectionList(k,i))
+                    #ifdef _DEBUG 
+                        write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
+                    #endif
+                    do k=1,GWFDomain%ia(i)
+                        kCell=(j-1)*TMPLT%nElements+abs(GWFDomain%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                         GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element ',kCell
+                        #endif
                     
-                        GWFDomain%ConnectionLength(k,iGWF_Cell)=TMPLT%ConnectionLength(k,i)
-                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=TMPLT%PerpendicularArea(k,i)
+                        GWFDomain%ConnectionLength(k,iGWF_Cell)=GWFDomain%ConnectionLength(k,i)
+                        GWFDomain%PerpendicularArea(k,iGWF_Cell)=GWFDomain%PerpendicularArea(k,i)
                         
-                        GWFDomain%ThroughFace(k,iGWF_Cell)=TMPLT%ThroughFace(k,i)
+                        GWFDomain%ThroughFace(k,iGWF_Cell)=GWFDomain%ThroughFace(k,i)
 
                     end do
                     
@@ -5221,11 +5232,18 @@
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iDown=iGWF_Cell+TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element below ',iDown
+                        #endif
+
                     end if
                     if(j > 1) then ! upward connection
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iUp=iGWF_Cell-TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element above ',iUp
+                        #endif
                     end if
                 end do
             end do
@@ -5260,6 +5278,12 @@
 
         ! Copy the template mesh to the Modflow SWF data mesh
         SWFDomain.mesh=TMPLT
+        
+        if(.not. NodalControlVolume) then
+            call CellGeometry_MeshCentred(SWFDomain) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
+        else
+            call IaJa_CellGeometry_NodeCentred(SWFDomain) ! Convert mesh-centred TMPLT cell connection data to node-centred
+        endif
         
         SWFDomain.name='SWFDomain'
         SWFDomain.meshtype='UNSTRUCTURED'
@@ -5618,7 +5642,6 @@
         call FreeUnit(FNum)
         
     end subroutine GWFToTecplot
-
     !-------------------------------------------------------------
     subroutine IaJa_MeshCentred(domain)
         implicit none
@@ -5706,6 +5729,7 @@
         return
 
     end subroutine IaJa_MeshCentred
+
     !----------------------------------------------------------------------
     subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
         implicit none
@@ -6109,7 +6133,7 @@
         ! use existing TMPLT%CellArea (e.g. area of triangle)  
         do i=1,Modflow%GWF%nCells
             iCell = myMOD(i,TMPLT%nElements)
-            Modflow%GWF%Cell(i)%Area=TMPLT%Element(iCell)%xyArea
+            Modflow%GWF%Cell(i)%xyArea=TMPLT%Element(iCell)%xyArea
         end do
     
         !allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
@@ -6127,7 +6151,7 @@
                 ! GWF neighbour in same column (above or below)
                 if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then 
                     Modflow%GWF%ConnectionLength(j,i)=(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)/2.0d0
-                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%Area
+                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%xyArea
                 
                 ! GWF neighbour in different column (adjacent)
                 else  
@@ -6192,7 +6216,7 @@
         ! Cell horizontal areas
         ! use existing TMPLT%CellArea (e.g. area of triangle)  
         do i=1,Modflow%SWF%nCells
-            Modflow%SWF%Cell(i)%Area=Modflow%SWF%Element(i)%xyArea
+            Modflow%SWF%Cell(i)%xyArea=Modflow%SWF%Element(i)%xyArea
         end do
 
         Modflow%SWF%njag=0
@@ -7342,7 +7366,7 @@
         
         ! calculate node-centred cell area based on TMPLT%CellArea
         ! do top layer first
-        Modflow%GWF%Cell%Area=0.0d0
+        Modflow%GWF%Cell%xyArea=0.0d0
         do i=1,TMPLT%nElements
             do j=1,TMPLT%nNodesPerElement
                 j1=TMPLT%idNode(j,i)
@@ -7358,7 +7382,7 @@
                             &          TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
                             &          TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%Cell(j1)%Area=Modflow%GWF%Cell(j1)%Area+TriangleArea
+                    Modflow%GWF%Cell(j1)%xyArea=Modflow%GWF%Cell(j1)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  GWFDomain%node(j1)%z, &
                                                            TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   GWFDomain%node(j1)%z)
                     if(bcheck(TMPLT%node(j1)%is,BoundaryNode)) then 
@@ -7370,7 +7394,7 @@
                             &          TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
                             &          TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%Cell(j2)%Area=Modflow%GWF%Cell(j2)%Area+TriangleArea
+                    Modflow%GWF%Cell(j2)%xyArea=Modflow%GWF%Cell(j2)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xCircle,    TMPLT%Element(i)%yCircle,   0.0d0, &
                                                            TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0)
                     if(bcheck(TMPLT%node(j2)%is,BoundaryNode)) then 
@@ -7384,7 +7408,7 @@
                             &          GWFDomain%Element(i)%xSide(j),   GWFDomain%Element(i)%ySide(j),  0.0d0, &
                             &          GWFDomain%Element(i)%x,          GWFDomain%Element(i)%y,         0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%Cell(j1)%Area=Modflow%GWF%Cell(j1)%Area+TriangleArea
+                    Modflow%GWF%Cell(j1)%xyArea=Modflow%GWF%Cell(j1)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,TMPLT%Element(i)%xSide(j),   TMPLT%Element(i)%ySide(j),  0.0d0, &
                                                            GWFDomain%Element(i)%x,      GWFDomain%Element(i)%y,     0.0d0)
                     if(bcheck(TMPLT%node(j1)%is,BoundaryNode)) then 
@@ -7396,7 +7420,7 @@
                             &          GWFDomain%Element(i)%x,       GWFDomain%Element(i)%y,       0.0d0, &
                             &          GWFDomain%Element(i)%xSide(j),GWFDomain%Element(i)%ySide(j),0.0d0, &
                             &          TriangleArea)
-                    Modflow%GWF%Cell(j2)%Area=Modflow%GWF%Cell(j2)%Area+TriangleArea
+                    Modflow%GWF%Cell(j2)%xyArea=Modflow%GWF%Cell(j2)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,GWFDomain%Element(i)%x,       GWFDomain%Element(i)%y,       0.0d0, &
                                                            GWFDomain%Element(i)%xSide(j),GWFDomain%Element(i)%ySide(j),0.0d0)
                     if(bcheck(TMPLT%node(j2)%is,BoundaryNode)) then 
@@ -7415,16 +7439,28 @@
         do i=1,TMPLT%nNodes
             do j=2,Modflow%GWF%nLayers
                 iCell = (j-1)*TMPLT%nNodes+i
-                Modflow%GWF%Cell(icell)%Area=Modflow%GWF%Cell(i)%Area
+                Modflow%GWF%Cell(icell)%xyArea=Modflow%GWF%Cell(i)%xyArea
             end do
         end do
         
         ! Generate connection data from GWFDomain 
-        allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
-                 Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
-        call AllocChk(ialloc,'GWF Cell connection arrays')
+        !allocate(Modflow%GWF%ConnectionLength(MAX_CNCTS,Modflow%GWF%nCells), &
+        !         Modflow%GWF%PerpendicularArea(MAX_CNCTS,Modflow%GWF%nCells),stat=ialloc)
+        !call AllocChk(ialloc,'GWF Cell connection arrays')
         Modflow%GWF%ConnectionLength(:,:)=0.0d0
         Modflow%GWF%PerpendicularArea(:,:)=0.0d0
+        
+        #ifdef _DEBUG
+            if(i==5) then
+                write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
+                call msg(TMPStr)
+                !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
+                !call msg(TMPStr)
+                write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
+                call msg(TMPStr)
+            endif
+        #endif
+
 
         Modflow%GWF%nodelay=TMPLT%nNodes
         do i=1,Modflow%GWF%nCells
@@ -7433,37 +7469,38 @@
             do j=2,Modflow%GWF%ia(i)
                 if(myMOD(i,Modflow%GWF%nodelay) == myMOD(Modflow%GWF%ConnectionList(j,i),Modflow%GWF%nodelay)) then ! GWF neighbour in same column
                     Modflow%GWF%ConnectionLength(j,i)=Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom
-                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%Area
+                    Modflow%GWF%PerpendicularArea(j,i)=Modflow%GWF%Cell(i)%xyArea
                     
-                    !!!fred temp debug outputs
-                    !!if(i==5) then
-                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
-                    !!    call msg(TMPStr)
-                    !!    !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
-                    !!    !call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
-                    !!    call msg(TMPStr)
-                    !!endif
+                    #ifdef _DEBUG
+                        if(i==5) then
+                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'vConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
+                            call msg(TMPStr)
+                            !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
+                            !call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
+                            call msg(TMPStr)
+                        endif
+                    #endif
                 else  ! SWF or GWF neighbour in adjacent column
                     Modflow%GWF%ConnectionLength(j,i)=GWFDomain%ConnectionLength(j,i)
                     Modflow%GWF%PerpendicularArea(j,i)=GWFDomain%PerpendicularArea(j,i)*(Modflow%GWF%Cell(i)%Top-Modflow%GWF%Cell(i)%Bottom)
                     
-                    !!!fred temp debug outputs
-                    !!if(i==5) then
-                    !!    write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
-                    !!    call msg(TMPStr)
-                    !!    !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
-                    !!    !call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' GWFDomain%PerpendicularArea(j,i) ',GWFDomain%PerpendicularArea(j,i)
-                    !!    call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
-                    !!    call msg(TMPStr)
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Top ',Modflow%GWF%Cell(i)%Top
-                    !!    call msg(TMPStr)                        
-                    !!    write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Bottom ',Modflow%GWF%Cell(i)%Bottom
-                    !!    call msg(TMPStr)                        
-                    !!
-                    !!endif
+                    #ifdef _DEBUG
+                        if(i==5) then
+                            write(TMPStr,'(a,i5,a,i5,a,i5)') 'hConnection between cell i ',i,' and cell Modflow%GWF%ConnectionList(j,i) ',Modflow%GWF%ConnectionList(j,i),' j ',j
+                            call msg(TMPStr)
+                            !write(TMPStr,'(a,f15.5)') ' Modflow%GWF%ConnectionLength(j,i) ',Modflow%GWF%ConnectionLength(j,i)
+                            !call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' GWFDomain%PerpendicularArea(j,i) ',GWFDomain%PerpendicularArea(j,i)
+                            call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%PerpendicularArea(j,i) ',Modflow%GWF%PerpendicularArea(j,i)
+                            call msg(TMPStr)
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Top ',Modflow%GWF%Cell(i)%Top
+                            call msg(TMPStr)                        
+                            write(TMPStr,'(a,f15.5)') ' Modflow%GWF%Cell(i)%Bottom ',Modflow%GWF%Cell(i)%Bottom
+                            call msg(TMPStr)                        
+                        endif
+                    #endif
                 end if
             end do
         end do
@@ -7509,7 +7546,7 @@
                             &          Modflow%SWF%element(i)%xSide(j), Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          Modflow%SWF%element(i)%xCircle,  Modflow%SWF%element(i)%yCircle,     0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%cell(j1)%Area=Modflow%SWF%cell(j1)%Area+TriangleArea
+                    Modflow%SWF%cell(j1)%xyArea=Modflow%SWF%cell(j1)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z, &
                         Modflow%SWF%element(i)%xCircle,     Modflow%SWF%element(i)%yCircle,     Modflow%SWF%node(j1)%z)
@@ -7518,7 +7555,7 @@
                             &          Modflow%SWF%element(i)%xCircle,  Modflow%SWF%element(i)%yCircle,     0.0d0, &
                             &          Modflow%SWF%element(i)%xSide(j), Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%cell(j2)%Area=Modflow%SWF%cell(j2)%Area+TriangleArea
+                    Modflow%SWF%cell(j2)%xyArea=Modflow%SWF%cell(j2)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot, &
                         Modflow%SWF%element(i)%xCircle,     Modflow%SWF%element(i)%yCircle,     Modflow%SWF%node(j2)%z, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
@@ -7539,7 +7576,7 @@
                             &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          Modflow%SWF%element(i)%x,Modflow%SWF%Element(i)%y,0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%cell(j1)%Area=Modflow%SWF%cell(j1)%Area+TriangleArea
+                    Modflow%SWF%cell(j1)%xyArea=Modflow%SWF%cell(j1)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j1)%z,&
                         Modflow%SWF%Element(i)%x,           Modflow%SWF%Element(i)%y,           Modflow%SWF%node(j1)%z)
@@ -7548,7 +7585,7 @@
                             &          Modflow%SWF%Element(i)%x,            Modflow%SWF%Element(i)%y,           0.0d0, &
                             &          Modflow%SWF%element(i)%xSide(j),     Modflow%SWF%element(i)%ySide(j),    0.0d0, &
                             &          TriangleArea)
-                    Modflow%SWF%cell(j2)%Area=Modflow%SWF%cell(j2)%Area+TriangleArea
+                    Modflow%SWF%cell(j2)%xyArea=Modflow%SWF%cell(j2)%xyArea+TriangleArea
                     call Line3DSegment_Tecplot(FNumTecplot,&
                         Modflow%SWF%Element(i)%x,           Modflow%SWF%Element(i)%y,           Modflow%SWF%node(j2)%z, &
                         Modflow%SWF%element(i)%xSide(j),    Modflow%SWF%element(i)%ySide(j),    Modflow%SWF%node(j2)%z)
@@ -8032,7 +8069,7 @@
         write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%cell(i)%StartingHeads-Modflow%SWF%cell(i)%z,i=1,Modflow%SWF%nCells)
 
         write(FNum,'(a)') '# Cell Area'
-        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%Cell(i)%Area,i=1,Modflow%SWF%nCells)
+        write(FNum,'(5('//FMT_R8//'))') (Modflow%SWF%Cell(i)%xyArea,i=1,Modflow%SWF%nCells)
         
         do i=1,Modflow%SWF%nElements
             if(Modflow%SWF%nNodesPerElement==3) then ! 3-node triangle, repeat node 3 for 4-node tecplot type fequadrilateral
@@ -8065,93 +8102,89 @@
         ! These routines required for both node- and mesh-centred control volume cases
         call BuildFaceTopologyFrommesh(TMPLT)  
         call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
-        call IaJa_MeshCentred(TMPLT) 
         
-        if(.not. NodalControlVolume) then
-            call CellGeometry_MeshCentred(TMPLT) ! calculate ConnectionLength and PerpendicularArea for mesh-centred case
-        else
-            call IaJa_CellGeometry_NodeCentred(TMPLT) ! Convert mesh-centred TMPLT cell connection data to node-centred
-        endif
+        call IaJa_MeshCentred(TMPLT) 
+
         
         
         continue
     end subroutine TemplateBuild
     
     !-------------------------------------------------------------
-    subroutine CellGeometry_MeshCentred(TMPLT)
+    subroutine CellGeometry_MeshCentred(domain)
         implicit none
-        type (mesh) TMPLT
+        type (ModflowDomain) domain
 
         integer(i4) :: i, j
 
         ! Cell connection length and perpendicular area arrays
-        allocate(TMPLT%ConnectionLength(MAX_CNCTS,TMPLT%nElements), &
-                 TMPLT%PerpendicularArea(MAX_CNCTS,TMPLT%nElements),stat=ialloc)
-        call AllocChk(ialloc,'TMPLT Cell ConnectionLength, PerpendicularArea arrays')
-        TMPLT%ConnectionLength(:,:)=0.0
-        TMPLT%PerpendicularArea(:,:)=0.0
+        allocate(domain%ConnectionLength(MAX_CNCTS,domain%nElements), &
+                 domain%PerpendicularArea(MAX_CNCTS,domain%nElements),stat=ialloc)
+        call AllocChk(ialloc,'domain Cell ConnectionLength, PerpendicularArea arrays')
+        domain%ConnectionLength(:,:)=0.0
+        domain%PerpendicularArea(:,:)=0.0
 
-        do i=1,TMPLT%nElements
+        do i=1,domain%nElements
                     
-            do j=2,TMPLT%ia(i)
-                ! 2D TMPLT neighbours are always in an adjacent column of the mesh so use sidelength
-                if(TMPLT%nNodesPerElement == 3) then
-                    select case (TMPLT%ThroughFace(j,i))
+            do j=2,domain%ia(i)
+                ! 2D domain neighbours are always in an adjacent column of the mesh so use sidelength
+                if(domain%nNodesPerElement == 3) then
+                    select case (domain%ThroughFace(j,i))
                         case ( 1 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(1)   
+                            domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(1)   
                         case ( 2 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(2)   
+                            domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(2)   
                         case ( 3 )
-                            TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(3)   
+                            domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(3)   
                         case ( 4 )  ! must be 8-node block
                             call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
                     end select
-                    TMPLT%ConnectionLength(j,i)=TMPLT%Element(i)%rCircle
-                    TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
-                else if(TMPLT%nNodesPerElement == 4) then
-                    select case (TMPLT%ThroughFace(j,i))
+                    domain%ConnectionLength(j,i)=domain%Element(i)%rCircle
+                    domain%PerpendicularArea(j,i)=domain%PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
+                else if(domain%nNodesPerElement == 4) then
+                    select case (domain%ThroughFace(j,i))
                     case ( 1 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(1)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(1,i))**2 + &
-                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(1,i))**2)
+                        domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(1)   
+                        domain%ConnectionLength(j,i)=sqrt((domain%Element(i)%x-domain%FaceCentroidX(1,i))**2 + &
+                                                         (domain%Element(i)%y-domain%FaceCentroidY(1,i))**2)
                     case ( 2 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(2)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(2,i))**2 + &
-                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(2,i))**2)
+                        domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(2)   
+                        domain%ConnectionLength(j,i)=sqrt((domain%Element(i)%x-domain%FaceCentroidX(2,i))**2 + &
+                                                         (domain%Element(i)%y-domain%FaceCentroidY(2,i))**2)
                     case ( 3 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(3)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(3,i))**2 + &
-                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(3,i))**2)
+                        domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(3)   
+                        domain%ConnectionLength(j,i)=sqrt((domain%Element(i)%x-domain%FaceCentroidX(3,i))**2 + &
+                                                         (domain%Element(i)%y-domain%FaceCentroidY(3,i))**2)
                     case ( 4 )
-                        TMPLT%PerpendicularArea(j,i)=TMPLT%Element(i)%SideLength(4)   
-                        TMPLT%ConnectionLength(j,i)=sqrt((TMPLT%Element(i)%x-TMPLT%FaceCentroidX(4,i))**2 + &
-                                                         (TMPLT%Element(i)%y-TMPLT%FaceCentroidY(4,i))**2)
+                        domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(4)   
+                        domain%ConnectionLength(j,i)=sqrt((domain%Element(i)%x-domain%FaceCentroidX(4,i))**2 + &
+                                                         (domain%Element(i)%y-domain%FaceCentroidY(4,i))**2)
                     end select
-                    TMPLT%PerpendicularArea(j,i)=TMPLT%PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
+                    domain%PerpendicularArea(j,i)=domain%PerpendicularArea(j,i)**1.0d0  ! assume thickness of 1?
                 end if
             end do
         end do
     end subroutine CellGeometry_MeshCentred
     !-------------------------------------------------------------
-    subroutine IaJa_CellGeometry_NodeCentred(TMPLT)
-        ! Convert TMPLT IaJa structure from mesh-centred to node-centred 
+    subroutine IaJa_CellGeometry_NodeCentred(domain)
+        ! Convert domain IaJa structure from mesh-centred to node-centred 
         ! Calculate node-centred cell ConnectionLength and PerpendicularArea arrays
         implicit none
-        type(mesh) TMPLT
+        type(ModflowDomain) domain
         
         integer(i4) :: i, j, jNode, kNode
         
         real(dp) :: FractionSide
         
-        integer(i4) :: ia_TMP(TMPLT%nNodes)
-        integer(i4) :: ConnectionList_TMP(MAX_CNCTS,TMPLT%nNodes)
-        real(dp) :: ConnectionLength_TMP(MAX_CNCTS,TMPLT%nNodes)
-        real(dp) :: PerpendicularArea_TMP(MAX_CNCTS,TMPLT%nNodes)
+        integer(i4) :: ia_TMP(domain%nNodes)
+        integer(i4) :: ConnectionList_TMP(MAX_CNCTS,domain%nNodes)
+        real(dp) :: ConnectionLength_TMP(MAX_CNCTS,domain%nNodes)
+        real(dp) :: PerpendicularArea_TMP(MAX_CNCTS,domain%nNodes)
         
         integer(i4) :: iSort(MAX_CNCTS)
 
         
-        ! If TMPLT defined by triangles with inner circles then:
+        ! If domain defined by triangles with inner circles then:
         !For xSide, ySide intercept calc
 	    real(dp) :: xc1, yc1, xc2, yc2
 	    real(dp) :: xs1, ys1, xs2, ys2
@@ -8159,42 +8192,42 @@
 	    real(dp) :: del, del2
 	    real(dp) :: rseg, rcut
         
-        ! For xSide, ySide circle tangent
+        ! For calculating xSide, ySide as triangle inner circle tangent
         integer(i4) :: j1, j2
         real(dp) :: D, DC, D1, D2, RC
         
         !! For node-centred modflow cell connection and area calculations we need xSide, ySide array coordinates
-        !allocate(TMPLT%xSide(TMPLT%nNodesPerElement,TMPLT%nElements), &
-        !            TMPLT%ySide(TMPLT%nNodesPerElement,TMPLT%nElements),stat=ialloc)
+        !allocate(domain%xSide(domain%nNodesPerElement,domain%nElements), &
+        !            domain%ySide(domain%nNodesPerElement,domain%nElements),stat=ialloc)
         !call AllocChk(ialloc,'GB xSide, ySide')
         
         ! xSide, ySide at circle centre intersections for neighbouring elements
-        do i=1,TMPLT%nElements
-            do j=2,TMPLT%ia(i)
+        do i=1,domain%nElements
+            do j=2,domain%ia(i)
                 
                 ! Coordinates of face endpoints
-                xc1=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i),i))%x
-			    yc1=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i),i))%y
-                if(TMPLT%ThroughFace(j,i) < TMPLT%nNodesPerElement) then ! connect to next node
-                    xc2=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i)+1,i))%x
-			        yc2=TMPLT%node(TMPLT%idNode(TMPLT%ThroughFace(j,i)+1,i))%y
+                xc1=domain%node(domain%idNode(domain%ThroughFace(j,i),i))%x
+			    yc1=domain%node(domain%idNode(domain%ThroughFace(j,i),i))%y
+                if(domain%ThroughFace(j,i) < domain%nNodesPerElement) then ! connect to next node
+                    xc2=domain%node(domain%idNode(domain%ThroughFace(j,i)+1,i))%x
+			        yc2=domain%node(domain%idNode(domain%ThroughFace(j,i)+1,i))%y
                 else ! connect to node 1
-                    xc2=TMPLT%node(TMPLT%idNode(1,i))%x
-			        yc2=TMPLT%node(TMPLT%idNode(1,i))%y
+                    xc2=domain%node(domain%idNode(1,i))%x
+			        yc2=domain%node(domain%idNode(1,i))%y
                 end if
                 
-                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
+                if(domain%nNodesPerElement == 3) then ! fetriangles 
                     ! Coordinates of neighbour circle centres
-			        xs1=TMPLT%Element(i)%xCircle
-			        ys1=TMPLT%Element(i)%yCircle
-			        xs2=TMPLT%Element(TMPLT%Connectionlist(j,i))%xCircle
-			        ys2=TMPLT%Element(TMPLT%Connectionlist(j,i))%yCircle
-                else if (TMPLT%nNodesPerElement == 4) then ! quadrilateral 
+			        xs1=domain%Element(i)%xCircle
+			        ys1=domain%Element(i)%yCircle
+			        xs2=domain%Element(domain%Connectionlist(j,i))%xCircle
+			        ys2=domain%Element(domain%Connectionlist(j,i))%yCircle
+                else if (domain%nNodesPerElement == 4) then ! quadrilateral 
                     ! Coordinates of neighbour cell centre (cell%x,cell%y)
-			        xs1=TMPLT%Element(i)%x
-			        ys1=TMPLT%Element(i)%y
-			        xs2=TMPLT%Element(TMPLT%Connectionlist(j,i))%x
-			        ys2=TMPLT%Element(TMPLT%Connectionlist(j,i))%y
+			        xs1=domain%Element(i)%x
+			        ys1=domain%Element(i)%y
+			        xs2=domain%Element(domain%Connectionlist(j,i))%x
+			        ys2=domain%Element(domain%Connectionlist(j,i))%y
                 endif
 			    !
 			    !  The following 6 lines determine if the two segments intersect
@@ -8204,8 +8237,8 @@
 				    rseg=1.-((yc2-yc1)*(xc2-xs2)-(xc2-xc1)*(yc2-ys2))/del
 				    rcut=1.-((ys2-ys1)*(xs2-xc2)-(xs2-xs1)*(ys2-yc2))/del2
 				    if (rseg.ge.0.0  .AND. rseg.le.1.0 .AND. rcut.ge.0.0 .AND. rcut.le.1.0)    then
-					    TMPLT%element(i)%xTangent(TMPLT%ThroughFace(j,i))=xs1*(1.0-rseg)+xs2*rseg
-					    TMPLT%element(i)%yTangent(TMPLT%ThroughFace(j,i))=ys1*(1.0-rseg)+ys2*rseg
+					    domain%element(i)%xSide(domain%ThroughFace(j,i))=xs1*(1.0-rseg)+xs2*rseg
+					    domain%element(i)%ySide(domain%ThroughFace(j,i))=ys1*(1.0-rseg)+ys2*rseg
                     else
                         call ErrMsg('Lines do not intersect')
                     end if
@@ -8214,27 +8247,27 @@
             end do
         end do
         
-        do i=1,TMPLT%nElements
-            do j=1,TMPLT%nFacesPerElement
-                j1=TMPLT%idNode(TMPLT%LocalFaceNodes(1,j),i)
-                j2=TMPLT%idNode(TMPLT%LocalFaceNodes(2,j),i)
+        do i=1,domain%nElements
+            do j=1,domain%nFacesPerElement
+                j1=domain%idNode(domain%LocalFaceNodes(1,j),i)
+                j2=domain%idNode(domain%LocalFaceNodes(2,j),i)
                 
-                if(TMPLT%FaceNeighbour(j,i) == 0) then ! face on boundary
+                if(domain%FaceNeighbour(j,i) == 0) then ! face on boundary
                 
-                    if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
+                    if(domain%nNodesPerElement == 3) then ! fetriangles 
                         ! xSide, ySide at circle tangent for boundary element sides
-                        RC=TMPLT%Element(i)%rCircle
-                        DC=sqrt((TMPLT%Element(i)%xCircle-TMPLT%node(j1)%x)**2+(TMPLT%Element(i)%yCircle-TMPLT%node(j1)%y)**2)
-                        D=TMPLT%Element(i)%SideLength(j)
+                        RC=domain%Element(i)%rCircle
+                        DC=sqrt((domain%Element(i)%xCircle-domain%node(j1)%x)**2+(domain%Element(i)%yCircle-domain%node(j1)%y)**2)
+                        D=domain%Element(i)%SideLength(j)
                         D1=sqrt(DC*DC-RC*RC)
                         D2=D-D1
                 
-                        TMPLT%element(i)%xSide(j)=TMPLT%node(j1)%x+(TMPLT%node(j2)%x-TMPLT%node(j1)%x)*D1/D
-                        TMPLT%element(i)%ySide(j)=TMPLT%node(j1)%y+(TMPLT%node(j2)%y-TMPLT%node(j1)%y)*D1/D
-                    else if(TMPLT%nNodesPerElement == 4) then ! quadrilateral 
+                        domain%element(i)%xSide(j)=domain%node(j1)%x+(domain%node(j2)%x-domain%node(j1)%x)*D1/D
+                        domain%element(i)%ySide(j)=domain%node(j1)%y+(domain%node(j2)%y-domain%node(j1)%y)*D1/D
+                    else if(domain%nNodesPerElement == 4) then ! quadrilateral 
                         ! xSide, ySide at midpoint of boundary element sides
-                        TMPLT%element(i)%xSide(j)=(TMPLT%node(j1)%x+TMPLT%node(j2)%x)/2.0d0
-                        TMPLT%element(i)%ySide(j)=(TMPLT%node(j1)%y+TMPLT%node(j2)%y)/2.0d0
+                        domain%element(i)%xSide(j)=(domain%node(j1)%x+domain%node(j2)%x)/2.0d0
+                        domain%element(i)%ySide(j)=(domain%node(j1)%y+domain%node(j2)%y)/2.0d0
                     end if
                     
                 end if
@@ -8244,92 +8277,92 @@
         
         call Msg(' ')
         call Msg('In routine IaJa_CellGeometry_NodeCentred ')
-        call Msg('  Generating cell connection arrays for TMPLT '//trim(TMPLT%name)//'...')
+        call Msg('  Generating cell connection arrays for domain '//trim(domain%name)//'...')
         
         ConnectionList_TMP(:,:)=0
         ConnectionLength_TMP(:,:)=0
         PerpendicularArea_TMP(:,:)=0
         
-        do i=1,TMPLT%nNodes
+        do i=1,domain%nNodes
             ia_TMP(i)=1
             ConnectionList_TMP(ia_TMP(i),i)=-i
         end do
 
         ! Loop in order around nodes in element and form cell connection lists
-        do i=1,TMPLT%nElements
-            do j=1,TMPLT%nNodesPerElement
-                jNode=TMPLT%idNode(j,i)
-                if(j == TMPLT%nNodesPerElement) then
-                    kNode=TMPLT%idNode(1,i)
+        do i=1,domain%nElements
+            do j=1,domain%nNodesPerElement
+                jNode=domain%idNode(j,i)
+                if(j == domain%nNodesPerElement) then
+                    kNode=domain%idNode(1,i)
                 else
-                    kNode=TMPLT%idNode(J+1,i)
+                    kNode=domain%idNode(J+1,i)
                 end if
                 
                 ! jnode 
                 ia_TMP(jNode)=ia_TMP(jNode)+1
                 ConnectionList_TMP(ia_TMP(jNode),jNode)=kNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                FractionSide=sqrt((TMPLT%node(jNode)%x-TMPLT%element(i)%xSide(j))**2+(TMPLT%node(jNode)%y-TMPLT%element(i)%ySide(j))**2)/TMPLT%Element(i)%SideLength(j)
-                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*TMPLT%Element(i)%SideLength(j)
-                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
-                    if(TMPLT%ConnectionList(j,i) > 0) then
+                FractionSide=sqrt((domain%node(jNode)%x-domain%element(i)%xSide(j))**2+(domain%node(jNode)%y-domain%element(i)%ySide(j))**2)/domain%Element(i)%SideLength(j)
+                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*domain%Element(i)%SideLength(j)
+                if(domain%nNodesPerElement == 3) then ! fetriangles 
+                    if(domain%ConnectionList(j,i) > 0) then
                         PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
-                            (TMPLT%Element(i)%xCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%xCircle)**2+ &
-                            (TMPLT%Element(i)%yCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%yCircle)**2)
+                            (domain%Element(i)%xCircle-domain%Element(domain%ConnectionList(j,i))%xCircle)**2+ &
+                            (domain%Element(i)%yCircle-domain%Element(domain%ConnectionList(j,i))%yCircle)**2)
                     else
                         PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
-                            (TMPLT%Element(i)%xCircle-TMPLT%element(i)%xSide(j))**2+ &
-                            (TMPLT%Element(i)%yCircle-TMPLT%element(i)%ySide(j))**2)
+                            (domain%Element(i)%xCircle-domain%element(i)%xSide(j))**2+ &
+                            (domain%Element(i)%yCircle-domain%element(i)%ySide(j))**2)
                     endif    
                 else
-                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=TMPLT%Element(i)%SideLength(j)
+                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=domain%Element(i)%SideLength(j)
                 endif
 
                 ! knode 
                 ia_TMP(kNode)=ia_TMP(kNode)+1
                 ConnectionList_TMP(ia_TMP(kNode),kNode)=jNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*TMPLT%Element(i)%SideLength(j)
-                if(TMPLT%nNodesPerElement == 3) then ! fetriangles 
-                    if(TMPLT%ConnectionList(j,i) > 0) then
+                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*domain%Element(i)%SideLength(j)
+                if(domain%nNodesPerElement == 3) then ! fetriangles 
+                    if(domain%ConnectionList(j,i) > 0) then
                         PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
-                            (TMPLT%Element(i)%xCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%xCircle)**2+ &
-                            (TMPLT%Element(i)%yCircle-TMPLT%Element(TMPLT%ConnectionList(j,i))%yCircle)**2)
+                            (domain%Element(i)%xCircle-domain%Element(domain%ConnectionList(j,i))%xCircle)**2+ &
+                            (domain%Element(i)%yCircle-domain%Element(domain%ConnectionList(j,i))%yCircle)**2)
                     else
                         PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
-                            (TMPLT%Element(i)%xCircle-TMPLT%element(i)%xSide(j))**2+ &
-                            (TMPLT%Element(i)%yCircle-TMPLT%element(i)%ySide(j))**2)
+                            (domain%Element(i)%xCircle-domain%element(i)%xSide(j))**2+ &
+                            (domain%Element(i)%yCircle-domain%element(i)%ySide(j))**2)
                     endif
                 else
-                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=TMPLT%Element(i)%SideLength(j)
+                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=domain%Element(i)%SideLength(j)
                 endif
             end do
         end do
         
         ! Sort cell connection list, remove duplicates and determine ia
-        deallocate(TMPLT%ia, TMPLT%ConnectionList)
-        allocate(TMPLT%ia(TMPLT%nNodes), &
-                 TMPLT%ConnectionList(MAX_CNCTS,TMPLT%nNodes), &
-                 TMPLT%ConnectionLength(MAX_CNCTS,TMPLT%nNodes), &
-                 TMPLT%PerpendicularArea(MAX_CNCTS,TMPLT%nNodes), stat=ialloc)
-        call AllocChk(ialloc,trim(TMPLT%name)//' node-centred ia arrays')
-        TMPLT%ia(:)=0.
-        TMPLT%ConnectionList(:,:)=0.
-        TMPLT%ConnectionLength(:,:)=0.0
-        TMPLT%PerpendicularArea(:,:)=0.0
+        deallocate(domain%ia, domain%ConnectionList)
+        allocate(domain%ia(domain%nNodes), &
+                 domain%ConnectionList(MAX_CNCTS,domain%nNodes), &
+                 domain%ConnectionLength(MAX_CNCTS,domain%nNodes), &
+                 domain%PerpendicularArea(MAX_CNCTS,domain%nNodes), stat=ialloc)
+        call AllocChk(ialloc,trim(domain%name)//' node-centred ia arrays')
+        domain%ia(:)=0.
+        domain%ConnectionList(:,:)=0.
+        domain%ConnectionLength(:,:)=0.0
+        domain%PerpendicularArea(:,:)=0.0
 
         
-        do i=1,TMPLT%nNodes
+        do i=1,domain%nNodes
             call indexx_int(MAX_CNCTS,ConnectionList_TMP(:,i),iSort)
-            TMPLT%ia(i)=1
-            TMPLT%ConnectionList(1,i)=i
+            domain%ia(i)=1
+            domain%ConnectionList(1,i)=i
             do j=2,MAX_CNCTS
                 if(ConnectionList_TMP(isort(j),i) == 0) cycle
                 if(ConnectionList_TMP(isort(j),i) == abs(ConnectionList_TMP(isort(j-1),i)) ) cycle  
-                TMPLT%ia(i)=TMPLT%ia(i)+1
-                TMPLT%ConnectionList(TMPLT%ia(i),i)=ConnectionList_TMP(isort(j),i)
-                TMPLT%ConnectionLength(TMPLT%ia(i),i)=ConnectionLength_TMP(isort(j),i)
-                TMPLT%PerpendicularArea(TMPLT%ia(i),i)=PerpendicularArea_TMP(isort(j),i)
+                domain%ia(i)=domain%ia(i)+1
+                domain%ConnectionList(domain%ia(i),i)=ConnectionList_TMP(isort(j),i)
+                domain%ConnectionLength(domain%ia(i),i)=ConnectionLength_TMP(isort(j),i)
+                domain%PerpendicularArea(domain%ia(i),i)=PerpendicularArea_TMP(isort(j),i)
             end do
         end do
            
@@ -8702,7 +8735,7 @@
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
                 nEnd = nStrt + Modflow%GWF%nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%Area,k=nStrt,nEnd)
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%xyArea,k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         else
@@ -8710,7 +8743,7 @@
                 write(TmpSTR,'(i5)') i
                 write(Modflow.iDISU,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  Horizontal Area Layer '//trim(TmpSTR)
                 nEnd = nStrt + Modflow%GWF%nodelay-1
-                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%Area,k=nStrt,nEnd)
+                write(Modflow.iDISU,'(5('//FMT_R8//'))') (Modflow%GWF%cell(k)%xyArea,k=nStrt,nEnd)
                 nStrt=nEnd+1
             end do
         end if
@@ -8972,7 +9005,7 @@
         
         write(Modflow.iSWF,'(a)') '#    IFNO    IFTYP            FAREA               FELEV        ISSWADI'
         do i=1,Modflow%SWF%nCells
-            write(Modflow.iSWF,'(2i9,2('//FMT_R8//'),i9)') i, 1, Modflow%SWF%Cell(i)%Area, Modflow%SWF%cell(i)%z,0
+            write(Modflow.iSWF,'(2i9,2('//FMT_R8//'),i9)') i, 1, Modflow%SWF%Cell(i)%xyArea, Modflow%SWF%cell(i)%z,0
         end do
 
         write(Modflow.iSWF,'(a)') '#    IFNO   IFGWNO       IFCON                 SGCL          SGCAREA       ISGWADI'
