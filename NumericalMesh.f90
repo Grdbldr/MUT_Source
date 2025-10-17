@@ -98,6 +98,13 @@ module NumericalMesh
 
 
     end type mesh
+   
+    type MeshGroup
+        integer (i4) :: nMesh=0
+        type(mesh), allocatable :: mesh(:) ! array of meshes
+    end type MeshGroup
+
+
 
     contains
 
@@ -234,6 +241,19 @@ module NumericalMesh
      
     end subroutine BuildFaceTopologyFrommesh
 
+    !----------------------------------------------------------------------
+    subroutine GrowMeshArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        type(mesh), allocatable :: iArray(:)
+        type(mesh), allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'GrowElementArray iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowMeshArray
     !----------------------------------------------------------------------
     subroutine GrowElementArray(iArray,nSizeIn,nSizeout)
         implicit none

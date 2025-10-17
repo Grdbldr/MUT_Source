@@ -1,7 +1,9 @@
 module MUT  !### Modflow-USG Tools
     use GeneralRoutines
+    use MeshGen
     use MUSG
     use tecplot
+    use NumericalMesh
     
     implicit none
 
@@ -75,7 +77,19 @@ module MUT  !### Modflow-USG Tools
     subroutine ProcessMUT !--- Command processor for Modflow-USG Tools (.mut file extension)
 
         type (ModflowProject) MyProject
+        
+        type(MeshGroup) MyMeshGroup
         !type (HGSProject) MyHGS
+        
+        ! Ways to define the 2D template mesh
+        character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'
+        character(MAX_INST) :: QuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
+        character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
+        character(MAX_INST) :: GenerateVariableRectangles_CMD  =   'generate variable rectangles'
+        character(MAX_INST) :: GenerateSegmentsFromXYZEndpoints_CMD  =   'generate segments from xyz endpoints'
+        ! There are many other possible 2d mesh definition options e.g.
+        !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
+
         do
             read(FnumMUT,'(a)',iostat=status,end=10) MUT_CMD
             call LwrCse(MUT_CMD)
@@ -100,8 +114,68 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, ElapsedTime_CMD) /= 0) then
                 read(FnumMUT,*) l1
                 call ElapsedTime(l1)
+                
+            ! Mesh generation options
+            else if(index(MUT_CMD, MeshFromGb_CMD)  /= 0) then
+                NeedGBName=.true.
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+        
+                if(MyMeshGroup%nMesh > 1) then
+                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                else    
+                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
+                    call AllocChk(ialloc,'New mesh from instruction: '//trim(MUT_CMD))
+                end if
 
+                call ReadGridBuilderMesh(FNumMut,MyMeshGroup%Mesh(MyMeshGroup%nMesh))                
+                !TMPLT.Name='TMPLT'
+                !!call MeshFromGb(FnumMUT,TMPLT)
+                !call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            
+            else if(index(MUT_CMD, GenerateUniformRectangles_CMD)  /= 0) then
+                ! Build the 2D template mesh from a uniform 2D rectangular mesh
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+        
+                if(MyMeshGroup%nMesh > 1) then
+                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                else    
+                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
+                    call AllocChk(ialloc,'MyMeshGroup%Mesh GridBuilder mesh array')
+                end if
+                call GenerateUniformRectangles(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
+                
+                
+                
+                
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            !    JustBuilt=.true.
+            !
+            !else if(index(MUT_CMD, GenerateVariableRectangles_CMD)  /= 0) then
+            !    ! Build the 2D template mesh from a variable 2D rectangular mesh
+            !    call GenerateVariableRectangles(FnumMUT,TMPLT)
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            !    JustBuilt=.true.
+                
+            else if(index(MUT_CMD, GenerateSegmentsFromXYZEndpoints_CMD)  /= 0) then
+                ! Build the 2D template mesh from a uniform 2D rectangular mesh
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+        
+                if(MyMeshGroup%nMesh > 1) then
+                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                else    
+                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
+                    call AllocChk(ialloc,'MyMeshGroup%Mesh segment mesh array')
+                end if
+                call GenerateSegmentsFromXYZEndpoints(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
 
+            
+            !else if(index(MUT_CMD, QuadtreeMeshFromGWV_CMD)  /= 0) then
+            !    ! Build the 2D template mesh from a grdbldr 2D mesh
+            !    call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+           
+                
+            ! Modflow options
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
                 call BuildModflowUSG(FnumMUT,MyProject,prefix)
 

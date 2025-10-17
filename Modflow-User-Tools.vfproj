@@ -54,18 +54,16 @@
 		<Filter Name="Header Files" Filter="fi;fd;h;inc"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-			<File RelativePath=".\BasicTypes.f90">
-			</File>
+			<File RelativePath=".\BasicTypes.f90"/>
 			<File RelativePath=".\GeneralRoutines.f90"/>
 			<File RelativePath=".\GenericList.f90"/>
-			<File RelativePath=".\GridBuilder.f90"/>
-			<File RelativePath=".\KindParameters.f90"/>
+			<File RelativePath=".\KindParameters.f90">
+			</File>
 			<File RelativePath=".\Materials.f90"/>
 			<File RelativePath=".\MeshGeneration.f90"/>
 			<File RelativePath=".\Modflow_USG.f90"/>
 			<File RelativePath=".\MUSGModules.f90"/>
-			<File RelativePath=".\NumericalMesh.f90">
-			</File>
+			<File RelativePath=".\NumericalMesh.f90"/>
 			<File RelativePath=".\openspec.inc"/>
 			<File RelativePath=".\pre.f90"/>
 			<File RelativePath=".\raster.f90"/>

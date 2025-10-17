@@ -1,8 +1,11 @@
-Module MeshGeneration
+Module MeshGen
     use GeneralRoutines
     use NumericalMesh
     use Tecplot
     implicit none
+    
+    logical :: NeedGBName=.false. ! flag to indicate if GridBuilder name is needed
+
 
     integer(i4) :: user_nz
     integer(i4) :: user_maxnlayer=50
@@ -59,11 +62,369 @@ Module MeshGeneration
 	    call freeunit(itmp)
 
     end subroutine list_file_elevation
-    
     !----------------------------------------------------------------------
-    subroutine GenerateUniformRectangles(FNum,U_RECT_2D)
+    subroutine ReadGridBuilderMesh(FNumMUT,GB_TRI_2D)
         implicit none
-        integer(i4) :: FNum
+        type(mesh) GB_TRI_2D
+        
+        integer(i4) :: FNumMUT
+        
+        character(128) :: GBPathToFile
+
+        integer(i4) :: i,j
+        real(dp) :: x(3),y(3)
+        real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
+        
+        
+        if(NeedGBName) then
+            read(FNumMut,'(a80)') TmpSTR
+            GB_TRI_2D%Name=TmpSTR
+            call Msg('Name: '//trim(GB_TRI_2D%Name))
+        else
+            GB_TRI_2D%Name='TMPLT'
+        end if
+        
+        read(FNumMut,'(a80)') GBPathToFile
+
+        inquire(file=trim(GBPathToFile)//'.grd',exist=FileExists)
+        if(.not. FileExists) then
+            call ErrMsg('File not found: '//trim(GBPathToFile)//'.grd')
+        end if
+        
+        call Msg(FileReadSTR//'GridBuilder file: '//trim(GBPathToFile)//'.grd')
+
+
+        GB_TRI_2D%nNodesPerElement=3
+        GB_TRI_2D%Element%Typ='triangle'
+        GB_TRI_2D%TecplotTyp='fetriangle'
+        
+        !     NODE COORDINATES
+	    call getunit(itmp)
+        open(itmp,file=trim(GBPathToFile)//'.xyc',form='unformatted')
+        read(itmp) GB_TRI_2D%nNodes
+    
+        
+        allocate(GB_TRI_2D%node(GB_TRI_2D%nNodes),stat=ialloc)
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d node array')
+        GB_TRI_2D%node%x = 0 ! automatic initialization
+        GB_TRI_2D%node%y = 0 ! automatic initialization
+        GB_TRI_2D%node%z = 0 ! automatic initialization
+        read(itmp) (GB_TRI_2D%node(i)%x, GB_TRI_2D%node(i)%y, i=1,GB_TRI_2D%nNodes)
+	    call freeunit(itmp)
+
+        !     ELEMENT INCIDENCES
+	    call getunit(itmp)
+        open(itmp,file=trim(GBPathToFile)//'.in3',form='unformatted')
+        read(itmp) GB_TRI_2D%nElements
+
+        allocate(GB_TRI_2D%Element(GB_TRI_2D%nElements), GB_TRI_2D%idNode(GB_TRI_2D%nNodesPerElement,GB_TRI_2D%nElements), stat=ialloc)
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d element, idNode arrays')
+        GB_TRI_2D%Element(:)%idZone = 0 ! automatic initialization
+        GB_TRI_2D%idNode(:,:) = 0 ! automatic initialization
+        read(itmp) (GB_TRI_2D%idNode(1,i),GB_TRI_2D%idNode(2,i),GB_TRI_2D%idNode(3,i), i=1,GB_TRI_2D%nElements)
+	    call freeunit(itmp)
+
+        !     Element zone numbers
+	    call getunit(itmp)
+        open(itmp,file=trim(GBPathToFile)//'.ean',form='unformatted')  ! ean contains GB element area(aka zone) numbers 
+        read(itmp) (GB_TRI_2D%Element(i)%idZone,i=1,GB_TRI_2D%nElements)
+	    call freeunit(itmp)
+        GB_TRI_2D%nZones=maxval(GB_TRI_2D%Element%idZone)
+        allocate(GB_TRI_2D%Zone(GB_TRI_2D%nZones),stat=ialloc)
+        call AllocChk(ialloc,'GB_TRI_2D%Zone array')
+        
+        do i=1,GB_TRI_2D%nElements
+            ! xc and yc from circumcircles
+            if(GB_TRI_2D%nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
+            do j=1,GB_TRI_2D%nNodesPerElement
+                x(j)=GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%x
+                y(j)=GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%y
+            end do
+            call InnerCircle(x,y,GB_TRI_2D%Element(i)%xyArea,xc,yc,GB_TRI_2D%Element(i)%rCircle,lseg,aseg,dseg)
+            
+            GB_TRI_2D%Element(i)%SideLength(1)=lseg(1,2)
+            GB_TRI_2D%Element(i)%SideLength(2)=lseg(2,3)
+            GB_TRI_2D%Element(i)%SideLength(3)=lseg(3,1)
+           
+            GB_TRI_2D%Element(i)%xCircle=xc
+            GB_TRI_2D%Element(i)%yCircle=yc
+                
+                
+            ! zc from centroid of the idNode array coordinates
+            zc=0.0
+            do j=1,3
+                zc=zc+GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%z
+            end do
+                
+            GB_TRI_2D%Element(i)%x=xc
+            GB_TRI_2D%Element(i)%y=yc
+            GB_TRI_2D%Element(i)%z=zc/3
+            GB_TRI_2D%Element(i)%zCircle=zc/3
+        end do
+        
+        GB_TRI_2D%Element%is=0
+
+        if(EnableTecplotOutput) then
+            call MeshToTecplot(GB_TRI_2D)
+        endif
+
+        return
+    end subroutine ReadGridBuilderMesh
+    !-------------------------------------------------------------
+    subroutine MESHToTecplot(LocalMesh)
+        implicit none
+        type(mesh) LocalMesh
+        
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i, j
+
+        ! tecplot output file
+        FName=trim(LocalMesh%name)//'.tecplot.dat'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+
+        write(FNum,*) 'Title = "'//trim(LocalMesh%name)//'"'
+
+        ! static variables
+        VarSTR='variables="X","Y","Z","Zone","Element Area","Inner Circle Radius"'
+        nVar=6
+
+        !if(allocated(LocalMesh%rCircle)) then
+        !    VarSTR=trim(VarSTR)//'"'//trim(LocalMesh%name)//'Inner circle radius",'
+        !    nVar=nVar+1
+        !end if
+            
+        write(FNum,'(a)') trim(VarSTR)
+
+
+        write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(LocalMesh%name)//'"  ,N=',LocalMesh%nNodes,', E=',LocalMesh%nElements,&
+        ', datapacking=block, zonetype='//trim(LocalMesh%TecplotTyp)
+        
+        CellCenteredSTR=', VARLOCATION=([4,5'
+        if(nVar.ge.6) then
+            do j=6,nVar
+                write(str2,'(i2)') j
+                CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+            end do
+        end if
+        CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+        write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
+
+        write(FNum,'(a)') '# x'
+        write(FNum,'(5('//FMT_R8//'))') (LocalMesh%node(i)%x,i=1,LocalMesh%nNodes)
+        write(FNum,'(a)') '# y'
+        write(FNum,'(5('//FMT_R8//'))') (LocalMesh%node(i)%y,i=1,LocalMesh%nNodes)
+        write(FNum,'(a)') '# z'
+        write(FNum,'(5('//FMT_R8//'))') (LocalMesh%node(i)%z,i=1,LocalMesh%nNodes)
+        
+        write(FNum,'(a)') '# zone'
+        write(FNum,'(5i8)') (LocalMesh%Element(i)%idZone,i=1,LocalMesh%nElements)
+            
+        write(FNum,'(a)') '# element area'
+        write(FNum,'(5('//FMT_R8//'))') (LocalMesh%Element(i)%xyArea,i=1,LocalMesh%nElements)
+                    
+        write(FNum,'(a)') '# circle radius'
+        write(FNum,'(5('//FMT_R8//'))') (LocalMesh%Element(i)%rCircle,i=1,LocalMesh%nElements)
+            
+        
+        do i=1,LocalMesh%nElements
+            if(LocalMesh%nNodesPerElement==2) then ! 2-node segment
+                write(FNum,'(8i8)') (LocalMesh%idNode(j,i),j=1,2)
+            else if(LocalMesh%nNodesPerElement==3) then ! 3-node triangle
+                write(FNum,'(8i8)') (LocalMesh%idNode(j,i),j=1,3)
+            else if(LocalMesh%nNodesPerElement==4) then ! 4-node quadrilateral
+                if(LocalMesh%idNode(4,i) > 0) then
+                    write(FNum,'(8i8)') (LocalMesh%idNode(j,i),j=1,4) 
+                else
+                    write(FNum,'(8i8)') (LocalMesh%idNode(j,i),j=1,3), LocalMesh%idNode(3,i) 
+                end if
+            else
+                write(TmpSTR,'(i2)')LocalMesh%nNodesPerElement
+                call ErrMsg(trim(LocalMesh%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+            end if
+
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine MeshToTecplot
+    !----------------------------------------------------------------------
+    subroutine GenerateSegmentsFromXYZEndpoints(FNumMut,SEG_3D)
+        implicit none
+        integer(i4) :: FNumMUT
+        type(mesh) SEG_3D
+        
+        type(node), allocatable :: nodeTMP(:)
+
+        integer(i4) :: i
+        integer(i4) :: nElements
+        integer(i4) :: nSizeInit, nNodesInit, nElementsInit
+        !real(dp), allocatable :: xiTMP(:), yiTMP(:), ziTMP(:)  ! temporary xyz arrays
+                
+        real(dp) :: TotalLength
+        real(dp) :: dx, dy, dz
+        real(dp) :: cx, cy, cz
+
+	    real(dp) :: xp(2)
+	    real(dp) :: yp(2)
+	    real(dp) :: zp(2)
+	    xp(:) = 0
+	    yp(:) = 0
+	    zp(:) = 0
+        
+        ! generate segments from XYZ triples
+        read(FNumMut,'(a80)') TmpSTR
+        SEG_3D%Name=TmpSTR
+        call Msg('Name: '//trim(SEG_3D%Name))
+
+        SEG_3D%nNodesPerElement=2
+        SEG_3D%Element%Typ='segment'
+        SEG_3D%TecplotTyp='felineseg'
+
+        
+        
+        nNodesInit=SEG_3D%nNodes
+        nElementsInit=SEG_3D%nElements
+        SEG_3D%nZones=SEG_3D%nZones+1
+
+        nSizeInit=max(2,SEG_3D%nNodes)
+	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'nodeTMP arrays')
+	    nodeTMP%x = -999.0d0
+	    nodeTMP%y = -999.0d0
+	    nodeTMP%z = -999.0d0
+        
+        if(.not. allocated(SEG_3D%node)) then  
+            allocate(SEG_3D%node(nSizeInit),stat=ialloc)
+	        call AllocChk(ialloc,'SEG_3D%node array')
+	        SEG_3D%node%x = -999.0d0
+	        SEG_3D%node%y = -999.0d0
+	        SEG_3D%node%z = -999.0d0
+        endif
+
+        call Msg(TAB//'                X                Y                Z')
+
+	    do i=1,2
+			read(FNumMUT,*) xp(i),yp(i),zp(i)
+            write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
+            call Msg(TAB//trim(TmpSTR))
+        end do 
+        
+ 		read(FNumMUT,*) nElements
+        write(TmpSTR,'(a, i8)') 'Number of new segment elements: ',nElements 
+        call Msg(TAB//trim(TmpSTR))
+        
+        
+        TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
+        write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
+        call Msg(TAB//trim(TmpSTR))
+        if(TotalLength < 0.0001) then
+            call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
+        else if(TotalLength < 1e-10) then   
+            call ErrMsg(TAB//'Total Length of new CLN is essentially zero')
+        endif
+        
+        dx=(xp(2) - xp(1))/nElements
+        dy=(yp(2) - yp(1))/nElements
+        dz=(zp(2) - zp(1))/nElements
+        cx=xp(1)
+        cy=yp(1)
+        cz=zp(1)
+        do i=1,nElements+1
+            SEG_3D%nNodes=SEG_3D%nNodes+1
+            if(SEG_3D%nNodes > nSizeInit) then
+                nodeTMP(1:nSizeInit) = SEG_3D%node
+                call move_alloc (nodeTMP, SEG_3D%node)
+               
+                nSizeInit=nSizeInit*2
+	            allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	            call AllocChk(ialloc,'nodeTMP arrays')
+	            nodeTMP%x = -999.0d0
+	            nodeTMP%y = -999.0d0
+	            nodeTMP%z = -999.0d0
+
+            endif
+            SEG_3D%node(SEG_3D%nNodes)%x=cx
+            SEG_3D%node(SEG_3D%nNodes)%y=cy
+            SEG_3D%node(SEG_3D%nNodes)%z=cz
+            cx=cx+dx
+            cy=cy+dy
+            cz=cz+dz
+        end do
+        
+        ! Trim CLN xyz to final size
+        nSizeInit=SEG_3D%nNodes
+        deallocate(nodeTMP)
+	    allocate(nodeTMP(nSizeInit*2),stat=ialloc)
+	    call AllocChk(ialloc,'nodeTMP arrays')
+	    nodeTMP%x = -999.0d0
+	    nodeTMP%y = -999.0d0
+	    nodeTMP%z = -999.0d0
+        
+        nodeTMP(1:nSizeInit) = SEG_3D%node
+        call move_alloc (nodeTMP, SEG_3D%node)
+        
+        if(.not. allocated(SEG_3D%element)) then  
+            SEG_3D%nElements=SEG_3D%nNodes-1
+            allocate(SEG_3D%Element(SEG_3D%nElements), SEG_3D%idNode(SEG_3D%nNodesPerElement,SEG_3D%nElements), stat=ialloc)
+            call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
+            SEG_3D%Element(:)%idZone = 0 ! automatic initialization
+            SEG_3D%idNode(:,:) = 0 ! automatic initialization
+            SEG_3D%element%iLayer = 0
+            SEG_3D%element%x=0.0d0
+            SEG_3D%element%y=0.0d0
+            SEG_3D%element%z=0.0d0
+            SEG_3D%element%Area=0.0d0
+            SEG_3D%element%xyArea=0.0d0
+            !SEG_3D%cell%Length=-999.0d0
+            !SEG_3D%cell%LowestElevation=-999.0d0
+            !SEG_3D%cell%SlopeAngle=-999.0d0
+        else
+            nSizeInit=SEG_3D%nElements
+            SEG_3D%nElements=SEG_3D%nNodes-1
+            call growInteger2dArray(SEG_3D%idNode,2,nSizeInit,SEG_3D%nElements)
+            call growElementArray(SEG_3D%Element,nSizeInit,SEG_3D%nElements)
+        end if
+
+        ! generate line element incidences
+        do i=nElementsInit+1,SEG_3D%nElements
+            SEG_3D%element(i)%idZone=SEG_3D%nZones
+            SEG_3D%idNode(1,i)=i
+            SEG_3D%idNode(2,i)=i+1
+            SEG_3D%element(i)%x=(SEG_3D%node(SEG_3D%idNode(2,i))%x + SEG_3D%node(SEG_3D%idNode(1,i))%x)/2.0d0
+            SEG_3D%element(i)%y=(SEG_3D%node(SEG_3D%idNode(2,i))%y + SEG_3D%node(SEG_3D%idNode(1,i))%y)/2.0d0
+            SEG_3D%element(i)%z=(SEG_3D%node(SEG_3D%idNode(2,i))%z + SEG_3D%node(SEG_3D%idNode(1,i))%z)/2.0d0
+            !SEG_3D%cell(i)%Length=sqrt(       (SEG_3D%node(SEG_3D%idNode(2,i))%x -   SEG_3D%node(SEG_3D%idNode(1,i))%x)**2 + & 
+            !                                        (SEG_3D%node(SEG_3D%idNode(2,i))%y -   SEG_3D%node(SEG_3D%idNode(1,i))%y)**2 + & 
+            !                                        (SEG_3D%node(SEG_3D%idNode(2,i))%z -   SEG_3D%node(SEG_3D%idNode(1,i))%z)**2) 
+            !SEG_3D%cell(i)%LowestElevation=min (SEG_3D%node(SEG_3D%idNode(2,i))%z,    SEG_3D%node(SEG_3D%idNode(1,i))%z)
+            !SEG_3D%cell(i)%SlopeAngle=asin(abs (SEG_3D%node(SEG_3D%idNode(2,i))%z-    SEG_3D%node(SEG_3D%idNode(1,i))%z))* 180.0d0 * pi
+        end do
+                    
+        !SEG_3D%IsDefined=.true.
+    
+        call Msg(' ')
+        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',SEG_3D%nNodes
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',SEG_3D%nElements
+        call Msg(TmpSTR)
+        
+        if(EnableTecplotOutput) then
+            call MeshToTecplot(SEG_3D)
+        endif
+
+
+
+
+        continue 
+    end subroutine GenerateSegmentsFromXYZEndpoints
+    !----------------------------------------------------------------------
+    subroutine GenerateUniformRectangles(FNumMut,U_RECT_2D)
+        implicit none
+        integer(i4) :: FNumMUT
         type(mesh) U_RECT_2D
 
 
@@ -75,29 +436,32 @@ Module MeshGeneration
         real(sp), allocatable :: xi(:)
         real(sp), allocatable :: yi(:)
 
-        U_RECT_2D%name='U_RECT_2D'
-
         !     generate uniform rectangles
+        read(FNumMut,'(a80)') TmpSTR
+        U_RECT_2D%Name=TmpSTR
+        call Msg('Name: '//trim(U_RECT_2D%Name))
+
         U_RECT_2D%nNodesPerElement=4
         U_RECT_2D%Element%Typ='rectangle'
         U_RECT_2D%TecplotTyp='fequadrilateral'
 
 
         !     xl, yl are grid lengths in x- and y-directions
-        read(FNum,*) xl, nbx, xOffset
-        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Mesh length in X        ',xl,'     '//TRIM(UnitsOfLength)
+        call Msg(FileReadSTR//'MUT file')
+        read(FNumMUT,*) xl, nbx, xOffset
+        write(TMPStr,'(a,'//FMT_R8//',a)') 'Mesh length in X        ',xl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
-        write(TMPStr,'(a,i9)')      TAB//'Number of elements in X ',nbx
+        write(TMPStr,'(a,i9)')      'Number of elements in X ',nbx
         call Msg(TMPStr)
-        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') 'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
-        read(FNum,*) yl, nby,yOffset
-        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
+        read(FNumMUT,*) yl, nby,yOffset
+        write(TMPStr,'(a,'//FMT_R8//',a)') 'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
-        write(TMPStr,'(a,i9)')      TAB//'Number of elements in Y ',nby
+        write(TMPStr,'(a,i9)')      'Number of elements in Y ',nby
         call Msg(TMPStr)
-        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//'Y Offset                ',yOffset,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') 'Y Offset                ',yOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
 
@@ -185,16 +549,16 @@ Module MeshGeneration
 
         U_RECT_2D%Element%is=0
         
-        !if(EnableTecplotOutput) then
-        !    call GBToTecplot(U_RECT_2D)
-        !endif
+ 
+        write(TmpSTR,'(a,i8)')    'Total number of nodes         ',U_RECT_2D%nNodes
+        call Msg(TmpSTR)
+        write(TmpSTR,'(a,i8)')    'Total number of elements      ',U_RECT_2D%nElements
+        call Msg(TmpSTR)
+        
+        if(EnableTecplotOutput) then
+            call MeshToTecplot(U_RECT_2D)
+        endif
 
-    
-        call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',U_RECT_2D%nNodes
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',U_RECT_2D%nElements
-        call Msg(TmpSTR)
         return
     end subroutine GenerateUniformRectangles
     !----------------------------------------------------------------------
@@ -1120,4 +1484,4 @@ Module MeshGeneration
         return
     end function zelev_proportional
 
-end Module MeshGeneration
+end Module MeshGen

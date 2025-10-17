@@ -57,10 +57,11 @@ module GeneralRoutines    !### bit setting routines
     
     
     integer(i4) :: ilen
-    character(10) :: FileOpenSTR   ='---> Open '
-    character(9)  :: FileCreateSTR ='---> New '
-    character(10) :: FileReadSTR   ='<--- Read '
-    character(11) :: FileStripSTR  ='<--- Strip '
+    character(10) :: FileOpenSTR   ='---> Open: '
+    character(9)  :: FileCreateSTR ='---> New: '
+    character(29)  :: MUTFileSTR ='<--- MUT input file results: '
+    character(10) :: FileReadSTR   ='<--- Read: '
+    character(11) :: FileStripSTR  ='<--- Strip: '
     
     !---------------------------------------------- General declarations
     integer(i4) :: ncount
