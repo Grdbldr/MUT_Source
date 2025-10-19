@@ -1,6 +1,8 @@
 module MUT  !### Modflow-USG Tools
     use GeneralRoutines
+    use error_param
     use MeshGen
+    use gb
     use MUSG
     use tecplot
     use NumericalMesh
@@ -89,6 +91,12 @@ module MUT  !### Modflow-USG Tools
         character(MAX_INST) :: GenerateSegmentsFromXYZEndpoints_CMD  =   'generate segments from xyz endpoints'
         ! There are many other possible 2d mesh definition options e.g.
         !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
+        
+                
+        ! Ways to define a GridBuilder mesh
+        character(MAX_INST) :: GridBuilder_CMD          =   'build gridbuilder mesh'
+        
+        integer(i4) :: ierror
 
         do
             read(FnumMUT,'(a)',iostat=status,end=10) MUT_CMD
@@ -175,7 +183,11 @@ module MUT  !### Modflow-USG Tools
             !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
            
                 
-            ! Modflow options
+            ! GridBuilder options
+            else if(index(MUT_CMD, GridBuilder_CMD) /= 0) then
+                call GridBuilder(iError)
+
+                ! Modflow options
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
                 call BuildModflowUSG(FnumMUT,MyProject,prefix)
 

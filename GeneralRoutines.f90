@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG   
-        character(37) :: MUTVersion=' 1.69 DEBUG modularization'
+        character(37) :: MUTVersion=' 1.69 DEBUG GB'
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion=' 1.69 RELEASE modularization'
+        character(37) :: MUTVersion=' 1.69 RELEASE GB'
     #endif
 
 
@@ -5600,6 +5600,9 @@ module GeneralRoutines    !### bit setting routines
 	    end if			
 
     end function in_poly
+    
+    !------------------------------------------------------------------------------------------------------
+
 
     SUBROUTINE INDEXX3(N,ARRIN,INDX)
 	    integer(i4) :: i, n, j, l, ir, indxt

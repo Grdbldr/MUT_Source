@@ -60,9 +60,11 @@
 			<File RelativePath=".\KindParameters.f90">
 			</File>
 			<File RelativePath=".\Materials.f90"/>
-			<File RelativePath=".\MeshGeneration.f90"/>
+			<File RelativePath=".\MeshGeneration.f90">
+			</File>
 			<File RelativePath=".\Modflow_USG.f90"/>
-			<File RelativePath=".\MUSGModules.f90"/>
+			<File RelativePath=".\MUSGModules.f90">
+			</File>
 			<File RelativePath=".\NumericalMesh.f90"/>
 			<File RelativePath=".\openspec.inc"/>
 			<File RelativePath=".\pre.f90"/>
