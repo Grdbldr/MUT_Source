@@ -62,8 +62,8 @@ module gb
 
 
 	!integer(i4)		:: ne				! number of elements in mesh
-	integer(i4),allocatable		:: in(:,:)		! element node lists
-	integer(i4),allocatable		:: el_area(:)	! element zone (subarea) numbers
+	!integer(i4),allocatable		:: in(:,:)		! element node lists
+	!integer(i4),allocatable		:: el_area	! element zone (subarea) numbers
 
 	!integer(i4), allocatable :: node(:) ! node bit set array 
 	!integer(i4), allocatable :: lGB%element%is(:) ! element bit set array 
@@ -338,7 +338,7 @@ module gb
 					return
 				endif
 				do i=nes,lGB%nElements
-					el_area(i)=k
+					lGB%element(i)%idZone=k
 				end do
 			endif
 		end do
@@ -501,20 +501,20 @@ module gb
 		eicon(:,:,:)=0
 
 		do l=1,lGB%nElements
-			node1=in(l,1)
-			node2=in(l,2)
+			node1=lGB%idNode(1,l)
+			node2=lGB%idNode(2,l)
 			call make_list(l,node1,node2)
-			node2=in(l,3)
+			node2=lGB%idNode(3,l)
 			call make_list(l,node1,node2)
-			node1=in(l,2)
-			node2=in(l,1)
+			node1=lGB%idNode(2,l)
+			node2=lGB%idNode(1,l)
 			call make_list(l,node1,node2)
-			node2=in(l,3)
+			node2=lGB%idNode(3,l)
 			call make_list(l,node1,node2)
-			node1=in(l,3)
-			node2=in(l,1)
+			node1=lGB%idNode(3,l)
+			node2=lGB%idNode(1,l)
 			call make_list(l,node1,node2)
-			node2=in(l,2)
+			node2=lGB%idNode(2,l)
 			call make_list(l,node1,node2)
 		end do
 
@@ -728,7 +728,7 @@ module gb
 
 
 		do l=1,lGB%nElements
-			if(in(l,1) == nde .or. in(l,2) == nde .or. in(l,3) == nde)      then
+			if(lGB%idNode(1,l) == nde .or. lGB%idNode(2,l) == nde .or. lGB%idNode(3,l) == nde)      then
 				call set(lGB%element(l)%is,chosen)
 			endif
 		end do
@@ -832,23 +832,23 @@ module gb
 		integer(i4) :: n_temp, e_temp
 		logical set_chosen
 
-		i1=in(l,1)
-		i2=in(l,2)
-		i3=in(l,3)
+		i1=lGB%idNode(1,l)
+		i2=lGB%idNode(2,l)
+		i3=lGB%idNode(3,l)
 		call check_exist(i1,i2,n1,nnn,nil,nnl)
 		if(ierr /= 0) return
 		call check_exist(i2,i3,n2,nnn,nil,nnl)
 		if(ierr /= 0) return
 		call check_exist(i3,i1,n3,nnn,nil,nnl)
 		if(ierr /= 0) return
-		n_temp=in(l,2)
-		e_temp=el_area(l)
+		n_temp=lGB%idNode(2,l)
+		e_temp=lGB%element(l)%idZone
 		call add_element(nne,n_temp,n2,n1,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
 			call set(lGB%element(nne)%is,chosen)
 		endif
-		n_temp=in(l,3)
+		n_temp=lGB%idNode(3,l)
 		call add_element(nne,n_temp,n3,n2,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
@@ -859,8 +859,8 @@ module gb
 		if (set_chosen) then
 			call set(lGB%element(nne)%is,chosen)
 		endif
-		in(l,2)=n1
-		in(l,3)=n3
+		lGB%idNode(2,l)=n1
+		lGB%idNode(3,l)=n3
 
 	end subroutine refine_element
 	!----------------------------------------------------------------------
@@ -893,6 +893,7 @@ module gb
 			if (i.LE.nil .aND. .not. node_exists) goto 10
 		endif
 		if (.not. node_exists) then
+             write(*,*) lGB%nNodes,' check_exist'
 			call new_node(nnn,xm,ym)
 			if(ierr /= 0) return
 			call update_bnodes(i1,i2,nnn)
@@ -921,38 +922,38 @@ module gb
 		! check each side to see if node already exists
 		implicit none
 
-		integer(i4) :: i, l, nil, nnn, nne, new_node
+		integer(i4) :: i, l, nil, nnn, nne, nSplitSides
 
 		integer(i4) :: nnl(4*lGB%nNodes)
 		real*8 :: x1,y1,x2,y2,x3,y3
 
-		new_node=0
-		x1=0.5*lGB%node(in(l,1))%x+0.5*lGB%node(in(l,2))%x
-		y1=0.5*lGB%node(in(l,1))%y+0.5*lGB%node(in(l,2))%y
-		x2=0.5*lGB%node(in(l,2))%x+0.5*lGB%node(in(l,3))%x
-		y2=0.5*lGB%node(in(l,2))%y+0.5*lGB%node(in(l,3))%y
-		x3=0.5*lGB%node(in(l,3))%x+0.5*lGB%node(in(l,1))%x
-		y3=0.5*lGB%node(in(l,3))%y+0.5*lGB%node(in(l,1))%y
+		nSplitSides=0
+		x1=0.5*lGB%node(lGB%idNode(1,l))%x+0.5*lGB%node(lGB%idNode(2,l))%x
+		y1=0.5*lGB%node(lGB%idNode(1,l))%y+0.5*lGB%node(lGB%idNode(2,l))%y
+		x2=0.5*lGB%node(lGB%idNode(2,l))%x+0.5*lGB%node(lGB%idNode(3,l))%x
+		y2=0.5*lGB%node(lGB%idNode(2,l))%y+0.5*lGB%node(lGB%idNode(3,l))%y
+		x3=0.5*lGB%node(lGB%idNode(3,l))%x+0.5*lGB%node(lGB%idNode(1,l))%x
+		y3=0.5*lGB%node(lGB%idNode(3,l))%y+0.5*lGB%node(lGB%idNode(1,l))%y
 		i=1
 		10    continue
 			if (abs(x1-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-lGB%node(nnl(i))%y).lt.1.e-5) then
-					new_node=new_node+1
+					nSplitSides=nSplitSides+1
 				endif
 			endif
 			if (abs(x2-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y2-lGB%node(nnl(i))%y).lt.1.e-5) then
-					new_node=new_node+1
+					nSplitSides=nSplitSides+1
 				endif
 			endif
 			if (abs(x3-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y3-lGB%node(nnl(i))%y).lt.1.e-5) then
-					new_node=new_node+1
+					nSplitSides=nSplitSides+1
 				endif
 			endif
 			i=i+1
-		if(i.le.nil .and. new_node.le.1) goto 10
-		if (new_node.gt.1) then
+		if(i.le.nil .and. nSplitSides.le.1) goto 10
+		if (nSplitSides.gt.1) then
 			call refine_element(l,.false.,nil,nnn,nne,nnl)
 			if(ierr /= 0) return
 		endif
@@ -970,38 +971,38 @@ module gb
 		real*8 :: x1,y1,x2,y2,x3,y3
 
 		done=.false.
-		x1=0.5*lGB%node(in(l,1))%x+0.5*lGB%node(in(l,2))%x
-		y1=0.5*lGB%node(in(l,1))%y+0.5*lGB%node(in(l,2))%y
-		x2=0.5*lGB%node(in(l,2))%x+0.5*lGB%node(in(l,3))%x
-		y2=0.5*lGB%node(in(l,2))%y+0.5*lGB%node(in(l,3))%y
-		x3=0.5*lGB%node(in(l,3))%x+0.5*lGB%node(in(l,1))%x
-		y3=0.5*lGB%node(in(l,3))%y+0.5*lGB%node(in(l,1))%y
+		x1=0.5*lGB%node(lGB%idNode(1,l))%x+0.5*lGB%node(lGB%idNode(2,l))%x
+		y1=0.5*lGB%node(lGB%idNode(1,l))%y+0.5*lGB%node(lGB%idNode(2,l))%y
+		x2=0.5*lGB%node(lGB%idNode(2,l))%x+0.5*lGB%node(lGB%idNode(3,l))%x
+		y2=0.5*lGB%node(lGB%idNode(2,l))%y+0.5*lGB%node(lGB%idNode(3,l))%y
+		x3=0.5*lGB%node(lGB%idNode(3,l))%x+0.5*lGB%node(lGB%idNode(1,l))%x
+		y3=0.5*lGB%node(lGB%idNode(3,l))%y+0.5*lGB%node(lGB%idNode(1,l))%y
 		i=1
 		10    continue
 			if (abs(x1-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-lGB%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,in(l,2),in(l,3),el_area(l))
+					call add_element(nne,n1,lGB%idNode(2,l),lGB%idNode(3,l),lGB%element(l)%idZone)
 					if(ierr /= 0) return
-					in(l,2)=n1
+					lGB%idNode(2,l)=n1
 					done=.true.
 				endif
 			endif
 			if (abs(x2-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y2-lGB%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,in(l,3),in(l,1),el_area(l))
+					call add_element(nne,n1,lGB%idNode(3,l),lGB%idNode(1,l),lGB%element(l)%idZone)
 					if(ierr /= 0) return
-					in(l,3)=n1
+					lGB%idNode(3,l)=n1
 					done=.true.
 				endif
 			endif
 			if (abs(x3-lGB%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y3-lGB%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,in(l,2),in(l,3),el_area(l))
+					call add_element(nne,n1,lGB%idNode(2,l),lGB%idNode(3,l),lGB%element(l)%idZone)
 					if(ierr /= 0) return
-					in(l,3)=n1
+					lGB%idNode(3,l)=n1
 					done=.true.
 				endif
 			endif
@@ -1519,56 +1520,6 @@ module gb
 	end subroutine initialize_outer_boundary_array
 
 
-	!!----------------------------------------------------------------------
-	!subroutine reallocate_element_arrays(ne_rqst)
-	!	implicit none
- !
-	!	real, parameter :: ne_mult=1.5
- !
-	!	integer(i4) :: ne_rqst, i, ne_new
- !
-	!	integer(i4), allocatable :: in_tmp(:,:)		! element node lists
-	!	integer(i4), allocatable :: elem_tmp(:)		! element bit setting
-	!	integer(i4), allocatable :: el_area_tmp(:) ! element area number 
- !
- !
-	!	if(ne_rqst >= ne_cur) then  ! reallocate in etc
- !
-	!		ne_new=nint(ne_rqst*ne_mult)
- !
-	!		allocate(in_tmp(ne_new,3),elem_tmp(ne_new), el_area_tmp(ne_new), stat=ialloc)
-	!		call check_alloc(ialloc,'allocate temp element arrays')
-	!		if(ierr /= 0) return
- !
-	!		in_tmp(:,:)=0.0d0
-	!		elem_tmp(:)=0.0d0
-	!		el_area_tmp(:)=0
- !
-	!		! copy current data
-	!		do i=1,ne_cur
-	!			in_tmp(i,:)		=	in(i,:)
-	!			elem_tmp(i)			=	lGB%element%is(i)
-	!			el_area_tmp(i)	=	el_area(i)
-	!		end do
- !
-	!		! destroy arrays
-	!		deallocate(in, lGB%element%is, el_area)
-	!		! reallocate
-	!		allocate(in(ne_new,3),lGB%element%is(ne_new),el_area(ne_new),  stat=ialloc)
-	!		call check_alloc(ialloc,'reallocate element arrays')
-	!		if(ierr /= 0) return
- !
-	!		! copy current data
-	!		do i=1,ne_cur
-	!			in(i,:)		=	in_tmp(i,:)
-	!			lGB%element%is(i)		=	elem_tmp(i)
-	!			el_area(i)	=	el_area_tmp(i)
-	!		end do
- !
-	!		ne_cur=ne_new
- !
-	!	end if
-	!end subroutine reallocate_element_arrays
 	!----------------------------------------------------------------------
 	subroutine add_element(nne,i1,i2,i3,e_area)
 		implicit none
@@ -1577,62 +1528,20 @@ module gb
 
 
         call GrowElementArray(lGB%element,nne,nne+1)	
+        call GrowInteger2dArray(lGB%idNode,3,nne,nne+1)	
 		!call reallocate_element_arrays(nel)
 		if(ierr /= 0) return
 
         nne=nne+1  ! we are going to make a new element
 
-		in(nne,1)=i1
-		in(nne,2)=i2
-		in(nne,3)=i3
+		lGB%idNode(1,nne)=i1
+		lGB%idNode(2,nne)=i2
+		lGB%idNode(3,nne)=i3
 		lGB%element(nne)%is=0	
-		el_area(nne)=e_area		
+		lGB%element(nne)%id=nne	
+		lGB%element(nne)%idZone=e_area		
 
 	end subroutine add_element
-	!!----------------------------------------------------------------------
-	!subroutine initialize_element_arrays(e_proposed)
-	!	implicit none
-	!	integer(i4) :: e_proposed
- !
-	!	if(e_proposed > ne_cur) ne_cur=e_proposed
- !
-	!	!if(allocated(in)) then
-	!	!	deallocate(in, lGB%element%is, el_area)
-	!	!endif
- !
-	!	allocate(lGB%Element(ne_cur), stat=ialloc)
-	!	call check_alloc(ialloc,'initial element arrays')
-	!	if(ierr /= 0) return
- !
-	!	in(:,:)=0
-	!	lGB%element(:)%is=0
-	!	el_area(:)=0 
- !
- !
-	!end subroutine initialize_element_arrays
-	!!----------------------------------------------------------------------
-	!subroutine initialize_node_arrays(n_proposed)
-	!	implicit none
- !
-	!	integer(i4) :: n_proposed
- !
-	!	if(n_proposed > nn_cur) nn_cur=n_proposed
- !
-	!	!if(allocated(lGB%node%x)) then
-	!	!	deallocate(lGB%node%x,lGB%node%y,lGB%node%is)
-	!	!endif
- !
-	!	allocate(lGB%Node(nn_cur), stat=ialloc)
-	!	call check_alloc(ialloc,'initial node arrays')
-	!	if(ierr /= 0) return
- !       
- !       lGB%nNodes=nn_cur
- !
-	!	lGB%node(:)%x=0.0
-	!	lGB%node(:)%y=0.0
-	!	lGB%node(:)%is=0 
- !
-	!end subroutine initialize_node_arrays
 	!----------------------------------------------------------------------
 	subroutine new_node(nn,xnew,ynew)
 		implicit none
@@ -1651,6 +1560,8 @@ module gb
 		lGB%node(nn)%x=xnew
 		lGB%node(nn)%y=ynew
 		lGB%node(nn)%is=0	
+        
+         write(*,*) lGB%nNodes,' node ',nn, xnew, ynew
 
 	end subroutine new_node
 	!----------------------------------------------------------------------
@@ -1719,6 +1630,8 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
+                     write(*,*) lGB%nNodes,' gen_uni_bnodes a'
+
 					call new_node(lGB%nNodes,x1*(1.0-rmu)+x2*rmu,y1*(1.0-rmu)+y2*rmu)
 					call update_bnodes(n1,n2,lGB%nNodes)
 					n1=lGB%nNodes
@@ -1732,6 +1645,7 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
+                     write(*,*) lGB%nNodes,' gen_uni_bnodes b'
 					call new_node(lGB%nNodes,x2*(1.0-rmu)+x1*rmu,y2*(1.0-rmu)+y1*rmu)
 					call update_bnodes(n1,n2,lGB%nNodes)
 					n2=lGB%nNodes
@@ -2043,6 +1957,7 @@ module gb
 		olap=0.5
 		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
 		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) lGB%nNodes,' nng_1'
 		call new_node(lGB%nNodes,(a1x+a2x)/2.0,(a1y+a2y)/2.0)
 		if(ierr /= 0) return
 
@@ -2135,8 +2050,10 @@ module gb
 		olap=0.5
 		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
 		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) lGB%nNodes,' nng_2 a'
 		call new_node(lGB%nNodes,a1x,a1y)
 		if(ierr /= 0) return
+         write(*,*) lGB%nNodes,' nng_2 b'
 		call new_node(lGB%nNodes,a2x,a2y)
 		if(ierr /= 0) return
 
@@ -2230,6 +2147,7 @@ module gb
 			if(ierr /= 0) return
 		else
 			lGB%nNodes=lGB%nNodes-2
+         write(*,*) lGB%nNodes,' nng_2 overlap'
 		endif
 
 	end subroutine nng_2
@@ -2264,8 +2182,10 @@ module gb
 		olap=0.8
 		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
 		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) lGB%nNodes,' fix_stuck a'
 		call new_node(lGB%nNodes,a1x,a1y)
 		if(ierr /= 0) return
+         write(*,*) lGB%nNodes,' fix_stuck b'
 		call new_node(lGB%nNodes,a2x,a2y)
 		if(ierr /= 0) return
 
@@ -2786,15 +2706,15 @@ module gb
 		end do
 
 		do i=1,lGB%nElements
-			ndummy(i,1)=jnt(in(i,1))
-			ndummy(i,2)=jnt(in(i,2))
-			ndummy(i,3)=jnt(in(i,3))
+			ndummy(i,1)=jnt(lGB%idNode(1,i))
+			ndummy(i,2)=jnt(lGB%idNode(2,i))
+			ndummy(i,3)=jnt(lGB%idNode(3,i))
 		end do
 
 		do i=1,lGB%nElements
-			in(i,1)=ndummy(i,1)
-			in(i,2)=ndummy(i,2)
-			in(i,3)=ndummy(i,3)
+			lGB%idNode(1,i)=ndummy(i,1)
+			lGB%idNode(2,i)=ndummy(i,2)
+			lGB%idNode(3,i)=ndummy(i,3)
 		end do
 
 		! outer boundary
@@ -2896,6 +2816,7 @@ module gb
 		call reallocate_outer_boundary_arrays(onbn)
 		if(ierr /= 0) goto 1000
 		do i=1,onbn_in
+			 write(*,*) lGB%nNodes,' process_gen_file a'
 			call new_node(lGB%nNodes,x_in(obn_in(i)),y_in(obn_in(i)))  ! all outer boundary nodes are kept
 			if(ierr /= 0) goto 1000
 			call set(lGB%node(lGB%nNodes)%is,out_bndy)
@@ -2918,6 +2839,7 @@ module gb
 				do j=0,nbn_in(n_area)
 				
 					if(jnt(bn_in(area,j)) == 0) then   ! this node hasn't been assigned yet
+						 write(*,*) lGB%nNodes,' process_gen_file a'
 						call new_node(lGB%nNodes,x_in(bn_in(area,j)),y_in(bn_in(area,j)))  ! keep this boundary node
 						if(ierr /= 0) goto 1000
 						call set(lGB%node(lGB%nNodes)%is,out_bndy)
@@ -3167,6 +3089,7 @@ module gb
 			old_nn=lGB%nNodes
 			!       Define the coordinates of the new nodes
 			do i=nct(i_int-1)+1,nct(i_int)
+			 write(*,*) lGB%nNodes,' update_area'
 				call new_node(lGB%nNodes,xcut(i),ycut(i))
 				if(ierr /= 0) goto 1000
 			end do
@@ -3770,6 +3693,7 @@ module gb
 			tie_in=.true.
 		else
 			tie_in=.false.
+			 write(*,*) lGB%nNodes,' check_tie_in'
 			call new_node(lGB%nNodes,xtie,ytie)
 			if(ierr /= 0) return
 			p_node=lGB%nNodes

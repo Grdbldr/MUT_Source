@@ -4289,6 +4289,11 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
+        
         allocate(iTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowInteger2dArray iTMP array')
         iTMP (:,1:nSizeIn) = iArray

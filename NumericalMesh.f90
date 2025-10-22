@@ -277,7 +277,7 @@ module NumericalMesh
             iTMP(1:nSizeIn) = iArray
             call move_alloc (iTMP, iArray)
         else
-            call Msg('Requested size less than current size in GrowElementArray')    
+            !call Msg('Requested size less than current size in GrowElementArray')    
             return
         endif
 
@@ -288,9 +288,16 @@ module NumericalMesh
         type(node), allocatable :: iArray(:)
         type(node), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
+        integer(i4) :: iSize
         
         if(.not. allocated(iArray)) then
             allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
+        iSize=size(iArray)
+        if(nSizeout < iSize) then
+            !call Msg('Requested size less than current size in GrowNodeArray')    
             return
         endif
         
@@ -300,7 +307,7 @@ module NumericalMesh
             iTMP(1:nSizeIn) = iArray
             call move_alloc (iTMP, iArray)
         else
-            call Msg('Requested size less than current size in GrowNodeArray')    
+            !call Msg('Requested size less than current size in GrowNodeArray')    
             return
         endif
         
