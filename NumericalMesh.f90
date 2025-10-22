@@ -247,11 +247,16 @@ module NumericalMesh
         type(mesh), allocatable :: iArray(:)
         type(mesh), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
-        
-        allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'GrowElementArray iTMP array')
-        iTMP(1:nSizeIn) = iArray
-        call move_alloc (iTMP, iArray)
+
+        if(nSizeIn < nSizeout) then
+            allocate(iTMP(nSizeout),stat=ialloc)
+	        call AllocChk(ialloc,'GrowMeshArray iTMP array')
+            iTMP(1:nSizeIn) = iArray
+            call move_alloc (iTMP, iArray)
+        else
+            call Msg('Requested size less than current size in GrowMeshArray')    
+            return
+        endif
         
     end subroutine GrowMeshArray
     !----------------------------------------------------------------------
@@ -261,11 +266,21 @@ module NumericalMesh
         type(element), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
-        allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'GrowElementArray iTMP array')
-        iTMP(1:nSizeIn) = iArray
-        call move_alloc (iTMP, iArray)
-        
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+
+        if(nSizeIn < nSizeout) then
+            allocate(iTMP(nSizeout),stat=ialloc)
+	        call AllocChk(ialloc,'GrowElementArray iTMP array')
+            iTMP(1:nSizeIn) = iArray
+            call move_alloc (iTMP, iArray)
+        else
+            call Msg('Requested size less than current size in GrowElementArray')    
+            return
+        endif
+
     end subroutine GrowElementArray
     !----------------------------------------------------------------------
     subroutine GrowNodeArray(iArray,nSizeIn,nSizeout)
@@ -274,10 +289,20 @@ module NumericalMesh
         type(node), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
-        allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'GrowNodeArray iTMP array')
-        iTMP(1:nSizeIn) = iArray
-        call move_alloc (iTMP, iArray)
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
+        if(nSizeIn < nSizeout) then
+            allocate(iTMP(nSizeout),stat=ialloc)
+	        call AllocChk(ialloc,'GrowNodeArray iTMP array')
+            iTMP(1:nSizeIn) = iArray
+            call move_alloc (iTMP, iArray)
+        else
+            call Msg('Requested size less than current size in GrowNodeArray')    
+            return
+        endif
         
     end subroutine GrowNodeArray
     !----------------------------------------------------------------------

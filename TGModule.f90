@@ -185,6 +185,7 @@ module MUT  !### Modflow-USG Tools
                 
             ! GridBuilder options
             else if(index(MUT_CMD, GridBuilder_CMD) /= 0) then
+                call read_gendat(FNumMUT)
                 call GridBuilder(iError)
 
                 ! Modflow options

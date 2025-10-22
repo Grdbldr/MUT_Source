@@ -4271,6 +4271,11 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeIn<nSizeout) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
         allocate(iTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
         iTMP(1:nSizeIn) = iArray
