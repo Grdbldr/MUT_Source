@@ -13,9 +13,7 @@ module gb
 	logical :: plan_view_file
 	real :: scr_ratio
     
-    type(mesh) lGB
-
-    
+   
 	logical		:: plan_view		! true for isotropic scaling in x and y
 
 	integer(i4)		:: nn_in=1000			! number of nodes
@@ -66,7 +64,7 @@ module gb
 	!integer(i4),allocatable		:: el_area	! element zone (subarea) numbers
 
 	!integer(i4), allocatable :: node(:) ! node bit set array 
-	!integer(i4), allocatable :: lGB%element%is(:) ! element bit set array 
+	!integer(i4), allocatable :: GB_GEN%element%is(:) ! element bit set array 
 
 
 	character*60 :: log_msg
@@ -245,8 +243,9 @@ module gb
 
 	end subroutine read_gendat
 	!----------------------------------------------------------------------
-	subroutine GridBuilder(ierror)
+	subroutine GridBuilder(GB_GEN,ierror)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: ierror
 		integer(i4) :: i, k, nes
@@ -257,21 +256,38 @@ module gb
 	
 		!open(99,file='test.txt',status='unknown')
 
-		! initial arrays for nodes..
-		!nn_cur=1
-		!call initialize_node_arrays(nn_in)
-		!if(ierr /= 0) then
-		!	ierror=ierr
-		!	return
-		!endif
+		!! initial arrays for nodes..
+		!call GrowNodeArray(GB_GEN%Node,0,1)	
+		!!nn_cur=1
+		!!call initialize_node_arrays(nn_in)
+		!!if(ierr /= 0) then
+		!!	ierror=ierr
+		!!	return
+		!!endif
+  !!
+		!!! initial arrays for elements... 
+		!call GrowElementArray(GB_GEN%Element,0,1)	
+		!!ne_cur=1
+		!!call initialize_element_arrays(1000)
+		!!if(ierr /= 0) then
+		!!	ierror=ierr
+		!!	return
+		!!endif
+        
+        GB_GEN%nNodes=0
+        allocate(GB_GEN%node(100),stat=ialloc)
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d node array')
+        GB_GEN%node%x = 0 ! automatic initialization
+        GB_GEN%node%y = 0 ! automatic initialization
+        GB_GEN%node%z = 0 ! automatic initialization
 
-		!! initial arrays for elements... 
-		!ne_cur=1
-		!call initialize_element_arrays(1000)
-		!if(ierr /= 0) then
-		!	ierror=ierr
-		!	return
-		!endif
+        GB_GEN%nNodesPerElement=3
+        GB_GEN%nElements=0
+        allocate(GB_GEN%Element(100), &
+            GB_GEN%idNode(GB_GEN%nNodesPerElement,100), stat=ialloc)
+        call AllocChk(ialloc,'ReadGridBuilderMesh 2d element, idNode arrays')
+        GB_GEN%Element(:)%idZone = 0 ! automatic initialization
+        GB_GEN%idNode(:,:) = 0 ! automatic initialization
 
 		! initial arrays for outer boundary nodes... 
 		no_cur=1
@@ -308,19 +324,19 @@ module gb
 
 
 		! use caller boundary data to form dll outer boundary data (import_ob_batch)
-		call process_gen_file
+		call process_gen_file(GB_GEN)
 		if(ierr /= 0) then
 			ierror=ierr
 			return
 		endif
 
-		call fix_short_segs_batch
+		call fix_short_segs_batch(GB_GEN)
 		if(ierr /= 0) then
 			ierror=ierr
 			return
 		endif
 	
-		call gen_uni_bnodes     ! generate uniformly spaced boundary nodes
+		call gen_uni_bnodes(GB_GEN)     ! generate uniformly spaced boundary nodes
 		if(ierr /= 0) then
 			ierror=ierr
 			return
@@ -328,29 +344,29 @@ module gb
 
 
 		call Msg('Generating mesh...')
-		lGB%nElements=0
+		GB_GEN%nElements=0
 		do k=1,area
 			if (.not. hole(k)) then
-				nes=lGB%nElements+1
-				call gen_convex(k) ! fill an area with elements
+				nes=GB_GEN%nElements+1
+				call gen_convex(GB_GEN,k) ! fill an area with elements
 				if(ierr /= 0) then
 					ierror=ierr
 					return
 				endif
-				do i=nes,lGB%nElements
-					lGB%element(i)%idZone=k
+				do i=nes,GB_GEN%nElements
+					GB_GEN%element(i)%idZone=k
 				end do
 			endif
 		end do
 
-		call grid_limits
+		call grid_limits(GB_GEN)
 
-		call set_ob_ab
+		call set_ob_ab(GB_GEN)
 
 		call Msg('Relaxing grid...')
 
 		recalc_nicon=.true.
-		call relax_grid
+		call relax_grid(GB_GEN)
 
 
 
@@ -362,13 +378,13 @@ module gb
 
 		if(nwells > 0) then
 			call Msg('Adding wells...')
-			call make_wells
+			call make_wells(GB_GEN)
 			if(ierr /= 0) then
 				ierror=ierr
 				return
 			endif
 
-			call refine_wells
+			call refine_wells(GB_GEN)
 			if(ierr /= 0) then
 				ierror=ierr
 				return
@@ -387,6 +403,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine find_node(x1,y1,p_node)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i
 
@@ -397,20 +414,21 @@ module gb
 		dist_min=1.0e20
 		97    continue
 			!if(plan_view)then
-				f1=sqrt((x1-lGB%node(i)%x)**2+((y1-lGB%node(i)%y))**2)
+				f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y))**2)
 			!else
-			!	f1=sqrt((x1-lGB%node(i)%x)**2+((y1-lGB%node(i)%y)*xy_ratio)**2)
+			!	f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y)*xy_ratio)**2)
 			!endif
 			if(f1.lt.dist_min) then
 				p_node=i
 				dist_min=f1
 			endif
 			i=i+1
-		if (i.LE.lGB%nNodes) goto 97
+		if (i.LE.GB_GEN%nNodes) goto 97
 	end subroutine find_node
 	!-----------------------------------------------------------------------
-	subroutine grid_limits
+	subroutine grid_limits(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i
 
@@ -418,27 +436,28 @@ module gb
 		xmax=-1.e20
 		ymin=1.e20
 		ymax=-1.e20
-		do  i=1,lGB%nNodes
-			if(lGB%node(i)%x.lt.xmin) xmin=lGB%node(i)%x
-			if(lGB%node(i)%x.gt.xmax) xmax=lGB%node(i)%x
-			if(lGB%node(i)%y.lt.ymin) ymin=lGB%node(i)%y
-			if(lGB%node(i)%y.gt.ymax) ymax=lGB%node(i)%y
+		do  i=1,GB_GEN%nNodes
+			if(GB_GEN%node(i)%x.lt.xmin) xmin=GB_GEN%node(i)%x
+			if(GB_GEN%node(i)%x.gt.xmax) xmax=GB_GEN%node(i)%x
+			if(GB_GEN%node(i)%y.lt.ymin) ymin=GB_GEN%node(i)%y
+			if(GB_GEN%node(i)%y.gt.ymax) ymax=GB_GEN%node(i)%y
 		end do
 	end subroutine grid_limits
 	!----------------------------------------------------------------------
-	 subroutine set_ob_ab
+	 subroutine set_ob_ab(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j
 
 		do  j=1,onbn
-			call set(lGB%node(obn(j))%is,out_bndy)
-			call set(lGB%node(obn(j))%is,b_2nd_type)
+			call set(GB_GEN%node(obn(j))%is,out_bndy)
+			call set(GB_GEN%node(obn(j))%is,b_2nd_type)
 		end do
 
 		do i=1,area
 			do  j=1,nbn(i)
-				call set(lGB%node(bn(i,j))%is,any_bndy)
+				call set(GB_GEN%node(bn(i,j))%is,any_bndy)
 			end do
 		end do
 
@@ -446,37 +465,40 @@ module gb
 
 	!*** Grid relaxation routines ***
 	!----------------------------------------------------------------------
-	subroutine relax_grid
+	subroutine relax_grid(GB_GEN)
 		implicit none 
-    
+ 		type(mesh) GB_GEN
+   
 		integer(i4) :: i, j
 		real(dp) :: maxdiff, tol, xm, ym, diff
 
-		call node_connections
+		call node_connections(GB_GEN)
 		if(ierr /= 0) return
 
 		tol=(xmax-xmin)/1.e-5
 		10    continue
 			maxdiff=0.0
-			do i=1,lGB%nNodes
-				if (.not. bcheck(lGB%node(i)%is,any_bndy) .and. .not. bcheck(lGB%node(i)%is,well)) then
+			do i=1,GB_GEN%nNodes
+				if (.not. bcheck(GB_GEN%node(i)%is,any_bndy) .and. .not. bcheck(GB_GEN%node(i)%is,well)) then
 					xm=0.0d0
 					ym=0.0d0
 					do j=1,nicon(i)
-						xm=xm+lGB%node(icon(i,j))%x
-						ym=ym+lGB%node(icon(i,j))%y
+						xm=xm+GB_GEN%node(icon(i,j))%x
+						ym=ym+GB_GEN%node(icon(i,j))%y
 					end do
-					diff=sqrt((lGB%node(i)%x-xm/nicon(i))**2 + (lGB%node(i)%y-ym/nicon(i))**2)
+					diff=sqrt((GB_GEN%node(i)%x-xm/nicon(i))**2 + (GB_GEN%node(i)%y-ym/nicon(i))**2)
 					maxdiff=max(diff,maxdiff)
-					lGB%node(i)%x=xm/nicon(i)
-					lGB%node(i)%y=ym/nicon(i)
+					GB_GEN%node(i)%x=xm/nicon(i)
+					GB_GEN%node(i)%y=ym/nicon(i)
 				endif
 			end do
 		if (maxdiff.gt.tol) goto 10
 
 	end subroutine relax_grid
 	!----------------------------------------------------------------------
-	subroutine node_connections
+	subroutine node_connections(GB_GEN)
+		implicit none 
+        type(mesh) GB_GEN
 
 		integer(i4) :: i, j, k, l, node1, node2, i1, i2, ic, n1, n2
 
@@ -486,13 +508,13 @@ module gb
 		if(.not. recalc_nicon) return
 
 		if(allocated(nicon)) deallocate(nicon,icon,eicon)
-		allocate(nicon(lGB%nNodes),icon(lGB%nNodes,maxnicon),eicon(lGB%nNodes,maxnicon,2),stat=ialloc)
-		call check_alloc(ialloc,'Node connection arrays')
+		allocate(nicon(GB_GEN%nNodes),icon(GB_GEN%nNodes,maxnicon),eicon(GB_GEN%nNodes,maxnicon,2),stat=ialloc)
+		call AllocChk(ialloc,'Node connection arrays')
 		if(ierr /= 0) return
 
 
 		allocate(new_order(maxnicon),icon_w(maxnicon),eicon_w(maxnicon,2),angle(maxnicon), stat=ialloc)
-		call check_alloc(ialloc,'Node connection working arrays')
+		call AllocChk(ialloc,'Node connection working arrays')
 		if(ierr /= 0) return
 
 		!     Clear connection data
@@ -500,32 +522,32 @@ module gb
 		icon(:,:)=0
 		eicon(:,:,:)=0
 
-		do l=1,lGB%nElements
-			node1=lGB%idNode(1,l)
-			node2=lGB%idNode(2,l)
+		do l=1,GB_GEN%nElements
+			node1=GB_GEN%idNode(1,l)
+			node2=GB_GEN%idNode(2,l)
 			call make_list(l,node1,node2)
-			node2=lGB%idNode(3,l)
+			node2=GB_GEN%idNode(3,l)
 			call make_list(l,node1,node2)
-			node1=lGB%idNode(2,l)
-			node2=lGB%idNode(1,l)
+			node1=GB_GEN%idNode(2,l)
+			node2=GB_GEN%idNode(1,l)
 			call make_list(l,node1,node2)
-			node2=lGB%idNode(3,l)
+			node2=GB_GEN%idNode(3,l)
 			call make_list(l,node1,node2)
-			node1=lGB%idNode(3,l)
-			node2=lGB%idNode(1,l)
+			node1=GB_GEN%idNode(3,l)
+			node2=GB_GEN%idNode(1,l)
 			call make_list(l,node1,node2)
-			node2=lGB%idNode(2,l)
+			node2=GB_GEN%idNode(2,l)
 			call make_list(l,node1,node2)
 		end do
 
 		! Compute angles and sort
-		do i=1,lGB%nNodes
+		do i=1,GB_GEN%nNodes
 			if(nicon(i).gt.2) then
 				i1=icon(i,1)
 				!         Change i1 to downstream boundary node if in list
 				do j=1,nicon(i)
 					ic=icon(i,j)
-					if(bcheck(lGB%node(ic)%is,out_bndy)) then
+					if(bcheck(GB_GEN%node(ic)%is,out_bndy)) then
 						k=1
 						30 continue  ! loop over outer boundary
 							n1=obn(k)
@@ -545,7 +567,7 @@ module gb
 					if(i2.eq.i1) then
 						angle(j)=0.0
 					else
-						call int_angle(lGB%node(i2)%x,lGB%node(i2)%y,lGB%node(i)%x,lGB%node(i)%y,lGB%node(i1)%x,lGB%node(i1)%y,angle(j))
+						call int_angle(GB_GEN%node(i2)%x,GB_GEN%node(i2)%y,GB_GEN%node(i)%x,GB_GEN%node(i)%y,GB_GEN%node(i1)%x,GB_GEN%node(i1)%y,angle(j))
 					endif
 				end do
 				call indexx(nicon(i),angle,new_order,maxnicon)
@@ -649,31 +671,33 @@ module gb
 
 	!*** Well positioning and refinement routines ***
 	!----------------------------------------------------------------------
-	subroutine make_wells
+	subroutine make_wells(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, nde
 
 
-		call node_connections
+		call node_connections(GB_GEN)
 		if(ierr /= 0) return
 
 		do i=1,nwells      ! move and fix well nodes
 			call find_node(xw(i),yw(i),nde)
-			if(.not. bcheck(lGB%node(nde)%is,well)) then
-				lGB%node(nde)%x=xw(i)
-				lGB%node(nde)%y=yw(i)
-				call set(lGB%node(nde)%is,well)
+			if(.not. bcheck(GB_GEN%node(nde)%is,well)) then
+				GB_GEN%node(nde)%x=xw(i)
+				GB_GEN%node(nde)%y=yw(i)
+				call set(GB_GEN%node(nde)%is,well)
 			endif
 		end do
 
-		call relax_grid
+		call relax_grid(GB_GEN)
 		if(ierr /= 0) return
 
 	end subroutine make_wells
 	!----------------------------------------------------------------------
-	subroutine refine_wells
+	subroutine refine_wells(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j, l, nde, nn_old
 
@@ -683,18 +707,18 @@ module gb
 		do i=1,nwells  ! fix well node neighbours
 			call find_node(xw(i),yw(i),nde)
 			do j=1,nicon(nde)
-				call set(lGB%node(icon(nde,j))%is,well)
+				call set(GB_GEN%node(icon(nde,j))%is,well)
 			end do
 		end do
 
-		nn_old=lGB%nNodes
+		nn_old=GB_GEN%nNodes
 
 		refine_loop: do
 
 			stop_refining=.true.
 
-			do l=1,lGB%nElements   ! no elements chosen
-				call clear(lGB%element(l)%is,chosen)
+			do l=1,GB_GEN%nElements   ! no elements chosen
+				call clear(GB_GEN%element(l)%is,chosen)
 			end do
 
 
@@ -715,21 +739,22 @@ module gb
 
 		end do refine_loop
 
-		do i=nn_old+1,lGB%nNodes  ! fix new nodes too
-			call set(lGB%node(i)%is,well)
+		do i=nn_old+1,GB_GEN%nNodes  ! fix new nodes too
+			call set(GB_GEN%node(i)%is,well)
 		end do
 
 	end subroutine refine_wells
 	!----------------------------------------------------------------------
 	subroutine choose_e_connected(nde)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: l, nde
 
 
-		do l=1,lGB%nElements
-			if(lGB%idNode(1,l) == nde .or. lGB%idNode(2,l) == nde .or. lGB%idNode(3,l) == nde)      then
-				call set(lGB%element(l)%is,chosen)
+		do l=1,GB_GEN%nElements
+			if(GB_GEN%idNode(1,l) == nde .or. GB_GEN%idNode(2,l) == nde .or. GB_GEN%idNode(3,l) == nde)      then
+				call set(GB_GEN%element(l)%is,chosen)
 			endif
 		end do
 
@@ -737,17 +762,18 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine node_spacing(i,spacing)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j
 
 		real(dp) :: spacing, dist
 
-		call node_connections
+		call node_connections(GB_GEN)
 		if(ierr /= 0) return
 
 		spacing=0.0
 		do j=1,nicon(i)
-			dist=sqrt((lGB%node(i)%x-lGB%node(icon(i,j))%x)**2 + (lGB%node(i)%y-lGB%node(icon(i,j))%y)**2)
+			dist=sqrt((GB_GEN%node(i)%x-GB_GEN%node(icon(i,j))%x)**2 + (GB_GEN%node(i)%y-GB_GEN%node(icon(i,j))%y)**2)
 			spacing=spacing+dist
 		end do
 
@@ -755,65 +781,50 @@ module gb
 
 	end subroutine node_spacing
 
-
-	!----------------------------------------------------------------------
-	subroutine check_alloc(ialloc,string)
-		use error_param
-		implicit none
-    
-		integer(i4) :: ialloc
-		character*(*) string
-
-		if(ialloc.ne.0) then
-			ierr=1
-		endif
-
-	end subroutine check_alloc
-
-
 	!-----------------------------------------------------------------------
 	!*** Mesh refinement routines ***
 	!-----------------------------------------------------------------------
 	subroutine refine_chosen
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: l, nil, nnn, nne
 
 		integer(i4),allocatable :: nnl(:)
 	
-		allocate(nnl(4*lGB%nNodes), stat=ialloc)
-		call check_alloc(ialloc,'refine_chosen work array')
+		allocate(nnl(4*GB_GEN%nNodes), stat=ialloc)
+		call AllocChk(ialloc,'refine_chosen work array')
 		if(ierr /= 0 ) return
 
 		nnl(:)=0
 
 		nil=0
-		nnn=lGB%nNodes
-		nne=lGB%nElements
-		do l=1,lGB%nElements
-			if (bcheck(lGB%element(l)%is,chosen)) then
-				call refine_element(l,.true.,nil,nnn,nne,nnl)
+		nnn=GB_GEN%nNodes
+		nne=GB_GEN%nElements
+		do l=1,GB_GEN%nElements
+			if (bcheck(GB_GEN%element(l)%is,chosen)) then
+				call refine_element(GB_GEN,l,.true.,nil,nnn,nne,nnl)
 				if(ierr /= 0) goto 1000
 			endif
 		end do
-		if (nnn.gt.lGB%nNodes) then
+		if (nnn.gt.GB_GEN%nNodes) then
 			15      sn=nnn
-				do  l=1,lGB%nElements
-					if (.not. bcheck(lGB%element(l)%is,chosen)) then
-						call check_two(l,nil,nnn,nne,nnl)
+				do  l=1,GB_GEN%nElements
+					if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
+						call check_two(GB_GEN,l,nil,nnn,nne,nnl)
 						if(ierr /= 0) goto 1000
 					endif
 				end do
 			if(nnn.gt.sn) goto 15
-			do  l=1,lGB%nElements
-				if (.not. bcheck(lGB%element(l)%is,chosen)) then
-					call check_one(l,nil,nne,nnl)
+			do  l=1,GB_GEN%nElements
+				if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
+					call check_one(GB_GEN,l,nil,nne,nnl)
 					if(ierr /= 0) goto 1000
 				endif
 			end do
 		endif
-		lGB%nNodes=nnn
-		lGB%nElements=nne
+		GB_GEN%nNodes=nnn
+		GB_GEN%nElements=nne
 		!call calc_bandwidth
 		!recalc_segs=.true.
 		recalc_nicon=.true.
@@ -822,66 +833,68 @@ module gb
 
 	end subroutine refine_chosen
 	!----------------------------------------------------------------------
-	subroutine refine_element(l,set_chosen,nil,nnn,nne,nnl)
+	subroutine refine_element(GB_GEN,l,set_chosen,nil,nnn,nne,nnl)
 		! check each side to see if node already exists
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: l, i1, i2, i3, n1, n2, n3, nnn, nil, nne 
 
-		integer(i4) :: nnl(4*lGB%nNodes)
+		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		integer(i4) :: n_temp, e_temp
 		logical set_chosen
 
-		i1=lGB%idNode(1,l)
-		i2=lGB%idNode(2,l)
-		i3=lGB%idNode(3,l)
-		call check_exist(i1,i2,n1,nnn,nil,nnl)
+		i1=GB_GEN%idNode(1,l)
+		i2=GB_GEN%idNode(2,l)
+		i3=GB_GEN%idNode(3,l)
+		call check_exist(GB_GEN,i1,i2,n1,nnn,nil,nnl)
 		if(ierr /= 0) return
-		call check_exist(i2,i3,n2,nnn,nil,nnl)
+		call check_exist(GB_GEN,i2,i3,n2,nnn,nil,nnl)
 		if(ierr /= 0) return
-		call check_exist(i3,i1,n3,nnn,nil,nnl)
+		call check_exist(GB_GEN,i3,i1,n3,nnn,nil,nnl)
 		if(ierr /= 0) return
-		n_temp=lGB%idNode(2,l)
-		e_temp=lGB%element(l)%idZone
+		n_temp=GB_GEN%idNode(2,l)
+		e_temp=GB_GEN%element(l)%idZone
 		call add_element(nne,n_temp,n2,n1,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
-			call set(lGB%element(nne)%is,chosen)
+			call set(GB_GEN%element(nne)%is,chosen)
 		endif
-		n_temp=lGB%idNode(3,l)
+		n_temp=GB_GEN%idNode(3,l)
 		call add_element(nne,n_temp,n3,n2,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
-			call set(lGB%element(nne)%is,chosen)
+			call set(GB_GEN%element(nne)%is,chosen)
 		endif
 		call add_element(nne,n1,n2,n3,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
-			call set(lGB%element(nne)%is,chosen)
+			call set(GB_GEN%element(nne)%is,chosen)
 		endif
-		lGB%idNode(2,l)=n1
-		lGB%idNode(3,l)=n3
+		GB_GEN%idNode(2,l)=n1
+		GB_GEN%idNode(3,l)=n3
 
 	end subroutine refine_element
 	!----------------------------------------------------------------------
-	subroutine check_exist(i1,i2,ninc,nnn,nil,nnl)
+	subroutine check_exist(GB_GEN,i1,i2,ninc,nnn,nil,nnl)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, i1, i2, nnn, nil, ninc 
 
 		logical node_exists
-		integer(i4) :: nnl(4*lGB%nNodes)
+		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		real*8 :: xm
 		real*8 :: ym
 
-		xm=0.5*lGB%node(i1)%x+0.5*lGB%node(i2)%x
-		ym=0.5*lGB%node(i1)%y+0.5*lGB%node(i2)%y
+		xm=0.5*GB_GEN%node(i1)%x+0.5*GB_GEN%node(i2)%x
+		ym=0.5*GB_GEN%node(i1)%y+0.5*GB_GEN%node(i2)%y
 		node_exists=.false.
 		if (nil.gt.0)then
 			i=1
 			10      continue
-				if (abs(xm-lGB%node(nnl(i))%x).lt.1.e-5) then
-					if(abs(ym-lGB%node(nnl(i))%y).lt.1.e-5) then
+				if (abs(xm-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+					if(abs(ym-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 						node_exists=.true.
 						ninc=nnl(i)
 						call delete_nnl(nnl,i,nil)
@@ -893,24 +906,25 @@ module gb
 			if (i.LE.nil .aND. .not. node_exists) goto 10
 		endif
 		if (.not. node_exists) then
-             write(*,*) lGB%nNodes,' check_exist'
-			call new_node(nnn,xm,ym)
+             write(*,*) GB_GEN%nNodes,' check_exist'
+			call new_node(GB_GEN,xm,ym)
 			if(ierr /= 0) return
-			call update_bnodes(i1,i2,nnn)
+			call update_bnodes(GB_GEN,i1,i2,nnn)
 			if(ierr /= 0) return
 			nil=nil+1
-			nnl(nil)=nnn
-			ninc=nnn
+			nnl(nil)=GB_GEN%nNodes
+			ninc=GB_GEN%nNodes
 		endif
 
 	end subroutine check_exist
 	!----------------------------------------------------------------------
 	subroutine delete_nnl(nnl,i,nil)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j, nil
 
-		integer(i4) :: nnl(4*lGB%nNodes)
+		integer(i4) :: nnl(4*GB_GEN%nNodes)
 	
 		do j=i,nil-1
 			nnl(j)=nnl(j+1)
@@ -918,91 +932,93 @@ module gb
 
 	end subroutine delete_nnl
 	!----------------------------------------------------------------------
-	subroutine check_two(l,nil,nnn,nne,nnl)
+	subroutine check_two(GB_GEN,l,nil,nnn,nne,nnl)
 		! check each side to see if node already exists
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, l, nil, nnn, nne, nSplitSides
 
-		integer(i4) :: nnl(4*lGB%nNodes)
+		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		real*8 :: x1,y1,x2,y2,x3,y3
 
 		nSplitSides=0
-		x1=0.5*lGB%node(lGB%idNode(1,l))%x+0.5*lGB%node(lGB%idNode(2,l))%x
-		y1=0.5*lGB%node(lGB%idNode(1,l))%y+0.5*lGB%node(lGB%idNode(2,l))%y
-		x2=0.5*lGB%node(lGB%idNode(2,l))%x+0.5*lGB%node(lGB%idNode(3,l))%x
-		y2=0.5*lGB%node(lGB%idNode(2,l))%y+0.5*lGB%node(lGB%idNode(3,l))%y
-		x3=0.5*lGB%node(lGB%idNode(3,l))%x+0.5*lGB%node(lGB%idNode(1,l))%x
-		y3=0.5*lGB%node(lGB%idNode(3,l))%y+0.5*lGB%node(lGB%idNode(1,l))%y
+		x1=0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(2,l))%x
+		y1=0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(2,l))%y
+		x2=0.5*GB_GEN%node(GB_GEN%idNode(2,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x
+		y2=0.5*GB_GEN%node(GB_GEN%idNode(2,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y
+		x3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x
+		y3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y
 		i=1
 		10    continue
-			if (abs(x1-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y1-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					nSplitSides=nSplitSides+1
 				endif
 			endif
-			if (abs(x2-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y2-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x2-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y2-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					nSplitSides=nSplitSides+1
 				endif
 			endif
-			if (abs(x3-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y3-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x3-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y3-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					nSplitSides=nSplitSides+1
 				endif
 			endif
 			i=i+1
 		if(i.le.nil .and. nSplitSides.le.1) goto 10
 		if (nSplitSides.gt.1) then
-			call refine_element(l,.false.,nil,nnn,nne,nnl)
+			call refine_element(GB_GEN,l,.false.,nil,nnn,nne,nnl)
 			if(ierr /= 0) return
 		endif
 
 	end subroutine check_two
 	!----------------------------------------------------------------------
-	subroutine check_one(l,nil,nne,nnl)
+	subroutine check_one(GB_GEN,l,nil,nne,nnl)
 		! check each side to see if node already exists
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, l, nil, nne, n1
 
-		integer(i4) :: nnl(4*lGB%nNodes)
+		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		logical done
 		real*8 :: x1,y1,x2,y2,x3,y3
 
 		done=.false.
-		x1=0.5*lGB%node(lGB%idNode(1,l))%x+0.5*lGB%node(lGB%idNode(2,l))%x
-		y1=0.5*lGB%node(lGB%idNode(1,l))%y+0.5*lGB%node(lGB%idNode(2,l))%y
-		x2=0.5*lGB%node(lGB%idNode(2,l))%x+0.5*lGB%node(lGB%idNode(3,l))%x
-		y2=0.5*lGB%node(lGB%idNode(2,l))%y+0.5*lGB%node(lGB%idNode(3,l))%y
-		x3=0.5*lGB%node(lGB%idNode(3,l))%x+0.5*lGB%node(lGB%idNode(1,l))%x
-		y3=0.5*lGB%node(lGB%idNode(3,l))%y+0.5*lGB%node(lGB%idNode(1,l))%y
+		x1=0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(2,l))%x
+		y1=0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(2,l))%y
+		x2=0.5*GB_GEN%node(GB_GEN%idNode(2,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x
+		y2=0.5*GB_GEN%node(GB_GEN%idNode(2,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y
+		x3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x
+		y3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y
 		i=1
 		10    continue
-			if (abs(x1-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y1-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,lGB%idNode(2,l),lGB%idNode(3,l),lGB%element(l)%idZone)
+					call add_element(nne,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
-					lGB%idNode(2,l)=n1
+					GB_GEN%idNode(2,l)=n1
 					done=.true.
 				endif
 			endif
-			if (abs(x2-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y2-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x2-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y2-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,lGB%idNode(3,l),lGB%idNode(1,l),lGB%element(l)%idZone)
+					call add_element(nne,n1,GB_GEN%idNode(3,l),GB_GEN%idNode(1,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
-					lGB%idNode(3,l)=n1
+					GB_GEN%idNode(3,l)=n1
 					done=.true.
 				endif
 			endif
-			if (abs(x3-lGB%node(nnl(i))%x).lt.1.e-5) then
-				if(abs(y3-lGB%node(nnl(i))%y).lt.1.e-5) then
+			if (abs(x3-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
+				if(abs(y3-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,lGB%idNode(2,l),lGB%idNode(3,l),lGB%element(l)%idZone)
+					call add_element(nne,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
-					lGB%idNode(3,l)=n1
+					GB_GEN%idNode(3,l)=n1
 					done=.true.
 				endif
 			endif
@@ -1024,7 +1040,7 @@ module gb
 		endif
 
 		allocate(seg_node(ns_cur,2),seg_el(ns_cur,2), seg_area(ns_cur,2), seg_is(ns_cur),stat=ialloc)
-		call check_alloc(ialloc,'initial segment arrays')
+		call AllocChk(ialloc,'initial segment arrays')
 		if(ierr /= 0) return
 
 		seg_node(:,:)=0
@@ -1052,7 +1068,7 @@ module gb
 			ns_new=nint(ns_rqst*ns_mult)
 
 			allocate(seg_node_tmp(ns_new,2),seg_el_tmp(ns_new,2), seg_area_tmp(ns_new,2), seg_is_tmp(ns_new), stat=ialloc)
-			call check_alloc(ialloc,'allocate temp segment arrays')
+			call AllocChk(ialloc,'allocate temp segment arrays')
 			if(ierr /= 0) return
 	
 			seg_node_tmp(:,:)=0
@@ -1072,7 +1088,7 @@ module gb
 			deallocate(seg_node, seg_area, seg_el, seg_is)
 			! reallocate
 			allocate(seg_node(ns_new,2),seg_el(ns_new,2), seg_area(ns_new,2), seg_is(ns_new), stat=ialloc)
-			call check_alloc(ialloc,'reallocate segment arrays')
+			call AllocChk(ialloc,'reallocate segment arrays')
 			if(ierr /= 0) return
 
 			! copy current data
@@ -1121,7 +1137,7 @@ module gb
 		allocate(nsg(nc_cur),nct(nc_cur),al(nc_cur),ae(nc_cur),usne(nc_cur), &
 			usnl(nc_cur),xcut(nc_cur),ycut(nc_cur),xi(nc_cur),yi(nc_cur),rc(nc_cur), &
 			rs(nc_cur), stat=ialloc)
-		call check_alloc(ialloc,'initial cut arrays')
+		call AllocChk(ialloc,'initial cut arrays')
 		if(ierr /= 0) return
 
 		nsg(:)=0
@@ -1176,7 +1192,7 @@ module gb
 				yi_tmp(nc_cur), &
 				rc_tmp(nc_cur), &
 				rs_tmp(nc_cur), stat=ialloc)
-			call check_alloc(ialloc,'allocate temp cut boundary arrays')
+			call AllocChk(ialloc,'allocate temp cut boundary arrays')
 			if(ierr /= 0) return
 	
 			nsg_tmp(:)=0
@@ -1223,7 +1239,7 @@ module gb
 				yi(nc_new), &
 				rc(nc_new), &
 				rs(nc_new), stat=ialloc)
-			call check_alloc(ialloc,'reallocate cut arrays')
+			call AllocChk(ialloc,'reallocate cut arrays')
 			if(ierr /= 0) return
 	
 			nsg(:)=0
@@ -1276,7 +1292,7 @@ module gb
 			nl_new=nint(nl_rqst*nl_mult)
 
 			allocate(lbn_tmp(0:nl_new), stat=ialloc)
-			call check_alloc(ialloc,'allocate temp lbn array')
+			call AllocChk(ialloc,'allocate temp lbn array')
 			if(ierr /= 0) return
 	
 			lbn_tmp(:)=0
@@ -1290,7 +1306,7 @@ module gb
 			deallocate(lbn)
 			! reallocate
 			allocate(lbn(0:nl_new), stat=ialloc)
-			call check_alloc(ialloc,'reallocate lbn array')
+			call AllocChk(ialloc,'reallocate lbn array')
 			if(ierr /= 0) return
 
 			! copy current data
@@ -1319,7 +1335,7 @@ module gb
 			nb_new=nint(nb_rqst*nb_mult)
 
 			allocate(obn_tmp(0:nb_new), stat=ialloc)
-			call check_alloc(ialloc,'allocate temp outer boundary arrays')
+			call AllocChk(ialloc,'allocate temp outer boundary arrays')
 			if(ierr /= 0) return
 
 			obn_tmp(:)=0
@@ -1333,7 +1349,7 @@ module gb
 			deallocate(obn)
 			! reallocate
 			allocate(obn(0:nb_new), stat=ialloc)
-			call check_alloc(ialloc,'reallocate outer boundary arrays')
+			call AllocChk(ialloc,'reallocate outer boundary arrays')
 			if(ierr /= 0) return
 
 			! copy current data
@@ -1382,7 +1398,7 @@ module gb
 				elength_tmp(na_new),y_elength_tmp(na_new), &
 				stretch_factor_tmp(na_new),ndrop_rate_tmp(na_new), &
 				hole_tmp(na_new),plot_area_tmp(na_new), stat=ialloc)
-			call check_alloc(ialloc,'allocate temp boundary arrays')
+			call AllocChk(ialloc,'allocate temp boundary arrays')
 			if(ierr /= 0) return
 
 			nbn_tmp(:)=0
@@ -1416,7 +1432,7 @@ module gb
 				elength(na_new),y_elength(na_new), &
 				stretch_factor(na_new),ndrop_rate(na_new), &
 				hole(na_new),plot_area(na_new), stat=ialloc)
-			call check_alloc(ialloc,'reallocate boundary arrays')
+			call AllocChk(ialloc,'reallocate boundary arrays')
 			if(ierr /= 0) return
 
 			nbn(:)=0
@@ -1491,7 +1507,7 @@ module gb
 			elength(na_cur), y_elength(na_cur), &
 			stretch_factor(na_cur), ndrop_rate(na_cur), &
 			hole(na_cur), plot_area(na_cur), stat=ialloc)
-		call check_alloc(ialloc,'initial boundary arrays')
+		call AllocChk(ialloc,'initial boundary arrays')
 		if(ierr /= 0) return
 
 		nbn(:)=0
@@ -1512,7 +1528,7 @@ module gb
 		if(b_proposed > no_cur) no_cur=b_proposed
 
 		allocate(obn(0:no_cur), stat=ialloc)
-		call check_alloc(ialloc,'initial outer boundary arrays')
+		call AllocChk(ialloc,'initial outer boundary arrays')
 		if(ierr /= 0) return
 
 		obn(:)=0
@@ -1523,50 +1539,53 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine add_element(nne,i1,i2,i3,e_area)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i1, i2, i3, nne, e_area
 
 
-        call GrowElementArray(lGB%element,nne,nne+1)	
-        call GrowInteger2dArray(lGB%idNode,3,nne,nne+1)	
+        call GrowElementArray(GB_GEN%element,nne,nne+1)	
+        call GrowInteger2dArray(GB_GEN%idNode,3,nne,nne+1)	
 		!call reallocate_element_arrays(nel)
 		if(ierr /= 0) return
 
         nne=nne+1  ! we are going to make a new element
 
-		lGB%idNode(1,nne)=i1
-		lGB%idNode(2,nne)=i2
-		lGB%idNode(3,nne)=i3
-		lGB%element(nne)%is=0	
-		lGB%element(nne)%id=nne	
-		lGB%element(nne)%idZone=e_area		
+		GB_GEN%idNode(1,nne)=i1
+		GB_GEN%idNode(2,nne)=i2
+		GB_GEN%idNode(3,nne)=i3
+		GB_GEN%element(nne)%is=0	
+		GB_GEN%element(nne)%id=nne	
+		GB_GEN%element(nne)%idZone=e_area		
 
 	end subroutine add_element
 	!----------------------------------------------------------------------
-	subroutine new_node(nn,xnew,ynew)
+	subroutine new_node(GB_Gen,xnew,ynew)
 		implicit none
+		type(mesh) GB_GEN
 
-		integer(i4) :: nn
+		!integer(i4) :: nn
 		real(dp) :: xnew, ynew
 
 
-        call GrowNodeArray(lGB%Node,nn,nn+1)	
+        call GrowNodeArray(GB_GEN%Node,GB_GEN%nNodes,GB_GEN%nNodes+1)	
 		!call reallocate_node_arrays(nnd)
 		if(ierr /= 0) return
 
-        nn=nn+1
+        GB_GEN%nNodes=GB_GEN%nNodes+1
 
-		lGB%node(nn)%id=nn
-		lGB%node(nn)%x=xnew
-		lGB%node(nn)%y=ynew
-		lGB%node(nn)%is=0	
+		GB_GEN%node(GB_GEN%nNodes)%id=GB_GEN%nNodes
+		GB_GEN%node(GB_GEN%nNodes)%x=xnew
+		GB_GEN%node(GB_GEN%nNodes)%y=ynew
+		GB_GEN%node(GB_GEN%nNodes)%is=0	
         
-         write(*,*) lGB%nNodes,' node ',nn, xnew, ynew
+         write(*,*) GB_GEN%nNodes,' node ',GB_GEN%nNodes, xnew, ynew
 
 	end subroutine new_node
 	!----------------------------------------------------------------------
-	subroutine gen_uni_bnodes
+	subroutine gen_uni_bnodes(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, n1, n2, i1
 		real(dp) :: x1, y1, x2, y2, d, rmu, rmu1, rmu2, del_rmu, rmu_el
@@ -1575,8 +1594,8 @@ module gb
 		integer(i4) :: nseg_old
 		real(dp), allocatable :: size_nde(:)  ! smallest element size (seg length or elength) at a node 
 
-		allocate(size_nde(lGB%nNodes), stat=ialloc)
-		call check_alloc(ialloc,'gen_uni_bnodes work arrays')
+		allocate(size_nde(GB_GEN%nNodes), stat=ialloc)
+		call AllocChk(ialloc,'gen_uni_bnodes work arrays')
 
 		size_nde(:)=1.e20  ! array assignment
 
@@ -1586,7 +1605,7 @@ module gb
 		do i=1,nseg
 			n1=seg_node(i,1)
 			n2=seg_node(i,2)
-			d=sqrt((lGB%node(n2)%x-lGB%node(n1)%x)**2+(lGB%node(n2)%y-lGB%node(n1)%y)**2)
+			d=sqrt((GB_GEN%node(n2)%x-GB_GEN%node(n1)%x)**2+(GB_GEN%node(n2)%y-GB_GEN%node(n1)%y)**2)
 
 			size_nde(n1)=min(size_nde(n1),d)   					! segment length
 			size_nde(n1)=min(size_nde(n1),elength(seg_area(i,1)))	! target length	
@@ -1604,10 +1623,10 @@ module gb
 		seg_old_loop: do i=1,nseg_old
 			n1=seg_node(i,1)
 			n2=seg_node(i,2)
-			x1=lGB%node(n1)%x
-			y1=lGB%node(n1)%y
-			x2=lGB%node(n2)%x
-			y2=lGB%node(n2)%y
+			x1=GB_GEN%node(n1)%x
+			y1=GB_GEN%node(n1)%y
+			x2=GB_GEN%node(n2)%x
+			y2=GB_GEN%node(n2)%y
 			d=sqrt((x2-x1)**2+(y2-y1)**2)
 			rmu1=size_nde(n1)/d	  ! length factor at n1
 			rmu2=size_nde(n2)/d	  ! length factor at n2
@@ -1621,7 +1640,7 @@ module gb
 				stretch=min(stretch,stretch_factor(seg_area(i,2)))
 			end if
 		
-			i1=lGB%nNodes+1
+			i1=GB_GEN%nNodes+1
 			if(rmu1 <= rmu2) then  ! node 1 hase smaller length factor
 				rmu=0.0
 				del_rmu=min(rmu_el,rmu1*stretch*.707)
@@ -1630,11 +1649,11 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
-                     write(*,*) lGB%nNodes,' gen_uni_bnodes a'
+                     write(*,*) GB_GEN%nNodes,' gen_uni_bnodes a'
 
-					call new_node(lGB%nNodes,x1*(1.0-rmu)+x2*rmu,y1*(1.0-rmu)+y2*rmu)
-					call update_bnodes(n1,n2,lGB%nNodes)
-					n1=lGB%nNodes
+					call new_node(GB_GEN,x1*(1.0-rmu)+x2*rmu,y1*(1.0-rmu)+y2*rmu)
+					call update_bnodes(GB_GEN,n1,n2,GB_GEN%nNodes)
+					n1=GB_GEN%nNodes
 					del_rmu=min(rmu_el,del_rmu*stretch*.707)
 				end do
 			else				  ! node 2 hase smaller length factor
@@ -1645,10 +1664,10 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
-                     write(*,*) lGB%nNodes,' gen_uni_bnodes b'
-					call new_node(lGB%nNodes,x2*(1.0-rmu)+x1*rmu,y2*(1.0-rmu)+y1*rmu)
-					call update_bnodes(n1,n2,lGB%nNodes)
-					n2=lGB%nNodes
+                     write(*,*) GB_GEN%nNodes,' gen_uni_bnodes b'
+					call new_node(GB_GEN,x2*(1.0-rmu)+x1*rmu,y2*(1.0-rmu)+y1*rmu)
+					call update_bnodes(GB_GEN,n1,n2,GB_GEN%nNodes)
+					n2=GB_GEN%nNodes
 					del_rmu=min(rmu_el,del_rmu*stretch*.707)
 				end do
 			endif
@@ -1719,8 +1738,9 @@ module gb
 
 	end subroutine update_outer_boundary
 	!----------------------------------------------------------------------
-	subroutine gen_convex(reg)
+	subroutine gen_convex(GB_GEN,reg)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, lev, nng
 		real(dp) :: crit_angle, des_angle, phi, fac, aa1, ab1, aa2, ab2, aspect
@@ -1730,7 +1750,7 @@ module gb
 		nl_cur=nb_cur
 
 		allocate(lbn(0:nl_cur),stat=ialloc)
-		call check_alloc(ialloc,'gen_convex lbn')
+		call AllocChk(ialloc,'gen_convex lbn')
 		if(ierr /= 0) return
 
 
@@ -1779,31 +1799,31 @@ module gb
 			nd=lbn(i)
 			dsn=lbn(iad(1))
 			dsn2=lbn(iad(2))
-			call int_angle_nng(usn,nd,dsn,crit_angle,des_angle,phi,nng)
+			call int_angle_nng(GB_GEN,usn,nd,dsn,crit_angle,des_angle,phi,nng)
 			if (phi.lt.185.0)then
 				select case (nng)
 				case (0)
-					call check_node_in_el(node_inside)	
+					call check_node_in_el(GB_GEN,node_inside)	
 					if(.not. node_inside) then
-						call nng_0(reg,i,des_angle,aspect)
+						call nng_0(GB_GEN,reg,i,des_angle,aspect)
 						if(ierr /= 0) goto 1000
 					endif
 
 				case (1)
 					!if(do_grade) then
-					!	call krig_point(lGB%node(nd)%x,lGB%node(nd)%y,fac,d1,d2,d3)
+					!	call krig_point(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,fac,d1,d2,d3)
 					!else
 						fac=1.
 					!endif
-					call nng_1(reg,fac,i)
+					call nng_1(GB_GEN,reg,fac,i)
 					if(ierr /= 0) goto 1000
 				case (2)
 					!if(do_grade) then
-					!	call krig_point(lGB%node(nd)%x,lGB%node(nd)%y,fac,d1,d2,d3)
+					!	call krig_point(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,fac,d1,d2,d3)
 					!else
 						fac=1.
 					!endif
-					call nng_2(reg,fac,i)
+					call nng_2(GB_GEN,reg,fac,i)
 					if(ierr /= 0) goto 1000
 				end  select
 			else
@@ -1840,26 +1860,26 @@ module gb
 			nd=lbn(i)
 			dsn=lbn(i+1)
 			usn=lbn(i-1)
-			call add_element(lGB%nElements,nd,dsn,usn,reg)
+			call add_element(GB_GEN%nElements,nd,dsn,usn,reg)
 			if(ierr /= 0) goto 1000
 		else
 			da1=lbn(1)
 			db1=lbn(2)
 			da2=lbn(3)
 			db2=lbn(4)
-			call int_angle(lGB%node(db2)%x,lGB%node(db2)%y,lGB%node(da1)%x,lGB%node(da1)%y,lGB%node(db1)%x,lGB%node(db1)%y,aa1)
-			call int_angle(lGB%node(da1)%x,lGB%node(da1)%y,lGB%node(db1)%x,lGB%node(db1)%y,lGB%node(da2)%x,lGB%node(da2)%y,ab1)
-			call int_angle(lGB%node(db1)%x,lGB%node(db1)%y,lGB%node(da2)%x,lGB%node(da2)%y,lGB%node(db2)%x,lGB%node(db2)%y,aa2)
-			call int_angle(lGB%node(da2)%x,lGB%node(da2)%y,lGB%node(db2)%x,lGB%node(db2)%y,lGB%node(da1)%x,lGB%node(da1)%y,ab2)
+			call int_angle(GB_GEN%node(db2)%x,GB_GEN%node(db2)%y,GB_GEN%node(da1)%x,GB_GEN%node(da1)%y,GB_GEN%node(db1)%x,GB_GEN%node(db1)%y,aa1)
+			call int_angle(GB_GEN%node(da1)%x,GB_GEN%node(da1)%y,GB_GEN%node(db1)%x,GB_GEN%node(db1)%y,GB_GEN%node(da2)%x,GB_GEN%node(da2)%y,ab1)
+			call int_angle(GB_GEN%node(db1)%x,GB_GEN%node(db1)%y,GB_GEN%node(da2)%x,GB_GEN%node(da2)%y,GB_GEN%node(db2)%x,GB_GEN%node(db2)%y,aa2)
+			call int_angle(GB_GEN%node(da2)%x,GB_GEN%node(da2)%y,GB_GEN%node(db2)%x,GB_GEN%node(db2)%y,GB_GEN%node(da1)%x,GB_GEN%node(da1)%y,ab2)
 			if(aa1+aa2.gt.ab1+ab2) then
-				call add_element(lGB%nElements,da1,db1,da2,reg)
+				call add_element(GB_GEN%nElements,da1,db1,da2,reg)
 				if(ierr /= 0) goto 1000
-				call add_element(lGB%nElements,da1,da2,db2,reg)
+				call add_element(GB_GEN%nElements,da1,da2,db2,reg)
 				if(ierr /= 0) goto 1000
 			else
-				call add_element(lGB%nElements,da1,db1,db2,reg)
+				call add_element(GB_GEN%nElements,da1,db1,db2,reg)
 				if(ierr /= 0) goto 1000
-				call add_element(lGB%nElements,db1,da2,db2,reg)
+				call add_element(GB_GEN%nElements,db1,da2,db2,reg)
 				if(ierr /= 0) goto 1000
 			endif
 		endif
@@ -1868,8 +1888,9 @@ module gb
 
 	end subroutine gen_convex
 	!----------------------------------------------------------------------
-	subroutine check_node_in_el(node_inside)	
+	subroutine check_node_in_el(GB_GEN,node_inside)	
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: j
 		real(dp) :: f1, f2, f3
@@ -1880,11 +1901,11 @@ module gb
 		! loop over boundary nodes between dsn and usn
 		j=iad(2)
 		10    continue
-			f1=(lGB%node(lbn(j))%y-lGB%node(nd)%y)*(lGB%node(dsn)%x-lGB%node(nd)%x)-(lGB%node(lbn(j))%x-lGB%node(nd)%x)*(lGB%node(dsn)%y-lGB%node(nd)%y)
+			f1=(GB_GEN%node(lbn(j))%y-GB_GEN%node(nd)%y)*(GB_GEN%node(dsn)%x-GB_GEN%node(nd)%x)-(GB_GEN%node(lbn(j))%x-GB_GEN%node(nd)%x)*(GB_GEN%node(dsn)%y-GB_GEN%node(nd)%y)
 			if (f1.gt.1e-10) then
-				f2=(lGB%node(lbn(j))%y-lGB%node(dsn)%y)*(lGB%node(usn)%x-lGB%node(dsn)%x)-(lGB%node(lbn(j))%x-lGB%node(dsn)%x)*(lGB%node(usn)%y-lGB%node(dsn)%y)
+				f2=(GB_GEN%node(lbn(j))%y-GB_GEN%node(dsn)%y)*(GB_GEN%node(usn)%x-GB_GEN%node(dsn)%x)-(GB_GEN%node(lbn(j))%x-GB_GEN%node(dsn)%x)*(GB_GEN%node(usn)%y-GB_GEN%node(dsn)%y)
 				if (f2.gt.1.e-10) then
-					f3=(lGB%node(lbn(j))%y-lGB%node(usn)%y)*(lGB%node(nd)%x-lGB%node(usn)%x)-(lGB%node(lbn(j))%x-lGB%node(usn)%x)*(lGB%node(nd)%y-lGB%node(usn)%y)
+					f3=(GB_GEN%node(lbn(j))%y-GB_GEN%node(usn)%y)*(GB_GEN%node(nd)%x-GB_GEN%node(usn)%x)-(GB_GEN%node(lbn(j))%x-GB_GEN%node(usn)%x)*(GB_GEN%node(nd)%y-GB_GEN%node(usn)%y)
 					if (f3.gt.1.e-10) then
 						node_inside=.true.
 					endif
@@ -1896,8 +1917,9 @@ module gb
 
 	end subroutine check_node_in_el
 	!----------------------------------------------------------------------
-	subroutine nng_0(reg,i,des_angle,aspect)
+	subroutine nng_0(GB_GEN,reg,i,des_angle,aspect)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j
 		real(dp) :: des_angle, aspect,olap, d, du, dd
@@ -1909,16 +1931,16 @@ module gb
 		j=iad(2)
 		if(j.ge.lnbn) j=0
 		40    continue
-			call check_olap(usn,dsn,lbn(j),lbn(j+1),olap,overlap)
+			call check_olap(GB_GEN,usn,dsn,lbn(j),lbn(j+1),olap,overlap)
 			j=j+1
 			if(j.ge.lnbn) j=0
 		if(j.ne.iad(-2) .and. .not. overlap) goto 40
 
 		if (.not. overlap) then
 			! skip if a neighbouring segment length is much smaller than  proposed one
-			d=sqrt((lGB%node(usn)%x-lGB%node(dsn)%x)**2 + (lGB%node(usn)%y-lGB%node(dsn)%y)**2)  
-			du=sqrt((lGB%node(usn)%x-lGB%node(usn2)%x)**2 + (lGB%node(usn)%y-lGB%node(usn2)%y)**2)/d  
-			dd=sqrt((lGB%node(dsn)%x-lGB%node(dsn2)%x)**2 + (lGB%node(dsn)%y-lGB%node(dsn2)%y)**2)/d  
+			d=sqrt((GB_GEN%node(usn)%x-GB_GEN%node(dsn)%x)**2 + (GB_GEN%node(usn)%y-GB_GEN%node(dsn)%y)**2)  
+			du=sqrt((GB_GEN%node(usn)%x-GB_GEN%node(usn2)%x)**2 + (GB_GEN%node(usn)%y-GB_GEN%node(usn2)%y)**2)/d  
+			dd=sqrt((GB_GEN%node(dsn)%x-GB_GEN%node(dsn2)%x)**2 + (GB_GEN%node(dsn)%y-GB_GEN%node(dsn2)%y)**2)/d  
 
 			if(lnbn > 5 .and. (du < aspect .or. dd < aspect)) then
 				return
@@ -1933,7 +1955,7 @@ module gb
 					lbn(j)=lbn(j+1)
 				end do
 			endif
-			call add_element(lGB%nElements,nd,dsn,usn,reg)
+			call add_element(GB_GEN%nElements,nd,dsn,usn,reg)
 			sn=usn
 			des_angle=110.0
 			aspect=.4
@@ -1943,8 +1965,9 @@ module gb
 
 	end subroutine nng_0
 	!----------------------------------------------------------------------
-	subroutine nng_1(reg,fac,i)
+	subroutine nng_1(GB_GEN,reg,fac,i)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j
 		logical :: overlap
@@ -1955,10 +1978,10 @@ module gb
 		integer(i4) reg
 
 		olap=0.5
-		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
-		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) lGB%nNodes,' nng_1'
-		call new_node(lGB%nNodes,(a1x+a2x)/2.0,(a1y+a2y)/2.0)
+		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
+		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) GB_GEN%nNodes,' nng_1'
+		call new_node(GB_GEN,(a1x+a2x)/2.0,(a1y+a2y)/2.0)
 		if(ierr /= 0) return
 
 		! check for grid overlap
@@ -1966,7 +1989,7 @@ module gb
 		j=iad(2)
 		if(j.ge.lnbn) j=0
 		50    continue
-			call check_olap(dsn,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+			call check_olap(GB_GEN,dsn,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 			j=j+1
 			if(j.ge.lnbn) j=0
 		if (j.ne.iad(-1) .and. .not. overlap) goto 50
@@ -1975,7 +1998,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			60      continue
-				call check_olap(usn,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,usn,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 			if (j.ne.iad(-2) .and. .not. overlap) goto 60
@@ -1985,32 +2008,32 @@ module gb
 		j=iad(1)
 		if(j.ge.lnbn) j=0
 		70      continue
-			call check_olap(nd,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+			call check_olap(GB_GEN,nd,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 			j=j+1
 			if(j.ge.lnbn) j=0
 		if (j.ne.iad(-1) .and. .not. overlap) goto 70
 		endif
 
 		if(.not. overlap) then
-			if(.not. in_ob(lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y)) then
+			if(.not. in_ob(GB_GEN,GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y)) then
 				ierr=5
 				write(log_msg,'(a,i10)') 'Node outside outer boundary, area ',reg
 				call Msg(log_msg)
 				return
 			endif
 			sn=usn
-			lbn(i)=lGB%nNodes
-			if(i.eq.lnbn) lbn(0)=lGB%nNodes
-			call add_element(lGB%nElements,nd,lGB%nNodes,usn,reg)
+			lbn(i)=GB_GEN%nNodes
+			if(i.eq.lnbn) lbn(0)=GB_GEN%nNodes
+			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,usn,reg)
 			if(ierr /= 0) return
-			call add_element(lGB%nElements,nd,dsn,lGB%nNodes,reg)
+			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 			i=i+1
 			!if(i.gt.lnbn) i=i-1
 		else
 			!     call draw_node(nd,blue,sn_sz)
 			!call key_pause
-			lGB%nNodes=lGB%nNodes-1
+			GB_GEN%nNodes=GB_GEN%nNodes-1
 			!call nng_0
 		endif
 
@@ -2037,8 +2060,9 @@ module gb
 
 	end subroutine gen_node
 	!----------------------------------------------------------------------
-	subroutine nng_2(reg,fac,i)
+	subroutine nng_2(GB_GEN,reg,fac,i)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j
 		real(dp) :: olap
@@ -2048,13 +2072,13 @@ module gb
 		integer(i4) :: reg
 
 		olap=0.5
-		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
-		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) lGB%nNodes,' nng_2 a'
-		call new_node(lGB%nNodes,a1x,a1y)
+		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
+		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) GB_GEN%nNodes,' nng_2 a'
+		call new_node(GB_GEN,a1x,a1y)
 		if(ierr /= 0) return
-         write(*,*) lGB%nNodes,' nng_2 b'
-		call new_node(lGB%nNodes,a2x,a2y)
+         write(*,*) GB_GEN%nNodes,' nng_2 b'
+		call new_node(GB_GEN,a2x,a2y)
 		if(ierr /= 0) return
 
 		! check for grid overlap
@@ -2062,7 +2086,7 @@ module gb
 		j=iad(2)
 		if(j.ge.lnbn) j=0
 		olap1: do
-			call check_olap(dsn,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+			call check_olap(GB_GEN,dsn,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 			j=j+1
 			if(j.ge.lnbn) j=0
 			if (j.eq.iad(-1) .or. overlap) exit olap1
@@ -2072,7 +2096,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			olap2: do
-				call check_olap(usn,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,usn,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 				if (j.eq.iad(-2) .or. overlap) exit olap2
@@ -2083,7 +2107,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			olap3: do
-				call check_olap(nd,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,nd,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 				if (j.eq.iad(-1) .or. overlap) exit olap3
@@ -2094,7 +2118,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			olap4: do
-				call check_olap(nd,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,nd,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 				if (j.eq.iad(-1) .or. overlap) exit olap4
@@ -2105,7 +2129,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			olap5: do
-				call check_olap(lGB%nNodes,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,GB_GEN%nNodes,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 				if (j.eq.iad(-1) .or. overlap) exit olap5
@@ -2113,7 +2137,7 @@ module gb
 		endif
 
 		if(.not. overlap) then
-			if(.not. in_ob(lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y)) then
+			if(.not. in_ob(GB_GEN,GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y)) then
 				ierr=5
 				write(log_msg,'(a,i10)') 'Node outside outer boundary, area ',reg
 				call Msg(log_msg)
@@ -2123,7 +2147,7 @@ module gb
 			if(ierr /= 0) return
 			sn=usn
 			if(i.eq.lnbn) then
-				lbn(0)=lGB%nNodes
+				lbn(0)=GB_GEN%nNodes
 			else
 				do j=lnbn,i+1,-1
 					lbn(j+1)=lbn(j)
@@ -2137,23 +2161,24 @@ module gb
 				call write_area_boundary_as_dig(reg) 
 				return
 			endif	 
-			lbn(i)=lGB%nNodes-1
-			lbn(i+1)=lGB%nNodes
-			call add_element(lGB%nElements,nd,lGB%nNodes-1,usn,reg)
+			lbn(i)=GB_GEN%nNodes-1
+			lbn(i+1)=GB_GEN%nNodes
+			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes-1,usn,reg)
 			if(ierr /= 0) return
-			call add_element(lGB%nElements,nd,lGB%nNodes,lGB%nNodes-1,reg)
+			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
 			if(ierr /= 0) return
-			call add_element(lGB%nElements,nd,dsn,lGB%nNodes,reg)
+			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 		else
-			lGB%nNodes=lGB%nNodes-2
-         write(*,*) lGB%nNodes,' nng_2 overlap'
+			GB_GEN%nNodes=GB_GEN%nNodes-2
+         write(*,*) GB_GEN%nNodes,' nng_2 overlap'
 		endif
 
 	end subroutine nng_2
 	!----------------------------------------------------------------------
 	subroutine write_area_boundary_as_dig(i)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j
 
@@ -2162,7 +2187,7 @@ module gb
 		write(888,*) .true.
 		write(888,*) '-999. -999.'
 		do j=1,nbn(i)
-		write(888,*) lGB%node(bn(i,j))%x,lGB%node(bn(i,j))%y
+		write(888,*) GB_GEN%node(bn(i,j))%x,GB_GEN%node(bn(i,j))%y
 		end do
 		write(888,*) '-999. -999.'
 		close(888)
@@ -2171,6 +2196,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine fix_stuck(reg,fac,i)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j
 		real(dp) :: olap
@@ -2180,13 +2206,13 @@ module gb
 		integer(i4) :: reg
 
 		olap=0.8
-		call gen_node(lGB%node(usn)%x,lGB%node(usn)%y,lGB%node(nd)%x,lGB%node(nd)%y,a1x,a1y,fac)
-		call gen_node(lGB%node(nd)%x,lGB%node(nd)%y,lGB%node(dsn)%x,lGB%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) lGB%nNodes,' fix_stuck a'
-		call new_node(lGB%nNodes,a1x,a1y)
+		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
+		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
+         write(*,*) GB_GEN%nNodes,' fix_stuck a'
+		call new_node(GB_GEN,a1x,a1y)
 		if(ierr /= 0) return
-         write(*,*) lGB%nNodes,' fix_stuck b'
-		call new_node(lGB%nNodes,a2x,a2y)
+         write(*,*) GB_GEN%nNodes,' fix_stuck b'
+		call new_node(GB_GEN,a2x,a2y)
 		if(ierr /= 0) return
 
 		! check for grid overlap
@@ -2194,7 +2220,7 @@ module gb
 		j=iad(2)
 		if(j.ge.lnbn) j=0
 		10    continue
-			call check_olap(dsn,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+			call check_olap(GB_GEN,dsn,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 			j=j+1
 			if(j.ge.lnbn) j=0
 		if (j.ne.iad(-1) .and. .not. overlap) goto 10
@@ -2203,7 +2229,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			20      continue
-				call check_olap(usn,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,usn,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 			if (j.ne.iad(-2) .and. .not. overlap) goto 20
@@ -2213,7 +2239,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			30      continue
-				call check_olap(lGB%nNodes,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,GB_GEN%nNodes,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 			if (j.ne.iad(-1) .and. .not. overlap) goto 30
@@ -2223,7 +2249,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			40      continue
-				call check_olap(nd,lGB%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,nd,GB_GEN%nNodes-1,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 			if (j.ne.iad(-1) .and. .not. overlap) goto 40
@@ -2233,7 +2259,7 @@ module gb
 			j=iad(1)
 			if(j.ge.lnbn) j=0
 			50      continue
-				call check_olap(nd,lGB%nNodes,lbn(j),lbn(j+1),olap,overlap)
+				call check_olap(GB_GEN,nd,GB_GEN%nNodes,lbn(j),lbn(j+1),olap,overlap)
 				j=j+1
 				if(j.ge.lnbn) j=0
 			if (j.ne.iad(-1) .and. .not. overlap) goto 50
@@ -2241,7 +2267,7 @@ module gb
 
 		if(.not. overlap) then
 			sn=dsn
-			lbn(i)=lGB%nNodes-1
+			lbn(i)=GB_GEN%nNodes-1
 			lnbn=lnbn+1
 			if(lnbn > 2*nbn(reg)) then
 				ierr=3
@@ -2253,38 +2279,39 @@ module gb
 			do j=lnbn,i+2,-1
 				lbn(j)=lbn(j-1)
 			end do
-			lbn(i+1)=lGB%nNodes
-			if(i.eq.lnbn) lbn(0)=lGB%nNodes
-			call add_element(lGB%nElements,nd,lGB%nNodes-1,usn,reg)
+			lbn(i+1)=GB_GEN%nNodes
+			if(i.eq.lnbn) lbn(0)=GB_GEN%nNodes
+			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes-1,usn,reg)
 			if(ierr /= 0) return
-			call add_element(lGB%nElements,nd,lGB%nNodes,lGB%nNodes-1,reg)
+			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
 			if(ierr /= 0) return
-			call add_element(lGB%nElements,nd,dsn,lGB%nNodes,reg)
+			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 			stuck=.false.
 		else
-			lGB%nNodes=lGB%nNodes-2
+			GB_GEN%nNodes=GB_GEN%nNodes-2
 		endif
 
 	end subroutine fix_stuck
 	!----------------------------------------------------------------------
-	subroutine check_olap(i1,i2,i3,i_4,olap,overlap)
+	subroutine check_olap(GB_GEN,i1,i2,i3,i_4,olap,overlap)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i1, i2, i3, i_4
 		logical :: overlap
 		real(dp) :: del,rmu,rmu2,xin,yin, olap
 		!
-		del=(lGB%node(i2)%x-lGB%node(i1)%x)*(lGB%node(i3)%y-lGB%node(i_4)%y)-(lGB%node(i2)%y-lGB%node(i1)%y)*(lGB%node(i3)%x-lGB%node(i_4)%x)
+		del=(GB_GEN%node(i2)%x-GB_GEN%node(i1)%x)*(GB_GEN%node(i3)%y-GB_GEN%node(i_4)%y)-(GB_GEN%node(i2)%y-GB_GEN%node(i1)%y)*(GB_GEN%node(i3)%x-GB_GEN%node(i_4)%x)
 		if (abs(del).gt.0.0) then
-			rmu=((lGB%node(i3)%y-lGB%node(i_4)%y)*(lGB%node(i3)%x-lGB%node(i1)%x)-(lGB%node(i3)%x-lGB%node(i_4)%x)*(lGB%node(i3)%y-lGB%node(i1)%y))/del
+			rmu=((GB_GEN%node(i3)%y-GB_GEN%node(i_4)%y)*(GB_GEN%node(i3)%x-GB_GEN%node(i1)%x)-(GB_GEN%node(i3)%x-GB_GEN%node(i_4)%x)*(GB_GEN%node(i3)%y-GB_GEN%node(i1)%y))/del
 			if (rmu.ge.0.0 .and. rmu.le.1.0+olap) then
-				xin=rmu*lGB%node(i2)%x+(1.0-rmu)*lGB%node(i1)%x
-				yin=rmu*lGB%node(i2)%y+(1.0-rmu)*lGB%node(i1)%y
-				if (abs(lGB%node(i3)%x-lGB%node(i_4)%x).gt.0.0) then
-					rmu2=(xin-lGB%node(i_4)%x)/(lGB%node(i3)%x-lGB%node(i_4)%x)
+				xin=rmu*GB_GEN%node(i2)%x+(1.0-rmu)*GB_GEN%node(i1)%x
+				yin=rmu*GB_GEN%node(i2)%y+(1.0-rmu)*GB_GEN%node(i1)%y
+				if (abs(GB_GEN%node(i3)%x-GB_GEN%node(i_4)%x).gt.0.0) then
+					rmu2=(xin-GB_GEN%node(i_4)%x)/(GB_GEN%node(i3)%x-GB_GEN%node(i_4)%x)
 				else
-					rmu2=(yin-lGB%node(i_4)%y)/(lGB%node(i3)%y-lGB%node(i_4)%y)
+					rmu2=(yin-GB_GEN%node(i_4)%y)/(GB_GEN%node(i3)%y-GB_GEN%node(i_4)%y)
 				endif
 				if (rmu2.ge.0.0 .and. rmu2.le.1.0) then
 					overlap=.true.
@@ -2361,18 +2388,20 @@ module gb
 
 	end subroutine int_angle
 	!----------------------------------------------------------------------
-	subroutine int_angle_nng(n1,n0,n2,crit_angle,des_angle,phi,nng)
+	subroutine int_angle_nng(GB_GEN,n1,n0,n2,crit_angle,des_angle,phi,nng)
 		implicit none
-		integer(i4) :: n1, n0, n2, nng
+		type(mesh) GB_GEN
+		
+        integer(i4) :: n1, n0, n2, nng
 		real(dp) :: x1,y1,x2,y2,x0,y0,xr,yr
 		real(dp) :: theta1, theta2, fxy, phi, des_angle, crit_angle, s1, s2, savg
 
-		x1=lGB%node(n1)%x
-		y1=lGB%node(n1)%y
-		x0=lGB%node(n0)%x
-		y0=lGB%node(n0)%y
-		x2=lGB%node(n2)%x
-		y2=lGB%node(n2)%y
+		x1=GB_GEN%node(n1)%x
+		y1=GB_GEN%node(n1)%y
+		x0=GB_GEN%node(n0)%x
+		y0=GB_GEN%node(n0)%y
+		x2=GB_GEN%node(n2)%x
+		y2=GB_GEN%node(n2)%y
 
 		xr=x1-x0
 		yr=y1-y0
@@ -2457,8 +2486,9 @@ module gb
 
 	end subroutine int_angle_nng
 	!----------------------------------------------------------------------
-	subroutine update_bnodes(i1,i2,new)
+	subroutine update_bnodes(GB_GEN,i1,i2,new)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j,k, i1, i2, new
 
@@ -2469,9 +2499,9 @@ module gb
 		!     sets the node new any_bndy flag. if area 0 or hole then sets the node
 		!     new out_bndy flag.
 		!
-		call clear(lGB%node(new)%is,any_bndy)
-		call clear(lGB%node(new)%is,out_bndy)
-		call set(lGB%node(new)%is,b_2nd_type)
+		call clear(GB_GEN%node(new)%is,any_bndy)
+		call clear(GB_GEN%node(new)%is,out_bndy)
+		call set(GB_GEN%node(new)%is,b_2nd_type)
 
 		k=0
 		found=.false.
@@ -2484,11 +2514,11 @@ module gb
 				found=.true.
 				! update outer boundary flag and boundary condition if necessary
 				if(j.eq.0) then
-					call set(lGB%node(new)%is,out_bndy)
+					call set(GB_GEN%node(new)%is,out_bndy)
 				elseif(hole(j)) then
-					call set(lGB%node(new)%is,out_bndy)
+					call set(GB_GEN%node(new)%is,out_bndy)
 				endif
-				call set(lGB%node(new)%is,any_bndy)
+				call set(GB_GEN%node(new)%is,any_bndy)
 				! insert it in the list
 				do i=onbn,k+1,-1
 					obn(i+1)=obn(i)
@@ -2511,9 +2541,9 @@ module gb
 					found=.true.
 					! update outer boundary flag and boundary condition if necessary
 					if(hole(j)) then
-						call set(lGB%node(new)%is,out_bndy)
+						call set(GB_GEN%node(new)%is,out_bndy)
 					endif
-					call set(lGB%node(new)%is,any_bndy)
+					call set(GB_GEN%node(new)%is,any_bndy)
 					! insert it in the list
 					do i=nbn(j),k+1,-1
 						bn(j,i+1)=bn(j,i)
@@ -2529,6 +2559,7 @@ module gb
 	!----------------------------------------------------------------------
 	  subroutine propose_drop_node(nd1,nd2, dropped)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j, k, nd1, nd2, pos_1, pos_2
 
@@ -2609,18 +2640,18 @@ module gb
 		end do
 
 		! node nd1 is moved to the midpoint of nd1--nd2
-		lGB%node(nd1)%x=(lGB%node(nd1)%x+lGB%node(nd2)%x)/2.
-		lGB%node(nd1)%y=(lGB%node(nd1)%y+lGB%node(nd2)%y)/2.
+		GB_GEN%node(nd1)%x=(GB_GEN%node(nd1)%x+GB_GEN%node(nd2)%x)/2.
+		GB_GEN%node(nd1)%y=(GB_GEN%node(nd1)%y+GB_GEN%node(nd2)%y)/2.
 
 	
 		! node nd2 is now moved to nn 
-		lGB%node(nd2)%x=lGB%node((lGB%nNodes))%x
-		lGB%node(nd2)%y=lGB%node(lGB%nNodes)%y
+		GB_GEN%node(nd2)%x=GB_GEN%node((GB_GEN%nNodes))%x
+		GB_GEN%node(nd2)%y=GB_GEN%node(GB_GEN%nNodes)%y
 	
 		! if an area boundary list contained node nn, it is now renumbered to nd2
 		do k=1,area
 			do i=0,nbn(k)
-				if (bn(k,i).eq.lGB%nNodes) then 
+				if (bn(k,i).eq.GB_GEN%nNodes) then 
 					bn(k,i)=nd2         ! update boundary node list
 				endif
 			end do
@@ -2659,62 +2690,63 @@ module gb
 
 		! if outer boundary list contained node nn, it is now renumbered to nd2
 		do i=0,onbn
-			if (obn(i).eq.lGB%nNodes) then 
+			if (obn(i).eq.GB_GEN%nNodes) then 
 				obn(i)=nd2         ! update boundary node list
 			endif
 		end do
 
 		dropped=.true.
-		lGB%nNodes=lGB%nNodes-1
+		GB_GEN%nNodes=GB_GEN%nNodes-1
 
 	end subroutine propose_drop_node
 	!----------------------------------------------------------------------
 	subroutine shuffle_arrays(jnt)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i,j
 		real, allocatable :: rdum(:)
 		integer(i4), allocatable :: ldum(:),jnt(:),ndummy(:,:), bdummy(:,:)
 
-		allocate(rdum(lGB%nNodes),ldum(lGB%nNodes),jnt(0:lGB%nNodes),ndummy(lGB%nElements,3),bdummy(0:area,0:nb_cur), stat=ialloc)
-		call check_alloc(ialloc,'shuffle_arrays work arrays')
+		allocate(rdum(GB_GEN%nNodes),ldum(GB_GEN%nNodes),jnt(0:GB_GEN%nNodes),ndummy(GB_GEN%nElements,3),bdummy(0:area,0:nb_cur), stat=ialloc)
+		call AllocChk(ialloc,'shuffle_arrays work arrays')
 
 
 		jnt(0)=0
-		do i=1,lGB%nNodes
-			rdum(jnt(i))=lGB%node(i)%x
+		do i=1,GB_GEN%nNodes
+			rdum(jnt(i))=GB_GEN%node(i)%x
 		end do
 
-		do i=1,lGB%nNodes
-			lGB%node(i)%x=rdum(i)
+		do i=1,GB_GEN%nNodes
+			GB_GEN%node(i)%x=rdum(i)
 		end do
 
-		do i=1,lGB%nNodes
-			rdum(jnt(i))=lGB%node(i)%y
+		do i=1,GB_GEN%nNodes
+			rdum(jnt(i))=GB_GEN%node(i)%y
 		end do
 
-		do i=1,lGB%nNodes
-			lGB%node(i)%y=rdum(i)
+		do i=1,GB_GEN%nNodes
+			GB_GEN%node(i)%y=rdum(i)
 		end do
 
-		do i=1,lGB%nNodes
-			ldum(jnt(i))=lGB%node(i)%is
+		do i=1,GB_GEN%nNodes
+			ldum(jnt(i))=GB_GEN%node(i)%is
 		end do
 
-		do i=1,lGB%nNodes
-			lGB%node(i)%is=ldum(i)
+		do i=1,GB_GEN%nNodes
+			GB_GEN%node(i)%is=ldum(i)
 		end do
 
-		do i=1,lGB%nElements
-			ndummy(i,1)=jnt(lGB%idNode(1,i))
-			ndummy(i,2)=jnt(lGB%idNode(2,i))
-			ndummy(i,3)=jnt(lGB%idNode(3,i))
+		do i=1,GB_GEN%nElements
+			ndummy(i,1)=jnt(GB_GEN%idNode(1,i))
+			ndummy(i,2)=jnt(GB_GEN%idNode(2,i))
+			ndummy(i,3)=jnt(GB_GEN%idNode(3,i))
 		end do
 
-		do i=1,lGB%nElements
-			lGB%idNode(1,i)=ndummy(i,1)
-			lGB%idNode(2,i)=ndummy(i,2)
-			lGB%idNode(3,i)=ndummy(i,3)
+		do i=1,GB_GEN%nElements
+			GB_GEN%idNode(1,i)=ndummy(i,1)
+			GB_GEN%idNode(2,i)=ndummy(i,2)
+			GB_GEN%idNode(3,i)=ndummy(i,3)
 		end do
 
 		! outer boundary
@@ -2739,8 +2771,9 @@ module gb
 
 	end subroutine shuffle_arrays
 	!----------------------------------------------------------------------
-	subroutine fix_short_segs_batch
+	subroutine fix_short_segs_batch(GB_GEN)
 		implicit none		
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, nd1, nd2, pass, nseg_old
 		real(dp) :: seg_l
@@ -2749,8 +2782,8 @@ module gb
 
 		logical,allocatable :: n_dropped(:)   ! node has been dropped
 
-		allocate(n_dropped(lGB%nNodes),stat=ialloc)
-		call check_alloc(ialloc,'fix_short_segs_batch work array')  
+		allocate(n_dropped(GB_GEN%nNodes),stat=ialloc)
+		call AllocChk(ialloc,'fix_short_segs_batch work array')  
 
 		pass=0
 		nseg_old=0
@@ -2767,12 +2800,12 @@ module gb
 				nd1=seg_node(i,1)
 				nd2=seg_node(i,2)
 				if(.not. n_dropped(nd1) .and. .not. n_dropped(nd2)) then  ! only do anything if neither node changed
-					seg_l=sqrt((lGB%node(nd1)%x-lGB%node(nd2)%x)**2+(lGB%node(nd1)%y-lGB%node(nd2)%y)**2)
+					seg_l=sqrt((GB_GEN%node(nd1)%x-GB_GEN%node(nd2)%x)**2+(GB_GEN%node(nd1)%y-GB_GEN%node(nd2)%y)**2)
 					if(seg_l.lt.segl_user) then
 						call propose_drop_node(nd1,nd2,dropped)
 						if(dropped) then
 							n_dropped(nd2)=.true.
-							n_dropped(lGB%nNodes+1)=.true.
+							n_dropped(GB_GEN%nNodes+1)=.true.
 						endif
 					endif
 				endif
@@ -2797,14 +2830,15 @@ module gb
 		endif
 	end subroutine direct
 	!----------------------------------------------------------------------
-	subroutine process_gen_file
+	subroutine process_gen_file(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j, n_area
 		integer(i4), allocatable :: jnt(:)   ! new node numbers i.e. jnt(10) = new node number for old node 10
 
 		allocate(jnt(nn_in),stat=ialloc) 
-		call check_alloc(ialloc,'process_gen_file work array')
+		call AllocChk(ialloc,'process_gen_file work array')
 		if(ierr /= 0) return
 
 		jnt(:)=0  ! if not assigned yet
@@ -2816,13 +2850,13 @@ module gb
 		call reallocate_outer_boundary_arrays(onbn)
 		if(ierr /= 0) goto 1000
 		do i=1,onbn_in
-			 write(*,*) lGB%nNodes,' process_gen_file a'
-			call new_node(lGB%nNodes,x_in(obn_in(i)),y_in(obn_in(i)))  ! all outer boundary nodes are kept
+			 write(*,*) GB_GEN%nNodes,' process_gen_file a'
+			call new_node(GB_GEN,x_in(obn_in(i)),y_in(obn_in(i)))  ! all outer boundary nodes are kept
 			if(ierr /= 0) goto 1000
-			call set(lGB%node(lGB%nNodes)%is,out_bndy)
-			call set(lGB%node(lGB%nNodes)%is,any_bndy)
-			jnt(obn_in(i))=lGB%nNodes 
-			obn(i)=lGB%nNodes
+			call set(GB_GEN%node(GB_GEN%nNodes)%is,out_bndy)
+			call set(GB_GEN%node(GB_GEN%nNodes)%is,any_bndy)
+			jnt(obn_in(i))=GB_GEN%nNodes 
+			obn(i)=GB_GEN%nNodes
 		end do
 		obn(0)=jnt(obn_in(0))
 
@@ -2839,13 +2873,13 @@ module gb
 				do j=0,nbn_in(n_area)
 				
 					if(jnt(bn_in(area,j)) == 0) then   ! this node hasn't been assigned yet
-						 write(*,*) lGB%nNodes,' process_gen_file a'
-						call new_node(lGB%nNodes,x_in(bn_in(area,j)),y_in(bn_in(area,j)))  ! keep this boundary node
+						 write(*,*) GB_GEN%nNodes,' process_gen_file a'
+						call new_node(GB_GEN,x_in(bn_in(area,j)),y_in(bn_in(area,j)))  ! keep this boundary node
 						if(ierr /= 0) goto 1000
-						call set(lGB%node(lGB%nNodes)%is,out_bndy)
-						call set(lGB%node(lGB%nNodes)%is,any_bndy)
-						jnt(bn_in(area,j))=lGB%nNodes 
-						bn(area,j)=lGB%nNodes
+						call set(GB_GEN%node(GB_GEN%nNodes)%is,out_bndy)
+						call set(GB_GEN%node(GB_GEN%nNodes)%is,any_bndy)
+						jnt(bn_in(area,j))=GB_GEN%nNodes 
+						bn(area,j)=GB_GEN%nNodes
 					else
 						bn(area,j)=jnt(bn_in(area,j))   ! re-assign new node number 
 					endif
@@ -2881,41 +2915,42 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine set_ob_dir
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i
 		real(dp), allocatable :: dum_x(:),dum_y(:)
 		real(dp) :: ang, tot_ang1, tot_ang2
 	
-		allocate(dum_x(lGB%nNodes), dum_y(lGB%nNodes), stat=ialloc)
-		call check_alloc(ialloc,'set_ob_dir work arrays')
+		allocate(dum_x(GB_GEN%nNodes), dum_y(GB_GEN%nNodes), stat=ialloc)
+		call AllocChk(ialloc,'set_ob_dir work arrays')
 		if(ierr /= 0) return
 	
-		call int_angle(lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y,lGB%node(1)%x,lGB%node(1)%y,lGB%node(2)%x,lGB%node(2)%y,ang)
+		call int_angle(GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y,GB_GEN%node(1)%x,GB_GEN%node(1)%y,GB_GEN%node(2)%x,GB_GEN%node(2)%y,ang)
 		tot_ang1=ang
-		do i=2,lGB%nNodes-1
-			call int_angle(lGB%node(i-1)%x,lGB%node(i-1)%y,lGB%node(i)%x,lGB%node(i)%y,lGB%node(i+1)%x,lGB%node(i+1)%y,ang)
+		do i=2,GB_GEN%nNodes-1
+			call int_angle(GB_GEN%node(i-1)%x,GB_GEN%node(i-1)%y,GB_GEN%node(i)%x,GB_GEN%node(i)%y,GB_GEN%node(i+1)%x,GB_GEN%node(i+1)%y,ang)
 			tot_ang1=tot_ang1+ang
 		end do
-		call int_angle(lGB%node(lGB%nNodes-1)%x,lGB%node(lGB%nNodes-1)%y,lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y,lGB%node(1)%x,lGB%node(1)%y,ang)
+		call int_angle(GB_GEN%node(GB_GEN%nNodes-1)%x,GB_GEN%node(GB_GEN%nNodes-1)%y,GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y,GB_GEN%node(1)%x,GB_GEN%node(1)%y,ang)
 	
-		call int_angle(lGB%node(1)%x,lGB%node(1)%y,lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y,lGB%node(lGB%nNodes-1)%x,lGB%node(lGB%nNodes-1)%y,ang)
+		call int_angle(GB_GEN%node(1)%x,GB_GEN%node(1)%y,GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y,GB_GEN%node(GB_GEN%nNodes-1)%x,GB_GEN%node(GB_GEN%nNodes-1)%y,ang)
 		tot_ang2=ang
-		do i=lGB%nNodes-1,2,-1
-			call int_angle(lGB%node(i+1)%x,lGB%node(i+1)%y,lGB%node(i)%x,lGB%node(i)%y,lGB%node(i-1)%x,lGB%node(i-1)%y,ang)
+		do i=GB_GEN%nNodes-1,2,-1
+			call int_angle(GB_GEN%node(i+1)%x,GB_GEN%node(i+1)%y,GB_GEN%node(i)%x,GB_GEN%node(i)%y,GB_GEN%node(i-1)%x,GB_GEN%node(i-1)%y,ang)
 			tot_ang2=tot_ang2+ang
 		end do
-		call int_angle(lGB%node(2)%x,lGB%node(2)%y,lGB%node(1)%x,lGB%node(1)%y,lGB%node((lGB%nNodes))%x,lGB%node(lGB%nNodes)%y,ang)
+		call int_angle(GB_GEN%node(2)%x,GB_GEN%node(2)%y,GB_GEN%node(1)%x,GB_GEN%node(1)%y,GB_GEN%node((GB_GEN%nNodes))%x,GB_GEN%node(GB_GEN%nNodes)%y,ang)
 	
 		if(tot_ang1.lt.tot_ang2) goto 1000
 	
-		do i=1,lGB%nNodes
-			dum_x(i)=lGB%node(i)%x
-			dum_y(i)=lGB%node(i)%y
+		do i=1,GB_GEN%nNodes
+			dum_x(i)=GB_GEN%node(i)%x
+			dum_y(i)=GB_GEN%node(i)%y
 		end do
 	
-		do i=1,lGB%nNodes
-			lGB%node(i)%x=dum_x(lGB%nNodes-i+1)
-			lGB%node(i)%y=dum_y(lGB%nNodes-i+1)
+		do i=1,GB_GEN%nNodes
+			GB_GEN%node(i)%x=dum_x(GB_GEN%nNodes-i+1)
+			GB_GEN%node(i)%y=dum_y(GB_GEN%nNodes-i+1)
 		end do
 	
 		1000 deallocate(dum_x, dum_y)
@@ -2955,6 +2990,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine update_area(i_int,tie_in_start,nds,tie_in_end,nde)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, k, i_int, nds, nde, nc1, nc2, nbn_old, ndum, old_nn, nn_s, nn_e, inc
 
@@ -2964,7 +3000,7 @@ module gb
 
 		integer(i4),allocatable :: ldum(:)
 		allocate(ldum(0:nb_cur),stat=ialloc)
-		call check_alloc(ialloc,'update_area work array')
+		call AllocChk(ialloc,'update_area work array')
 		if(ierr /= 0) return
 
 		!     This version only updates the nodes which make up the segments which
@@ -3086,16 +3122,16 @@ module gb
 			bn(area,0)=ldum(nc2)
 			!
 		else  ! new nodes needed
-			old_nn=lGB%nNodes
+			old_nn=GB_GEN%nNodes
 			!       Define the coordinates of the new nodes
 			do i=nct(i_int-1)+1,nct(i_int)
-			 write(*,*) lGB%nNodes,' update_area'
-				call new_node(lGB%nNodes,xcut(i),ycut(i))
+			 write(*,*) GB_GEN%nNodes,' update_area'
+				call new_node(GB_GEN,xcut(i),ycut(i))
 				if(ierr /= 0) goto 1000
 			end do
 			!       Store the start and end numbers of the new nodes
 			nn_s=old_nn+1
-			nn_e=lGB%nNodes
+			nn_e=GB_GEN%nNodes
 			!
 			!       If nc1 is greater than nc2 then the cut enters the area downstream
 			!       of the point of exit.  In this case swap the start and end node
@@ -3105,7 +3141,7 @@ module gb
 				ndum=nc2
 				nc2=nc1
 				nc1=ndum
-				nn_s=lGB%nNodes
+				nn_s=GB_GEN%nNodes
 				nn_e=old_nn+1
 				inc=-1
 			endif
@@ -3170,7 +3206,7 @@ module gb
 
 		integer(i4),allocatable :: ldum(:)
 		allocate(ldum(0:nb_cur),stat=ialloc)
-		call check_alloc(ialloc,'update_area work array')
+		call AllocChk(ialloc,'update_area work array')
 		if(ierr /= 0) return
 
 		!     This version only updates the nodes which make up the segments which
@@ -3226,6 +3262,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine calc_al_ae(i_int,skip)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, i_int, n0, n1, n2, n3, nc_ds
 		real(dp) :: phi, phi2  
@@ -3263,7 +3300,7 @@ module gb
 		!
 		!     Simplest case is where  0.0 < rs and rs < 1.0
 		if(rs(i_int).gt.0.0 .and. rs(i_int).lt.1.0) then
-			call direct(xcut(nc_ds),ycut(nc_ds), lGB%node(n1)%x,lGB%node(n1)%y,lGB%node(n2)%x,lGB%node(n2)%y,entering)
+			call direct(xcut(nc_ds),ycut(nc_ds), GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,entering)
 			if(entering) then
 				ae(i_int)=a1
 				usne(i_int)=n1
@@ -3299,8 +3336,8 @@ module gb
 			!
 			if(abs(rs(i_int)-1.0).lt.1.e-37) then  ! get downstream node number n3
 				call find_dsn(a1,n1,n2,n3)
-				call int_angle(lGB%node(n1)%x,lGB%node(n1)%y,lGB%node(n2)%x,lGB%node(n2)%y,lGB%node(n3)%x,lGB%node(n3)%y,phi)
-				call int_angle(lGB%node(n1)%x,lGB%node(n1)%y,lGB%node(n2)%x,lGB%node(n2)%y,xds,yds,phi2)
+				call int_angle(GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,GB_GEN%node(n3)%x,GB_GEN%node(n3)%y,phi)
+				call int_angle(GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,xds,yds,phi2)
 				if(phi2.lt.phi) then
 					entering=.true.
 				else
@@ -3313,8 +3350,8 @@ module gb
 					usnl(i_int)=n3
 				else
 					call find_dsn(a2,n1,n2,n3)
-					call int_angle(lGB%node(n3)%x,lGB%node(n3)%y,lGB%node(n2)%x,lGB%node(n2)%y,lGB%node(n1)%x,lGB%node(n1)%y,phi)
-					call int_angle(lGB%node(n3)%x,lGB%node(n3)%y,lGB%node(n2)%x,lGB%node(n2)%y,xds,yds,phi2)
+					call int_angle(GB_GEN%node(n3)%x,GB_GEN%node(n3)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,phi)
+					call int_angle(GB_GEN%node(n3)%x,GB_GEN%node(n3)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,xds,yds,phi2)
 					if(phi2.lt.phi) then
 						entering=.true.
 					else
@@ -3332,8 +3369,8 @@ module gb
 				endif
 			else                  ! get upstream node number n0
 				call find_dsn(a1,n2,n1,n0)
-				call int_angle(lGB%node(n0)%x,lGB%node(n0)%y,lGB%node(n1)%x,lGB%node(n1)%y,lGB%node(n2)%x,lGB%node(n2)%y,phi)
-				call int_angle(lGB%node(n0)%x,lGB%node(n0)%y,lGB%node(n1)%x,lGB%node(n1)%y,xds,yds,phi2)
+				call int_angle(GB_GEN%node(n0)%x,GB_GEN%node(n0)%y,GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,phi)
+				call int_angle(GB_GEN%node(n0)%x,GB_GEN%node(n0)%y,GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,xds,yds,phi2)
 				if(phi2.lt.phi) then
 					entering=.true.
 				else
@@ -3346,8 +3383,8 @@ module gb
 					usnl(i_int)=n2
 				else
 					call find_dsn(a2,n2,n1,n0)
-					call int_angle(lGB%node(n2)%x,lGB%node(n2)%y,lGB%node(n1)%x,lGB%node(n1)%y,lGB%node(n0)%x,lGB%node(n0)%y,phi)
-					call int_angle(lGB%node(n2)%x,lGB%node(n2)%y,lGB%node(n1)%x,lGB%node(n1)%y,xds,yds,phi2)
+					call int_angle(GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,GB_GEN%node(n0)%x,GB_GEN%node(n0)%y,phi)
+					call int_angle(GB_GEN%node(n2)%x,GB_GEN%node(n2)%y,GB_GEN%node(n1)%x,GB_GEN%node(n1)%y,xds,yds,phi2)
 					if(phi2.lt.phi) then
 						entering=.true.
 					else
@@ -3370,6 +3407,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine analyze_cut(split)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, j, k, ia, id, ig, ih, ii, ij
 		real(dp) :: xc1, yc1, xc2, yc2
@@ -3399,10 +3437,10 @@ module gb
 			yc2=ycut(i+1)
 			! Loop over the existing segments
 			do j=1,nseg
-				xs1=lGB%node(seg_node(j,1))%x
-				ys1=lGB%node(seg_node(j,1))%y
-				xs2=lGB%node(seg_node(j,2))%x
-				ys2=lGB%node(seg_node(j,2))%y
+				xs1=GB_GEN%node(seg_node(j,1))%x
+				ys1=GB_GEN%node(seg_node(j,1))%y
+				xs2=GB_GEN%node(seg_node(j,2))%x
+				ys2=GB_GEN%node(seg_node(j,2))%y
 				!
 				!  The following 6 lines determine if the two segments intersect
 				del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
@@ -3534,6 +3572,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine extend_cut_downstream
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: j
 		real(dp) :: rext
@@ -3552,10 +3591,10 @@ module gb
 		xc2=xcut(ncut)
 		yc2=ycut(ncut)
 		do j=1,nseg
-			xs1=lGB%node(seg_node(j,1))%x
-			ys1=lGB%node(seg_node(j,1))%y
-			xs2=lGB%node(seg_node(j,2))%x
-			ys2=lGB%node(seg_node(j,2))%y
+			xs1=GB_GEN%node(seg_node(j,1))%x
+			ys1=GB_GEN%node(seg_node(j,1))%y
+			xs2=GB_GEN%node(seg_node(j,2))%x
+			ys2=GB_GEN%node(seg_node(j,2))%y
 			!  The following 6 lines determine if the two segments intersect
 			del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
 			del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
@@ -3578,6 +3617,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine extend_cut_upstream
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: j
 		real(dp) :: rext
@@ -3596,10 +3636,10 @@ module gb
 		xc2=xcut(2)
 		yc2=ycut(2)
 		do j=1,nseg
-			xs1=lGB%node(seg_node(j,1))%x
-			ys1=lGB%node(seg_node(j,1))%y
-			xs2=lGB%node(seg_node(j,2))%x
-			ys2=lGB%node(seg_node(j,2))%y
+			xs1=GB_GEN%node(seg_node(j,1))%x
+			ys1=GB_GEN%node(seg_node(j,1))%y
+			xs2=GB_GEN%node(seg_node(j,2))%x
+			ys2=GB_GEN%node(seg_node(j,2))%y
 			!  The following 6 lines determine if the two segments intersect
 			del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
 			del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
@@ -3679,6 +3719,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine check_tie_in(xtie,ytie,tie_in,p_node)
 		implicit none
+		type(mesh) GB_GEN
 
 		logical tie_in
 		integer(i4) p_node
@@ -3686,17 +3727,17 @@ module gb
 	
 		! Find closest node and calculate distances
 		call gen_find_node(xtie,ytie,p_node)
-		difx=abs(xtie-lGB%node(p_node)%x)
-		dify=abs(ytie-lGB%node(p_node)%y)
+		difx=abs(xtie-GB_GEN%node(p_node)%x)
+		dify=abs(ytie-GB_GEN%node(p_node)%y)
 	
 		if (difx.lt.1.e-5 .and. dify.lt.1.e-5) then ! node exists
 			tie_in=.true.
 		else
 			tie_in=.false.
-			 write(*,*) lGB%nNodes,' check_tie_in'
-			call new_node(lGB%nNodes,xtie,ytie)
+			 write(*,*) GB_GEN%nNodes,' check_tie_in'
+			call new_node(GB_GEN,xtie,ytie)
 			if(ierr /= 0) return
-			p_node=lGB%nNodes
+			p_node=GB_GEN%nNodes
 		endif
 	
 	end subroutine check_tie_in
@@ -3792,6 +3833,7 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine gen_find_node(x1,y1,p_node)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, p_node
 		real(dp) :: x1,y1, dist_min, f1
@@ -3799,20 +3841,21 @@ module gb
 		i=1
 		dist_min=1.0e20
 		97    continue
-			f1=sqrt((x1-lGB%node(i)%x)**2+((y1-lGB%node(i)%y))**2)
-			!f1=sqrt((x1-lGB%node(i)%x)**2+((y1-lGB%node(i)%y)*scr_ratio)**2)
+			f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y))**2)
+			!f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y)*scr_ratio)**2)
 			if(f1.lt.dist_min) then
 				p_node=i
 				dist_min=f1
 			endif
 			i=i+1
-		if (i.LE.lGB%nNodes) goto 97
+		if (i.LE.GB_GEN%nNodes) goto 97
 
 	end subroutine gen_find_node
 
     !------------------------------------------------------------------------------------------------------
-    function in_ob(px,py)
+    function in_ob(GB_GEN,px,py)
         implicit none
+		type(mesh) GB_GEN
 
         LOGICAL :: in_ob
 
@@ -3822,11 +3865,11 @@ module gb
         cn = 0  ! the crossing number counter
 
         do i=0,onbn-1
-           if (((lGB%node(obn(i))%y <= py) .and. (lGB%node(obn(i+1))%y > py))   & ! an upward crossing
-            .or.  ((lGB%node(obn(i))%y > py) .and. (lGB%node(obn(i+1))%y <= py)))  then ! a downward crossing
+           if (((GB_GEN%node(obn(i))%y <= py) .and. (GB_GEN%node(obn(i+1))%y > py))   & ! an upward crossing
+            .or.  ((GB_GEN%node(obn(i))%y > py) .and. (GB_GEN%node(obn(i+1))%y <= py)))  then ! a downward crossing
                 ! compute the actual edge-ray intersect x-coordinate
-                vt = (py - lGB%node(obn(i))%y) / (lGB%node(obn(i+1))%y - lGB%node(obn(i))%y)
-                if (px < lGB%node(obn(i))%x + vt * (lGB%node(obn(i+1))%x - lGB%node(obn(i))%x)) then ! px < intersect
+                vt = (py - GB_GEN%node(obn(i))%y) / (GB_GEN%node(obn(i+1))%y - GB_GEN%node(obn(i))%y)
+                if (px < GB_GEN%node(obn(i))%x + vt * (GB_GEN%node(obn(i+1))%x - GB_GEN%node(obn(i))%x)) then ! px < intersect
                     cn=cn+1   ! a valid crossing of y=P.y right of P.x
                 endif
             end if

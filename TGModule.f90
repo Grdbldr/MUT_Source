@@ -127,14 +127,7 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, MeshFromGb_CMD)  /= 0) then
                 NeedGBName=.true.
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
-        
-                if(MyMeshGroup%nMesh > 1) then
-                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
-                else    
-                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
-                    call AllocChk(ialloc,'New mesh from instruction: '//trim(MUT_CMD))
-                end if
-
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
                 call ReadGridBuilderMesh(FNumMut,MyMeshGroup%Mesh(MyMeshGroup%nMesh))                
                 !TMPLT.Name='TMPLT'
                 !!call MeshFromGb(FnumMUT,TMPLT)
@@ -143,13 +136,7 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, GenerateUniformRectangles_CMD)  /= 0) then
                 ! Build the 2D template mesh from a uniform 2D rectangular mesh
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
-        
-                if(MyMeshGroup%nMesh > 1) then
-                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
-                else    
-                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
-                    call AllocChk(ialloc,'MyMeshGroup%Mesh GridBuilder mesh array')
-                end if
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
                 call GenerateUniformRectangles(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
                 
                 
@@ -167,13 +154,7 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, GenerateSegmentsFromXYZEndpoints_CMD)  /= 0) then
                 ! Build the 2D template mesh from a uniform 2D rectangular mesh
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
-        
-                if(MyMeshGroup%nMesh > 1) then
-                    call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
-                else    
-                    allocate(MyMeshGroup%Mesh(1),stat=ialloc)
-                    call AllocChk(ialloc,'MyMeshGroup%Mesh segment mesh array')
-                end if
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
                 call GenerateSegmentsFromXYZEndpoints(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
 
             
@@ -185,8 +166,24 @@ module MUT  !### Modflow-USG Tools
                 
             ! GridBuilder options
             else if(index(MUT_CMD, GridBuilder_CMD) /= 0) then
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                !if(.not. allocated(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%node)) then
+                !    call GrowNodeArray(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%node,0,1)
+                !endif
+                !if(.not. allocated(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%element)) then
+                !    call GrowElementArray(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%element,0,1)
+                !endif
+                !
+                read(FNumMut,'(a80)') TmpSTR
+                MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
+                call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
                 call read_gendat(FNumMUT)
-                call GridBuilder(iError)
+                call GridBuilder(MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
+                if(EnableTecplotOutput) then
+                    call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                endif
+
 
                 ! Modflow options
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then

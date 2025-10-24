@@ -247,6 +247,17 @@ module NumericalMesh
         type(mesh), allocatable :: iArray(:)
         type(mesh), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
+        integer(i4) :: iSize
+
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
+        iSize=size(iArray)
+        if(nSizeout < iSize) then
+            return
+        endif
 
         if(nSizeIn < nSizeout) then
             allocate(iTMP(nSizeout),stat=ialloc)
@@ -254,10 +265,8 @@ module NumericalMesh
             iTMP(1:nSizeIn) = iArray
             call move_alloc (iTMP, iArray)
         else
-            call Msg('Requested size less than current size in GrowMeshArray')    
             return
         endif
-        
     end subroutine GrowMeshArray
     !----------------------------------------------------------------------
     subroutine GrowElementArray(iArray,nSizeIn,nSizeout)
@@ -265,9 +274,15 @@ module NumericalMesh
         type(element), allocatable :: iArray(:)
         type(element), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
+        integer(i4) :: iSize
         
         if(.not. allocated(iArray)) then
             allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
+        iSize=size(iArray)
+        if(nSizeout < iSize) then
             return
         endif
 
@@ -277,7 +292,6 @@ module NumericalMesh
             iTMP(1:nSizeIn) = iArray
             call move_alloc (iTMP, iArray)
         else
-            !call Msg('Requested size less than current size in GrowElementArray')    
             return
         endif
 
@@ -297,7 +311,6 @@ module NumericalMesh
         
         iSize=size(iArray)
         if(nSizeout < iSize) then
-            !call Msg('Requested size less than current size in GrowNodeArray')    
             return
         endif
         
@@ -307,7 +320,6 @@ module NumericalMesh
             iTMP(1:nSizeIn) = iArray
             call move_alloc (iTMP, iArray)
         else
-            !call Msg('Requested size less than current size in GrowNodeArray')    
             return
         endif
         
