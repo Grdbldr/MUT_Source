@@ -168,13 +168,6 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, GridBuilder_CMD) /= 0) then
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
                 call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
-                !if(.not. allocated(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%node)) then
-                !    call GrowNodeArray(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%node,0,1)
-                !endif
-                !if(.not. allocated(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%element)) then
-                !    call GrowElementArray(MyMeshGroup%Mesh(MyMeshGroup%nMesh)%element,0,1)
-                !endif
-                !
                 read(FNumMut,'(a80)') TmpSTR
                 MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
                 call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))

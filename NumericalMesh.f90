@@ -108,6 +108,19 @@ module NumericalMesh
 
     contains
 
+	!-----------------------------------------------------------------------
+	subroutine mesh_limits(D)
+		implicit none
+		type(mesh) D
+
+		D%xmin=MINVAL(D%node%x)
+		D%xmax=MAXVAL(D%node%x)
+		D%ymin=MINVAL(D%node%y)
+		D%ymax=MAXVAL(D%node%y)
+		D%zmin=MINVAL(D%node%z)
+		D%zmax=MAXVAL(D%node%z)
+
+    end subroutine mesh_limits
 
     !----------------------------------------------------------------------
     subroutine BuildFaceTopologyFrommesh(D)

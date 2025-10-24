@@ -172,7 +172,6 @@ module gb
 	subroutine read_gendat(FNumMUT)
 		implicit none
         integer(i4) :: FNumMUT
-        integer(i4) :: FNum
 
 		integer :: i,j
 
@@ -252,27 +251,10 @@ module gb
 
 		ierr=0
 
-		! call Msg('Revision 15: Fast removal of short segments')
-	
-		!open(99,file='test.txt',status='unknown')
+        
+        GB_GEN%Element%Typ='triangle'
+        GB_GEN%TecplotTyp='fetriangle'
 
-		!! initial arrays for nodes..
-		!call GrowNodeArray(GB_GEN%Node,0,1)	
-		!!nn_cur=1
-		!!call initialize_node_arrays(nn_in)
-		!!if(ierr /= 0) then
-		!!	ierror=ierr
-		!!	return
-		!!endif
-  !!
-		!!! initial arrays for elements... 
-		!call GrowElementArray(GB_GEN%Element,0,1)	
-		!!ne_cur=1
-		!!call initialize_element_arrays(1000)
-		!!if(ierr /= 0) then
-		!!	ierror=ierr
-		!!	return
-		!!endif
         
         GB_GEN%nNodes=0
         allocate(GB_GEN%node(100),stat=ialloc)
@@ -359,7 +341,7 @@ module gb
 			endif
 		end do
 
-		call grid_limits(GB_GEN)
+		call mesh_limits(GB_GEN)
 
 		call set_ob_ab(GB_GEN)
 
@@ -425,24 +407,6 @@ module gb
 			i=i+1
 		if (i.LE.GB_GEN%nNodes) goto 97
 	end subroutine find_node
-	!-----------------------------------------------------------------------
-	subroutine grid_limits(GB_GEN)
-		implicit none
-		type(mesh) GB_GEN
-
-		integer(i4) :: i
-
-		xmin=1.e20
-		xmax=-1.e20
-		ymin=1.e20
-		ymax=-1.e20
-		do  i=1,GB_GEN%nNodes
-			if(GB_GEN%node(i)%x.lt.xmin) xmin=GB_GEN%node(i)%x
-			if(GB_GEN%node(i)%x.gt.xmax) xmax=GB_GEN%node(i)%x
-			if(GB_GEN%node(i)%y.lt.ymin) ymin=GB_GEN%node(i)%y
-			if(GB_GEN%node(i)%y.gt.ymax) ymax=GB_GEN%node(i)%y
-		end do
-	end subroutine grid_limits
 	!----------------------------------------------------------------------
 	 subroutine set_ob_ab(GB_GEN)
 		implicit none
@@ -475,7 +439,7 @@ module gb
 		call node_connections(GB_GEN)
 		if(ierr /= 0) return
 
-		tol=(xmax-xmin)/1.e-5
+		tol=(GB_GEN%xmax-GB_GEN%xmin)/1.e-5
 		10    continue
 			maxdiff=0.0
 			do i=1,GB_GEN%nNodes
@@ -818,7 +782,7 @@ module gb
 			if(nnn.gt.sn) goto 15
 			do  l=1,GB_GEN%nElements
 				if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
-					call check_one(GB_GEN,l,nil,nne,nnl)
+					call check_one(GB_GEN,l,nil,nnl)
 					if(ierr /= 0) goto 1000
 				endif
 			end do
@@ -855,18 +819,18 @@ module gb
 		if(ierr /= 0) return
 		n_temp=GB_GEN%idNode(2,l)
 		e_temp=GB_GEN%element(l)%idZone
-		call add_element(nne,n_temp,n2,n1,e_temp)
+		call add_element(GB_GEN,n_temp,n2,n1,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
 			call set(GB_GEN%element(nne)%is,chosen)
 		endif
 		n_temp=GB_GEN%idNode(3,l)
-		call add_element(nne,n_temp,n3,n2,e_temp)
+		call add_element(GB_GEN,n_temp,n3,n2,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
 			call set(GB_GEN%element(nne)%is,chosen)
 		endif
-		call add_element(nne,n1,n2,n3,e_temp)
+		call add_element(GB_GEN,n1,n2,n3,e_temp)
 		if(ierr /= 0) return
 		if (set_chosen) then
 			call set(GB_GEN%element(nne)%is,chosen)
@@ -975,12 +939,12 @@ module gb
 
 	end subroutine check_two
 	!----------------------------------------------------------------------
-	subroutine check_one(GB_GEN,l,nil,nne,nnl)
+	subroutine check_one(GB_GEN,l,nil,nnl)
 		! check each side to see if node already exists
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, l, nil, nne, n1
+		integer(i4) :: i, l, nil, n1
 
 		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		logical done
@@ -998,7 +962,7 @@ module gb
 			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
+					call add_element(GB_GEN,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
 					GB_GEN%idNode(2,l)=n1
 					done=.true.
@@ -1007,7 +971,7 @@ module gb
 			if (abs(x2-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y2-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,GB_GEN%idNode(3,l),GB_GEN%idNode(1,l),GB_GEN%element(l)%idZone)
+					call add_element(GB_GEN,n1,GB_GEN%idNode(3,l),GB_GEN%idNode(1,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
 					GB_GEN%idNode(3,l)=n1
 					done=.true.
@@ -1016,7 +980,7 @@ module gb
 			if (abs(x3-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y3-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(nne,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
+					call add_element(GB_GEN,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
 					if(ierr /= 0) return
 					GB_GEN%idNode(3,l)=n1
 					done=.true.
@@ -1537,26 +1501,28 @@ module gb
 
 
 	!----------------------------------------------------------------------
-	subroutine add_element(nne,i1,i2,i3,e_area)
+	subroutine add_element(GB_GEN,i1,i2,i3,e_area)
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i1, i2, i3, nne, e_area
+		integer(i4) :: i1, i2, i3, e_area
 
 
-        call GrowElementArray(GB_GEN%element,nne,nne+1)	
-        call GrowInteger2dArray(GB_GEN%idNode,3,nne,nne+1)	
+        call GrowElementArray(GB_GEN%element,GB_GEN%nElements,GB_GEN%nElements+1)	
+        call GrowInteger2dArray(GB_GEN%idNode,3,GB_GEN%nElements,GB_GEN%nElements+1)	
 		!call reallocate_element_arrays(nel)
 		if(ierr /= 0) return
 
-        nne=nne+1  ! we are going to make a new element
+        GB_GEN%nElements=GB_GEN%nElements+1  ! we are going to make a new element
 
-		GB_GEN%idNode(1,nne)=i1
-		GB_GEN%idNode(2,nne)=i2
-		GB_GEN%idNode(3,nne)=i3
-		GB_GEN%element(nne)%is=0	
-		GB_GEN%element(nne)%id=nne	
-		GB_GEN%element(nne)%idZone=e_area		
+		GB_GEN%idNode(1,GB_GEN%nElements)=i1
+		GB_GEN%idNode(2,GB_GEN%nElements)=i2
+		GB_GEN%idNode(3,GB_GEN%nElements)=i3
+		GB_GEN%element(GB_GEN%nElements)%is=0	
+		GB_GEN%element(GB_GEN%nElements)%id=GB_GEN%nElements	
+		GB_GEN%element(GB_GEN%nElements)%idZone=e_area		
+
+        write(*,*) GB_GEN%nElements,' element ',i1,i2,i3
 
 	end subroutine add_element
 	!----------------------------------------------------------------------
@@ -1860,7 +1826,7 @@ module gb
 			nd=lbn(i)
 			dsn=lbn(i+1)
 			usn=lbn(i-1)
-			call add_element(GB_GEN%nElements,nd,dsn,usn,reg)
+			call add_element(GB_GEN,nd,dsn,usn,reg)
 			if(ierr /= 0) goto 1000
 		else
 			da1=lbn(1)
@@ -1872,14 +1838,14 @@ module gb
 			call int_angle(GB_GEN%node(db1)%x,GB_GEN%node(db1)%y,GB_GEN%node(da2)%x,GB_GEN%node(da2)%y,GB_GEN%node(db2)%x,GB_GEN%node(db2)%y,aa2)
 			call int_angle(GB_GEN%node(da2)%x,GB_GEN%node(da2)%y,GB_GEN%node(db2)%x,GB_GEN%node(db2)%y,GB_GEN%node(da1)%x,GB_GEN%node(da1)%y,ab2)
 			if(aa1+aa2.gt.ab1+ab2) then
-				call add_element(GB_GEN%nElements,da1,db1,da2,reg)
+				call add_element(GB_GEN,da1,db1,da2,reg)
 				if(ierr /= 0) goto 1000
-				call add_element(GB_GEN%nElements,da1,da2,db2,reg)
+				call add_element(GB_GEN,da1,da2,db2,reg)
 				if(ierr /= 0) goto 1000
 			else
-				call add_element(GB_GEN%nElements,da1,db1,db2,reg)
+				call add_element(GB_GEN,da1,db1,db2,reg)
 				if(ierr /= 0) goto 1000
-				call add_element(GB_GEN%nElements,db1,da2,db2,reg)
+				call add_element(GB_GEN,db1,da2,db2,reg)
 				if(ierr /= 0) goto 1000
 			endif
 		endif
@@ -1955,7 +1921,7 @@ module gb
 					lbn(j)=lbn(j+1)
 				end do
 			endif
-			call add_element(GB_GEN%nElements,nd,dsn,usn,reg)
+			call add_element(GB_GEN,nd,dsn,usn,reg)
 			sn=usn
 			des_angle=110.0
 			aspect=.4
@@ -2024,9 +1990,9 @@ module gb
 			sn=usn
 			lbn(i)=GB_GEN%nNodes
 			if(i.eq.lnbn) lbn(0)=GB_GEN%nNodes
-			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,usn,reg)
+			call add_element(GB_GEN,nd,GB_GEN%nNodes,usn,reg)
 			if(ierr /= 0) return
-			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
+			call add_element(GB_GEN,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 			i=i+1
 			!if(i.gt.lnbn) i=i-1
@@ -2163,11 +2129,11 @@ module gb
 			endif	 
 			lbn(i)=GB_GEN%nNodes-1
 			lbn(i+1)=GB_GEN%nNodes
-			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes-1,usn,reg)
+			call add_element(GB_GEN,nd,GB_GEN%nNodes-1,usn,reg)
 			if(ierr /= 0) return
-			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
+			call add_element(GB_GEN,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
 			if(ierr /= 0) return
-			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
+			call add_element(GB_GEN,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 		else
 			GB_GEN%nNodes=GB_GEN%nNodes-2
@@ -2281,11 +2247,11 @@ module gb
 			end do
 			lbn(i+1)=GB_GEN%nNodes
 			if(i.eq.lnbn) lbn(0)=GB_GEN%nNodes
-			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes-1,usn,reg)
+			call add_element(GB_GEN,nd,GB_GEN%nNodes-1,usn,reg)
 			if(ierr /= 0) return
-			call add_element(GB_GEN%nElements,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
+			call add_element(GB_GEN,nd,GB_GEN%nNodes,GB_GEN%nNodes-1,reg)
 			if(ierr /= 0) return
-			call add_element(GB_GEN%nElements,nd,dsn,GB_GEN%nNodes,reg)
+			call add_element(GB_GEN,nd,dsn,GB_GEN%nNodes,reg)
 			if(ierr /= 0) return
 			stuck=.false.
 		else
