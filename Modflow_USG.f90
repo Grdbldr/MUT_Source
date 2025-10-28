@@ -2080,7 +2080,7 @@
         endif
         call InitializeModflowFiles(Modflow)
 
-        do
+        InstructionLoop:do
             
             read(FNumMUT,'(a)',iostat=status,end=10) instruction
     
@@ -2601,7 +2601,7 @@
             else
                 call ErrMsg('MUSG?:'//instruction)
             end if
-        end do
+        end do InstructionLoop
 
         10 continue
 
