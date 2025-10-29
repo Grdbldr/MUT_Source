@@ -4,7 +4,7 @@ module GeneralRoutines    !### bit setting routines
     use ifwin, only : GetCurrentDirectory
     implicit none
     
-    character(37) :: MUTVersion=' 1.64 BETA'
+    character(37) :: MUTVersion=' 1.65 BETA'
 
 
     

@@ -91,7 +91,7 @@
 
     character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	                =   'swf initial depth'
     character(MAX_INST) :: SWFInitialHeadFromTecplotFile_CMD	        =   'swf initial head from tecplot file'
-    
+!    
     
 
     
@@ -840,8 +840,8 @@
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
             write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
             write(Modflow.iCHD,'(a,a)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',trim(MUTVersion)
-        else
-            pause 'next stress period?'
+        !else
+        !    pause 'next stress period?'
         end if
 
     end subroutine AssignCHDtoDomain
@@ -912,8 +912,8 @@
             call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
             write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
             write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
-        else
-            pause 'next stress period?'
+        !else
+        !    pause 'next stress period?'
         end if
 
 
@@ -958,8 +958,8 @@
             call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
             write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
             write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
-        else
-            pause 'next stress period?'
+        !else
+        !    pause 'next stress period?'
         end if
 
 
@@ -1032,8 +1032,8 @@
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDRN))
             write(Modflow.iNAM,'(a,i4,a)') 'DRN  ',Modflow.iDRN,' '//trim(Modflow.FNameDRN)
             write(Modflow.iDRN,'(a,a)') '# MODFLOW-USG DRN file written by Modflow-User-Tools version ',trim(MUTVersion)
-        else
-            pause 'next stress period?'
+        !else
+        !    pause 'next stress period?'
         end if
 
     end subroutine AssignDRNtoDomain
@@ -1874,8 +1874,8 @@
                     endif
                 end do
             endif
-        else
-            pause 'next stress period?'
+        !else
+        !    pause 'next stress period?'
         end if
     
     end subroutine AssignWELtoDomain
@@ -8832,11 +8832,14 @@
         !------------------- CHD file
         write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! maximum number of CHD cells in any stress period 
         write(modflow.iCHD,*) modflow.GWF.nCHDCells+modflow.CLN.nCHDCells+modflow.SWF.nCHDCells ! number of CHD cells to read
-            
+        
+        ! fred ConstantHead(i) written twice below for a non-varying head over stress period
+        !     (i.e. start and end heads are the same)!!!! 
+
         if(allocated(modflow.GWF.ConstantHead)) then
             do i=1,modflow.GWF.nCells
                 if(bcheck(Modflow.GWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') i,modflow.GWF.ConstantHead(i)
+                    write(modflow.iCHD,'(i8,2x,2('//FMT_R8//'))') i,modflow.GWF.ConstantHead(i),modflow.GWF.ConstantHead(i)
                 end if
             end do
         end if
@@ -8844,7 +8847,7 @@
         if(allocated(modflow.CLN.ConstantHead)) then
             do i=1,modflow.CLN.nCells
                 if(bcheck(Modflow.CLN.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow.GWF.nCells+i,modflow.CLN.ConstantHead(i)
+                    write(modflow.iCHD,'(i8,2x,2('//FMT_R8//'))') Modflow.GWF.nCells+i,modflow.CLN.ConstantHead(i),modflow.CLN.ConstantHead(i)
                 end if
             end do
         end if
@@ -8852,7 +8855,7 @@
         if(allocated(modflow.SWF.ConstantHead)) then
             do i=1,modflow.SWF.nCells
                 if(bcheck(Modflow.SWF.Cell_Is(i),ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.ConstantHead(i)
+                    write(modflow.iCHD,'(i8,2x,2('//FMT_R8//'))') Modflow.GWF.nCells+modflow.CLN.nCells+i,modflow.SWF.ConstantHead(i),modflow.SWF.ConstantHead(i)
                 end if
             end do
         end if
