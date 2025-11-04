@@ -9,7 +9,6 @@ module MUT  !### Modflow-USG Tools
     
     implicit none
 
-    !integer(i4), parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
     character(MAX_INST) :: MUT_CMD="none"
     character(MAX_INST) :: BuildModflowUSG_CMD="build modflow usg"
     character(MAX_INST) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
@@ -94,7 +93,7 @@ module MUT  !### Modflow-USG Tools
         
                 
         ! Ways to define a GridBuilder mesh
-        character(MAX_INST) :: GridBuilder_CMD          =   'build gridbuilder mesh'
+        character(MAX_INST) :: GridBuilder_CMD          =   'build triangular mesh'
         
         integer(i4) :: ierror
 
@@ -171,8 +170,7 @@ module MUT  !### Modflow-USG Tools
                 read(FNumMut,'(a80)') TmpSTR
                 MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
                 call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
-                call read_gendat(FNumMUT)
-                call GridBuilder(MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
+                call GridBuilder(FNumMUT,MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
                 if(EnableTecplotOutput) then
                     call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 endif

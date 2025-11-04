@@ -6,11 +6,19 @@ module gb
 	use GeneralRoutines
     use NumericalMesh
 	use error_param
+    use BasicTypes
 
 	implicit none
     
+    ! The derived type t_Areas has nAreasCutLines t_line components:
+    type :: t_Area
+        type (t_line) :: CutBoundary
+        character(len=:), allocatable :: name
+        integer(i4) :: id
+        integer(i4) :: nAreas 
+    end type t_Area
+
     character(50) :: title
-	logical :: plan_view_file
 	real :: scr_ratio
     
    
@@ -26,9 +34,9 @@ module gb
 	integer(i4),allocatable		:: obn_in(:)	! outer boundary node list
 	integer(i4),allocatable		:: nbn_in(:)	! number of boundry nodes in area 
 	integer(i4),allocatable		:: bn_in(:,:)   ! boundary node list
-	real(dp),allocatable	:: elength_in(:)			! area element length x
-	real(dp),allocatable	:: y_elength_in(:)			! area element length y
-	real(dp),allocatable	:: stretch_factor_in(:)		! local element stretch factor
+	real(sp),allocatable	:: elength_in(:)			! area element length x
+	real(sp),allocatable	:: y_elength_in(:)			! area element length y
+	real(sp),allocatable	:: stretch_factor_in(:)		! local element stretch factor
 	integer(i4), allocatable	:: ndrop_rate_in(:)			! local node drop rate
 	logical,allocatable		:: hole_in(:)	! true if area not to be filled with elements
 
@@ -51,14 +59,12 @@ module gb
 	integer(i4),allocatable		:: obn(:)	! outer boundary node list
 	integer(i4),allocatable		:: nbn(:)	! number of boundry nodes in area 
 	integer(i4),allocatable		:: bn(:,:)   ! boundary node list
-	real(dp), allocatable	:: elength(:)
-	real(dp), allocatable	:: y_elength(:)
-	real(dp), allocatable	:: stretch_factor(:)
+	real(sp), allocatable	:: elength(:)
+	real(sp), allocatable	:: y_elength(:)
+	real(sp), allocatable	:: stretch_factor(:)
 	integer(i4), allocatable	:: ndrop_rate(:) 
 	logical,allocatable		:: hole(:)	! true if area not to be filled with elements
-
-
-
+    
 	!integer(i4)		:: ne				! number of elements in mesh
 	!integer(i4),allocatable		:: in(:,:)		! element node lists
 	!integer(i4),allocatable		:: el_area	! element zone (subarea) numbers
@@ -167,98 +173,32 @@ module gb
 	logical recalc_nicon
     
     contains
-    
-	!----------------------------------------------------------------------
-	subroutine read_gendat(FNumMUT)
-		implicit none
-        integer(i4) :: FNumMUT
-
-		integer :: i,j
-
-		read(FNumMut,'(a80)') TmpSTR
-        call Msg('Read GB Gen file: '//trim(TmpSTR))
-
-	    call getunit(itmp)
-		open(itmp,file=trim(TmpSTR),status='old',form='formatted')
-		read(itmp,'(a)') title
-		read(itmp,*) nn_in,area_in
-		read(itmp,*) plan_view_file
-		read(itmp,*) xmin,xmax,ymin,ymax
-		read(itmp,*) scr_ratio
-		read(itmp,*) segl_user
-        
-        allocate(x_in(nn_in), &
-				y_in(nn_in), &
-				stat=ialloc)
-        call AllocChk(ialloc,'read_gendat: x_in, y_in')
-
-		do i=1,nn_in
-			read(itmp,*) x_in(i),y_in(i)
-		end do
-
-		read(itmp,*) onbn_in
-        allocate(obn_in(0:onbn_in),stat=ialloc)
-        call AllocChk(ialloc,'read_gendat: obn_in')
-		read(itmp,*) (obn_in(i),i=0,onbn_in)
-
-
-		read(itmp,*) nbn_in_max
-
-        allocate(elength_in(nn_in), &
-				y_elength_in(nn_in), &
-				stretch_factor_in(nn_in), &
-				ndrop_rate_in(nn_in), &
-				hole_in(nn_in), &
-				nbn_in(nn_in), &
-				bn_in(nn_in,0:nbn_in_max), &
-				stat=ialloc)
-        call AllocChk(ialloc,'read_gendat: x_in, y_in')
-		do i=1,area_in
-			if (plan_view_file) then
-				read(itmp,*) elength_in(i)
-			else
-				read(itmp,*) elength_in(i), y_elength_in(i)
-			endif
-			read(itmp,*) stretch_factor_in(i)
-			read(itmp,*) ndrop_rate_in(i)
-			read(itmp,*) hole_in(i)
-			read(itmp,*) nbn_in(i)
-			read(itmp,*) (bn_in(i,j),j=0,nbn_in(i))
-		end do
-
-		close(itmp)
-		!xmin_in = x_in(1)
-		!ymin_in = y_in(1)
-		!xmax_in = xmin_in
-		!ymax_in = ymin_in
-		!do i=2,nn_in
-		!	xmin_in=min(xmin_in,x_in(i))
-		!	ymin_in=min(ymin_in,y_in(i))
-		!	xmax_in=max(xmin_in,x_in(i))
-		!	ymax_in=max(ymin_in,y_in(i))
-		!end do
-
-    	
-
-	end subroutine read_gendat
-	!----------------------------------------------------------------------
-	subroutine GridBuilder(GB_GEN,ierror)
+    !----------------------------------------------------------------------
+	subroutine GridBuilder(FNumMUT,GB_GEN,ierror)
 		implicit none
 		type(mesh) GB_GEN
+        
+        integer(i4) :: FNumMUT
+
+        character(MAX_INST) :: instruction
+        character(MAX_INST) :: WellsFrom_ID_X_Y_File_CMD='wells from id_x_y file'
+        character(MAX_INST) :: RefinementFrom_ID_X_Y_File_CMD='refinement from id_x_y file'
+
 
 		integer(i4) :: ierror
 		integer(i4) :: i, k, nes
+        
+        real(dp) :: RealInput
 
 		ierr=0
 
         
         GB_GEN%Element%Typ='triangle'
         GB_GEN%TecplotTyp='fetriangle'
-
         
         GB_GEN%nNodes=0
         allocate(GB_GEN%node(100),stat=ialloc)
-        call AllocChk(ialloc,'ReadGridBuilderMesh 2d node array')
+        call AllocChk(ialloc,'GB_GEN%node array')
         GB_GEN%node%x = 0 ! automatic initialization
         GB_GEN%node%y = 0 ! automatic initialization
         GB_GEN%node%z = 0 ! automatic initialization
@@ -267,17 +207,49 @@ module gb
         GB_GEN%nElements=0
         allocate(GB_GEN%Element(100), &
             GB_GEN%idNode(GB_GEN%nNodesPerElement,100), stat=ialloc)
-        call AllocChk(ialloc,'ReadGridBuilderMesh 2d element, idNode arrays')
+        call AllocChk(ialloc,'GB_GEN%Element, GB_GEN%idNode arrays')
         GB_GEN%Element(:)%idZone = 0 ! automatic initialization
         GB_GEN%idNode(:,:) = 0 ! automatic initialization
+        
+        call DefineOuterBoundary(FNumMUT)
+                 
+        call set_ob_ab(GB_GEN)
+       
+        ! Read a target element length
+        read(FNumMUT,*) RealInput
+        if(allocated(elength_in)) then
+            elength_in(:)=RealInput
+            write(TmpSTR,'(a, '//FMT_R8//')') 'Target Element Length: ',RealInput 
+			call Msg(TAB//trim(TmpSTR))
+			call Msg(TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
 
-		! initial arrays for outer boundary nodes... 
-		no_cur=1
-		call initialize_outer_boundary_array(onbn_in)
-		if(ierr /= 0) then
-			ierror=ierr
-			return
-		endif
+        else
+            call ErrMsg('elength_in array not allocated before TargetElementLength command')
+        endif
+
+        
+
+        GridBuilderMods_InstructionLoop:do
+            
+            read(FNumMUT,'(a)',iostat=status) instruction
+            call LwrCse(instruction)
+            if(index(instruction, 'end') /=0) then
+                call Msg(TAB//'end GridBuilderMods_InstructionLoop')
+                exit GridBuilderMods_InstructionLoop
+            else
+                call LwrCse(instruction)
+                call Msg(TAB//instruction)
+            end if    
+          
+            if(index(instruction, WellsFrom_ID_X_Y_File_CMD)  /= 0) then
+                !call WellsFrom_ID_X_Y_File(FNumMUT)
+            else if(index(instruction, RefinementFrom_ID_X_Y_File_CMD)  /= 0) then
+                !call RefinementFrom_ID_X_Y_File(FNumMUT)
+            else
+                call ErrMsg('MUSG?:'//instruction)
+            end if
+        end do GridBuilderMods_InstructionLoop
+        
 
 		! initial arrays for segments... 
 		ns_cur=1
@@ -379,9 +351,209 @@ module gb
         continue
 
 
-	end subroutine GridBuilder
+    end subroutine GridBuilder
+
+    !----------------------------------------------------------------------
+    subroutine DefineOuterBoundary(FNumMUT)
+		implicit none
+        type(t_line) :: OuterBoundary
+        integer(i4) :: i 
+        integer(i4) :: FNumMUT
+        integer(i4) :: FnumLine
+		character(MAX_STR) :: FNameLine
+        
+        
+   
+		read(FNumMUT,'(a)') FNameLine 
+        inquire(file=FNameLine,exist=FileExists)
+        if(.not. FileExists) then
+			call ErrMsg('File not found: '//trim(FNameLine))
+        endif
+                
+        call Msg(TAB//FileReadSTR//'OuterBoundaryFrom_ID_X_Y file: '//trim(FNameLine))
+
+		call OpenAscii(FnumLine,FNameLine)
+        call LineFrom_ID_X_Y_File(FnumLine,OuterBoundary)
+                
+        OuterBoundary%Name=Trim(FNameline)
+                
+        ! default setting for 1 area
+        nn_in=OuterBoundary%nPoints
+        area_in=1
+        plan_view=.true.
+        scr_ratio=1.607142
+		! xmin,xmax,ymin,ymax calculated later when grid generated
+        ! scr_ratio not used 
+        segl_user=OuterBoundary%nPoints-2   ! number of segments in outer boundary
+        
+		allocate(x_in(nn_in), &
+				y_in(nn_in), &
+				stat=ialloc)
+		call AllocChk(ialloc,'OuterBoundaryFrom_ID_X_Y_File_CMD: x_in, y_in')
+
+		x_in(:)=OuterBoundary%Point(:)%x
+        y_in(:)=OuterBoundary%Point(:)%y
+                
+        onbn_in=OuterBoundary%nPoints
+        allocate(obn_in(0:OuterBoundary%nPoints),stat=ialloc)
+		call AllocChk(ialloc,'OuterBoundaryFrom_ID_X_Y_File_CMD: obn_in')
+		obn_in(0:)=OuterBoundary%point(0:)%id
+                
+
+		allocate(elength_in(Area_in), &
+				y_elength_in(Area_in), &
+				stretch_factor_in(Area_in), &
+				ndrop_rate_in(Area_in), &
+				hole_in(Area_in), &
+				nbn_in(Area_in), &
+				bn_in(Area_in,0:onbn_in), &
+				stat=ialloc)
+		call AllocChk(ialloc,'OuterBoundaryFrom_ID_X_Y_File_CMD: x_in, y_in')
+
+		elength_in(:)=(MAXval(OuterBoundary%Point(:)%x) - MINval(OuterBoundary%Point(:)%x))/10.
+        y_elength_in(:)=(MAXval(OuterBoundary%Point(:)%y) - MINval(OuterBoundary%Point(:)%y))/10.
+        stretch_factor_in(:)=2.0
+		ndrop_rate_in(:)=1
+		hole_in(:)=.false.
+        do i=1,area_in
+			nbn_in(i)=OuterBoundary%nPoints
+            bn_in(i,0:OuterBoundary%nPoints)=OuterBoundary%Point(0:)%id
+        end do
+
+        nbn_in_max=0
+		do i=1,area_in
+			if(nbn_in(i) > nbn_in_max) nbn_in_max=nbn_in(i)
+        end do
+                
+        xmin=minval(x_in)
+        xmax=maxval(x_in)
+        ymin=minval(y_in)
+        ymax=maxval(y_in)
+        
+        ! initial arrays for outer boundary nodes... 
+		call initialize_outer_boundary_array(OuterBoundary%nPoints)
+		call initialize_segment_arrays(1000)
+		call initialize_boundary_arrays(area_in,nbn_in_max)
+        
+    end subroutine DefineOuterBoundary
+	!----------------------------------------------------------------------
+	subroutine read_gendat(FNumMUT)
+		implicit none
+        integer(i4) :: FNumMUT
+
+		integer :: i,j
+
+		read(FNumMut,'(a80)') TmpSTR
+        call Msg('Read GB Gen file: '//trim(TmpSTR))
+
+	    call getunit(itmp)
+		open(itmp,file=trim(TmpSTR),status='old',form='formatted')
+		read(itmp,'(a)') title
+		read(itmp,*) nn_in,area_in
+		read(itmp,*) plan_view
+		read(itmp,*) xmin,xmax,ymin,ymax
+		read(itmp,*) scr_ratio
+		read(itmp,*) segl_user
+        
+        allocate(x_in(nn_in), &
+				y_in(nn_in), &
+				stat=ialloc)
+        call AllocChk(ialloc,'read_gendat: x_in, y_in')
+
+		do i=1,nn_in
+			read(itmp,*) x_in(i),y_in(i)
+		end do
+
+		read(itmp,*) onbn_in
+        allocate(obn_in(0:onbn_in),stat=ialloc)
+        call AllocChk(ialloc,'read_gendat: obn_in')
+		read(itmp,*) (obn_in(i),i=0,onbn_in)
 
 
+		read(itmp,*) nbn_in_max
+
+        allocate(elength_in(nn_in), &
+				y_elength_in(nn_in), &
+				stretch_factor_in(nn_in), &
+				ndrop_rate_in(nn_in), &
+				hole_in(nn_in), &
+				nbn_in(nn_in), &
+				bn_in(nn_in,0:nbn_in_max), &
+				stat=ialloc)
+        call AllocChk(ialloc,'read_gendat: x_in, y_in')
+		do i=1,area_in
+			if (plan_view) then
+				read(itmp,*) elength_in(i)
+			else
+				read(itmp,*) elength_in(i), y_elength_in(i)
+			endif
+			read(itmp,*) stretch_factor_in(i)
+			read(itmp,*) ndrop_rate_in(i)
+			read(itmp,*) hole_in(i)
+			read(itmp,*) nbn_in(i)
+			read(itmp,*) (bn_in(i,j),j=0,nbn_in(i))
+		end do
+
+		close(itmp)
+		!xmin_in = x_in(1)
+		!ymin_in = y_in(1)
+		!xmax_in = xmin_in
+		!ymax_in = ymin_in
+		!do i=2,nn_in
+		!	xmin_in=min(xmin_in,x_in(i))
+		!	ymin_in=min(ymin_in,y_in(i))
+		!	xmax_in=max(xmin_in,x_in(i))
+		!	ymax_in=max(ymin_in,y_in(i))
+		!end do
+
+    	
+
+    end subroutine read_gendat
+	!----------------------------------------------------------------------
+	subroutine save_gendat(FNumMUT)
+		implicit none
+        integer(i4) :: FNumMUT
+
+		integer :: i,j
+
+		read(FNumMut,'(a80)') TmpSTR
+        call Msg(TAB//FileCreateSTR//'Grid generation file: '//trim(TmpSTR))
+
+	    call getunit(itmp)
+		open(itmp,file=trim(TmpSTR),status='unknown',form='formatted')
+		write(itmp,'(a)') ' dummy grid title'
+		write(itmp,*) nn_in,area_in
+		write(itmp,*) plan_view
+		write(itmp,*) xmin,xmax,ymin,ymax
+		write(itmp,*) scr_ratio
+		write(itmp,*) segl_user
+
+		do  i=1,nn_in
+			write(itmp,*) x_in(i),y_in(i)
+		end do
+
+		write(itmp,*) onbn_in
+		write(itmp,*) (obn_in(i),i=0,onbn_in)
+
+		write(itmp,*) nbn_in_max
+
+		do i=1,area_in
+			if (plan_view) then
+				write(itmp,*) elength_in(i)
+			else
+				write(itmp,*) elength_in(i), y_elength_in(i)
+			endif
+			write(itmp,*) stretch_factor_in(i)
+			write(itmp,*) ndrop_rate_in(i)
+			write(itmp,*) hole_in(i)
+			write(itmp,*) nbn_in(i)
+			write(itmp,'(8i10)') (bn_in(i,j),j=0,nbn_in(i))
+		end do
+
+
+		close(itmp)
+	end subroutine save_gendat
+    
 	!----------------------------------------------------------------------
 	subroutine find_node(x1,y1,p_node)
 		implicit none
@@ -414,14 +586,14 @@ module gb
 
 		integer(i4) :: i, j
 
-		do  j=1,onbn
-			call set(GB_GEN%node(obn(j))%is,out_bndy)
-			call set(GB_GEN%node(obn(j))%is,b_2nd_type)
+		do  j=1,onbn_in
+			call set(GB_GEN%node(obn_in(j))%is,out_bndy)
+			call set(GB_GEN%node(obn_in(j))%is,b_2nd_type)
 		end do
 
-		do i=1,area
-			do  j=1,nbn(i)
-				call set(GB_GEN%node(bn(i,j))%is,any_bndy)
+		do i=1,area_in
+			do  j=1,nbn_in(i)
+				call set(GB_GEN%node(bn_in(i,j))%is,any_bndy)
 			end do
 		end do
 
@@ -870,7 +1042,7 @@ module gb
 			if (i.LE.nil .aND. .not. node_exists) goto 10
 		endif
 		if (.not. node_exists) then
-             write(*,*) GB_GEN%nNodes,' check_exist'
+            ! write(*,*) GB_GEN%nNodes,' check_exist'
 			call new_node(GB_GEN,xm,ym)
 			if(ierr /= 0) return
 			call update_bnodes(GB_GEN,i1,i2,nnn)
@@ -1522,7 +1694,7 @@ module gb
 		GB_GEN%element(GB_GEN%nElements)%id=GB_GEN%nElements	
 		GB_GEN%element(GB_GEN%nElements)%idZone=e_area		
 
-        write(*,*) GB_GEN%nElements,' element ',i1,i2,i3
+        ! write(*,*) GB_GEN%nElements,' element ',i1,i2,i3
 
 	end subroutine add_element
 	!----------------------------------------------------------------------
@@ -1545,7 +1717,7 @@ module gb
 		GB_GEN%node(GB_GEN%nNodes)%y=ynew
 		GB_GEN%node(GB_GEN%nNodes)%is=0	
         
-         write(*,*) GB_GEN%nNodes,' node ',GB_GEN%nNodes, xnew, ynew
+         ! write(*,*) GB_GEN%nNodes,' node ',GB_GEN%nNodes, xnew, ynew
 
 	end subroutine new_node
 	!----------------------------------------------------------------------
@@ -1615,7 +1787,7 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
-                     write(*,*) GB_GEN%nNodes,' gen_uni_bnodes a'
+                     ! write(*,*) GB_GEN%nNodes,' gen_uni_bnodes a'
 
 					call new_node(GB_GEN,x1*(1.0-rmu)+x2*rmu,y1*(1.0-rmu)+y2*rmu)
 					call update_bnodes(GB_GEN,n1,n2,GB_GEN%nNodes)
@@ -1630,7 +1802,7 @@ module gb
 					if(1.0-rmu < del_rmu*0.75) exit
 
 					! add node
-                     write(*,*) GB_GEN%nNodes,' gen_uni_bnodes b'
+                     ! write(*,*) GB_GEN%nNodes,' gen_uni_bnodes b'
 					call new_node(GB_GEN,x2*(1.0-rmu)+x1*rmu,y2*(1.0-rmu)+y1*rmu)
 					call update_bnodes(GB_GEN,n1,n2,GB_GEN%nNodes)
 					n2=GB_GEN%nNodes
@@ -1794,7 +1966,7 @@ module gb
 				end  select
 			else
 				if(stuck) then
-					call fix_stuck(reg,fac,i)
+					call fix_stuck(GB_GEN,reg,fac,i)
 					if(ierr /= 0) goto 1000
 				endif
 			endif
@@ -1946,7 +2118,7 @@ module gb
 		olap=0.5
 		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
 		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) GB_GEN%nNodes,' nng_1'
+         ! write(*,*) GB_GEN%nNodes,' nng_1'
 		call new_node(GB_GEN,(a1x+a2x)/2.0,(a1y+a2y)/2.0)
 		if(ierr /= 0) return
 
@@ -2040,10 +2212,10 @@ module gb
 		olap=0.5
 		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
 		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) GB_GEN%nNodes,' nng_2 a'
+         ! write(*,*) GB_GEN%nNodes,' nng_2 a'
 		call new_node(GB_GEN,a1x,a1y)
 		if(ierr /= 0) return
-         write(*,*) GB_GEN%nNodes,' nng_2 b'
+         ! write(*,*) GB_GEN%nNodes,' nng_2 b'
 		call new_node(GB_GEN,a2x,a2y)
 		if(ierr /= 0) return
 
@@ -2137,7 +2309,7 @@ module gb
 			if(ierr /= 0) return
 		else
 			GB_GEN%nNodes=GB_GEN%nNodes-2
-         write(*,*) GB_GEN%nNodes,' nng_2 overlap'
+         ! write(*,*) GB_GEN%nNodes,' nng_2 overlap'
 		endif
 
 	end subroutine nng_2
@@ -2160,7 +2332,7 @@ module gb
 
 	end subroutine write_area_boundary_as_dig
 	!----------------------------------------------------------------------
-	subroutine fix_stuck(reg,fac,i)
+	subroutine fix_stuck(GB_GEN,reg,fac,i)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -2174,10 +2346,10 @@ module gb
 		olap=0.8
 		call gen_node(GB_GEN%node(usn)%x,GB_GEN%node(usn)%y,GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,a1x,a1y,fac)
 		call gen_node(GB_GEN%node(nd)%x,GB_GEN%node(nd)%y,GB_GEN%node(dsn)%x,GB_GEN%node(dsn)%y,a2x,a2y,fac)
-         write(*,*) GB_GEN%nNodes,' fix_stuck a'
+         ! write(*,*) GB_GEN%nNodes,' fix_stuck a'
 		call new_node(GB_GEN,a1x,a1y)
 		if(ierr /= 0) return
-         write(*,*) GB_GEN%nNodes,' fix_stuck b'
+         ! write(*,*) GB_GEN%nNodes,' fix_stuck b'
 		call new_node(GB_GEN,a2x,a2y)
 		if(ierr /= 0) return
 
@@ -2523,7 +2695,7 @@ module gb
 
 	end subroutine update_bnodes
 	!----------------------------------------------------------------------
-	  subroutine propose_drop_node(nd1,nd2, dropped)
+	  subroutine propose_drop_node(GB_GEN,nd1,nd2, dropped)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -2768,7 +2940,7 @@ module gb
 				if(.not. n_dropped(nd1) .and. .not. n_dropped(nd2)) then  ! only do anything if neither node changed
 					seg_l=sqrt((GB_GEN%node(nd1)%x-GB_GEN%node(nd2)%x)**2+(GB_GEN%node(nd1)%y-GB_GEN%node(nd2)%y)**2)
 					if(seg_l.lt.segl_user) then
-						call propose_drop_node(nd1,nd2,dropped)
+						call propose_drop_node(GB_GEN,nd1,nd2,dropped)
 						if(dropped) then
 							n_dropped(nd2)=.true.
 							n_dropped(GB_GEN%nNodes+1)=.true.
@@ -2803,7 +2975,7 @@ module gb
 		integer(i4) :: i, j, n_area
 		integer(i4), allocatable :: jnt(:)   ! new node numbers i.e. jnt(10) = new node number for old node 10
 
-		allocate(jnt(nn_in),stat=ialloc) 
+		allocate(jnt(0:nn_in),stat=ialloc) 
 		call AllocChk(ialloc,'process_gen_file work array')
 		if(ierr /= 0) return
 
@@ -2811,12 +2983,12 @@ module gb
 
 		area=0
 
-		! Copy to dll outer boundary node list
+		! Add OuterBoundary to GB_GEN
 		onbn=onbn_in
 		call reallocate_outer_boundary_arrays(onbn)
 		if(ierr /= 0) goto 1000
 		do i=1,onbn_in
-			 write(*,*) GB_GEN%nNodes,' process_gen_file a'
+			 ! write(*,*) GB_GEN%nNodes,' process_gen_file a'
 			call new_node(GB_GEN,x_in(obn_in(i)),y_in(obn_in(i)))  ! all outer boundary nodes are kept
 			if(ierr /= 0) goto 1000
 			call set(GB_GEN%node(GB_GEN%nNodes)%is,out_bndy)
@@ -2827,10 +2999,11 @@ module gb
 		obn(0)=jnt(obn_in(0))
 
 
-		! Form area boundaries from bn_in arrays
+		! Form first area from outer boundary
 		call Msg('Processing polygons...')
-		do n_area=1,area_in
-			if(bn_in(n_area,0) /= 0) then   ! treat as a polygon
+		!do n_area=1,area_in
+        n_area=1
+			!if(OuterBoundary%Linetyp=='Polygon') then   
 				area=area+1
 				plot_area(area)=.true.
 				nbn(area)=nbn_in(n_area)
@@ -2839,7 +3012,7 @@ module gb
 				do j=0,nbn_in(n_area)
 				
 					if(jnt(bn_in(area,j)) == 0) then   ! this node hasn't been assigned yet
-						 write(*,*) GB_GEN%nNodes,' process_gen_file a'
+						 ! write(*,*) GB_GEN%nNodes,' process_gen_file a'
 						call new_node(GB_GEN,x_in(bn_in(area,j)),y_in(bn_in(area,j)))  ! keep this boundary node
 						if(ierr /= 0) goto 1000
 						call set(GB_GEN%node(GB_GEN%nNodes)%is,out_bndy)
@@ -2850,19 +3023,26 @@ module gb
 						bn(area,j)=jnt(bn_in(area,j))   ! re-assign new node number 
 					endif
 				end do
-			endif
+			!endif
 			elength(area)=elength_in(area)
 			if(.not. plan_view) then
 				y_elength(area)=y_elength_in(area)
 			end if
 			stretch_factor(area)=stretch_factor_in(area)
 			ndrop_rate(area)=ndrop_rate_in(area)
-		end do
+		!end do
 
 		! treat the rest as cuts
 		call msg('Processing addlines...')
-		do n_area=1,area_in
-			if(bn_in(n_area,0) == 0) then   ! treat as a cut (i.e. addline in feflow)
+		do n_area=2,area_in
+            elength(area)=elength_in(area)
+			if(.not. plan_view) then
+				y_elength(area)=y_elength_in(area)
+			end if
+			stretch_factor(area)=stretch_factor_in(area)
+			ndrop_rate(area)=ndrop_rate_in(area)
+
+			!if(OuterBoundary%Linetyp=='Polyline') then   ! treat as a cut 
 				call reallocate_cut_arrays(nbn_in(n_area))
 				if(ierr /= 0) goto 1000
 				do j=1,nbn_in(n_area)
@@ -2870,16 +3050,16 @@ module gb
 					ycut(j)=y_in(bn_in(n_area,j))
 				end do
 				ncut=nbn_in(n_area)
-				call add_cut
+				call add_cut(GB_GEN)
 				if(ierr /= 0) goto 1000
-			endif
+			!endif
 		end do	
 	
 		1000 deallocate(jnt) 
 
 	end subroutine process_gen_file
 	!----------------------------------------------------------------------
-	subroutine set_ob_dir
+    subroutine set_ob_dir(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -2923,18 +3103,19 @@ module gb
 
 	end subroutine set_ob_dir
 	!----------------------------------------------------------------------
-	subroutine add_cut
+	subroutine add_cut(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: jj,ncut_new
 		logical :: split
 
 		10    call calc_segments
 			if(ierr /= 0) return
-			call analyze_cut(split)
+			call analyze_cut(GB_GEN,split)
 			if(ierr /= 0) return
 			if(n_int.gt.0) then
-			call tie_in_cut
+			call tie_in_cut(GB_GEN)
 			if(ierr /= 0) return
 			endif
 			if(split) then
@@ -3091,7 +3272,7 @@ module gb
 			old_nn=GB_GEN%nNodes
 			!       Define the coordinates of the new nodes
 			do i=nct(i_int-1)+1,nct(i_int)
-			 write(*,*) GB_GEN%nNodes,' update_area'
+			 ! write(*,*) GB_GEN%nNodes,' update_area'
 				call new_node(GB_GEN,xcut(i),ycut(i))
 				if(ierr /= 0) goto 1000
 			end do
@@ -3226,7 +3407,7 @@ module gb
 	
 	end subroutine update_outer_area
 	!----------------------------------------------------------------------
-	subroutine calc_al_ae(i_int,skip)
+	subroutine calc_al_ae(GB_GEN,i_int,skip)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3371,7 +3552,7 @@ module gb
 		!
 	end subroutine calc_al_ae
 	!----------------------------------------------------------------------
-	subroutine analyze_cut(split)
+	subroutine analyze_cut(GB_GEN,split)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3448,7 +3629,7 @@ module gb
 							rs(n_int)=rseg
 							nct(n_int)=i
 							rc(n_int)=rcut
-							call calc_al_ae(n_int,skip)
+							call calc_al_ae(GB_GEN,n_int,skip)
 							if(skip) n_int=n_int-1   ! abandon intercept
 						endif
 					endif
@@ -3458,9 +3639,9 @@ module gb
 		!
 		if(n_int.eq.0) then
 			if(.not. extended) then
-				call extend_cut_upstream
+				call extend_cut_upstream(GB_GEN)
 				if(ierr /= 0) return
-				call extend_cut_downstream
+				call extend_cut_downstream(GB_GEN)
 				if(ierr /= 0) return
 				extended=.true.
 				goto 11
@@ -3469,12 +3650,12 @@ module gb
 			endif
 		else
 			if(nct(1).ne.1 .and. al(1).ne.0) then
-				call extend_cut_upstream
+				call extend_cut_upstream(GB_GEN)
 				if(ierr /= 0) return
 				goto 11
 			endif
 			if(nct(n_int).ne.ncut-1 .and. ae(n_int).ne.0) then
-				call extend_cut_downstream
+				call extend_cut_downstream(GB_GEN)
 				if(ierr /= 0) return
 				goto 11
 			endif
@@ -3536,7 +3717,7 @@ module gb
 	
 	end subroutine analyze_cut
 	!----------------------------------------------------------------------
-	subroutine extend_cut_downstream
+	subroutine extend_cut_downstream(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3581,7 +3762,7 @@ module gb
 
 	end subroutine extend_cut_downstream
 	!----------------------------------------------------------------------
-	subroutine extend_cut_upstream
+	subroutine extend_cut_upstream(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3631,8 +3812,9 @@ module gb
 
 	end subroutine extend_cut_upstream
 	!----------------------------------------------------------------------
-	subroutine tie_in_cut
+    subroutine tie_in_cut(GB_GEN)
 		implicit none
+		type(mesh) GB_GEN
 
 		integer(i4) :: i, nds, nde
 
@@ -3641,7 +3823,7 @@ module gb
 		!  This routine determines whether or not to create a new node at the
 		!  intercept or tie in to an existing node.
 		!
-		call check_tie_in(xi(1),yi(1),tie_in_start,nds)
+		call check_tie_in(GB_GEN,xi(1),yi(1),tie_in_start,nds)
 		if(ierr /= 0) return
 		if(.not. tie_in_start) then
 			if(al(1).eq.0) then
@@ -3655,7 +3837,7 @@ module gb
 
 		if(n_int.ge.2) then
 			do i=2,n_int
-				call check_tie_in(xi(i),yi(i),tie_in_end,nde)
+				call check_tie_in(GB_GEN,xi(i),yi(i),tie_in_end,nde)
 				if(ierr /= 0) return
 				if(ae(i-1).eq.0) then   ! outer boundary
 					call update_outer_area(i,tie_in_start,nds,tie_in_end,nde)
@@ -3683,7 +3865,7 @@ module gb
 
 	end subroutine tie_in_cut
 	!----------------------------------------------------------------------
-	subroutine check_tie_in(xtie,ytie,tie_in,p_node)
+	subroutine check_tie_in(GB_GEN,xtie,ytie,tie_in,p_node)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3692,7 +3874,7 @@ module gb
 		real*8 xtie,ytie,difx,dify
 	
 		! Find closest node and calculate distances
-		call gen_find_node(xtie,ytie,p_node)
+		call gen_find_node(GB_GEN,xtie,ytie,p_node)
 		difx=abs(xtie-GB_GEN%node(p_node)%x)
 		dify=abs(ytie-GB_GEN%node(p_node)%y)
 	
@@ -3700,7 +3882,7 @@ module gb
 			tie_in=.true.
 		else
 			tie_in=.false.
-			 write(*,*) GB_GEN%nNodes,' check_tie_in'
+			 ! write(*,*) GB_GEN%nNodes,' check_tie_in'
 			call new_node(GB_GEN,xtie,ytie)
 			if(ierr /= 0) return
 			p_node=GB_GEN%nNodes
@@ -3797,7 +3979,7 @@ module gb
 
 	end subroutine calc_segments
 	!----------------------------------------------------------------------
-	subroutine gen_find_node(x1,y1,p_node)
+	subroutine gen_find_node(GB_GEN,x1,y1,p_node)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3808,7 +3990,6 @@ module gb
 		dist_min=1.0e20
 		97    continue
 			f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y))**2)
-			!f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y)*scr_ratio)**2)
 			if(f1.lt.dist_min) then
 				p_node=i
 				dist_min=f1

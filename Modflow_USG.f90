@@ -22,10 +22,6 @@
     character(MAX_INST) :: DisableTecplotOutput_CMD='disable tecplot output'
     
     
-    ! --------------------------------------------------Mesh definition section
-    ! By default, the 2D template mesh is converted to Modflow mesh using a mesh-centred control volume approach
-    ! This option changes it to a node-centred control volume approach
-    character(MAX_INST) :: NodalControlVolumes_CMD='nodal control volumes'
 
     ! By default, RICHARDS equation for variably-saturated flow is used
     ! This option changes it to saturated flow
@@ -2059,6 +2055,11 @@
     !-------------------------------------------------------------
     subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
         implicit none
+    
+        ! --------------------------------------------------Mesh definition section
+        ! By default, the 2D template mesh is converted to Modflow mesh using a mesh-centred control volume approach
+        ! This option changes it to a node-centred control volume approach
+        character(MAX_INST) :: NodalControlVolumes_CMD='nodal control volumes'
 
         character(MAX_STR) :: FName
         integer(i4) :: FNumMUT
@@ -2080,7 +2081,7 @@
         endif
         call InitializeModflowFiles(Modflow)
 
-        InstructionLoop:do
+        BuildModflowUSG_InstructionLoop:do
             
             read(FNumMUT,'(a)',iostat=status,end=10) instruction
     
@@ -2601,7 +2602,7 @@
             else
                 call ErrMsg('MUSG?:'//instruction)
             end if
-        end do InstructionLoop
+        end do BuildModflowUSG_InstructionLoop
 
         10 continue
 

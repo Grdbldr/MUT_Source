@@ -4263,7 +4263,28 @@ module GeneralRoutines    !### bit setting routines
     end subroutine AllocChk
     
     !---------------------------------------------- Increase array sizes at run-time 
+    subroutine GrowLogicalArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        logical, allocatable :: iArray(:)
+        logical, allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
 
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowLogicalArray
 
     subroutine GrowIntegerArray(iArray,nSizeIn,nSizeout)
         implicit none
@@ -4271,11 +4292,16 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
-        if(nSizeIn<nSizeout) then
+        if(nSizeout<nSizeIn) then
             call Msg('Requested size less than current size: in GrowIntegerArray')    
             return
         endif
         
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(iTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
         iTMP(1:nSizeIn) = iArray
@@ -4288,6 +4314,11 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iArray(:,:)
         integer(i4), allocatable :: iTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
+        
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
         
         if(.not. allocated(iArray)) then
             allocate(iArray(nSize1,nSizeout),stat=ialloc)
@@ -4307,6 +4338,16 @@ module GeneralRoutines    !### bit setting routines
         real(sp), allocatable :: rTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
         allocate(rTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowRealArray rTMP array')
         rTMP (1:nSizeIn) = rArray
@@ -4319,6 +4360,16 @@ module GeneralRoutines    !### bit setting routines
         real(sp), allocatable :: rArray(:,:)
         real(sp), allocatable :: rTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
+        
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
         
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowReal2dArray rTMP array')
@@ -4333,6 +4384,16 @@ module GeneralRoutines    !### bit setting routines
         real(dp), allocatable :: rTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(rTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
         rTMP (1:nSizeIn) = rArray
@@ -4347,13 +4408,22 @@ module GeneralRoutines    !### bit setting routines
         real(dp), allocatable :: rTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'GrowDReal2dArray rTMP array')
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
     end subroutine GrowDReal2dArray
-
 
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.
