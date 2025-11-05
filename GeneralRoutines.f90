@@ -5657,11 +5657,11 @@ module GeneralRoutines    !### bit setting routines
 				
 	    integer(i4) :: i, cn, n, npoly
 	    real(dp) :: px,py, vt
-	    real(dp) :: polyx(npoly),polyy(npoly)
+	    real(dp) :: polyx(0:npoly),polyy(0:npoly)
 
         cn = 0	! the crossing number counter
 
-	    do i=1,npoly-1
+	    do i=0,npoly-1
            if ((polyy(i) <= py .and. polyy(i+1) > py)   & ! an upward crossing
             .or.  (polyy(i) > py .and. polyy(i+1) <= py))  then ! a downward crossing
                 ! compute the actual edge-ray intersect x-coordinate

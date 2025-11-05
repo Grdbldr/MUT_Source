@@ -171,6 +171,45 @@ Module MeshGen
         return
     end subroutine ReadGridBuilderMesh
     !-------------------------------------------------------------
+    subroutine TriangularElementProperties(GB_TRI_2D)
+        implicit none
+        type(mesh) GB_TRI_2D
+        
+        integer(i4) :: i,j
+        real(dp) :: x(3),y(3)
+        real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
+            
+        do i=1,GB_TRI_2D%nElements
+            ! xc and yc from circumcircles
+            if(GB_TRI_2D%nNodesPerElement /= 3) call Errmsg('Currently only working for 3-node triangles')
+            do j=1,GB_TRI_2D%nNodesPerElement
+                x(j)=GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%x
+                y(j)=GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%y
+            end do
+            call InnerCircle(x,y,GB_TRI_2D%Element(i)%xyArea,xc,yc,GB_TRI_2D%Element(i)%rCircle,lseg,aseg,dseg)
+            
+            GB_TRI_2D%Element(i)%SideLength(1)=lseg(1,2)
+            GB_TRI_2D%Element(i)%SideLength(2)=lseg(2,3)
+            GB_TRI_2D%Element(i)%SideLength(3)=lseg(3,1)
+           
+            GB_TRI_2D%Element(i)%xCircle=xc
+            GB_TRI_2D%Element(i)%yCircle=yc
+                
+                
+            ! zc from centroid of the idNode array coordinates
+            zc=0.0
+            do j=1,3
+                zc=zc+GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%z
+            end do
+                
+            GB_TRI_2D%Element(i)%x=xc
+            GB_TRI_2D%Element(i)%y=yc
+            GB_TRI_2D%Element(i)%z=zc/3
+            GB_TRI_2D%Element(i)%zCircle=zc/3
+        end do
+    end subroutine TriangularElementProperties
+
+    !-------------------------------------------------------------
     subroutine MESHToTecplot(LocalMesh)
         implicit none
         type(mesh) LocalMesh
@@ -189,7 +228,7 @@ Module MeshGen
         write(FNum,*) 'Title = "'//trim(LocalMesh%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","Zone","Element Area","Inner Circle Radius"'
+        VarSTR='variables="X","Y","Z","Zone","xyArea","rCircle"'
         nVar=6
 
         !if(allocated(LocalMesh%rCircle)) then

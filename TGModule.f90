@@ -171,6 +171,7 @@ module MUT  !### Modflow-USG Tools
                 MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
                 call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
                 call GridBuilder(FNumMUT,MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
+                call TriangularElementProperties(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 if(EnableTecplotOutput) then
                     call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 endif

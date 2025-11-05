@@ -7,6 +7,7 @@ module gb
     use NumericalMesh
 	use error_param
     use BasicTypes
+    use MeshGen
 
 	implicit none
     
@@ -41,9 +42,9 @@ module gb
 	logical,allocatable		:: hole_in(:)	! true if area not to be filled with elements
 
 	integer(i4)		:: nwells
-	real(dp)	:: well_esize			! target elenemt size at well
-	real(dp),allocatable	:: xw(:)		! x coordinates
-	real(dp),allocatable	:: yw(:)		! y coordinates
+	real(dp)	:: well_esize			! target element size at well
+	real(dp),allocatable	:: xw(:)		! xell x coordinates
+	real(dp),allocatable	:: yw(:)		! well y coordinates
 
 	real(dp) :: segl_user
 
@@ -116,9 +117,11 @@ module gb
 
 
 	! common /segs/ 
-	integer(i4) :: nseg
+	integer(i4) :: gbNseg
 	integer(i4) :: ns_cur
-	integer(i4), allocatable :: seg_node(:,:)
+    
+    
+	integer(i4), allocatable :: gbSeg_node(:,:)
 	integer(i4), allocatable :: seg_el(:,:)
 	integer(i4), allocatable :: seg_area(:,:)
 	integer(i4), allocatable :: seg_is(:)
@@ -182,7 +185,7 @@ module gb
 
         character(MAX_INST) :: instruction
         character(MAX_INST) :: WellsFrom_ID_X_Y_File_CMD='wells from id_x_y file'
-        character(MAX_INST) :: RefinementFrom_ID_X_Y_File_CMD='refinement from id_x_y file'
+        character(MAX_INST) :: RefineInsidePolygon_CMD='refine inside polygon'
 
 
 		integer(i4) :: ierror
@@ -213,7 +216,7 @@ module gb
         
         call DefineOuterBoundary(FNumMUT)
                  
-        call set_ob_ab(GB_GEN)
+        call set_ob_dir
        
         ! Read a target element length
         read(FNumMUT,*) RealInput
@@ -229,45 +232,25 @@ module gb
 
         
 
-        GridBuilderMods_InstructionLoop:do
-            
-            read(FNumMUT,'(a)',iostat=status) instruction
-            call LwrCse(instruction)
-            if(index(instruction, 'end') /=0) then
-                call Msg(TAB//'end GridBuilderMods_InstructionLoop')
-                exit GridBuilderMods_InstructionLoop
-            else
-                call LwrCse(instruction)
-                call Msg(TAB//instruction)
-            end if    
-          
-            if(index(instruction, WellsFrom_ID_X_Y_File_CMD)  /= 0) then
-                !call WellsFrom_ID_X_Y_File(FNumMUT)
-            else if(index(instruction, RefinementFrom_ID_X_Y_File_CMD)  /= 0) then
-                !call RefinementFrom_ID_X_Y_File(FNumMUT)
-            else
-                call ErrMsg('MUSG?:'//instruction)
-            end if
-        end do GridBuilderMods_InstructionLoop
         
-
-		! initial arrays for segments... 
-		ns_cur=1
-		call initialize_segment_arrays(1000)
-		if(ierr /= 0) then
-			ierror=ierr
-			return
-		endif
-
-		! initial arrays for boundary nodes... 
-		nb_cur=1
-		na_cur=1
-		call initialize_boundary_arrays(area_in,nbn_in_max)
-		if(ierr /= 0) then
-			ierror=ierr
-			return
-		endif
-
+  !
+		!! initial arrays for segments... 
+		!ns_cur=1
+		!call initialize_segment_arrays(1000)
+		!if(ierr /= 0) then
+		!	ierror=ierr
+		!	return
+		!endif
+  !
+		!! initial arrays for boundary nodes... 
+		!nb_cur=1
+		!na_cur=1
+		!call initialize_boundary_arrays(area_in,nbn_in_max)
+		!if(ierr /= 0) then
+		!	ierror=ierr
+		!	return
+		!endif
+  !
 		! initial arrays for cuts... 
 		nc_cur=1
 		call initialize_cut_arrays(1000)
@@ -329,6 +312,32 @@ module gb
 			return
 		endif
 
+        GridBuilderMods_InstructionLoop:do
+            
+            read(FNumMUT,'(a)',iostat=status) instruction
+            call LwrCse(instruction)
+            if(index(instruction, 'end') /=0) then
+                call Msg(TAB//'end GridBuilderMods_InstructionLoop')
+                exit GridBuilderMods_InstructionLoop
+            else
+                call LwrCse(instruction)
+                call Msg(TAB//instruction)
+            end if    
+          
+            if(index(instruction, WellsFrom_ID_X_Y_File_CMD)  /= 0) then
+                call DefineWells(FNumMUT)
+                ! Read a target element length
+				read(FNumMUT,*) well_esize			! target element size at well
+				write(TmpSTR,'(a, '//FMT_R8//')') 'Target Element size at well: ',well_esize 
+				call Msg(TAB//trim(TmpSTR))
+				call Msg(TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+
+            else if(index(instruction, RefineInsidePolygon_CMD)  /= 0) then
+                call RefineInsidePolygon(GB_GEN,FNumMUT)
+            else
+                call ErrMsg('MUSG?:'//instruction)
+            end if
+        end do GridBuilderMods_InstructionLoop
 
 		if(nwells > 0) then
 			call Msg('Adding wells...')
@@ -343,7 +352,11 @@ module gb
 				ierror=ierr
 				return
 			endif
-		endif
+        endif
+
+        recalc_nicon=.true.
+		call relax_grid(GB_GEN)
+
 
 
 		if(allocated(nicon)) deallocate(nicon,icon,eicon)
@@ -436,6 +449,96 @@ module gb
 		call initialize_boundary_arrays(area_in,nbn_in_max)
         
     end subroutine DefineOuterBoundary
+    !----------------------------------------------------------------------
+    subroutine RefineInsidePolygon(GB_GEN,FNumMUT)
+		implicit none
+        type(mesh) :: GB_GEN
+        type(t_line) :: Polygon
+        integer(i4) :: i 
+        integer(i4) :: FNumMUT
+        integer(i4) :: FnumLine
+		character(MAX_STR) :: FNameLine
+        
+        LOGICAL :: IsInPoly
+        
+        
+   
+		read(FNumMUT,'(a)') FNameLine 
+        inquire(file=FNameLine,exist=FileExists)
+        if(.not. FileExists) then
+			call ErrMsg('File not found: '//trim(FNameLine))
+        endif
+                
+        call Msg(TAB//FileReadSTR//'RefineInsidePolygon file: '//trim(FNameLine))
+
+		call OpenAscii(FnumLine,FNameLine)
+        call LineFrom_ID_X_Y_File(FnumLine,Polygon)
+        
+        if(Polygon%LineTyp /= 'Polygon') then
+            write(TmpSTR,'(a)') 'RefineInsidePolygon file '//trim(FNameLine)//' must be of type polygon'
+            call ErrMsg(TmpSTR)
+        endif
+                
+        Polygon%Name=Trim(FNameline)
+                
+        ! Clear chosen elements
+		do i=1,GB_GEN%nElements
+			call clear(GB_GEN%element(i)%is,chosen)
+        end do
+        ! Triangle properties
+        call TriangularElementProperties(GB_GEN)
+
+        ! Find elements within region boundary
+		do i=1,GB_GEN%nElements
+            IsInPoly=.false.
+            IsInPoly=in_poly(Polygon%NPoints,Polygon%Point%x,Polygon%Point%y,GB_GEN%Element(i)%xCircle,GB_GEN%Element(i)%yCircle)
+			if(IsInPoly) then
+				call set(GB_GEN%element(i)%is,chosen)
+                write(TMPStr,'(a,i8,a)') ' Element ',i,' marked for refinement'
+                write(*,*) trim(TMPStr)
+			endif
+        end do
+        
+        call refine_chosen(GB_GEN)
+        	
+    end subroutine RefineInsidePolygon
+    !----------------------------------------------------------------------
+    subroutine DefineWells(FNumMUT)
+		implicit none
+        type(t_pointset) :: Wells
+        integer(i4) :: FNumMUT
+        integer(i4) :: FnumLine
+		character(MAX_STR) :: FNameLine
+        
+        
+   
+		read(FNumMUT,'(a)') FNameLine 
+        inquire(file=FNameLine,exist=FileExists)
+        if(.not. FileExists) then
+			call ErrMsg('File not found: '//trim(FNameLine))
+        endif
+                
+        call Msg(TAB//FileReadSTR//'WellsFrom_ID_X_Y file: '//trim(FNameLine))
+
+		call OpenAscii(FnumLine,FNameLine)
+        call WellsFrom_ID_X_Y_File(FnumLine,Wells)
+        
+        Wells%Name=Trim(FNameline)
+                
+        ! default setting for 1 area
+        nwells=Wells%nPoints
+        
+        allocate(xw(nwells), &
+				 yw(nwells), &
+				stat=ialloc)
+		call AllocChk(ialloc,'WellsFrom_ID_X_Y_File_CMD: x_in, y_in')
+        
+        xw(:)=Wells%Point(:)%x
+        yw(:)=Wells%Point(:)%y
+
+
+        
+    end subroutine DefineWells
 	!----------------------------------------------------------------------
 	subroutine read_gendat(FNumMUT)
 		implicit none
@@ -554,8 +657,32 @@ module gb
 		close(itmp)
 	end subroutine save_gendat
     
+	!!----------------------------------------------------------------------
+	!subroutine find_node_old(x1,y1,p_node)
+	!	implicit none
+ !
+	!	integer :: i
+ !
+	!	integer p_node
+	!	real(dp) :: x1, y1, dist_min, f1
+ !
+	!	i=1
+	!	dist_min=1.0e20
+	!	97    continue
+	!		!if(plan_view)then
+	!			f1=sqrt((x1-x_in(i))**2+((y1-y_in(i)))**2)
+	!		!else
+	!		!	f1=sqrt((x1-x(i))**2+((y1-y(i))*xy_ratio)**2)
+	!		!endif
+	!		if(f1.lt.dist_min) then
+	!			p_node=i
+	!			dist_min=f1
+	!		endif
+	!		i=i+1
+	!	if (i.LE.nn_in) goto 97
+	!end subroutine find_node
 	!----------------------------------------------------------------------
-	subroutine find_node(x1,y1,p_node)
+	subroutine find_node(GB_GEN,x1,y1,p_node)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -818,7 +945,7 @@ module gb
 		if(ierr /= 0) return
 
 		do i=1,nwells      ! move and fix well nodes
-			call find_node(xw(i),yw(i),nde)
+			call find_node(GB_GEN,xw(i),yw(i),nde)
 			if(.not. bcheck(GB_GEN%node(nde)%is,well)) then
 				GB_GEN%node(nde)%x=xw(i)
 				GB_GEN%node(nde)%y=yw(i)
@@ -830,7 +957,56 @@ module gb
 		if(ierr /= 0) return
 
 	end subroutine make_wells
-	!----------------------------------------------------------------------
+!	!----------------------------------------------------------------------
+!	subroutine refine_wells_old
+!		implicit none
+!
+!		integer :: i, j, l, nde, nn_old
+!
+!		logical :: stop_refining
+!		real(dp) :: spacing
+!
+!		do i=1,nwells  ! fix well node neighbours
+!			call find_node(xw(i),yw(i),nde)
+!			do j=1,nicon(nde)
+!				call set(node(icon(nde,j)),well)
+!			end do
+!		end do
+!
+!		nn_old=nn
+!
+!		refine_loop: do
+!
+!			stop_refining=.true.
+!
+!			do l=1,ne   ! no elements chosen
+!				call clear(elem(l),chosen)
+!			end do
+!
+!
+!			do i=1,nwells
+!				call find_node(xw(i),yw(i),nde)
+!				call node_spacing(nde,spacing)
+!				if(ierr /= 0) return
+!				if(spacing > well_esize) then
+!					call choose_e_connected(nde)
+!					stop_refining=.false.
+!				endif
+!			end do
+!
+!			if(stop_refining) exit refine_loop
+!
+!			call refine_chosen
+!			if(ierr /= 0) return
+!
+!		end do refine_loop
+!
+!		do i=nn_old+1,nn  ! fix new nodes too
+!			call set(node(i),well)
+!		end do
+!
+!	end subroutine refine_wells_old
+!!----------------------------------------------------------------------
 	subroutine refine_wells(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
@@ -841,7 +1017,7 @@ module gb
 		real(dp) :: spacing
 
 		do i=1,nwells  ! fix well node neighbours
-			call find_node(xw(i),yw(i),nde)
+			call find_node(GB_GEN,xw(i),yw(i),nde)
 			do j=1,nicon(nde)
 				call set(GB_GEN%node(icon(nde,j))%is,well)
 			end do
@@ -859,18 +1035,20 @@ module gb
 
 
 			do i=1,nwells
-				call find_node(xw(i),yw(i),nde)
-				call node_spacing(nde,spacing)
+				call find_node(GB_GEN,xw(i),yw(i),nde)
+				call node_spacing(GB_GEN,nde,spacing)
 				if(ierr /= 0) return
 				if(spacing > well_esize) then
-					call choose_e_connected(nde)
+                    write(*,*) 'well ',i,' spacing ',spacing
+
+					call choose_e_connected(GB_GEN,nde)
 					stop_refining=.false.
 				endif
 			end do
 
 			if(stop_refining) exit refine_loop
 
-			call refine_chosen
+			call refine_chosen(GB_GEN)
 			if(ierr /= 0) return
 
 		end do refine_loop
@@ -881,7 +1059,7 @@ module gb
 
 	end subroutine refine_wells
 	!----------------------------------------------------------------------
-	subroutine choose_e_connected(nde)
+	subroutine choose_e_connected(GB_GEN,nde)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -896,7 +1074,7 @@ module gb
 
 	end subroutine choose_e_connected
 	!----------------------------------------------------------------------
-	subroutine node_spacing(i,spacing)
+	subroutine node_spacing(GB_GEN,i,spacing)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -920,11 +1098,11 @@ module gb
 	!-----------------------------------------------------------------------
 	!*** Mesh refinement routines ***
 	!-----------------------------------------------------------------------
-	subroutine refine_chosen
+	subroutine refine_chosen(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: l, nil, nnn, nne
+		integer(i4) :: l, nil, nnn, nne, gbNodesIn
 
 		integer(i4),allocatable :: nnl(:)
 	
@@ -936,14 +1114,16 @@ module gb
 
 		nil=0
 		nnn=GB_GEN%nNodes
+        gbNodesIn=GB_GEN%nNodes
 		nne=GB_GEN%nElements
 		do l=1,GB_GEN%nElements
 			if (bcheck(GB_GEN%element(l)%is,chosen)) then
 				call refine_element(GB_GEN,l,.true.,nil,nnn,nne,nnl)
 				if(ierr /= 0) goto 1000
 			endif
-		end do
-		if (nnn.gt.GB_GEN%nNodes) then
+        end do
+		
+        if (nnn.gt.gbNodesIn) then
 			15      sn=nnn
 				do  l=1,GB_GEN%nElements
 					if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
@@ -959,8 +1139,8 @@ module gb
 				endif
 			end do
 		endif
-		GB_GEN%nNodes=nnn
-		GB_GEN%nElements=nne
+		!GB_GEN%nNodes=nnn
+		!GB_GEN%nElements=nne
 		!call calc_bandwidth
 		!recalc_segs=.true.
 		recalc_nicon=.true.
@@ -1016,7 +1196,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, i1, i2, nnn, nil, ninc 
+		integer(i4) :: i, i1, i2, nnn, nil, ninc, gbnNodesBefore 
 
 		logical node_exists
 		integer(i4) :: nnl(4*GB_GEN%nNodes)
@@ -1043,7 +1223,9 @@ module gb
 		endif
 		if (.not. node_exists) then
             ! write(*,*) GB_GEN%nNodes,' check_exist'
+            gbnNodesBefore=GB_GEN%nNodes
 			call new_node(GB_GEN,xm,ym)
+            nnn=nnn+GB_GEN%nNodes - gbnNodesBefore
 			if(ierr /= 0) return
 			call update_bnodes(GB_GEN,i1,i2,nnn)
 			if(ierr /= 0) return
@@ -1105,7 +1287,7 @@ module gb
 			i=i+1
 		if(i.le.nil .and. nSplitSides.le.1) goto 10
 		if (nSplitSides.gt.1) then
-			call refine_element(GB_GEN,l,.false.,nil,nnn,nne,nnl)
+			call refine_element(GB_GEN,l,.true.,nil,nnn,nne,nnl)  ! fred was false
 			if(ierr /= 0) return
 		endif
 
@@ -1116,7 +1298,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, l, nil, n1
+		integer(i4) :: i, l, nil, n1, n2, n3, iz
 
 		integer(i4) :: nnl(4*GB_GEN%nNodes)
 		logical done
@@ -1134,7 +1316,10 @@ module gb
 			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(GB_GEN,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
+                    n2=GB_GEN%idNode(2,l)
+                    n3=GB_GEN%idNode(3,l)
+                    iz=GB_GEN%element(l)%idZone
+					call add_element(GB_GEN,n1,n2,n3,iz)
 					if(ierr /= 0) return
 					GB_GEN%idNode(2,l)=n1
 					done=.true.
@@ -1143,7 +1328,10 @@ module gb
 			if (abs(x2-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y2-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(GB_GEN,n1,GB_GEN%idNode(3,l),GB_GEN%idNode(1,l),GB_GEN%element(l)%idZone)
+                    n2=GB_GEN%idNode(3,l)
+                    n3=GB_GEN%idNode(1,l)
+                    iz=GB_GEN%element(l)%idZone
+					call add_element(GB_GEN,n1,n2,n3,iz)
 					if(ierr /= 0) return
 					GB_GEN%idNode(3,l)=n1
 					done=.true.
@@ -1152,7 +1340,10 @@ module gb
 			if (abs(x3-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y3-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
-					call add_element(GB_GEN,n1,GB_GEN%idNode(2,l),GB_GEN%idNode(3,l),GB_GEN%element(l)%idZone)
+                    n2=GB_GEN%idNode(2,l)
+                    n3=GB_GEN%idNode(3,l)
+                    iz=GB_GEN%element(l)%idZone
+					call add_element(GB_GEN,n1,n2,n3,iz)
 					if(ierr /= 0) return
 					GB_GEN%idNode(3,l)=n1
 					done=.true.
@@ -1171,15 +1362,11 @@ module gb
 
 		if(proposed > ns_cur) ns_cur=proposed
 
-		if(allocated(seg_node)) then
-			deallocate(seg_node, seg_el, seg_area, seg_is)
-		endif
-
-		allocate(seg_node(ns_cur,2),seg_el(ns_cur,2), seg_area(ns_cur,2), seg_is(ns_cur),stat=ialloc)
+		allocate(gbSeg_node(ns_cur,2),seg_el(ns_cur,2), seg_area(ns_cur,2), seg_is(ns_cur),stat=ialloc)
 		call AllocChk(ialloc,'initial segment arrays')
 		if(ierr /= 0) return
 
-		seg_node(:,:)=0
+		gbSeg_node(:,:)=0
 		seg_area(:,:)=0
 		seg_el(:,:)=0
 		seg_is(:)=0
@@ -1194,42 +1381,42 @@ module gb
 
 		integer(i4) :: ns_rqst, i
 
-		integer(i4), allocatable :: seg_node_tmp(:,:) 
+		integer(i4), allocatable :: gbSeg_node_tmp(:,:) 
 		integer(i4), allocatable :: seg_el_tmp(:,:) 
 		integer(i4), allocatable :: seg_area_tmp(:,:) 
 		integer(i4), allocatable :: seg_is_tmp(:) 
 
-		if(ns_rqst >= ns_cur) then  ! reallocate seg_node etc
+		if(ns_rqst >= ns_cur) then  ! reallocate gbSeg_node etc
 
 			ns_new=nint(ns_rqst*ns_mult)
 
-			allocate(seg_node_tmp(ns_new,2),seg_el_tmp(ns_new,2), seg_area_tmp(ns_new,2), seg_is_tmp(ns_new), stat=ialloc)
+			allocate(gbSeg_node_tmp(ns_new,2),seg_el_tmp(ns_new,2), seg_area_tmp(ns_new,2), seg_is_tmp(ns_new), stat=ialloc)
 			call AllocChk(ialloc,'allocate temp segment arrays')
 			if(ierr /= 0) return
 	
-			seg_node_tmp(:,:)=0
+			gbSeg_node_tmp(:,:)=0
 			seg_el_tmp(:,:)=0
 			seg_area_tmp(:,:)=0
 			seg_is_tmp(:)=0
 
 			! copy current data
 			do i=1,ns_cur
-				seg_node_tmp(i,:)	=	seg_node(i,:)
+				gbSeg_node_tmp(i,:)	=	gbSeg_node(i,:)
 				seg_el_tmp(i,:)		=	seg_el(i,:)
 				seg_area_tmp(i,:)	=	seg_area(i,:)
 				seg_is_tmp(i)		=	seg_is(i)
 			end do
 
 			! destroy arrays
-			deallocate(seg_node, seg_area, seg_el, seg_is)
+			deallocate(gbSeg_node, seg_area, seg_el, seg_is)
 			! reallocate
-			allocate(seg_node(ns_new,2),seg_el(ns_new,2), seg_area(ns_new,2), seg_is(ns_new), stat=ialloc)
+			allocate(gbSeg_node(ns_new,2),seg_el(ns_new,2), seg_area(ns_new,2), seg_is(ns_new), stat=ialloc)
 			call AllocChk(ialloc,'reallocate segment arrays')
 			if(ierr /= 0) return
 
 			! copy current data
 			do i=1,ns_cur
-				seg_node(i,:)	=	seg_node_tmp(i,:)	
+				gbSeg_node(i,:)	=	gbSeg_node_tmp(i,:)	
 				seg_el(i,:)		=	seg_el_tmp(i,:)		
 				seg_area(i,:)	=	seg_area_tmp(i,:)	
 				seg_is(i)		=	seg_is_tmp(i)	
@@ -1241,7 +1428,7 @@ module gb
 
 	end subroutine reallocate_segment_arrays
 	!----------------------------------------------------------------------
-	subroutine new_segment(nnseg,n1,n2,a1,a2,l1,l2)
+	subroutine gbNewSegment(nnseg,n1,n2,a1,a2,l1,l2)
 		implicit none
 
 		integer(i4) :: nnseg, n1, n2, a1, a2, l1, l2
@@ -1251,14 +1438,14 @@ module gb
 		call reallocate_segment_arrays(nnseg)
 		if(ierr /= 0) return
 
-		seg_node(nnseg,1)=n1
-		seg_node(nnseg,2)=n2
+		gbSeg_node(nnseg,1)=n1
+		gbSeg_node(nnseg,2)=n2
 		seg_area(nnseg,1)=a1
 		seg_area(nnseg,2)=a2
 		seg_el(nnseg,1)=l1
 		seg_el(nnseg,2)=l2
 
-	end subroutine new_segment
+	end subroutine gbNewSegment
 	!----------------------------------------------------------------------
 	subroutine initialize_cut_arrays(proposed)
 		implicit none
@@ -1677,11 +1864,11 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i1, i2, i3, e_area
+		integer(i4) :: i1, i2, i3, e_area,idum=3
 
 
         call GrowElementArray(GB_GEN%element,GB_GEN%nElements,GB_GEN%nElements+1)	
-        call GrowInteger2dArray(GB_GEN%idNode,3,GB_GEN%nElements,GB_GEN%nElements+1)	
+        call GrowInteger2dArray(GB_GEN%idNode,idum,GB_GEN%nElements,GB_GEN%nElements+1)	
 		!call reallocate_element_arrays(nel)
 		if(ierr /= 0) return
 
@@ -1692,7 +1879,7 @@ module gb
 		GB_GEN%idNode(3,GB_GEN%nElements)=i3
 		GB_GEN%element(GB_GEN%nElements)%is=0	
 		GB_GEN%element(GB_GEN%nElements)%id=GB_GEN%nElements	
-		GB_GEN%element(GB_GEN%nElements)%idZone=e_area		
+ 		GB_GEN%element(GB_GEN%nElements)%idZone=e_area		
 
         ! write(*,*) GB_GEN%nElements,' element ',i1,i2,i3
 
@@ -1702,7 +1889,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		!integer(i4) :: nn
+		integer(i4) :: nnn
 		real(dp) :: xnew, ynew
 
 
@@ -1712,7 +1899,7 @@ module gb
 
         GB_GEN%nNodes=GB_GEN%nNodes+1
 
-		GB_GEN%node(GB_GEN%nNodes)%id=GB_GEN%nNodes
+        GB_GEN%node(GB_GEN%nNodes)%id=GB_GEN%nNodes
 		GB_GEN%node(GB_GEN%nNodes)%x=xnew
 		GB_GEN%node(GB_GEN%nNodes)%y=ynew
 		GB_GEN%node(GB_GEN%nNodes)%is=0	
@@ -1725,7 +1912,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, n1, n2, i1
+		integer(i4) :: i, n1, n2, i1, iDum
 		real(dp) :: x1, y1, x2, y2, d, rmu, rmu1, rmu2, del_rmu, rmu_el
 
 
@@ -1740,9 +1927,9 @@ module gb
 		call calc_segments
 
 		! set array size_nde
-		do i=1,nseg
-			n1=seg_node(i,1)
-			n2=seg_node(i,2)
+		do i=1,gbNseg
+			n1=gbSeg_node(i,1)
+			n2=gbSeg_node(i,2)
 			d=sqrt((GB_GEN%node(n2)%x-GB_GEN%node(n1)%x)**2+(GB_GEN%node(n2)%y-GB_GEN%node(n1)%y)**2)
 
 			size_nde(n1)=min(size_nde(n1),d)   					! segment length
@@ -1757,10 +1944,10 @@ module gb
 		call Msg('Generating boundary nodes...')
 
 		! loop over segments and satisfy elength, inserting nodes as necessary 
-		nseg_old=nseg
+		nseg_old=gbNseg
 		seg_old_loop: do i=1,nseg_old
-			n1=seg_node(i,1)
-			n2=seg_node(i,2)
+			n1=gbSeg_node(i,1)
+			n2=gbSeg_node(i,2)
 			x1=GB_GEN%node(n1)%x
 			y1=GB_GEN%node(n1)%y
 			x2=GB_GEN%node(n2)%x
@@ -2107,7 +2294,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, j
+		integer(i4) :: i, j, idum
 		logical :: overlap
 		real(dp) :: olap
 		real(dp) :: fac
@@ -2202,7 +2389,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i,j
+		integer(i4) :: i,j, idum
 		real(dp) :: olap
 		real(dp) :: fac
 		logical :: overlap !, in_ob
@@ -2928,15 +3115,15 @@ module gb
 		outer_loop: do 
 			n_dropped(:)=.false.
 			call calc_segments
-			if(nseg==nseg_old) exit outer_loop
+			if(gbNseg==nseg_old) exit outer_loop
 
-			nseg_old=nseg
+			nseg_old=gbNseg
 			pass=pass+1
 			write(pass_msg,'(a,i4,a)') 'Remove short segments, pass ',pass,'...' 
 			call Msg(pass_msg)
-			do i=1,nseg
-				nd1=seg_node(i,1)
-				nd2=seg_node(i,2)
+			do i=1,gbNseg
+				nd1=gbSeg_node(i,1)
+				nd2=gbSeg_node(i,2)
 				if(.not. n_dropped(nd1) .and. .not. n_dropped(nd2)) then  ! only do anything if neither node changed
 					seg_l=sqrt((GB_GEN%node(nd1)%x-GB_GEN%node(nd2)%x)**2+(GB_GEN%node(nd1)%y-GB_GEN%node(nd2)%y)**2)
 					if(seg_l.lt.segl_user) then
@@ -3059,7 +3246,50 @@ module gb
 
 	end subroutine process_gen_file
 	!----------------------------------------------------------------------
-    subroutine set_ob_dir(GB_GEN)
+	subroutine set_ob_dir
+		implicit none
+
+		integer :: i
+		real(dp), allocatable :: dum_x(:),dum_y(:)
+		real(dp) :: ang, tot_ang1, tot_ang2
+	
+		allocate(dum_x(nn_in), dum_y(nn_in), stat=ialloc)
+		call AllocChk(ialloc,'set_ob_dir work arrays')
+		if(ierr /= 0) return
+	
+		call int_angle(x_in(nn_in),y_in(nn_in),x_in(1),y_in(1),x_in(2),y_in(2),ang)
+		tot_ang1=ang
+		do i=2,nn_in-1
+			call int_angle(x_in(i-1),y_in(i-1),x_in(i),y_in(i),x_in(i+1),y_in(i+1),ang)
+			tot_ang1=tot_ang1+ang
+		end do
+		call int_angle(x_in(nn_in-1),y_in(nn_in-1),x_in(nn_in),y_in(nn_in),x_in(1),y_in(1),ang)
+	
+		call int_angle(x_in(1),y_in(1),x_in(nn_in),y_in(nn_in),x_in(nn_in-1),y_in(nn_in-1),ang)
+		tot_ang2=ang
+		do i=nn_in-1,2,-1
+			call int_angle(x_in(i+1),y_in(i+1),x_in(i),y_in(i),x_in(i-1),y_in(i-1),ang)
+			tot_ang2=tot_ang2+ang
+		end do
+		call int_angle(x_in(2),y_in(2),x_in(1),y_in(1),x_in(nn_in),y_in(nn_in),ang)
+	
+		if(tot_ang1.lt.tot_ang2) goto 1000
+	
+		do i=1,nn_in
+			dum_x(i)=x_in(i)
+			dum_y(i)=y_in(i)
+		end do
+	
+		do i=1,nn_in
+			x_in(i)=dum_x(nn_in-i+1)
+			y_in(i)=dum_y(nn_in-i+1)
+		end do
+	
+		1000 deallocate(dum_x, dum_y)
+
+	end subroutine set_ob_dir
+	!----------------------------------------------------------------------
+    subroutine set_ob_dir_new(GB_GEN)
 		implicit none
 		type(mesh) GB_GEN
 
@@ -3101,7 +3331,7 @@ module gb
 	
 		1000 deallocate(dum_x, dum_y)
 
-	end subroutine set_ob_dir
+	end subroutine set_ob_dir_new
 	!----------------------------------------------------------------------
 	subroutine add_cut(GB_GEN)
 		implicit none
@@ -3439,8 +3669,8 @@ module gb
 		!     testing
 		a1=seg_area(nsg(i_int),1)
 		a2=seg_area(nsg(i_int),2)
-		n1=seg_node(nsg(i_int),1)
-		n2=seg_node(nsg(i_int),2)
+		n1=gbSeg_node(nsg(i_int),1)
+		n2=gbSeg_node(nsg(i_int),2)
 		!
 		!     This is the cut node number downstream of the intercept (inside area)
 		nc_ds=nct(i_int)+1
@@ -3583,11 +3813,11 @@ module gb
 			xc2=xcut(i+1)
 			yc2=ycut(i+1)
 			! Loop over the existing segments
-			do j=1,nseg
-				xs1=GB_GEN%node(seg_node(j,1))%x
-				ys1=GB_GEN%node(seg_node(j,1))%y
-				xs2=GB_GEN%node(seg_node(j,2))%x
-				ys2=GB_GEN%node(seg_node(j,2))%y
+			do j=1,gbNseg
+				xs1=GB_GEN%node(gbSeg_node(j,1))%x
+				ys1=GB_GEN%node(gbSeg_node(j,1))%y
+				xs2=GB_GEN%node(gbSeg_node(j,2))%x
+				ys2=GB_GEN%node(gbSeg_node(j,2))%y
 				!
 				!  The following 6 lines determine if the two segments intersect
 				del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
@@ -3737,11 +3967,11 @@ module gb
 		yc1=ycut(ncut-1)
 		xc2=xcut(ncut)
 		yc2=ycut(ncut)
-		do j=1,nseg
-			xs1=GB_GEN%node(seg_node(j,1))%x
-			ys1=GB_GEN%node(seg_node(j,1))%y
-			xs2=GB_GEN%node(seg_node(j,2))%x
-			ys2=GB_GEN%node(seg_node(j,2))%y
+		do j=1,gbNseg
+			xs1=GB_GEN%node(gbSeg_node(j,1))%x
+			ys1=GB_GEN%node(gbSeg_node(j,1))%y
+			xs2=GB_GEN%node(gbSeg_node(j,2))%x
+			ys2=GB_GEN%node(gbSeg_node(j,2))%y
 			!  The following 6 lines determine if the two segments intersect
 			del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
 			del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
@@ -3782,11 +4012,11 @@ module gb
 		yc1=ycut(1)
 		xc2=xcut(2)
 		yc2=ycut(2)
-		do j=1,nseg
-			xs1=GB_GEN%node(seg_node(j,1))%x
-			ys1=GB_GEN%node(seg_node(j,1))%y
-			xs2=GB_GEN%node(seg_node(j,2))%x
-			ys2=GB_GEN%node(seg_node(j,2))%y
+		do j=1,gbNseg
+			xs1=GB_GEN%node(gbSeg_node(j,1))%x
+			ys1=GB_GEN%node(gbSeg_node(j,1))%y
+			xs2=GB_GEN%node(gbSeg_node(j,2))%x
+			ys2=GB_GEN%node(gbSeg_node(j,2))%y
 			!  The following 6 lines determine if the two segments intersect
 			del=(xs1-xs2)*(yc2-yc1)-(ys1-ys2)*(xc2-xc1)
 			del2=(xc1-xc2)*(ys2-ys1)-(yc1-yc2)*(xs2-xs1)
@@ -3906,8 +4136,8 @@ module gb
 		found=.false.
 		j=1
 		10    continue
-			n1=seg_node(j,1)
-			n2=seg_node(j,2)
+			n1=gbSeg_node(j,1)
+			n2=gbSeg_node(j,2)
 			if (n1.eq.nhere) then
 				if(n2.ne.nopp) then
 					if(seg_area(j,1).eq.karea .or. seg_area(j,2).eq.karea) then
@@ -3925,7 +4155,7 @@ module gb
 				endif
 			endif
 			j=j+1
-		if(j.le.nseg) goto 10
+		if(j.le.gbNseg) goto 10
 	
 		20  continue  
 	
@@ -3940,12 +4170,12 @@ module gb
 
 		!     Form a list of unique boundary segment pairs.  These pairs have the
 		!     following properties:
-		!        (1) seg_node(i,1) is upstream node for seg_area(i,1)
-		!            seg_node(i,2) is upstream node for seg_area(i,2)
+		!        (1) gbSeg_node(i,1) is upstream node for seg_area(i,1)
+		!            gbSeg_node(i,2) is upstream node for seg_area(i,2)
 		!        (2) if seg_area(i,2) is 0 then this is an outer boundary segment
 
-		nseg=0
-		seg_node(:,:)=0
+		gbNseg=0
+		gbSeg_node(:,:)=0
 		seg_area(:,:)=0
 
 		call Msg('Calculating segment information...')
@@ -3963,14 +4193,14 @@ module gb
 				prev_def=.false.
 				j=1
 				40        continue
-					if (n1.eq.seg_node(j,2) .and. n2.eq.seg_node(j,1)) then
+					if (n1.eq.gbSeg_node(j,2) .and. n2.eq.gbSeg_node(j,1)) then
 						prev_def=.true.
 						seg_area(j,2)=k
 					endif
 					j=j+1
-				if(.not. prev_def .and. j.le.nseg) goto 40
+				if(.not. prev_def .and. j.le.gbNseg) goto 40
 				if (.not. prev_def) then
-					call new_segment(nseg,n1,n2,k,0,0,0)
+					call gbNewSegment(gbNseg,n1,n2,k,0,0,0)
 					if(ierr /= 0) return
 				endif
 				i=i+1
