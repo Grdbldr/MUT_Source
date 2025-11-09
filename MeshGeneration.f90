@@ -30,11 +30,10 @@ Module MeshGen
     logical :: layer_defined=.false.
     logical :: zone_by_template=.false.
     
-    integer(i4), allocatable :: seg_node(:,:)
-    integer(i4) :: nSeg        
 
     
     contains
+    
     !----------------------------------------------------------------------
     subroutine list_file_elevation(fname,nprop,maxnnp)
         implicit none
@@ -95,7 +94,7 @@ Module MeshGen
 
 
         GB_TRI_2D%nNodesPerElement=3
-        GB_TRI_2D%Element%Typ='triangle'
+        GB_TRI_2D%Element(:)%Typ='triangle'
         GB_TRI_2D%TecplotTyp='fetriangle'
         
         !     NODE COORDINATES
@@ -320,7 +319,7 @@ Module MeshGen
         call Msg('Name: '//trim(SEG_3D%Name))
 
         SEG_3D%nNodesPerElement=2
-        SEG_3D%Element%Typ='segment'
+        SEG_3D%Element(:)%Typ='segment'
         SEG_3D%TecplotTyp='felineseg'
 
         
@@ -481,7 +480,7 @@ Module MeshGen
         call Msg('Name: '//trim(U_RECT_2D%Name))
 
         U_RECT_2D%nNodesPerElement=4
-        U_RECT_2D%Element%Typ='rectangle'
+        U_RECT_2D%Element(:)%Typ='rectangle'
         U_RECT_2D%TecplotTyp='fequadrilateral'
 
 
@@ -891,44 +890,6 @@ Module MeshGen
     !    return
     !end subroutine GenerateRectanglesInteractive
 
-    !----------------------------------------------------------------------
-    subroutine check_seg(i1,i2) 
-	    implicit none
-     
-        integer(i4) :: j, k, i1, i2
-	    logical :: seg
-	 
-        seg=.true. 
-        do j=1,nseg 
-		    if (i1.eq.seg_node(j,2) .and. i2.eq.seg_node(j,1) .or. i1.eq.seg_node(j,1) .and. i2.eq.seg_node(j,2)) then
-			    seg=.false. 
-			    do  k=j,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-				    seg_node(k,1)=seg_node(k+1,1) 
-				    seg_node(k,2)=seg_node(k+1,2) 
-			    end do 
-			    nseg=nseg-1 
-			    exit
-		    endif 
-	    end do
-
-        if (seg) then 
-            call new_segment(i1,i2) 
-        endif 
-
-    end subroutine check_seg                                                            
-    
-    !----------------------------------------------------------------------
-    subroutine new_segment(n1,n2)
-	    implicit none
-
-	    integer(i4) :: n1, n2
-
-	    nseg=nseg+1
-
-	    seg_node(nseg,1)=n1
-	    seg_node(nseg,2)=n2
-
-    end subroutine new_segment
 
     !----------------------------------------------------------------------
     subroutine new_layer(FNumMUT,TMPLT,zone_by_template)

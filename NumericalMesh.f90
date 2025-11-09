@@ -11,7 +11,6 @@ module NumericalMesh
         real(dp) :: y
         real(dp) :: z
         
-        character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
     end type node 
@@ -19,7 +18,6 @@ module NumericalMesh
     type element
         character(40) :: Typ ! element typ eg triangle, quadrilateral, prism, block etc
         !character(len=:), allocatable :: Typ ! number of nodes in element
-        character(len=:), allocatable :: name
         integer(i4) :: id
         integer(i4) :: is
         integer(i4) :: idZone
@@ -104,142 +102,353 @@ module NumericalMesh
         type(mesh), allocatable :: mesh(:) ! array of meshes
     end type MeshGroup
 
+    integer(i4), allocatable :: seg_node(:,:)
+    integer(i4) :: nSeg        
 
 
     contains
+    subroutine SaveMeshASC(M)
+        implicit none
+        type(mesh) M
+        integer :: i, j
+        
+        character(128) :: FName
+        integer(i4) :: FNum
+        ! save mesh to binary file
+        FName=trim(M%name)//'.MeshASC'
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Ascii mesh file: '//trim(FName))
+        write(FNum,*) M%name
+        write(FNum,*) M%nNodes
+        write(FNum,*) M%nElements
+        write(FNum,*) M%nNodesPerElement
+        do i=1,M%nNodes
+            write(FNum,*) M%node(i)%id,M%node(i)%x,M%node(i)%y,M%node(i)%z,M%node(i)%is
+        end do
+        write(FNum,*) M%idNode
+        do i=1,M%nElements
+            write(FNum,*) M%element(i)%id,M%element(i)%typ,M%element(i)%idZone,M%element(i)%iLayer
+            write(FNum,*) M%element(i)%x,M%element(i)%y,M%element(i)%z,M%element(i)%is
+            write(FNum,*) M%element(i)%area,M%element(i)%xyArea
+            write(FNum,*) M%element(i)%xCircle,M%element(i)%yCircle,M%element(i)%zCircle,M%element(i)%rCircle
+            do j=1,M%nNodesPerElement
+                write(FNum,*) M%element(i)%xSide,M%element(i)%ySide,M%element(i)%SideLength
+            end do
+        end do
+        write(FNum,*) M%nZones
+        do i=1,M%nZones
+                write(FNum,*) M%zone(i)%name
+                write(FNum,*) M%zone(i)%id,M%element(i)%is
+        end do
+        
+
+        call FreeUnit(FNum)
+    end subroutine SaveMeshASC
+
+    subroutine SaveMeshBIN(M)
+        implicit none
+        type(mesh) M
+        integer :: i, j
+        
+        character(128) :: FName
+        integer(i4) :: FNum
+        ! save mesh to binary file
+        FName=trim(M%name)//'.MeshBIN'
+        call OpenBinary(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Binary mesh file: '//trim(FName))
+        
+        write(FNum) M%name
+        
+        write(FNum) M%nNodes
+        do i=1,M%nNodes
+            write(FNum) M%node(i)%id,M%node(i)%x,M%node(i)%y,M%node(i)%z,M%node(i)%is
+        end do
+        write(FNum) M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
+        write(*,*)'extents ', M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
+        
+        write(FNum) M%nElements
+        write(FNum) M%nNodesPerElement
+        write(FNum) M%TecplotTyp
+        write(FNum) M%idNode
+        
+        do i=1,M%nElements
+            write(FNum) M%element(i)%id,M%element(i)%typ,M%element(i)%idZone,M%element(i)%iLayer
+            write(FNum) M%element(i)%x,M%element(i)%y,M%element(i)%z,M%element(i)%is
+            write(FNum) M%element(i)%area,M%element(i)%xyArea
+            write(FNum) M%element(i)%xCircle,M%element(i)%yCircle,M%element(i)%zCircle,M%element(i)%rCircle
+            do j=1,M%nNodesPerElement
+                write(FNum) M%element(i)%xSide,M%element(i)%ySide,M%element(i)%SideLength
+            end do
+        end do
+        
+        write(FNum) M%nZones
+        do i=1,M%nZones
+                write(FNum) M%zone(i)%name
+                write(*,'(a)')'written zone name '// trim(M%zone(i)%name)
+                write(FNum) M%zone(i)%id,M%element(i)%is
+        end do
+ 
+        write(FNum) M%njag 
+        write(FNum) M%ia(:)      
+        do i=1,M%nElements
+            write(FNum) M%ConnectionList(:,i)  
+        end do
+        do i=1,M%nElements
+            write(FNum) (M%ThroughFace(j,i),j=1,MAX_CNCTS)  
+        end do
+
+        write(FNum) M%nFaces
+        write(FNum) M%nNodesPerFace
+        write(FNum) M%nFacesPerElement
+        write(FNum) ((M%LocalFaceNodes(i,j),i=1,M%nNodesPerFace),   j=1,M%nFacesPerElement) 
+        do j=1,M%nElements
+            write(FNum) (M%FaceHost(i,j),      i=1,M%nFacesPerElement)
+            write(FNum) (M%FaceNeighbour(i,j), i=1,M%nFacesPerElement)
+            write(FNum) (M%FaceCentroidX(i,j), i=1,M%nFacesPerElement)
+            write(FNum) (M%FaceCentroidY(i,j), i=1,M%nFacesPerElement)
+            write(FNum) (M%FaceCentroidZ(i,j), i=1,M%nFacesPerElement)
+        end do
+        
+        write(FNum) M%nLayers                 ! number of layers in the mesh 
+
+
+        call FreeUnit(FNum)
+    end subroutine SaveMeshBIN
+
+    subroutine ReadMeshBIN(M)
+        implicit none
+        type(mesh) M
+        integer :: i, j
+        
+        character(128) :: FName
+        integer(i4) :: FNum
+        ! save mesh to binary file
+        FName=trim(M%name)//'.MeshBIN'
+        call OpenBinary(FNum,FName)
+        call Msg('  ')
+        call Msg(TAB//FileCreateSTR//'Binary mesh file: '//trim(FName))
+        
+        read(FNum) M%name
+        write(*,'(a)')'mesh name '// trim(M%name)
+        
+        read(FNum) M%nNodes
+        allocate(M%Node(M%nNodes), stat=ialloc)
+        call AllocChk(ialloc,'ReadMeshBIN: M%Node arrays')
+        do i=1,M%nNodes
+            read(FNum) M%node(i)%id,M%node(i)%x,M%node(i)%y,M%node(i)%z,M%node(i)%is
+        end do
+        read(FNum) M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
+        
+        read(FNum) M%nElements
+        read(FNum) M%nNodesPerElement
+        read(FNum) M%TecplotTyp
+        allocate(M%Element(M%nElements), &
+            M%idNode(M%nNodesPerElement,M%nElements), stat=ialloc)
+        call AllocChk(ialloc,'ReadMeshBIN: M%Element, M%idNode arrays')
+        read(FNum) M%idNode
+        do i=1,M%nElements
+            read(FNum) M%element(i)%id,M%element(i)%typ,M%element(i)%idZone,M%element(i)%iLayer
+            read(FNum) M%element(i)%x,M%element(i)%y,M%element(i)%z,M%element(i)%is
+            read(FNum) M%element(i)%area,M%element(i)%xyArea
+            read(FNum) M%element(i)%xCircle,M%element(i)%yCircle,M%element(i)%zCircle,M%element(i)%rCircle
+            do j=1,M%nNodesPerElement
+                read(FNum) M%element(i)%xSide,M%element(i)%ySide,M%element(i)%SideLength
+            end do
+        end do
+ 
+        read(FNum) M%nZones
+        write(*,*) 'nzones ',M%nZones
+        allocate(M%Zone(M%nZones),stat=ialloc)
+        call AllocChk(ialloc,'ReadMeshBIN: M%Zone array')
+        do i=1,M%nZones
+            read(FNum) M%zone(i)%name
+            write(*,'(a)')'zone name '// trim(M%zone(i)%name)
+            read(FNum) M%zone(i)%id,M%element(i)%is
+        end do
+        
+        read(FNum) M%njag
+        
+        allocate(M%ia(M%nElements), &
+            M%ConnectionList(MAX_CNCTS,M%nElements), &
+            M%ThroughFace(MAX_CNCTS,M%nElements), &
+            stat=ialloc)
+        call AllocChk(ialloc,'ReadMeshBIN: M%ia, M%ConnectionList, M%ThroughFace arrays')
+        read(FNum) M%ia(:)      
+        do i=1,M%nElements
+            read(FNum) M%ConnectionList(:,i)  
+        end do
+        do i=1,M%nElements
+            read(FNum) M%ThroughFace(:,i)
+        end do
+        
+        read(FNum) M%nFaces
+        read(FNum) M%nNodesPerFace
+        read(FNum) M%nFacesPerElement
+        
+        allocate(M%LocalFaceNodes(M%nNodesPerFace, M%nFacesPerElement),stat=ialloc)
+        call AllocChk(ialloc,'ReadMeshBIN: M%LocalFaceNodes array')
+        read(FNum) ((M%LocalFaceNodes(i,j),i=1,M%nNodesPerFace),   j=1,M%nFacesPerElement) 
+        
+        allocate(M%FaceCentroidX(M%nFacesPerElement,M%nElements), &
+            M%FaceCentroidY(M%nFacesPerElement,M%nElements), &
+            M%FaceCentroidZ(M%nFacesPerElement,M%nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face Centroid arrays')
+        
+        allocate(M%FaceHost(M%nFacesPerElement,M%nElements), &
+                 M%FaceNeighbour(M%nFacesPerElement,M%nElements),stat=ialloc)
+        call AllocChk(ialloc,'Face host/neighbour arrays')
+
+        
+        do j=1,M%nElements
+            read(FNum) (M%FaceHost(i,j),      i=1,M%nFacesPerElement)
+            read(FNum) (M%FaceNeighbour(i,j), i=1,M%nFacesPerElement)
+            read(FNum) (M%FaceCentroidX(i,j), i=1,M%nFacesPerElement)
+            read(FNum) (M%FaceCentroidY(i,j), i=1,M%nFacesPerElement)
+            read(FNum) (M%FaceCentroidZ(i,j), i=1,M%nFacesPerElement)
+        end do
+        
+        read(FNum) M%nLayers                 ! number of layers in the mesh 
+
+
+        call FreeUnit(FNum)
+    end subroutine ReadMeshBIN
+
+
 
 	!-----------------------------------------------------------------------
-	subroutine mesh_limits(D)
+	subroutine MeshExtents(M)
 		implicit none
-		type(mesh) D
+		type(mesh) M
 
-		D%xmin=MINVAL(D%node%x)
-		D%xmax=MAXVAL(D%node%x)
-		D%ymin=MINVAL(D%node%y)
-		D%ymax=MAXVAL(D%node%y)
-		D%zmin=MINVAL(D%node%z)
-		D%zmax=MAXVAL(D%node%z)
+		M%xmin=MINVAL(M%node%x)
+		M%xmax=MAXVAL(M%node%x)
+		M%ymin=MINVAL(M%node%y)
+		M%ymax=MAXVAL(M%node%y)
+		M%zmin=MINVAL(M%node%z)
+		M%zmax=MAXVAL(M%node%z)
 
-    end subroutine mesh_limits
+    end subroutine MeshExtents
 
     !----------------------------------------------------------------------
-    subroutine BuildFaceTopologyFrommesh(D)
+    subroutine BuildFaceTopologyFrommesh(M)
         implicit none
 
-        type (mesh)  D
+        type (mesh)  M
 
         integer(i4) :: i, j, k, l
         
         call StopWatch(1,'BuildFaceTopologyFrommesh')
-        call Msg('Building face topology from model domain%..') 
+        call Msg('Building face topology from model domain...') 
 
         
         ! Local node numbers for 2D and 3D element faces 
-        select case (D%TecplotTyp)
+        select case (M%TecplotTyp)
         case ('felineseg')
-                D.nNodesPerFace=1
-                D.nFacesPerElement=2
-                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
-                call AllocChk(ialloc,'D.LocalFaceNodes  fetriangle')
+                M.nNodesPerFace=1
+                M.nFacesPerElement=2
+                allocate(M.LocalFaceNodes(M.nNodesPerFace, M.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'M.LocalFaceNodes  fetriangle')
 		                                 ! end1   end2   
-	            !data D.LocalFaceNodes/     1,      2   /
-	            D.LocalFaceNodes(1,1)=1    ! end1
-                D.LocalFaceNodes(1,2)=2    ! end2   
+	            !data M.LocalFaceNodes/     1,      2   /
+	            M.LocalFaceNodes(1,1)=1    ! end1
+                M.LocalFaceNodes(1,2)=2    ! end2   
         
         case ('fetriangle')
-                D.nNodesPerFace=2
-                D.nFacesPerElement=3
-                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
-                call AllocChk(ialloc,'D.LocalFaceNodes  fetriangle')
+                M.nNodesPerFace=2
+                M.nFacesPerElement=3
+                allocate(M.LocalFaceNodes(M.nNodesPerFace, M.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'M.LocalFaceNodes  fetriangle')
 		                                 ! side1   side2   side3 
-	            !data D.LocalFaceNodes/    1,2,      2,3,    3,1   /
-	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
-                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
-                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=1    ! side3 
+	            !data M.LocalFaceNodes/    1,2,      2,3,    3,1   /
+	            M.LocalFaceNodes(1,1)=1; M.LocalFaceNodes(2,1)=2    ! side1
+                M.LocalFaceNodes(1,2)=2; M.LocalFaceNodes(2,2)=3    ! side2   
+                M.LocalFaceNodes(1,3)=3; M.LocalFaceNodes(2,3)=1    ! side3 
             
         case ('fequadrilateral')
-                D.nNodesPerFace=2
-                D.nFacesPerElement=4
-                allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
-                call AllocChk(ialloc,'D.LocalFaceNodes  fequadrilateral')
+                M.nNodesPerFace=2
+                M.nFacesPerElement=4
+                allocate(M.LocalFaceNodes(M.nNodesPerFace, M.nFacesPerElement),stat=ialloc)
+                call AllocChk(ialloc,'M.LocalFaceNodes  fequadrilateral')
 		                                 ! side1     side2   side3   side4 
-	            !data D.LocalFaceNodes/    1,2,      2,3,    3,4,    4,1   /
-	            D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2    ! side1
-                D.LocalFaceNodes(1,2)=2; D.LocalFaceNodes(2,2)=3    ! side2   
-                D.LocalFaceNodes(1,3)=3; D.LocalFaceNodes(2,3)=4    ! side3 
-                D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=1    ! side3 
+	            !data M.LocalFaceNodes/    1,2,      2,3,    3,4,    4,1   /
+	            M.LocalFaceNodes(1,1)=1; M.LocalFaceNodes(2,1)=2    ! side1
+                M.LocalFaceNodes(1,2)=2; M.LocalFaceNodes(2,2)=3    ! side2   
+                M.LocalFaceNodes(1,3)=3; M.LocalFaceNodes(2,3)=4    ! side3 
+                M.LocalFaceNodes(1,4)=4; M.LocalFaceNodes(2,4)=1    ! side3 
                 
         case ('feprism')
-            D.nNodesPerFace=4
-            D.nFacesPerElement=5
-            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
-            call AllocChk(ialloc,'D.LocalFaceNodes  feprism')
+            M.nNodesPerFace=4
+            M.nFacesPerElement=5
+            allocate(M.LocalFaceNodes(M.nNodesPerFace, M.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'M.LocalFaceNodes  feprism')
                                         ! bottom      top         side1       side2       side3 
-	        !data D.LocalFaceNodes/    1,2,3,0,    4,5,6,0,    1,2,5,4,    1,3,6,4,    2,3,6,5   /
-	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=0    ! bottom
-	        D.LocalFaceNodes(1,2)=4; D.LocalFaceNodes(2,2)=5; D.LocalFaceNodes(3,2)=6; D.LocalFaceNodes(4,2)=0    ! top
-	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=5; D.LocalFaceNodes(4,3)=4    ! side1
-	        D.LocalFaceNodes(1,4)=1; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=6; D.LocalFaceNodes(4,4)=4    ! side2
-	        D.LocalFaceNodes(1,5)=2; D.LocalFaceNodes(2,5)=3; D.LocalFaceNodes(3,5)=6; D.LocalFaceNodes(4,5)=5    ! side3
+	        !data M.LocalFaceNodes/    1,2,3,0,    4,5,6,0,    1,2,5,4,    1,3,6,4,    2,3,6,5   /
+	        M.LocalFaceNodes(1,1)=1; M.LocalFaceNodes(2,1)=2; M.LocalFaceNodes(3,1)=3; M.LocalFaceNodes(4,1)=0    ! bottom
+	        M.LocalFaceNodes(1,2)=4; M.LocalFaceNodes(2,2)=5; M.LocalFaceNodes(3,2)=6; M.LocalFaceNodes(4,2)=0    ! top
+	        M.LocalFaceNodes(1,3)=1; M.LocalFaceNodes(2,3)=2; M.LocalFaceNodes(3,3)=5; M.LocalFaceNodes(4,3)=4    ! side1
+	        M.LocalFaceNodes(1,4)=1; M.LocalFaceNodes(2,4)=3; M.LocalFaceNodes(3,4)=6; M.LocalFaceNodes(4,4)=4    ! side2
+	        M.LocalFaceNodes(1,5)=2; M.LocalFaceNodes(2,5)=3; M.LocalFaceNodes(3,5)=6; M.LocalFaceNodes(4,5)=5    ! side3
 
         case ('febrick')
-            D.nNodesPerFace=4
-            D.nFacesPerElement=6
-            allocate(D.LocalFaceNodes(D.nNodesPerFace, D.nFacesPerElement),stat=ialloc)
-            call AllocChk(ialloc,'D.LocalFaceNodes  febrick')
+            M.nNodesPerFace=4
+            M.nFacesPerElement=6
+            allocate(M.LocalFaceNodes(M.nNodesPerFace, M.nFacesPerElement),stat=ialloc)
+            call AllocChk(ialloc,'M.LocalFaceNodes  febrick')
                                         ! bottom      top         front       back        left        right 
-	        !data D.LocalFaceNodes/    1,2,3,4,    5,6,7,8,    1,2,6,5,    4,3,7,8,    1,5,8,4,    2,6,7,3   /
-	        D.LocalFaceNodes(1,1)=1; D.LocalFaceNodes(2,1)=2; D.LocalFaceNodes(3,1)=3; D.LocalFaceNodes(4,1)=4    ! bottom
-	        D.LocalFaceNodes(1,2)=5; D.LocalFaceNodes(2,2)=6; D.LocalFaceNodes(3,2)=7; D.LocalFaceNodes(4,2)=8    ! top
-	        D.LocalFaceNodes(1,3)=1; D.LocalFaceNodes(2,3)=2; D.LocalFaceNodes(3,3)=6; D.LocalFaceNodes(4,3)=5    ! front
-	        D.LocalFaceNodes(1,4)=4; D.LocalFaceNodes(2,4)=3; D.LocalFaceNodes(3,4)=7; D.LocalFaceNodes(4,4)=8    ! back
-	        D.LocalFaceNodes(1,5)=1; D.LocalFaceNodes(2,5)=5; D.LocalFaceNodes(3,5)=8; D.LocalFaceNodes(4,5)=4    ! left
-	        D.LocalFaceNodes(1,6)=2; D.LocalFaceNodes(2,6)=6; D.LocalFaceNodes(3,6)=7; D.LocalFaceNodes(4,6)=3    ! right
+	        !data M.LocalFaceNodes/    1,2,3,4,    5,6,7,8,    1,2,6,5,    4,3,7,8,    1,5,8,4,    2,6,7,3   /
+	        M.LocalFaceNodes(1,1)=1; M.LocalFaceNodes(2,1)=2; M.LocalFaceNodes(3,1)=3; M.LocalFaceNodes(4,1)=4    ! bottom
+	        M.LocalFaceNodes(1,2)=5; M.LocalFaceNodes(2,2)=6; M.LocalFaceNodes(3,2)=7; M.LocalFaceNodes(4,2)=8    ! top
+	        M.LocalFaceNodes(1,3)=1; M.LocalFaceNodes(2,3)=2; M.LocalFaceNodes(3,3)=6; M.LocalFaceNodes(4,3)=5    ! front
+	        M.LocalFaceNodes(1,4)=4; M.LocalFaceNodes(2,4)=3; M.LocalFaceNodes(3,4)=7; M.LocalFaceNodes(4,4)=8    ! back
+	        M.LocalFaceNodes(1,5)=1; M.LocalFaceNodes(2,5)=5; M.LocalFaceNodes(3,5)=8; M.LocalFaceNodes(4,5)=4    ! left
+	        M.LocalFaceNodes(1,6)=2; M.LocalFaceNodes(2,6)=6; M.LocalFaceNodes(3,6)=7; M.LocalFaceNodes(4,6)=3    ! right
             
         case default
-            call ErrMsg('Tecplot Element Type '//trim(D%TecplotTyp)//' not supported')
+            call ErrMsg('Tecplot Element Type '//trim(M%TecplotTyp)//' not supported')
         end select  
   
         ! *** ASSUMPTION: If two face centroids are coincident, then the faces are shared by neighbouring elements
-        allocate(D.FaceCentroidX(D.nFacesPerElement,D.nElements), &
-                 D.FaceCentroidY(D.nFacesPerElement,D.nElements), &
-                 D.FaceCentroidZ(D.nFacesPerElement,D.nElements),stat=ialloc)
+        allocate(M.FaceCentroidX(M.nFacesPerElement,M.nElements), &
+                 M.FaceCentroidY(M.nFacesPerElement,M.nElements), &
+                 M.FaceCentroidZ(M.nFacesPerElement,M.nElements),stat=ialloc)
         call AllocChk(ialloc,'Face Centroid arrays')
         
-        allocate(D.FaceHost(D.nFacesPerElement,D.nElements), &
-                 D.FaceNeighbour(D.nFacesPerElement,D.nElements),stat=ialloc)
+        allocate(M.FaceHost(M.nFacesPerElement,M.nElements), &
+                 M.FaceNeighbour(M.nFacesPerElement,M.nElements),stat=ialloc)
         call AllocChk(ialloc,'Face host/neighbour arrays')
-        D.FaceHost(:,:)=0
+        M.FaceHost(:,:)=0
                
-        D.nFaces=0
-        do i=1,D.nElements
-            do j=1,D.nFacesPerElement
-                D.FaceHost(j,i)=i
-                D.nFaces=D.nFaces+1
-                D.FaceCentroidX(j,i)=0.0d0
-                D.FaceCentroidY(j,i)=0.0d0
-                D.FaceCentroidZ(j,i)=0.0d0
-                do k=1,D.nNodesPerFace
-                    D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%x
-                    D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%y
-                    D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)+D%node(D.idNode(D.LocalFaceNodes(k,j),i))%z
+        M.nFaces=0
+        do i=1,M.nElements
+            do j=1,M.nFacesPerElement
+                M.FaceHost(j,i)=i
+                M.nFaces=M.nFaces+1
+                M.FaceCentroidX(j,i)=0.0d0
+                M.FaceCentroidY(j,i)=0.0d0
+                M.FaceCentroidZ(j,i)=0.0d0
+                do k=1,M.nNodesPerFace
+                    M.FaceCentroidX(j,i)=M.FaceCentroidX(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%x
+                    M.FaceCentroidY(j,i)=M.FaceCentroidY(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%y
+                    M.FaceCentroidZ(j,i)=M.FaceCentroidZ(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%z
                 end do
-                D.FaceCentroidX(j,i)=D.FaceCentroidX(j,i)/D.nNodesPerFace
-                D.FaceCentroidY(j,i)=D.FaceCentroidY(j,i)/D.nNodesPerFace
-                D.FaceCentroidZ(j,i)=D.FaceCentroidZ(j,i)/D.nNodesPerFace
+                M.FaceCentroidX(j,i)=M.FaceCentroidX(j,i)/M.nNodesPerFace
+                M.FaceCentroidY(j,i)=M.FaceCentroidY(j,i)/M.nNodesPerFace
+                M.FaceCentroidZ(j,i)=M.FaceCentroidZ(j,i)/M.nNodesPerFace
             end do
         end do
         
-        D.FaceNeighbour(:,:)=0
-        do i=1,D.nElements
-            do j=1,D.nFacesPerElement
-                SearchLoop:do k=i+1,D.nElements
-                    do l=1,D.nFacesPerElement
-                        if(abs(D.FaceCentroidX(j,i)-D.FaceCentroidX(l,k)) < MinSeparationDistance .AND. &
-                           abs(D.FaceCentroidY(j,i)-D.FaceCentroidY(l,k)) < MinSeparationDistance .AND. &
-                           abs(D.FaceCentroidZ(j,i)-D.FaceCentroidZ(l,k)) < MinSeparationDistance) then ! shared face
-                            D.FaceNeighbour(j,i)=k    
-                            D.FaceNeighbour(l,k)=i 
+        M.FaceNeighbour(:,:)=0
+        do i=1,M.nElements
+            do j=1,M.nFacesPerElement
+                SearchLoop:do k=i+1,M.nElements
+                    do l=1,M.nFacesPerElement
+                        if(abs(M.FaceCentroidX(j,i)-M.FaceCentroidX(l,k)) < MinSeparationDistance .AND. &
+                           abs(M.FaceCentroidY(j,i)-M.FaceCentroidY(l,k)) < MinSeparationDistance .AND. &
+                           abs(M.FaceCentroidZ(j,i)-M.FaceCentroidZ(l,k)) < MinSeparationDistance) then ! shared face
+                            M.FaceNeighbour(j,i)=k    
+                            M.FaceNeighbour(l,k)=i 
                             exit SearchLoop
                         endif
                     end do
@@ -253,6 +462,198 @@ module NumericalMesh
                 
      
     end subroutine BuildFaceTopologyFrommesh
+    !-------------------------------------------------------------
+    subroutine BuildMeshCentredIaJa(M)
+        implicit none
+        type(mesh) M
+        
+        integer(i4) :: i, j, k, l
+        integer(i4) :: iEl, jEl
+        integer(i4) :: iNd, jNd
+        integer(i4) :: j1, j2
+        
+        real(dp) :: SeparationDistance
+        
+        real(dp) :: xMidpoint(M%nNodesPerElement,M%nElements)
+        real(dp) :: yMidpoint(M%nNodesPerElement,M%nElements)
+        real(dp) :: zMidpoint(M%nNodesPerElement,M%nElements)
+
+        call StopWatch(1,'BuildMeshCentredIaJa')
+        call Msg(' ')
+        call Msg('  Generating cell connection arrays for domain '//trim(M%name)//'...')
+
+        
+        allocate(M%ia(M%nElements), &
+                 M%ConnectionList(MAX_CNCTS,M%nElements), &
+                 M%ThroughFace(MAX_CNCTS,M%nElements), &
+                 stat=ialloc)
+        call AllocChk(ialloc,trim(M%name)//' connection arrays')
+
+        M%ia=0
+        M%ConnectionList=0
+        M%ThroughFace=0
+        
+        do i=1,M%nElements   ! First element connection is to itself
+            M%ia(i)=1
+            M%ConnectionList(M%ia(i),i)=-i     ! Negative entry shows start of element i list
+        end do
+
+
+        ! Element side midpoints
+        do i=1,M%nElements
+            do j=1,M%nNodesPerElement
+                j1=M%idNode(j,i)
+                if(j < M%nNodesPerElement) then
+                    j2=M%idNode(j+1,i)
+                else
+                    j2=M%idNode(1,i)
+                end if
+
+                xMidpoint(j,i)=(M%node(j1)%x+M%node(j2)%x)/2.0d0
+                yMidpoint(j,i)=(M%node(j1)%y+M%node(j2)%y)/2.0d0
+                zMidpoint(j,i)=(M%node(j1)%z+M%node(j2)%z)/2.0d0
+
+            end do
+        end do
+
+
+        ! Brute force search for neighbours using side midpoints
+        do iEl=1,M%nElements ! Loop over elements
+            do k=1,M%nNodesPerElement ! Loop over nodes in element
+                iNd=M%idNode(k,iEl)
+
+                do jEl=iEl+1,M%nElements ! Loop over rest of elements
+                    do l=1,M%nNodesPerElement ! Loop over nodes in next element
+                        jNd=M%idNode(l,jEl)
+                        SeparationDistance=sqrt((xMidpoint(k,iEl) - xMidpoint(l,jEl))**2 + &
+                            (yMidpoint(k,iEl) - yMidpoint(l,jEl))**2 + &
+                            (zMidpoint(k,iEl) - zMidpoint(l,jEl))**2 )
+                        if(SeparationDistance < MinSeparationDistance) then
+                            ! iEl is neighbour of jEl
+                            M%ia(iEl)=M%ia(iEl)+1
+                            M%ConnectionList(M%ia(iEl),iEl)=jEl
+                            M%ThroughFace(M%ia(iEl),iEl)=k
+                            
+                            ! jEl is neighbour of iEl
+                            M%ia(jEl)=M%ia(jEl)+1
+                            M%ConnectionList(M%ia(jEl),jEl)=iEl
+                            M%ThroughFace(M%ia(jEl),jEl)=l
+                        endif
+                    end do
+                end do
+            end do
+        end do
+        
+        M%njag=0
+        do i=1,M%nElements
+            M%njag=M%njag + M%ia(i)
+        end do
+
+        
+        call ElapsedTime(1)
+
+        return
+
+    end subroutine BuildMeshCentredIaJa
+    !----------------------------------------------------------------------
+    subroutine FlagOuterBoundaryNodes(M)
+        implicit none
+
+        type (mesh)  M
+
+        integer(i4) :: i, in1, in2, in3, in4 
+        
+        allocate(seg_node(M%nElements*4,2))
+        
+        !     construct the array of boundary segment nodes
+        call Msg('Find outer boundary segments...') 
+        if(M%nNodesPerElement==3) then
+            seg_node(1,1)=M%idNode(1,1) 
+            seg_node(1,2)=M%idNode(2,1) 
+            seg_node(2,1)=M%idNode(2,1) 
+            seg_node(2,2)=M%idNode(3,1) 
+            seg_node(3,1)=M%idNode(3,1) 
+            seg_node(3,2)=M%idNode(1,1) 
+            nseg=3 
+
+            do  i=2,M%nElements
+                in1=M%idNode(1,i) 
+                in2=M%idNode(2,i) 
+                in3=M%idNode(3,i) 
+                call check_seg(in1,in2) 
+                call check_seg(in2,in3) 
+                call check_seg(in3,in1) 
+            end do 
+        else if(M%nNodesPerElement==4) then
+            seg_node(1,1)=M%idNode(1,1) 
+            seg_node(1,2)=M%idNode(2,1) 
+            seg_node(2,1)=M%idNode(2,1) 
+            seg_node(2,2)=M%idNode(3,1) 
+            seg_node(3,1)=M%idNode(3,1) 
+            seg_node(3,2)=M%idNode(4,1) 
+            seg_node(4,1)=M%idNode(4,1) 
+            seg_node(4,2)=M%idNode(1,1) 
+            nseg=4 
+
+            do  i=2,M%nElements
+                in1=M%idNode(1,i) 
+                in2=M%idNode(2,i) 
+                in3=M%idNode(3,i) 
+                in4=M%idNode(4,i) 
+                call check_seg(in1,in2) 
+                call check_seg(in2,in3) 
+                call check_seg(in3,in4) 
+                call check_seg(in4,in1) 
+            end do 
+        end if
+
+     
+        do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+            call set(M%node(seg_node(i,1))%is,BoundaryNode) 
+            call set(M%node(seg_node(i,2))%is,BoundaryNode) 
+        end do 
+        
+        continue
+     
+    end subroutine FlagOuterBoundaryNodes
+    !----------------------------------------------------------------------
+    subroutine check_seg(i1,i2) 
+	    implicit none
+     
+        integer(i4) :: j, k, i1, i2
+	    logical :: seg
+	 
+        seg=.true. 
+        do j=1,nseg 
+		    if (i1.eq.seg_node(j,2) .and. i2.eq.seg_node(j,1) .or. i1.eq.seg_node(j,1) .and. i2.eq.seg_node(j,2)) then
+			    seg=.false. 
+			    do  k=j,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+				    seg_node(k,1)=seg_node(k+1,1) 
+				    seg_node(k,2)=seg_node(k+1,2) 
+			    end do 
+			    nseg=nseg-1 
+			    exit
+		    endif 
+	    end do
+
+        if (seg) then 
+            call new_segment(i1,i2) 
+        endif 
+
+    end subroutine check_seg                                                            
+    
+    !----------------------------------------------------------------------
+    subroutine new_segment(n1,n2)
+	    implicit none
+
+	    integer(i4) :: n1, n2
+
+	    nseg=nseg+1
+
+	    seg_node(nseg,1)=n1
+	    seg_node(nseg,2)=n2
+
+    end subroutine new_segment
 
     !----------------------------------------------------------------------
     subroutine GrowMeshArray(iArray,nSizeIn,nSizeout)

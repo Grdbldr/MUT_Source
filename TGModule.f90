@@ -88,6 +88,8 @@ module MUT  !### Modflow-USG Tools
         character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
         character(MAX_INST) :: GenerateVariableRectangles_CMD  =   'generate variable rectangles'
         character(MAX_INST) :: GenerateSegmentsFromXYZEndpoints_CMD  =   'generate segments from xyz endpoints'
+        character(MAX_INST) :: ReadMesh_CMD  =   'read mesh'
+        
         ! There are many other possible 2d mesh definition options e.g.
         !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
         
@@ -172,12 +174,29 @@ module MUT  !### Modflow-USG Tools
                 call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
                 call GridBuilder(FNumMUT,MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
                 call TriangularElementProperties(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                ! These routines required for both node- and mesh-centred control volume cases
+                call BuildFaceTopologyFrommesh(MyMeshGroup%mesh(MyMeshGroup%nMesh))  
+                call FlagOuterBoundaryNodes(MyMeshGroup%mesh(MyMeshGroup%nMesh)) ! From faces connected to only 1 element 
+                call BuildMeshCentredIaJa(MyMeshGroup%mesh(MyMeshGroup%nMesh)) 
+                call SaveMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 if(EnableTecplotOutput) then
                     call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 endif
+                
 
 
-                ! Modflow options
+            else if(index(MUT_CMD, ReadMesh_CMD) /= 0) then
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                read(FNumMut,'(a80)') TMPStr 
+                MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TMPStr
+                call ReadMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                
+                
+                continue
+
+
+            ! Modflow options
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
                 call BuildModflowUSG(FnumMUT,MyProject,prefix)
 

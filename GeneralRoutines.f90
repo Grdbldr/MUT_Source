@@ -4424,6 +4424,29 @@ module GeneralRoutines    !### bit setting routines
         call move_alloc (rTMP, rArray)
         
     end subroutine GrowDReal2dArray
+    
+    !---------------------------------------------- Read arrays 
+    subroutine ReadDRealArray(fnum,rArray)
+        implicit none
+        real(dp), allocatable :: rArray(:)
+
+        integer(i4) :: i, Fnum, fid
+	    character(MAX_LBL) :: VarSTR
+        
+	    read(FNum,'(a)') VarSTR
+        call Msg('ReadDRealArray file header: '//TRIM(VarSTR))
+        do i=1, SIZE(rArray)
+            read(FNum,*,iostat=status) fid,rArray(i)
+            if(status/=0) then
+                write(TMPStr,'(a,i8)') 'Array size: ',SIZE(rArray)
+                call Msg(TMPStr)
+                write(TMPStr,'(a,i8,a,i8)') 'Error reading real array at index ',i,' from file unit ',Fnum
+                call ErrMsg(TMPStr)
+            endif
+        end do
+        
+        
+    end subroutine ReadDRealArray
 
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.
@@ -4484,8 +4507,8 @@ module GeneralRoutines    !### bit setting routines
             end if
 		    call ErrMsg('Error opening file: '//fname)
         else
-            write(TmpSTR,'(i5)') iunit
-            call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
+            !write(TmpSTR,'(i5)') iunit
+            !call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
 	    end if
     end subroutine OpenBinary
 
@@ -4503,6 +4526,7 @@ module GeneralRoutines    !### bit setting routines
 	    end if
     end subroutine OpenDirect
 
+    !---------------------------------------------- User interface routines
     subroutine Msg(str) !--- Message to file and display.
 	    character(*) :: str
 	
@@ -4511,37 +4535,7 @@ module GeneralRoutines    !### bit setting routines
 	    write(*,'(a)') str(:l1)
     end subroutine Msg
 
-    subroutine LwrCse(string) !--- Make lowercase.
-	    implicit none
 
-        character*(*) :: string
-        integer(i4) :: length,i,j
-        length=len(string)
-        do i=1,length
-            j=ichar(string(i:i))
-            if(j.ge.65 .and. j.le.90) then
-                j=j+32
-                string(i:i)=char(j)
-            end if
-        end do
-
-    end subroutine LwrCse
-    
-    subroutine UprCse(string) !--- Make uppercase.
-	    implicit none
-
-        character*(*) :: string
-        integer(i4) :: length,i,j
-        length=len(string)
-        do i=1,length
-            j=ichar(string(i:i))
-            if(j.ge.97 .and. j.le.122) then
-                j=j-32
-                string(i:i)=char(j)
-            end if
-        end do
-
-    end subroutine UprCse
 
     subroutine EnterPrefix(prefix,lp,UserFNum,ext)
 	    implicit none
@@ -5256,6 +5250,37 @@ module GeneralRoutines    !### bit setting routines
 
 
     !---------------------------------------------- String routines
+
+    subroutine LwrCse(string) !--- Make lowercase.
+	    implicit none
+
+        character*(*) :: string
+        integer(i4) :: length,i,j
+        length=len(string)
+        do i=1,length
+            j=ichar(string(i:i))
+            if(j.ge.65 .and. j.le.90) then
+                j=j+32
+                string(i:i)=char(j)
+            end if
+        end do
+
+    end subroutine LwrCse
+    
+    subroutine UprCse(string) !--- Make uppercase.
+	    implicit none
+
+        character*(*) :: string
+        integer(i4) :: length,i,j
+        length=len(string)
+        do i=1,length
+            j=ichar(string(i:i))
+            if(j.ge.97 .and. j.le.122) then
+                j=j-32
+                string(i:i)=char(j)
+            end if
+        end do
+    end subroutine UprCse
 
     integer(i4) function CountChars(achar,str) !--- Occurrences of a character in a string.
         character(1) :: achar

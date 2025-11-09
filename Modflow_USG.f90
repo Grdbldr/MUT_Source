@@ -4692,67 +4692,6 @@
     end subroutine FlagChosenCellsInactiveTMPLT
     
 
-    !----------------------------------------------------------------------
-    subroutine FlagOuterBoundaryNodes(TMPLT)
-        implicit none
-
-        type (mesh)  TMPLT
-
-        integer(i4) :: i, in1, in2, in3, in4 
-        
-        allocate(seg_node(TMPLT%nElements*4,2))
-        
-        !     construct the array of boundary segment nodes
-        call Msg('Find outer boundary segments...') 
-        if(TMPLT%nNodesPerElement==3) then
-            seg_node(1,1)=TMPLT%idNode(1,1) 
-            seg_node(1,2)=TMPLT%idNode(2,1) 
-            seg_node(2,1)=TMPLT%idNode(2,1) 
-            seg_node(2,2)=TMPLT%idNode(3,1) 
-            seg_node(3,1)=TMPLT%idNode(3,1) 
-            seg_node(3,2)=TMPLT%idNode(1,1) 
-            nseg=3 
-
-            do  i=2,TMPLT%nElements
-                in1=TMPLT%idNode(1,i) 
-                in2=TMPLT%idNode(2,i) 
-                in3=TMPLT%idNode(3,i) 
-                call check_seg(in1,in2) 
-                call check_seg(in2,in3) 
-                call check_seg(in3,in1) 
-            end do 
-        else if(TMPLT%nNodesPerElement==4) then
-            seg_node(1,1)=TMPLT%idNode(1,1) 
-            seg_node(1,2)=TMPLT%idNode(2,1) 
-            seg_node(2,1)=TMPLT%idNode(2,1) 
-            seg_node(2,2)=TMPLT%idNode(3,1) 
-            seg_node(3,1)=TMPLT%idNode(3,1) 
-            seg_node(3,2)=TMPLT%idNode(4,1) 
-            seg_node(4,1)=TMPLT%idNode(4,1) 
-            seg_node(4,2)=TMPLT%idNode(1,1) 
-            nseg=4 
-
-            do  i=2,TMPLT%nElements
-                in1=TMPLT%idNode(1,i) 
-                in2=TMPLT%idNode(2,i) 
-                in3=TMPLT%idNode(3,i) 
-                in4=TMPLT%idNode(4,i) 
-                call check_seg(in1,in2) 
-                call check_seg(in2,in3) 
-                call check_seg(in3,in4) 
-                call check_seg(in4,in1) 
-            end do 
-        end if
-
-     
-        do  i=1,nseg                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-            call set(TMPLT%node(seg_node(i,1))%is,BoundaryNode) 
-            call set(TMPLT%node(seg_node(i,2))%is,BoundaryNode) 
-        end do 
-        
-        continue
-     
-    end subroutine FlagOuterBoundaryNodes
 
     !----------------------------------------------------------------------
     subroutine GenerateCLNDomain(FNum,CLNDomain)
@@ -5641,93 +5580,6 @@
         call FreeUnit(FNum)
         
     end subroutine GWFToTecplot
-    !-------------------------------------------------------------
-    subroutine IaJa_MeshCentred(domain)
-        implicit none
-        type(mesh) domain
-        
-        integer(i4) :: i, j, k, l
-        integer(i4) :: iEl, jEl
-        integer(i4) :: iNd, jNd
-        integer(i4) :: j1, j2
-        
-        real(dp) :: SeparationDistance
-        
-        real(dp) :: xMidpoint(domain%nNodesPerElement,domain%nElements)
-        real(dp) :: yMidpoint(domain%nNodesPerElement,domain%nElements)
-        real(dp) :: zMidpoint(domain%nNodesPerElement,domain%nElements)
-
-        call StopWatch(1,'IaJa_MeshCentred')
-        call Msg(' ')
-        call Msg('  Generating cell connection arrays for domain '//trim(domain%name)//'...')
-
-        
-        allocate(domain%ia(domain%nElements), &
-                 domain%ConnectionList(MAX_CNCTS,domain%nElements), &
-                 domain%ThroughFace(MAX_CNCTS,domain%nElements), &
-                 stat=ialloc)
-        call AllocChk(ialloc,trim(domain%name)//' connection arrays')
-
-        domain%ia=0
-        domain%ConnectionList=0
-        domain%ThroughFace=0
-        
-        do i=1,domain%nElements   ! First element connection is to itself
-            domain%ia(i)=1
-            domain%ConnectionList(domain%ia(i),i)=-i     ! Negative entry shows start of element i list
-        end do
-
-
-        ! Element side midpoints
-        do i=1,domain%nElements
-            do j=1,domain%nNodesPerElement
-                j1=domain%idNode(j,i)
-                if(j < domain%nNodesPerElement) then
-                    j2=domain%idNode(j+1,i)
-                else
-                    j2=domain%idNode(1,i)
-                end if
-
-                xMidpoint(j,i)=(domain%node(j1)%x+domain%node(j2)%x)/2.0d0
-                yMidpoint(j,i)=(domain%node(j1)%y+domain%node(j2)%y)/2.0d0
-                zMidpoint(j,i)=(domain%node(j1)%z+domain%node(j2)%z)/2.0d0
-
-            end do
-        end do
-
-
-        ! Brute force search for domain neighbours using side midpoints
-        do iEl=1,domain%nElements ! Loop over elements
-            do k=1,domain%nNodesPerElement ! Loop over nodes in element
-                iNd=domain%idNode(k,iEl)
-
-                do jEl=iEl+1,domain%nElements ! Loop over rest of elements
-                    do l=1,domain%nNodesPerElement ! Loop over nodes in next element
-                        jNd=domain%idNode(l,jEl)
-                        SeparationDistance=sqrt((xMidpoint(k,iEl) - xMidpoint(l,jEl))**2 + &
-                            (yMidpoint(k,iEl) - yMidpoint(l,jEl))**2 + &
-                            (zMidpoint(k,iEl) - zMidpoint(l,jEl))**2 )
-                        if(SeparationDistance < MinSeparationDistance) then
-                            ! iEl is neighbour of jEl
-                            domain%ia(iEl)=domain%ia(iEl)+1
-                            domain%ConnectionList(domain%ia(iEl),iEl)=jEl
-                            domain%ThroughFace(domain%ia(iEl),iEl)=k
-                            
-                            ! jEl is neighbour of iEl
-                            domain%ia(jEl)=domain%ia(jEl)+1
-                            domain%ConnectionList(domain%ia(jEl),jEl)=iEl
-                            domain%ThroughFace(domain%ia(jEl),jEl)=l
-                        endif
-                    end do
-                end do
-            end do
-        end do
-        
-        call ElapsedTime(1)
-
-        return
-
-    end subroutine IaJa_MeshCentred
 
     !----------------------------------------------------------------------
     subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
@@ -8096,7 +7948,7 @@
         call BuildFaceTopologyFrommesh(TMPLT)  
         call FlagOuterBoundaryNodes(TMPLT) ! From faces connected to only 1 element 
         
-        call IaJa_MeshCentred(TMPLT) 
+        call BuildMeshCentredIaJa(TMPLT) 
 
         
         

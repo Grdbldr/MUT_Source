@@ -196,12 +196,11 @@ module gb
 		ierr=0
 
         
-        GB_GEN%Element%Typ='triangle'
         GB_GEN%TecplotTyp='fetriangle'
         
         GB_GEN%nNodes=0
         allocate(GB_GEN%node(100),stat=ialloc)
-        call AllocChk(ialloc,'GB_GEN%node array')
+        call AllocChk(ialloc,'GridBuilder: GB_GEN%node array')
         GB_GEN%node%x = 0 ! automatic initialization
         GB_GEN%node%y = 0 ! automatic initialization
         GB_GEN%node%z = 0 ! automatic initialization
@@ -210,11 +209,20 @@ module gb
         GB_GEN%nElements=0
         allocate(GB_GEN%Element(100), &
             GB_GEN%idNode(GB_GEN%nNodesPerElement,100), stat=ialloc)
-        call AllocChk(ialloc,'GB_GEN%Element, GB_GEN%idNode arrays')
+        call AllocChk(ialloc,'GridBuilder: GB_GEN%Element, GB_GEN%idNode arrays')
         GB_GEN%Element(:)%idZone = 0 ! automatic initialization
         GB_GEN%idNode(:,:) = 0 ! automatic initialization
-        
+
         call DefineOuterBoundary(FNumMUT)
+        
+        ! this will be modified if we implement add_cuts
+        GB_GEN%nZones=1
+        allocate(GB_GEN%Zone(GB_GEN%nZones), stat=ialloc)
+        call AllocChk(ialloc,'GridBuilder: GB_GEN%Zone array')
+        GB_GEN%Zone(1)%id=1
+        GB_GEN%Zone(1)%name='Zone 1'
+        GB_GEN%Zone(1)%is=0
+
                  
         call set_ob_dir
        
@@ -296,7 +304,7 @@ module gb
 			endif
 		end do
 
-		call mesh_limits(GB_GEN)
+		call MeshExtents(GB_GEN)
 
 		call set_ob_ab(GB_GEN)
 
@@ -357,6 +365,7 @@ module gb
         recalc_nicon=.true.
 		call relax_grid(GB_GEN)
 
+        GB_GEN%Element%Typ='triangle'
 
 
 		if(allocated(nicon)) deallocate(nicon,icon,eicon)
@@ -1889,7 +1898,6 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: nnn
 		real(dp) :: xnew, ynew
 
 
@@ -1912,7 +1920,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, n1, n2, i1, iDum
+		integer(i4) :: i, n1, n2, i1
 		real(dp) :: x1, y1, x2, y2, d, rmu, rmu1, rmu2, del_rmu, rmu_el
 
 
@@ -2294,7 +2302,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i, j, idum
+		integer(i4) :: i, j
 		logical :: overlap
 		real(dp) :: olap
 		real(dp) :: fac
@@ -2389,7 +2397,7 @@ module gb
 		implicit none
 		type(mesh) GB_GEN
 
-		integer(i4) :: i,j, idum
+		integer(i4) :: i,j
 		real(dp) :: olap
 		real(dp) :: fac
 		logical :: overlap !, in_ob
