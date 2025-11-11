@@ -222,7 +222,7 @@ Module MeshGen
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
 
         write(FNum,*) 'Title = "'//trim(LocalMesh%name)//'"'
 
@@ -343,26 +343,26 @@ Module MeshGen
 	        SEG_3D%node%z = -999.0d0
         endif
 
-        call Msg(TAB//'                X                Y                Z')
+        call Msg('                X                Y                Z')
 
 	    do i=1,2
 			read(FNumMUT,*) xp(i),yp(i),zp(i)
             write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
-            call Msg(TAB//trim(TmpSTR))
+            call Msg(trim(TmpSTR))
         end do 
         
  		read(FNumMUT,*) nElements
         write(TmpSTR,'(a, i8)') 'Number of new segment elements: ',nElements 
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
         
         
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
         write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
         if(TotalLength < 0.0001) then
-            call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
+            call Msg('NOTE: Total Length of new CLN is less than 0.0001')
         else if(TotalLength < 1e-10) then   
-            call ErrMsg(TAB//'Total Length of new CLN is essentially zero')
+            call ErrMsg('Total Length of new CLN is essentially zero')
         endif
         
         dx=(xp(2) - xp(1))/nElements
@@ -445,9 +445,9 @@ Module MeshGen
         !SEG_3D%IsDefined=.true.
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',SEG_3D%nNodes
+        write(TmpSTR,'(a,i8)')    'Number of nodes         ',SEG_3D%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',SEG_3D%nElements
+        write(TmpSTR,'(a,i8)')    'Number of elements      ',SEG_3D%nElements
         call Msg(TmpSTR)
         
         if(EnableTecplotOutput) then
@@ -620,7 +620,7 @@ Module MeshGen
         
         !     xl, yl are grid lengths in x- and y-directions
         read(FNum,*) nx
-        write(TMPStr,'(a,i9)')      TAB//'Number of X-coordinates ',nx
+        write(TMPStr,'(a,i9)')      'Number of X-coordinates ',nx
         call Msg(TMPStr)
         allocate(xi(nx),stat=ialloc)
         call AllocChk(ialloc,'Gen_v_rects xi array')
@@ -628,7 +628,7 @@ Module MeshGen
         read(FNum,*) (xi(i),i=1,nx)
 
         read(FNum,*) ny
-        write(TMPStr,'(a,i9)')      TAB//'Number of Y-coordinates ',ny
+        write(TMPStr,'(a,i9)')      'Number of Y-coordinates ',ny
         call Msg(TMPStr)
         allocate(yi(ny),stat=ialloc)
         call AllocChk(ialloc,'Gen_v_rects yi array')
@@ -707,9 +707,9 @@ Module MeshGen
         TMPLT%Element%is=0
 
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',TMPLT%nNodes
+        write(TmpSTR,'(a,i8)')    'Number of nodes         ',TMPLT%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',TMPLT%nElements
+        write(TmpSTR,'(a,i8)')    'Number of elements      ',TMPLT%nElements
         call Msg(TmpSTR)
 
 
@@ -955,34 +955,34 @@ Module MeshGen
             call LwrCse(instruction)
             
             if(index(instruction,'end') /=0) then
-                call Msg(TAB//'end new layer')
+                call Msg('end new layer')
                 exit read_layer_instructions
             else
-                call Msg(TAB//TAB//instruction)
+                call Msg(instruction)
             end if
 
             if(index(instruction,layer_name_cmd) /=0) then
                 read(FNumMUT,'(a)') layer_name(nlayers)
-                call Msg(TAB//TAB//layer_name(nlayers))
+                call Msg(layer_name(nlayers))
 
             elseif(index(instruction,minimum_layer_thickness_cmd) /=0) then
 			    minimum_layer_thickness = .true.
 			    read(FNumMUT,*) z_added
 			    write(TmpSTR,'('//FMT_R8//',a)') z_added,'     '//TRIM(UnitsOfLength)
-			    call Msg(TAB//TAB//'Enforce minimum layer thickness of '//trim(TmpSTR))
+			    call Msg('Enforce minimum layer thickness of '//trim(TmpSTR))
 
             elseif(index(instruction,offset_base_cmd) /=0) then
 			    offset_base = .true.
 			    read(FNumMUT,*) base_offset
 			    write(TmpSTR,'('//FMT_R8//',a)') base_offset,'     '//TRIM(UnitsOfLength)
-			    call Msg(TAB//TAB//'Offset layer base by '//trim(TmpSTR))
+			    call Msg('Offset layer base by '//trim(TmpSTR))
 
             elseif(index(instruction,uniform_sublayers_cmd) /=0) then
 			    read(FNumMUT,*) nsublayer(nlayers)
 			    nz_temp = nz_temp + nsublayer(nlayers) 		
 			    !call user_size_check(nz_temp,user_nz,user_nz_str)
 			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg(TAB//TAB//'Number of uniform sublayers '//trim(TmpSTR))
+			    call Msg('Number of uniform sublayers '//trim(TmpSTR))
 
             elseif(index(instruction,proportional_sublayers_cmd) /=0) then
 			    proportional_sublayering=.true.
@@ -990,7 +990,7 @@ Module MeshGen
 			    nz_temp = nz_temp + nsublayer(nlayers) 		
 			    !call user_size_check(nz_temp,user_nz,user_nz_str)
 			    write(TmpSTR,'(i4)') nsublayer(nlayers)
-			    call Msg(TAB//TAB//'Number of proportional sublayers '//trim(TmpSTR))
+			    call Msg('Number of proportional sublayers '//trim(TmpSTR))
 
                 allocate(sub_thick(nsublayer(nlayers)),stat=ialloc)
                 call AllocChk(ialloc,'new_layer proportional sublayering array')
@@ -1000,18 +1000,18 @@ Module MeshGen
                     read(FNumMUT,*) sub_thick(j)
                     tot_thick=tot_thick+sub_thick(j)
                 end do
-                call Msg(TAB//TAB//' Sub#   Thickness       Fraction')
+                call Msg(' Sub#   Thickness       Fraction')
 
                 do j=1,nsublayer(nlayers)
                     sub_thick(j)=sub_thick(j)/tot_thick
 			        write(TmpSTR,'(i4,2('//FMT_R8//'))') j,sub_thick(j)*tot_thick,sub_thick(j)
-                    call Msg(TAB//TAB//trim(TmpSTR))
+                    call Msg(trim(TmpSTR))
                 end do
 
             elseif(index(instruction,constant_elevation_cmd) /=0) then
 			    read(FNumMUT,*) base_elev(1)
 			    write(TmpSTR,'('//FMT_R8//',a)') base_elev(1),'     '//TRIM(UnitsOfLength)
-                call Msg(TAB//TAB//'Layer base elevation '//TRIM(TmpSTR))
+                call Msg('Layer base elevation '//TRIM(TmpSTR))
 			    do j=2,TMPLT%nNodes
 				    base_elev(j)=base_elev(1)
 			    end do
@@ -1019,14 +1019,14 @@ Module MeshGen
 
             elseif(index(instruction,gb_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') basefile
-			    call Msg(TAB//TAB//'Base elevation from '//trim(basefile))
-                call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+			    call Msg('Base elevation from '//trim(basefile))
+                call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
                 call read_gb_nprop(basefile,base_elev,TMPLT%nNodes)
 
             elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') basefile
-			    call Msg(TAB//TAB//'Base elevation from '//trim(basefile))
-                call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+			    call Msg('Base elevation from '//trim(basefile))
+                call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
                 call list_file_elevation(basefile,base_elev,TMPLT%nNodes)
                 
                 
@@ -1050,7 +1050,7 @@ Module MeshGen
        !     
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: new layer')
+			    call ErrMsg('Unrecognized instruction: new layer')
             end if
 
         end do read_layer_instructions
@@ -1224,17 +1224,17 @@ Module MeshGen
 
             call LwrCse(instruction)
             if(index(instruction, 'end') /=0) then
-                call Msg(TAB//'end top elevation')
+                call Msg('end top elevation')
                 exit read_top
             else
                 call LwrCse(instruction)
-                call Msg(TAB//instruction)
+                call Msg(instruction)
             end if    
 
             if(index(instruction,constant_elevation_cmd) /=0) then
                 read(FNumMUT,*) top_elev(1)
                 write(TmpSTR,'(2('//FMT_R8//'),a)') top_elev(1),'     '//UnitsOfLength
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
                 do j=2,TMPLT%nNodes
 	                top_elev(j)=top_elev(1)
                 end do
@@ -1243,18 +1243,18 @@ Module MeshGen
                 offset_top = .true.
                 read(FNumMUT,*) top_offset
 			    write(TmpSTR,'(2('//FMT_R8//'))') top_offset
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
 
             elseif(index(instruction, gb_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
-			    call Msg(TAB//TAB//'Top elevation from '//trim(topfile))
-                call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+			    call Msg('Top elevation from '//trim(topfile))
+                call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
                 call read_gb_nprop(topfile,top_elev,TMPLT%nNodes)
 
             elseif(index(instruction,list_file_elevation_cmd) /=0) then
 			    read(FNumMUT,'(a)') topfile
-			    call Msg(TAB//TAB//'Top elevation from '//trim(topfile))
-                call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+			    call Msg('Top elevation from '//trim(topfile))
+                call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
                 call list_file_elevation(topfile,top_elev,TMPLT%nNodes)
                 
             elseif(index(instruction, xz_pairs_elevation_cmd) /=0) then
@@ -1267,7 +1267,7 @@ Module MeshGen
 			        call ErrMsg('File not found: '//trim(FNameTop))
                 endif
                 
-                call Msg(TAB//FileReadSTR//'Top_elevation: QGIS CSV file: '//trim(FNameTop))
+                call Msg(FileReadSTR//'Top_elevation: QGIS CSV file: '//trim(FNameTop))
 
 		        call OpenAscii(FnumTop,FNameTop)
 
@@ -1289,7 +1289,7 @@ Module MeshGen
 
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: top elevation')
+			    call ErrMsg('Unrecognized instruction: top elevation')
             end if
 
         end do read_top
@@ -1326,7 +1326,7 @@ Module MeshGen
 	    ziTMP(:) = -999.0d0
 
 
-        call Msg(TAB//'                X         Y        Z')
+        call Msg('                X         Y        Z')
 
 	    nPoints=0
 	    do
@@ -1336,7 +1336,7 @@ Module MeshGen
 		    call LwrCse(instruction)
 
 		    if(index(instruction,'end') > 0) then
-                call Msg(TAB//'end xyz list of points')
+                call Msg('end xyz list of points')
 			    exit
 		    else
 			    nPoints=nPoints+1
@@ -1364,7 +1364,7 @@ Module MeshGen
                 endif
                 
                 write(TmpSTR,'(i8,2x,3('//FMT_R8//'),a)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints),'     '//TRIM(UnitsOfLength)
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
 
 		    endif
         end do
@@ -1387,23 +1387,23 @@ Module MeshGen
         real(dp) :: nprop(TMPLT%nNodes)
 
 	    read(FNumMUT,*) xf2d, xt2d, yf2d, yt2d
-	    call Msg(TAB//'Bilinear function for the following range:')
+	    call Msg('Bilinear function for the following range:')
 	    write(TMPSTR,'(a,'//FMT_R8//',a,'//FMT_R8//',a)') 'X from ',xf2d,' to ',xt2d,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a,'//FMT_R8//',a)') 'Y from ',yf2d,' to ',yt2d,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
-	    call Msg(TAB//'z = z1 + slope_x*(x-xfrom) + curve_x*(x-xfrom)**2 + slope_y*(y-yfrom) + curve_y*(y-yfrom)**2 ')
+        call Msg(trim(TmpSTR))
+	    call Msg('z = z1 + slope_x*(x-xfrom) + curve_x*(x-xfrom)**2 + slope_y*(y-yfrom) + curve_y*(y-yfrom)**2 ')
 	    read(FNumMUT,*) a1,a2,a3,a4,a5
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') 'Where:     z1 = ',a1,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      slope_x = ',a2,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      curve_x = ',a3,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      slope_y = ',a4,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
 	    write(TMPSTR,'(a,'//FMT_R8//',a)') '      curve_y = ',a5,'     '//TRIM(UnitsOfLength)
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
         do i=1,TMPLT%nNodes
 		    if( TMPLT%node(i)%x.ge.xf2d .and. TMPLT%node(i)%x.le.xt2d .and. TMPLT%node(i)%y.ge.yf2d .and. TMPLT%node(i)%y.le.yt2d) then
 			    nprop(i)=a1 + a2*(TMPLT%node(i)%x-xf2d) + a3*(TMPLT%node(i)%x-xf2d)**2 + a4*(TMPLT%node(i)%y-yf2d) + a5*(TMPLT%node(i)%y-yf2d)**2
@@ -1431,7 +1431,7 @@ Module MeshGen
 	    zp(:) = 0
 
 
-        call Msg(TAB//'                X                Z')
+        call Msg('                X                Z')
 
 	    npairs=0
 	    read_xz_pairs:do
@@ -1442,7 +1442,7 @@ Module MeshGen
             call LwrCse(instruction)
 
             if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end elevation from xz pairs')
+                call Msg('end elevation from xz pairs')
                 exit read_xz_pairs
 		    else
 			    npairs=npairs+1
@@ -1459,7 +1459,7 @@ Module MeshGen
                 endif
                 
                 write(TmpSTR,'(i8,2x,2('//FMT_R8//'),a)') npairs,xp(npairs),zp(npairs),'     '//TRIM(UnitsOfLength)
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
 
 		    endif
 	    end do read_xz_pairs

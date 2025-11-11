@@ -740,7 +740,7 @@
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)' 
 
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Alpha of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Alpha of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -762,7 +762,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Beta of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Beta of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -784,7 +784,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Brooks of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Brooks of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -806,7 +806,7 @@
         real(dp) :: head
         
         read(FNumMUT,*) head
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
 		call Msg(trim(TmpSTR))
 
 
@@ -816,14 +816,14 @@
             domain%ConstantHead(:)=-999.d0
         end if
         
-        call Msg(TAB//'    Cell    Constant head')
+        call Msg('    Cell    Constant head')
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
                 call set(domain%cell(i)%is,ConstantHead)
                 domain%nCHDCells=domain%nCHDCells+1
                 domain%ConstantHead(i)=head
                 write(TmpSTR,'(i8,2x,'//FMT_R8//',a)') i,domain%ConstantHead(i),'     '//TRIM(UnitsofLength)
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
             end if
         end do
         
@@ -850,7 +850,7 @@
         integer(i4) :: i, j, k, j1, j2
         real(dp) :: AddToLength
         
-		call Msg(TAB//'Define all chosen '//trim(domain%name)//' Cells to be critical depth')
+		call Msg('Define all chosen '//trim(domain%name)//' Cells to be critical depth')
 
         call Msg('Assumes appropriate '//trim(domain%name)//' SWBC nodes flagged as boundary nodes') 
         
@@ -905,7 +905,7 @@
             Modflow.FNameSWBC=trim(Modflow.Prefix)//'.swbc'
             call OpenAscii(Modflow.iSWBC,Modflow.FNameSWBC)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
             write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
             write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
         else
@@ -924,9 +924,9 @@
         
         integer(i4) :: i
         
-		call Msg(TAB//'Define all chosen '//trim(domain%name)//' Cells to be critical depth')
+		call Msg('Define all chosen '//trim(domain%name)//' Cells to be critical depth')
 
-        call Msg(TAB//'Assumes SWBC Critical Depth Length equals sqrt(cell area)') 
+        call Msg('Assumes SWBC Critical Depth Length equals sqrt(cell area)') 
         
         if(NodalControlVolume) then
             do i=1,domain%nCells
@@ -951,7 +951,7 @@
             Modflow.FNameSWBC=trim(Modflow.Prefix)//'.swbc'
             call OpenAscii(Modflow.iSWBC,Modflow.FNameSWBC)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
             write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
             write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
         else
@@ -973,9 +973,9 @@
         
         read(FNumMUT,*) value1, value2
         write(TmpSTR,'('//FMT_R4//',a)') value1,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain%name)//' H1 depth for smoothing: '//trim(TmpSTR))
+		call Msg(trim(domain%name)//' H1 depth for smoothing: '//trim(TmpSTR))
         write(TmpSTR,'('//FMT_R4//',a)') value2,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain%name)//' H2 depth for smoothing: '//trim(TmpSTR))
+		call Msg(trim(domain%name)//' H2 depth for smoothing: '//trim(TmpSTR))
 
         
         do i=1,domain%nZones
@@ -999,7 +999,7 @@
         real(dp) :: cond
         
         read(FNumMUT,*) cond
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//trim(domain%name)//' drain conductance: ',cond,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//trim(domain%name)//' drain conductance: ',cond,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
 		call Msg(trim(TmpSTR))
 
 
@@ -1017,7 +1017,7 @@
                 domain%DrainElevation(i)=domain%cell(i)%Top
                 domain%DrainConductance(i)=cond
                 write(TmpSTR,'(i8,2x,'//FMT_R8//',a,'//FMT_R8//',a)') i,domain%DrainElevation(i),'     '//TRIM(UnitsOfLength), domain%DrainConductance(i),'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
             end if
         end do
         
@@ -1046,7 +1046,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Kh of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Kh of '//trim(TmpSTR))
         
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -1067,7 +1067,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Kv of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Kv of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -1089,7 +1089,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain%name)//' Depression Storage Height: '//trim(TmpSTR))
+		call Msg(trim(domain%name)//' Depression Storage Height: '//trim(TmpSTR))
 
 
         do i=1,domain%nZones
@@ -1112,7 +1112,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1/3)    '//TRIM(UnitsOfTime)
-		call Msg(TAB//trim(domain%name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
+		call Msg(trim(domain%name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
 
 
         do i=1,domain%nZones
@@ -1135,7 +1135,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(domain%name)//' Obstruction Storage Height: '//trim(TmpSTR))
+		call Msg(trim(domain%name)//' Obstruction Storage Height: '//trim(TmpSTR))
 
 
         do i=1,domain%nZones
@@ -1169,30 +1169,30 @@
         end do
         
         write(TmpSTR,'(i5)') iMaterial
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
         
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Kh_Kx:             ',Kh_Kx(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Kv_Kz:             ',Kv_Kz(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)  ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Storage:  ',SpecificStorage(iMaterial)  ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)    ,'     DIMENSIONLESS'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)    ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Alpha:             ',Alpha(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Beta:              ',Beta(iMaterial)             ,'     DIMENSIONLESS'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Beta:              ',Beta(iMaterial)             ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Sr:                ',Sr(iMaterial)               ,'     DIMENSIONLESS'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Sr:                ',Sr(iMaterial)               ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
         select case(UnsaturatedFunctionType(iMaterial))
         case ('Van Genuchten')
-            write(TmpSTR,'(a)')    TAB//'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
+            write(TmpSTR,'(a)')    'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
             call Msg(TmpSTR)
         case ('Brooks-Corey')
-            write(TmpSTR,'(a)')        TAB//'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
+            write(TmpSTR,'(a)')        'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//')')TAB//'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
+            write(TmpSTR,'(a,'//FMT_R4//')')'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
             call Msg(TmpSTR)
         case default
             call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
@@ -1202,23 +1202,23 @@
         TimeConversionFactor=TimeConverter(UnitsOfTime,GWF_TimeUnit(iMaterial))
         if(LengthConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material length unit:    '//trim(GWF_LengthUnit(iMaterial))
+            call Msg('**** Length Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material length unit:    '//trim(GWF_LengthUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(UnitsOfLength)
+            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(GWF_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(GWF_LengthUnit(iMaterial))
             call Msg(TmpSTR)
         endif
             
          if(TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material time unit:    '//trim(GWF_TimeUnit(iMaterial))
+            call Msg('**** Time Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material time unit:    '//trim(GWF_TimeUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow time unit:     '//trim(UnitsOfTime)
+            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(GWF_TimeUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(GWF_TimeUnit(iMaterial))
             call Msg(TmpSTR)
         endif
 
@@ -1249,31 +1249,31 @@
         
         if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** After Unit Conversion **** ')
+            call Msg('**** After Unit Conversion **** ')
             write(TmpSTR,'(i5)') iMaterial
-		    call Msg(TAB//'Properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial))//' after unit conversion')
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Kh_Kx:             ',Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
+		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial))//' after unit conversion')
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Kh_Kx:             ',Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Kv_Kz:             ',Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Kv_Kz:             ',Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Specific Storage:  ',SpecificStorage(iMaterial)/LengthConversionFactor             ,'     '//TRIM(UnitsOfLength)//'^(-1)'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Storage:  ',SpecificStorage(iMaterial)/LengthConversionFactor             ,'     '//TRIM(UnitsOfLength)//'^(-1)'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Specific Yield:    ',SpecificYield(iMaterial)                                      ,'     DIMENSIONLESS'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)                                      ,'     DIMENSIONLESS'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Alpha:             ',Alpha(iMaterial)/LengthConversionFactor                       ,'     '//TRIM(UnitsOfLength)//'^(-1)'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)/LengthConversionFactor                       ,'     '//TRIM(UnitsOfLength)//'^(-1)'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Beta:              ',Beta(iMaterial)                                               ,'     DIMENSIONLESS'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Beta:              ',Beta(iMaterial)                                               ,'     DIMENSIONLESS'
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Sr:                ',Sr(iMaterial)                                                 ,'     DIMENSIONLESS'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Sr:                ',Sr(iMaterial)                                                 ,'     DIMENSIONLESS'
             call Msg(TmpSTR)
             select case(UnsaturatedFunctionType(iMaterial))
             case ('Van Genuchten')
-                write(TmpSTR,'(a)')    TAB//'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
+                write(TmpSTR,'(a)')    'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
                 call Msg(TmpSTR)
             case ('Brooks-Corey')
-                write(TmpSTR,'(a)')        TAB//'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
+                write(TmpSTR,'(a)')        'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
                 call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//')')TAB//'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
+                write(TmpSTR,'(a,'//FMT_R4//')')'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
                 call Msg(TmpSTR)
             case default
                 call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
@@ -1415,54 +1415,54 @@
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
         
-		call Msg(TAB//'Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial)))
+		call Msg('Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial)))
         select case(Geometry(iMaterial))
         case ('Circular')
-            write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+            write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Circular Radius:    ',CircularRadius(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Circular Radius:    ',CircularRadius(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
         case ('Rectangular')
-            write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+            write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Rectangular Width:  ',RectangularWidth(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Width:  ',RectangularWidth(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Rectangular Height: ',RectangularHeight(iMaterial)    ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Height: ',RectangularHeight(iMaterial)    ,'     '//TRIM(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
         case default
             call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
         end select
 
-        write(TmpSTR,'(a)')            TAB//'Direction:          '//Direction(iMaterial)
+        write(TmpSTR,'(a)')            'Direction:          '//Direction(iMaterial)
         call Msg(TmpSTR)
         
-        write(TmpSTR,'(a)')            TAB//'Flow Treatment:     '//FlowTreatment(iMaterial) 
+        write(TmpSTR,'(a)')            'Flow Treatment:     '//FlowTreatment(iMaterial) 
         call Msg(TmpSTR)
 
-        write(TmpSTR,'(a,'//FMT_R4//',a)')    TAB//'Longitudinal K:     ',LongitudinalK(iMaterial)        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R4//',a)')    'Longitudinal K:     ',LongitudinalK(iMaterial)        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
         
         LengthConversionFactor=LengthConverter(UnitsOfLength,CLN_LengthUnit(iMaterial))
         TimeConversionFactor=TimeConverter(UnitsOfTime,CLN_TimeUnit(iMaterial))
         if(LengthConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material length unit:    '//trim(CLN_LengthUnit(iMaterial))
+            call Msg('**** Length Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material length unit:    '//trim(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(UnitsOfLength)
+            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(CLN_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
         endif
             
          if(TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material time unit:    '//trim(CLN_TimeUnit(iMaterial))
+            call Msg('**** Time Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material time unit:    '//trim(CLN_TimeUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow time unit:     '//trim(UnitsOfTime)
+            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(CLN_TimeUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(CLN_TimeUnit(iMaterial))
             call Msg(TmpSTR)
         endif
 
@@ -1521,33 +1521,33 @@
         
         if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** After Unit Conversion **** ')
+            call Msg('**** After Unit Conversion **** ')
             write(TmpSTR,'(i5)') iMaterial
-		    call Msg(TAB//'Properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial))//' after unit conversion')
+		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial))//' after unit conversion')
             select case(Geometry(iMaterial))
             case ('Circular')
-                write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+                write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
                 call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Circular Radius:    ',CircularRadius(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Circular Radius:    ',CircularRadius(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
                 call Msg(TmpSTR)
             case ('Rectangular')
-                write(TmpSTR,'(a)')        TAB//'Geometry:           '//trim(Geometry(iMaterial))
+                write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
                 call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Rectangular Width:  ',RectangularWidth(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Width:  ',RectangularWidth(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
                 call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Rectangular Height: ',RectangularHeight(iMaterial)*LengthConversionFactor     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Height: ',RectangularHeight(iMaterial)*LengthConversionFactor     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
                 call Msg(TmpSTR)
             case default
                 call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
             end select
 
-            write(TmpSTR,'(a)')            TAB//'Direction:          '//Direction(iMaterial)
+            write(TmpSTR,'(a)')            'Direction:          '//Direction(iMaterial)
             call Msg(TmpSTR)
         
-            write(TmpSTR,'(a)')            TAB//'Flow Treatment:     '//FlowTreatment(iMaterial) 
+            write(TmpSTR,'(a)')            'Flow Treatment:     '//FlowTreatment(iMaterial) 
             call Msg(TmpSTR)
 
-            write(TmpSTR,'(a,'//FMT_R4//')')    TAB//'Longitudinal K:     ',LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
+            write(TmpSTR,'(a,'//FMT_R4//')')    'Longitudinal K:     ',LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
             call Msg(TmpSTR)
 
         end if     
@@ -1571,16 +1571,16 @@
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
         
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)     ,'     '//TRIM(SWF_LengthUnit(iMaterial))//'^(-1/3)  '//TRIM(SWF_TimeUnit(iMaterial))
+		call Msg('Assigning all chosen '//trim(domain%name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)     ,'     '//TRIM(SWF_LengthUnit(iMaterial))//'^(-1/3)  '//TRIM(SWF_TimeUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial) ,'     '//TRIM(SWF_LengthUnit(iMaterial))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Depression Storage Height:  ',DepressionStorageHeight(iMaterial) ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial),'     '//TRIM(SWF_LengthUnit(iMaterial))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial),'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
         call Msg(TmpSTR)
 
                 
@@ -1588,23 +1588,23 @@
         TimeConversionFactor=TimeConverter(UnitsOfTime,SWF_TimeUnit(iMaterial))
         if(LengthConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material length unit:    '//trim(SWF_LengthUnit(iMaterial))
+            call Msg('**** Length Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material length unit:    '//trim(SWF_LengthUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(UnitsOfLength)
+            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(SWF_LengthUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(SWF_LengthUnit(iMaterial))
             call Msg(TmpSTR)
         endif
             
          if(TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'Material time unit:    '//trim(SWF_TimeUnit(iMaterial))
+            call Msg('**** Time Units Conversion **** ')
+            write(TmpSTR,'(a)')'Material time unit:    '//trim(SWF_TimeUnit(iMaterial))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow time unit:     '//trim(UnitsOfTime)
+            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(SWF_TimeUnit(iMaterial))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(SWF_TimeUnit(iMaterial))
             call Msg(TmpSTR)
         endif
 
@@ -1622,18 +1622,18 @@
 
         if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** After Unit Conversion **** ')
+            call Msg('**** After Unit Conversion **** ')
             write(TmpSTR,'(i5)') iMaterial
-		    call Msg(TAB//'Properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial))//' after unit conversion')
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor      ,'     '//TRIM(UnitsOfLength)//'^(-1/3)  '//TRIM(UnitsOfTime)
+		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial))//' after unit conversion')
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor      ,'     '//TRIM(UnitsOfLength)//'^(-1/3)  '//TRIM(UnitsOfTime)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)*LengthConversionFactor ,'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)*LengthConversionFactor ,'     '//TRIM(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)*LengthConversionFactor,'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)*LengthConversionFactor,'     '//TRIM(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)*LengthConversionFactor      ,'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)*LengthConversionFactor      ,'     '//TRIM(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(UnitsOfLength)
             call Msg(TmpSTR)
 
         end if     
@@ -1653,20 +1653,20 @@
         integer(i4) :: nRCHoption
         
         read(FNumMUT,*) rech
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
 		call Msg(trim(TmpSTR))
         read(FNumMUT,*) nRCHoption
-        write(TmpSTR,'(a,'//FMT_R8//')') TAB//'Assigning '//domain%name//' recharge option: ',nRCHoption
+        write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain%name//' recharge option: ',nRCHoption
 		call Msg(trim(TmpSTR))
         domain%nRCHoption=nRCHoption
         IF(nRCHoption.EQ.1) then
-            call Msg(TAB//'Option 1 -- recharge to top layer')
+            call Msg('Option 1 -- recharge to top layer')
         else IF(nRCHoption.EQ.2) then
-            call Msg(TAB//'option 2 -- recharge to one specified node in each vertical column') 
+            call Msg('option 2 -- recharge to one specified node in each vertical column') 
         else IF(nRCHoption.EQ.3) then
-            call Msg(TAB//'Option 3 -- recharge to highest active node in each vertical column')
+            call Msg('Option 3 -- recharge to highest active node in each vertical column')
         else IF(nRCHoption.EQ.4) then
-            call Msg(TAB//'Option 4 -- recharge to swf domain on top of each vertical column')
+            call Msg('Option 4 -- recharge to swf domain on top of each vertical column')
         endif
 
         
@@ -1730,20 +1730,20 @@
         integer(i4) :: nRCHoption
         
         read(FNumMUT,'(a)') modflow.FNameRTS
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain.name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain.name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
 		call Msg(trim(TmpSTR))
         read(FNumMUT,*) nRCHoption
-        write(TmpSTR,'(a,'//FMT_R8//')') TAB//'Assigning '//domain.name//' recharge option: ',nRCHoption
+        write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain.name//' recharge option: ',nRCHoption
 		call Msg(trim(TmpSTR))
         domain.nRCHoption=nRCHoption
         IF(nRCHoption.EQ.1) then
-            call Msg(TAB//'Option 1 -- recharge to top layer')
+            call Msg('Option 1 -- recharge to top layer')
         else IF(nRCHoption.EQ.2) then
-            call Msg(TAB//'option 2 -- recharge to one specified node in each vertical column') 
+            call Msg('option 2 -- recharge to one specified node in each vertical column') 
         else IF(nRCHoption.EQ.3) then
-            call Msg(TAB//'Option 3 -- recharge to highest active node in each vertical column')
+            call Msg('Option 3 -- recharge to highest active node in each vertical column')
         else IF(nRCHoption.EQ.4) then
-            call Msg(TAB//'Option 4 -- recharge to swf domain on top of each vertical column')
+            call Msg('Option 4 -- recharge to swf domain on top of each vertical column')
         endif
 
         
@@ -1807,7 +1807,7 @@
         real(dp) :: PumpRate
         
         read(FNumMUT,*) PumpRate
-        write(TmpSTR,'(a,'//FMT_R8//',a)') TAB//'Assigning '//domain%name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
 		call Msg(trim(TmpSTR))
         
         if(.not. allocated(domain%PumpingRate)) then ! 
@@ -1888,7 +1888,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(CLN.name)//' CLN circular radius: '//trim(TmpSTR))
+		call Msg(trim(CLN.name)//' CLN circular radius: '//trim(TmpSTR))
 
 
         do i=1,CLN.nZones
@@ -1910,7 +1910,7 @@
         
         read(FNumMUT,*) width, height
         write(TmpSTR,'(2'//FMT_R4//',a)')  width, height,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//trim(CLN.name)//' CLN rectangular width and height: '//trim(TmpSTR))
+		call Msg(trim(CLN.name)//' CLN rectangular width and height: '//trim(TmpSTR))
 
 
         do i=1,CLN.nZones
@@ -1933,7 +1933,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells an Sgcl of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells an Sgcl of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -1955,7 +1955,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Sr of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Sr of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -1977,7 +1977,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)'
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Ss of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Ss of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -1999,7 +1999,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a starting depth of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a starting depth of '//trim(TmpSTR))
 
 
         do i=1,domain%nCells
@@ -2022,7 +2022,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells starting heads of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells starting heads of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -2044,7 +2044,7 @@
         
         read(FNumMUT,*) value
         write(TmpSTR,'('//FMT_R4//')') value
-		call Msg(TAB//'Assigning all chosen '//trim(domain%name)//' cells a Sy of '//trim(TmpSTR))
+		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Sy of '//trim(TmpSTR))
 
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -2077,7 +2077,7 @@
             
         if(index(instruction, ModflowPrefix_CMD)  /= 0) then
             read(FnumMUT,'(a)') Modflow.prefix
-            call Msg(TAB//trim(Modflow.Prefix))
+            call Msg(trim(Modflow.Prefix))
         else 
             backspace(FNumMUT)
         endif
@@ -2151,15 +2151,15 @@
             if(index(instruction, NodalControlVolumes_CMD)  /= 0) then
                 ! Generate node centred control volume domains (default is mesh centred)
                 NodalControlVolume=.true.
-                call Msg(TAB//'*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
+                call Msg('*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
 
             elseif (index(instruction, SaturatedFlow_CMD)  /= 0) then
                 Modflow.SaturatedFlow=.true.
-                call Msg(TAB//'*** Saturated flow approach is used ')
+                call Msg('*** Saturated flow approach is used ')
 
             elseif (index(instruction, DisableTecplotOutput_CMD)  /= 0) then
                 EnableTecplotOutput=.false.
-                call Msg(TAB//'*** Tecplot Output Disabled')
+                call Msg('*** Tecplot Output Disabled')
 
                 
             ! Units set assignment
@@ -2174,7 +2174,7 @@
             else if(index(instruction, LocalUserbin_CMD)  /= 0) then
                 LocalUserbin=.true.
                 read(FnumMUT,'(a)') LocalUserbinPath
-                call msg(TAB//'Path to local database files: '//trim(LocalUserbinPath))
+                call msg('Path to local database files: '//trim(LocalUserbinPath))
     
             else if(index(instruction, SMS_Database_CMD)  /= 0) then
                 read(FnumMUT,'(a)') FName
@@ -2267,7 +2267,7 @@
                 case default
                     call ErrMsg('Domain type '//trim(ActiveDomainSTR)//' not supported')
                 end select
-                call Msg(TAB//trim(ActiveDomainSTR))
+                call Msg(trim(ActiveDomainSTR))
                 
 
             else if(index(instruction, ChooseAllNodes_CMD)  /= 0) then
@@ -3011,7 +3011,7 @@
             ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' zone numbers currently chosen: '
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' zone numbers currently chosen: '
         call Msg(trim(TmpSTR))
         do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
@@ -3034,7 +3034,7 @@
         integer(i4) :: number
 
 		read(FNumMUT,*) number
-        write(TmpSTR,'(a,i8)') TAB//'Adding zone number: ',number
+        write(TmpSTR,'(a,i8)') 'Adding zone number: ',number
 		call Msg(trim(TmpSTR))
         
         if(number <= 0 .or. number > domain%nZones) then
@@ -3044,7 +3044,7 @@
 
         call set(domain%zone(number)%is,chosen)
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' zone numbers currently chosen: '
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' zone numbers currently chosen: '
         call Msg(trim(TmpSTR))
         do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
@@ -3090,7 +3090,7 @@
         logical :: togon(domain%nNodes)
 
         read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose nodes from '//trim(fname))
+		call Msg('Choose nodes from '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3110,9 +3110,9 @@
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+		    call Msg('From Layer: '//trim(TmpSTR))
             write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+		    call Msg('To Layer:   '//trim(TmpSTR))
 
             ncount=0
             do i=1,domain%nNodes
@@ -3135,7 +3135,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No nodes chosen')
@@ -3159,7 +3159,7 @@
         logical :: togon(TMPLT%nNodes)
 
         read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose nodes from '//trim(fname))
+		call Msg('Choose nodes from '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3177,7 +3177,7 @@
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No nodes chosen')
@@ -3202,7 +3202,7 @@
             ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
@@ -3219,7 +3219,7 @@
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
+        write(TMPStr,*) 'Find node closest to XYZ: ',x1, y1, z1
         call Msg(TMPStr)
 
         dist_min=1.0e20
@@ -3232,9 +3232,9 @@
 	    end do
         call set(domain%node(iNode)%is,chosen)
         
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 
     end subroutine ChooseNodeAtXYZTemplate
@@ -3249,7 +3249,7 @@
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//'Find node closest to XYZ: ',x1, y1, z1
+        write(TMPStr,*) 'Find node closest to XYZ: ',x1, y1, z1
         call Msg(TMPStr)
 
         dist_min=1.0e20
@@ -3262,9 +3262,9 @@
 	    end do
         call set(domain%node(iNode)%is,chosen)
         
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 
     end subroutine ChooseNodeAtXYZ
@@ -3279,7 +3279,7 @@
 	    integer(i4) :: ncount
 
         read(FNumMut,*) iLyr
-        write(TMPStr,*) TAB//'Choose cells in layer: ',iLyr
+        write(TMPStr,*) 'Choose cells in layer: ',iLyr
         call Msg(TMPStr)
 
         ncount=0
@@ -3290,7 +3290,7 @@
             endif
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen in layer: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen in layer: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
@@ -3320,11 +3320,11 @@
 	    end do
         call set(domain%cell(iCell)%is,chosen)
         
-        write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+        write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
         call Msg(tmpSTR)
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
+        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
+		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
         
     end subroutine ChooseCellAtXYZ
@@ -3361,18 +3361,18 @@
             end do
             call set(domain%cell(iCell)%is,chosen)
             
-            write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+            write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
             call Msg(tmpSTR)
-            write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'At x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
+            write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'At x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
             call Msg(tmpSTR)
 	    end do
   !      call set(domain%cell(iCell)%is,chosen)
   !      
-  !      write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+  !      write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
   !      call Msg(tmpSTR)
-  !      write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
+  !      write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
   !      call Msg(tmpSTR)
-		!write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
+		!write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
   !      call Msg(tmpSTR)
         
     end subroutine ChooseCellsFromXYZList
@@ -3392,19 +3392,19 @@
 
         call Msg('Find cells whose centroids are in the range defined by: ')
         read(FNumMut,*) x1,x2
-        write(TMPStr,*) TAB//'X range: ',x1, x2
+        write(TMPStr,*) 'X range: ',x1, x2
         call Msg(TMPStr)
 
         read(FNumMut,*) y1,y2
-        write(TMPStr,*) TAB//'Y range: ',y1, y2
+        write(TMPStr,*) 'Y range: ',y1, y2
         call Msg(TMPStr)
 
         read(FNumMut,*) z1,z2
-        write(TMPStr,*) TAB//'Z range: ',z1, z2
+        write(TMPStr,*) 'Z range: ',z1, z2
         call Msg(TMPStr)
 
         read(FNumMut,*) ltop,lbot
-        write(TMPStr,*) TAB//'Layer range: ',ltop, lbot
+        write(TMPStr,*) 'Layer range: ',ltop, lbot
         call Msg(TMPStr)
 
         if(ltop.gt.lbot) then
@@ -3432,7 +3432,7 @@
             end if
         end do
     
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3452,7 +3452,7 @@
         logical togon(domain%nCells)
 
 		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from ascii file '//trim(fname))
+		call Msg('Choose Cells from ascii file '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown')
@@ -3471,7 +3471,7 @@
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3503,7 +3503,7 @@
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3526,7 +3526,7 @@
         logical togon(domain%nElements)
 
 		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from gb chosen elements file '//trim(fname))
+		call Msg('Choose Cells from gb chosen elements file '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3546,9 +3546,9 @@
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+		    call Msg('From Layer: '//trim(TmpSTR))
             write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+		    call Msg('To Layer:   '//trim(TmpSTR))
 
             ncount=0
             do i=1,domain%nCells
@@ -3570,7 +3570,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3593,7 +3593,7 @@
         logical togon(TMPLT%nElements)
 
 		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Elements from '//trim(fname))
+		call Msg('Choose Elements from '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3613,9 +3613,9 @@
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+		    call Msg('From Layer: '//trim(TmpSTR))
             write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+		    call Msg('To Layer:   '//trim(TmpSTR))
 
             ncount=0
             do i=1,TMPLT%nElements
@@ -3637,7 +3637,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' Elements chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' Elements chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Elements chosen')
 	    
@@ -3661,7 +3661,7 @@
         logical togon(domain%nNodes)
 
 		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Cells from GB chosen nodes file '//trim(fname))
+		call Msg('Choose Cells from GB chosen nodes file '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3681,9 +3681,9 @@
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+		    call Msg('From Layer: '//trim(TmpSTR))
             write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+		    call Msg('To Layer:   '//trim(TmpSTR))
 
             ncount=0
             do i=1,domain%nCells
@@ -3705,7 +3705,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 	    
@@ -3728,7 +3728,7 @@
         logical togon(TMPLT%nNodes)
 
 		read(FNumMUT,'(a)') fname
-		call Msg(TAB//'Choose Nodes from '//trim(fname))
+		call Msg('Choose Nodes from '//trim(fname))
 
         call getunit(itmp)
         open(itmp,file=fname,status='unknown',form='unformatted')
@@ -3748,9 +3748,9 @@
             nLayer_top=max(nLayer_top,1)
         
             write(TmpSTR,'(i5)') nLayer_top
-		    call Msg(TAB//'From Layer: '//trim(TmpSTR))
+		    call Msg('From Layer: '//trim(TmpSTR))
             write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg(TAB//'To Layer:   '//trim(TmpSTR))
+		    call Msg('To Layer:   '//trim(TmpSTR))
 
             ncount=0
             do i=1,TMPLT%nNodes
@@ -3772,7 +3772,7 @@
             end do
         end if
 
-        write(TmpSTR,'(a,i10)') TAB//trim(TMPLT%name)//' Nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' Nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Nodes chosen')
 	    
@@ -3800,7 +3800,7 @@
             if(bcheck(domain%cell(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Cells chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some Cells chosen')
@@ -3825,7 +3825,7 @@
             if(bcheck(domain%node(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' nodes chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' nodes chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some nodes chosen')
@@ -3851,7 +3851,7 @@
             if(bcheck(domain%zone(i)%is,chosen)) ncount=ncount+1
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' Zones chosen: ',ncount
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' Zones chosen: ',ncount
         call Msg(trim(TmpSTR))
         
 	    if(ncount /= 0) call ErrMsg('Some Zones chosen')
@@ -4576,7 +4576,7 @@
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
 
         write(FNum,*) 'Title = "'//trim(Modflow%CLN%name)//'"'
 
@@ -4792,11 +4792,11 @@
 		    call LwrCse(instruction)
 
             if(index(Instruction,'end') /= 0) then
-                call Msg(TAB//'end generate cln domain')
+                call Msg('end generate cln domain')
                 exit read_Instructions
             else
                 call Msg('')
-                call Msg(TAB//Instruction)
+                call Msg(Instruction)
             end if
                 
 
@@ -4807,7 +4807,7 @@
                 call CLNFromXYZPair(FNum,CLNDomain)
                 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate cln domain')
+			    call ErrMsg('Unrecognized instruction: generate cln domain')
             end if
 
         end do read_Instructions
@@ -4870,17 +4870,17 @@
 	        CLNDomain%node%z = -999.0d0
         endif
 
-        call Msg(TAB//'                X                Y                Z')
+        call Msg('                X                Y                Z')
 
 	    do i=1,2
 			read(FNum,*) xp(i),yp(i),zp(i)
             write(TmpSTR,'(i8,2x,5('//FMT_R8//'),a)') i,xp(i),yp(i),zp(i),'     '//TRIM(UnitsOfLength)
-            call Msg(TAB//trim(TmpSTR))
+            call Msg(trim(TmpSTR))
         end do 
         
  		read(FNum,*) nCells
         write(TmpSTR,'(a, i8)') 'Number of new CLN cells: ',nCells 
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
         
         if(.not. allocated(CLNDomain%cell)) then  
             allocate(CLNDomain%cell(nCells),stat=ialloc)
@@ -4893,11 +4893,11 @@
         
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
         write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
-        call Msg(TAB//trim(TmpSTR))
+        call Msg(trim(TmpSTR))
         if(TotalLength < 0.0001) then
-            call Msg(TAB//'NOTE: Total Length of new CLN is less than 0.0001')
+            call Msg('NOTE: Total Length of new CLN is less than 0.0001')
         else if(TotalLength < 1e-10) then   
-            call ErrMsg(TAB//'Total Length of new CLN is essentially zero')
+            call ErrMsg('Total Length of new CLN is essentially zero')
         endif
         
         dx=(xp(2) - xp(1))/nCells
@@ -4980,9 +4980,9 @@
         !CLNDomain%IsDefined=.true.
     
         call Msg(' ')
-        write(TmpSTR,'(a,i8)')    TAB//'Number of nodes         ',CLNDomain%nNodes
+        write(TmpSTR,'(a,i8)')    'Number of nodes         ',CLNDomain%nNodes
         call Msg(TmpSTR)
-        write(TmpSTR,'(a,i8)')    TAB//'Number of elements      ',CLNDomain%nElements
+        write(TmpSTR,'(a,i8)')    'Number of elements      ',CLNDomain%nElements
         call Msg(TmpSTR)
 
 
@@ -5086,7 +5086,7 @@
                 exit read_slice2lyr
             else
                 call Msg('')
-                call Msg(TAB//instruction)
+                call Msg(instruction)
             end if
                 
 
@@ -5110,7 +5110,7 @@
 			    layer_defined=.true.
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate gwf domain')
+			    call ErrMsg('Unrecognized instruction: generate gwf domain')
             end if
 
         end do read_slice2lyr
@@ -5311,11 +5311,11 @@
             call LwrCse(instruction)
 
             if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end generate swf domain instructions')
+                call Msg('end generate swf domain instructions')
                 exit read_slice2lyr
             else
                 call Msg('')
-                call Msg(TAB//instruction)
+                call Msg(instruction)
             end if
                 
 
@@ -5327,7 +5327,7 @@
 
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: generate swf domain')
+			    call ErrMsg('Unrecognized instruction: generate swf domain')
             end if
 
         end do read_slice2lyr
@@ -5366,7 +5366,7 @@
             else
                 modflow.nOutputTimes=modflow.nOutputTimes+1
                 read(instruction,*) OutputTimes(modflow.nOutputTimes)
-                call Msg(TAB//instruction)
+                call Msg(instruction)
             end if  
         end do read_oc
         
@@ -5376,11 +5376,11 @@
         modflow.OutputTimes(:modflow.nOutputTimes)=OutputTimes(:modflow.nOutputTimes)
         
         call Msg(' ')
-        call Msg(TAB//'   #     Output time')
-        call Msg(TAB//'--------------------')
+        call Msg('   #     Output time')
+        call Msg('--------------------')
         do i=1,modflow.nOutputTimes
             write(TmpSTR,'(i4,2x,'//FMT_R8//',a)') i, modflow.OutputTimes(i),'     '//TRIM(modflow.STR_TimeUnit)
-            call Msg(TAB//trim(TmpSTR))
+            call Msg(trim(TmpSTR))
         end do
     
         return
@@ -5501,7 +5501,7 @@
                 read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
                 do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do
                 exit FindStartString
@@ -5524,7 +5524,7 @@
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
 
         write(FNum,*) 'Title = "'//trim(Modflow%GWF%name)//'"'
 
@@ -5671,7 +5671,7 @@
 	    InitHead(:) = 0
 
 
-        call Msg(TAB//'                Z              Head')
+        call Msg('                Z              Head')
 
 	    npairs=0
 	    read_zhead_pairs:do
@@ -5682,7 +5682,7 @@
             call LwrCse(instruction)
 
             if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end gwf initial head function of z')
+                call Msg('end gwf initial head function of z')
                 exit read_zhead_pairs
 		    else
 			    npairs=npairs+1
@@ -5699,7 +5699,7 @@
                 endif
                 
                 write(TmpSTR,'(i8,2x,2('//FMT_R8//'))') npairs,zp(npairs),InitHead(npairs)
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
 
 		    endif
 	    end do read_zhead_pairs
@@ -5713,7 +5713,7 @@
 		    end do
         end do
         
-        call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+        call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
 
 
     end subroutine InitialHeadFunctionOfZtoGWF
@@ -5740,7 +5740,7 @@
 	    satn(:) = 0
 
 
-        call Msg(TAB//'                Depth               Sat')
+        call Msg('                Depth               Sat')
 
 	    npairs=0
 	    read_DepthSaturation_pairs:do
@@ -5751,7 +5751,7 @@
             call LwrCse(instruction)
 
             if(index(instruction,'end') /= 0) then
-                call Msg(TAB//'end gwf initial head function of z')
+                call Msg('end gwf initial head function of z')
                 exit read_DepthSaturation_pairs
 		    else
 			    npairs=npairs+1
@@ -5768,7 +5768,7 @@
                 endif
                 
                 write(TmpSTR,'(i8,2x,2('//FMT_R8//'))') npairs,dpth(npairs),satn(npairs)
-                call Msg(TAB//trim(TmpSTR))
+                call Msg(trim(TmpSTR))
 
 		    endif
         end do read_DepthSaturation_pairs
@@ -5824,7 +5824,7 @@
 		    !end do
       !  end do
       !  
-      !  call Msg(TAB//TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+      !  call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
 
 
     end subroutine InitialHeadFromDepthSatToGWF
@@ -5944,7 +5944,7 @@
         Modflow.FNameNAM=trim(Modflow.Prefix)//'.nam'
         call OpenAscii(Modflow.iNAM,Modflow.FNameNAM)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameNAM))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameNAM))
         write(Modflow.iNAM,'(a,a)') '# MODFLOW-USG NAM file written by Modflow-User-Tools version ',trim(MUTVersion)
 
         ! Get unit number for LST file and write data to NAM
@@ -5956,7 +5956,7 @@
         Modflow.FNameBAS6=trim(Modflow.Prefix)//'.bas'
         call OpenAscii(Modflow.iBAS6,Modflow.FNameBAS6)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameBAS6))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameBAS6))
         write(Modflow.iNAM,'(a,i4,a)') 'BAS6 ',Modflow.iBAS6,' '//trim(Modflow.FNameBAS6)
         write(Modflow.iBAS6,'(a)') '# MODFLOW-USGs Basic Package'
         write(Modflow.iBAS6,'(a,a)') '# MODFLOW-USG BAS6 file written by Modflow-User-Tools version ',trim(MUTVersion)
@@ -5965,7 +5965,7 @@
         Modflow.FNameSMS=trim(Modflow.Prefix)//'.sms'
         call OpenAscii(Modflow.iSMS,Modflow.FNameSMS)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSMS))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSMS))
         write(Modflow.iNAM,'(a,i4,a)') 'SMS  ',Modflow.iSMS,' '//trim(Modflow.FNameSMS)
         write(Modflow.iSMS,'(a,a)') '# MODFLOW-USG SMS file written by Modflow-User-Tools version ',trim(MUTVersion)
 
@@ -5973,7 +5973,7 @@
         Modflow.FNameOC=trim(Modflow.Prefix)//'.oc'
         call OpenAscii(Modflow.iOC,Modflow.FNameOC)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOC))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOC))
         write(Modflow.iNAM,'(a,i4,a)') 'OC   ',Modflow.iOC,' '//trim(Modflow.FNameOC)
         write(Modflow.iOC,'(a,a)') '# MODFLOW-USG OC file written by Modflow-User-Tools version ',trim(MUTVersion)
         
@@ -5982,7 +5982,7 @@
         Modflow.FNameLPF=trim(Modflow.Prefix)//'.lpf'
         call OpenAscii(Modflow.iLPF,Modflow.FNameLPF)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameLPF))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameLPF))
         write(Modflow.iNAM,'(a,i4,a)') 'LPF  ',Modflow.iLPF,' '//trim(Modflow.FNameLPF)
         write(Modflow.iLPF,'(a,a)') '# MODFLOW-USG Layer Property Flow (LPF) Package written by Modflow-User-Tools version ',trim(MUTVersion)
         
@@ -5990,14 +5990,14 @@
         Modflow.FNameGSF=trim(Modflow.Prefix)//'.gwf.gsf'
         call OpenAscii(Modflow.iGSF,Modflow.FNameGSF)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameGSF))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameGSF))
         write(Modflow.iGSF,'(a,a)') '# MODFLOW-USG Grid Specification File (GSF) written by Modflow-User-Tools version ',trim(MUTVersion)
         
         ! Initialize DIS file and write data to NAM
         Modflow.FNameDISU=trim(Modflow.Prefix)//'.dis'
         call OpenAscii(Modflow.iDISU,Modflow.FNameDISU)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDISU))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDISU))
         write(Modflow.iNAM,'(a,i4,a)') 'DISU ',Modflow.iDISU,' '//trim(Modflow.FNameDISU)
         write(Modflow.iDISU,'(a,a)') '# MODFLOW-USG DIS file written by Modflow-User-Tools version ',trim(MUTVersion)
         
@@ -6165,7 +6165,7 @@
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
             write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' CELLS"'
 
             VarSTR='variables="X","Y","Z"'
@@ -6187,7 +6187,7 @@
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
-                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' CHD"'
 
                 VarSTR='variables="X","Y","Z","CHD"'
@@ -6212,7 +6212,7 @@
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
-                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' RCH"'
 
                 VarSTR='variables="X","Y","Z","RCH"'
@@ -6252,7 +6252,7 @@
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
-                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' SWBC"'
 
                 VarSTR='variables="X","Y","Z","SWBC"'
@@ -6276,7 +6276,7 @@
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
-                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' DRN"'
 
                 VarSTR='variables="X","Y","Z","DRN"'
@@ -6301,7 +6301,7 @@
             
                 call OpenAscii(FNum,FName)
                 call Msg('  ')
-                call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' WEL"'
 
                 VarSTR='variables="X","Y","Z","WEL"'
@@ -6333,7 +6333,7 @@
         Modflow.FNameOBPT=trim(Modflow.Prefix)//'.OBPT'
         call OpenAscii(Modflow.iOBPT,Modflow.FNameOBPT)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOBPT))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameOBPT))
         write(Modflow.iNAM,'(a,i4,a)') 'OBPT  ',Modflow.iOBPT,' '//trim(Modflow.FNameOBPT)
         write(Modflow.iOBPT,'(a,a)') '# MODFLOW-USG OBPT file written by Modflow-User-Tools version ',trim(MUTVersion)
         write(Modflow.iOBPT,'(a)') '#      nGWFObsPnt  nSWFObsPnt  nCLNObsPnt   iGWFOBS     iSWFOBS     iCLNOBS'
@@ -7139,7 +7139,7 @@
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
             write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y","Z"'
@@ -7162,7 +7162,7 @@
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
             write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y"'
@@ -7188,7 +7188,7 @@
             
             call OpenAscii(FNum,FName)
             call Msg('  ')
-            call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
             write(FNum,'(a)') 'Title = "'//trim(TMPLT%name)//' "'
 
             VarSTR='variables="X","Y"'
@@ -7254,9 +7254,9 @@
             end if
         end do
 
-        write(TmpSTR,'(a,i10)') TAB//trim(domain%name)//' new zone number: ',domain%nZones
+        write(TmpSTR,'(a,i10)') trim(domain%name)//' new zone number: ',domain%nZones
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,i10)') TAB//'Cells added to new zone: ',ncount
+        write(TmpSTR,'(a,i10)') 'Cells added to new zone: ',ncount
         call Msg(trim(TmpSTR))
 	    if(ncount == 0) call ErrMsg('No Cells chosen')
 
@@ -7547,10 +7547,10 @@
         domain%nObsPnt=domain%nObsPnt+1
 
         read(FNumMUT,'(a)') domain%ObsPntName(domain%nObsPnt)
-        call Msg(TAB//TAB//trim(domain%name)//' observation point name: '//trim(domain%ObsPntName(domain%nObsPnt)))
+        call Msg(trim(domain%name)//' observation point name: '//trim(domain%ObsPntName(domain%nObsPnt)))
 
         read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//TAB//'Find cell closest to user XYZ: ',x1, y1, z1
+        write(TMPStr,*) 'Find cell closest to user XYZ: ',x1, y1, z1
         call Msg(TMPStr)
 
         dist_min=1.0e20
@@ -7563,9 +7563,9 @@
         end do
         
         domain%ObsPntCell(domain%nObsPnt)=iCell
-        write(TMPStr,'(a,i10,a)') TAB//TAB//' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
+        write(TMPStr,'(a,i10,a)') ' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
         call Msg(TMPStr)
-        write(TMPStr,'(a,'//FMT_R8//',a)') TAB//TAB//' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
+        write(TMPStr,'(a,'//FMT_R8//',a)') ' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
         
 
@@ -7706,68 +7706,68 @@
 
         read(FNumMUT,*) iSMSParameterSet
         write(TmpSTR,'(i4)') iSMSParameterSet
-        call Msg(TAB//'Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
+        call Msg('Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
         
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)        ',SMS_HCLOSE(iSMSParameterSet),'     '//TRIM(SMS_LengthUnit(iSMSParameterSet))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)        ',SMS_HCLOSE(iSMSParameterSet),'     '//TRIM(SMS_LengthUnit(iSMSParameterSet))
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)       ',SMS_HICLOSE(iSMSParameterSet),'     '//TRIM(SMS_LengthUnit(iSMSParameterSet))
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)       ',SMS_HICLOSE(iSMSParameterSet),'     '//TRIM(SMS_LengthUnit(iSMSParameterSet))
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'MAXIMUM NUMBER OF OUTER ITERATIONS     (MXITER)        ',SMS_MXITER(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'MAXIMUM NUMBER OF OUTER ITERATIONS     (MXITER)        ',SMS_MXITER(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'MAXIMUM NUMBER OF INNER ITERATIONS     (ITER1)         ',SMS_ITER1(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'MAXIMUM NUMBER OF INNER ITERATIONS     (ITER1)         ',SMS_ITER1(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'SOLVER PRINTOUT INDEX                  (IPRSMS)        ',SMS_IPRSMS(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'SOLVER PRINTOUT INDEX                  (IPRSMS)        ',SMS_IPRSMS(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'NONLINEAR ITERATION METHOD             (NONLINMETH)    ',SMS_NONLINMETH(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'NONLINEAR ITERATION METHOD             (NONLINMETH)    ',SMS_NONLINMETH(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'LINEAR SOLUTION METHOD                 (LINMETH)       ',SMS_NONLINMETH(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'LINEAR SOLUTION METHOD                 (LINMETH)       ',SMS_NONLINMETH(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'D-B-D WEIGHT REDUCTION FACTOR          (THETA)         ',SMS_THETA(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'D-B-D WEIGHT REDUCTION FACTOR          (THETA)         ',SMS_THETA(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'D-B-D WEIGHT INCREASE INCREMENT        (KAPPA)         ',SMS_KAPPA(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'D-B-D WEIGHT INCREASE INCREMENT        (KAPPA)         ',SMS_KAPPA(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'D-B-D PREVIOUS HISTORY FACTOR          (GAMMA)         ',SMS_GAMMA(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'D-B-D PREVIOUS HISTORY FACTOR          (GAMMA)         ',SMS_GAMMA(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'MOMENTUM TERM                          (AMOMENTUM)     ',SMS_AMOMENTUM(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'MOMENTUM TERM                          (AMOMENTUM)     ',SMS_AMOMENTUM(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'MAXIMUM NUMBER OF BACKTRACKS           (NUMTRACK)      ',SMS_NUMTRACK(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'MAXIMUM NUMBER OF BACKTRACKS           (NUMTRACK)      ',SMS_NUMTRACK(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'BACKTRACKING TOLERANCE FACTOR          (BTOL)          ',SMS_BTOL(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'BACKTRACKING TOLERANCE FACTOR          (BTOL)          ',SMS_BTOL(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'BACKTRACKING REDUCTION FACTOR          (BREDUC)        ',SMS_BREDUC(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'BACKTRACKING REDUCTION FACTOR          (BREDUC)        ',SMS_BREDUC(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'BACKTRACKING RESIDUAL LIMIT            (RES_LIM)       ',SMS_RES_LIM(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'BACKTRACKING RESIDUAL LIMIT            (RES_LIM)       ',SMS_RES_LIM(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'TRUNCATED NEWTON FLAG                  (ITRUNCNEWTON)  ',SMS_ITRUNCNEWTON(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'TRUNCATED NEWTON FLAG                  (ITRUNCNEWTON)  ',SMS_ITRUNCNEWTON(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,a)')      TAB//'Options                                                ',SMS_Options(iSMSParameterSet)
+        write(TmpSTR,'(a,a)')      'Options                                                ',SMS_Options(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'ACCELERATION METHOD                    (IACL)          ',SMS_IACL(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'ACCELERATION METHOD                    (IACL)          ',SMS_IACL(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'EQUATION ORDERING FLAG                 (NORDER)        ',SMS_NORDER(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'EQUATION ORDERING FLAG                 (NORDER)        ',SMS_NORDER(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'LEVEL OF FILL                          (LEVEL)         ',SMS_LEVEL(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'LEVEL OF FILL                          (LEVEL)         ',SMS_LEVEL(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'MAXIMUM NUMBER OF ORTHOGONALIZATIONS   (NORTH)         ',SMS_NORTH(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'MAXIMUM NUMBER OF ORTHOGONALIZATIONS   (NORTH)         ',SMS_NORTH(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'INDEX FOR USING REDUCED SYSTEM         (IREDSYS)       ',SMS_IREDSYS(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'INDEX FOR USING REDUCED SYSTEM         (IREDSYS)       ',SMS_IREDSYS(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'RESIDUAL REDUCTION CONVERGE CRITERION  (RRCTOL)        ',SMS_RRCTOL(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'RESIDUAL REDUCTION CONVERGE CRITERION  (RRCTOL)        ',SMS_RRCTOL(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'INDEX FOR USING DROP TOLERANCE         (IDROPTOL)      ',SMS_IDROPTOL(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'INDEX FOR USING DROP TOLERANCE         (IDROPTOL)      ',SMS_IDROPTOL(iSMSParameterSet)
         call Msg(trim(TmpSTR))
-        write(TmpSTR,'(a,'//FMT_R4//')')TAB//'DROP TOLERANCE VALUE                   (EPSRN)         ',SMS_EPSRN(iSMSParameterSet)
+        write(TmpSTR,'(a,'//FMT_R4//')')'DROP TOLERANCE VALUE                   (EPSRN)         ',SMS_EPSRN(iSMSParameterSet)
         call Msg(trim(TmpSTR))
         
         LengthConversionFactor=LengthConverter(UnitsOfLength,SMS_LengthUnit(iSMSParameterSet))
         if(LengthConversionFactor /= 1.0) then
             call Msg(' ')
-            call Msg(TAB//'**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')TAB//'SMS parameter set length unit:    '//trim(SMS_LengthUnit(iSMSParameterSet))
+            call Msg('**** Length Units Conversion **** ')
+            write(TmpSTR,'(a)')'SMS parameter set length unit:    '//trim(SMS_LengthUnit(iSMSParameterSet))
             call Msg(TmpSTR)
-            write(TmpSTR,'(a)')TAB//'Modflow length unit:     '//trim(UnitsOfLength)
+            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
             call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(SMS_LengthUnit(iSMSParameterSet))
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(SMS_LengthUnit(iSMSParameterSet))
             call Msg(TmpSTR)
         endif
         
@@ -7776,12 +7776,12 @@
             SMS_HICLOSE(iSMSParameterSet)=SMS_HICLOSE(iSMSParameterSet)*LengthConversionFactor
 
             call Msg(' ')
-            call Msg(TAB//'**** After Unit Conversion **** ')
+            call Msg('**** After Unit Conversion **** ')
             write(TmpSTR,'(i5)') iSMSParameterSet
-		    call Msg(TAB//'Properties of SMS dataset '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet))//' after unit conversion')
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)        ',SMS_HCLOSE(iSMSParameterSet),'     '//TRIM(UnitsOfLength)
+		    call Msg('Properties of SMS dataset '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet))//' after unit conversion')
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'OUTER ITERATION CONVERGENCE CRITERION  (HCLOSE)        ',SMS_HCLOSE(iSMSParameterSet),'     '//TRIM(UnitsOfLength)
             call Msg(trim(TmpSTR))
-            write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//'INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)       ',SMS_HICLOSE(iSMSParameterSet),'     '//TRIM(UnitsOfLength)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'INNER ITERATION CONVERGENCE CRITERION  (HICLOSE)       ',SMS_HICLOSE(iSMSParameterSet),'     '//TRIM(UnitsOfLength)
             call Msg(trim(TmpSTR))
        end if     
 
@@ -7805,7 +7805,7 @@
         character(MAX_INST) :: Tadjat_CMD	            =   'tadjat'
         character(MAX_INST) :: Tcutat_CMD	            =   'tcutat'
         Modflow.nPeriods=Modflow.nPeriods+1  
-        write(TmpSTR,'(a,i8)')TAB//'Stress period ',Modflow.nPeriods
+        write(TmpSTR,'(a,i8)')'Stress period ',Modflow.nPeriods
         call Msg(trim(TmpSTR))
         
         if(Modflow.nPeriods == 1) then
@@ -7833,46 +7833,46 @@
                 if(modflow.StressPeriodType(Modflow.nPeriods) /= 'SS' .and. modflow.StressPeriodType(Modflow.nPeriods) /= 'TR') then
                     call ErrMsg('Stress Period type must begin with either SS or TR')
                 end if
-                write(TmpSTR,'(a)')TAB//TAB//'Type: '//trim(modflow.StressPeriodType(Modflow.nPeriods))
+                write(TmpSTR,'(a)')'Type: '//trim(modflow.StressPeriodType(Modflow.nPeriods))
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Duration_cmd) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodDuration(Modflow.nPeriods)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//TAB//'Duration: ',modflow.StressPeriodDuration(Modflow.nPeriods),'     '//TRIM(modflow.STR_TimeUnit)
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Duration: ',modflow.StressPeriodDuration(Modflow.nPeriods),'     '//TRIM(modflow.STR_TimeUnit)
                 call Msg(trim(TmpSTR))
                 
             else if(index(instruction,NumberOfTimesteps_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodnTsteps(Modflow.nPeriods)
-                write(TmpSTR,'(a,i5)')TAB//TAB//'Number of time steps: ',modflow.StressPeriodnTsteps(Modflow.nPeriods)
+                write(TmpSTR,'(a,i5)')'Number of time steps: ',modflow.StressPeriodnTsteps(Modflow.nPeriods)
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Deltat_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodDeltat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//TAB//'Starting time step size: ',modflow.StressPeriodDeltat,'     '//TRIM(modflow.STR_TimeUnit)
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Starting time step size: ',modflow.StressPeriodDeltat,'     '//TRIM(modflow.STR_TimeUnit)
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Tminat_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodTminat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//TAB//'Minimum time step size: ',modflow.StressPeriodTminat,'     '//TRIM(modflow.STR_TimeUnit)
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Minimum time step size: ',modflow.StressPeriodTminat,'     '//TRIM(modflow.STR_TimeUnit)
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Tmaxat_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodTmaxat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//TAB//'Maximum time step size: ',modflow.StressPeriodTmaxat,'     '//TRIM(modflow.STR_TimeUnit)
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Maximum time step size: ',modflow.StressPeriodTmaxat,'     '//TRIM(modflow.STR_TimeUnit)
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Tadjat_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodtadjat
-                write(TmpSTR,'(a,'//FMT_R4//')')TAB//TAB//'Time step size adjustment factor: ',modflow.StressPeriodtadjat
+                write(TmpSTR,'(a,'//FMT_R4//')')'Time step size adjustment factor: ',modflow.StressPeriodtadjat
                 call Msg(trim(TmpSTR))
 
             else if(index(instruction,Tcutat_CMD) /=0) then
                 read(FNumMUT,*) modflow.StressPeriodTcutat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')TAB//TAB//'Time step size cutting factor: ',modflow.StressPeriodTcutat
+                write(TmpSTR,'(a,'//FMT_R4//',a)')'Time step size cutting factor: ',modflow.StressPeriodTcutat
                 call Msg(trim(TmpSTR))
 
             else
-			    call ErrMsg(TAB//'Unrecognized instruction: stress period')
+			    call ErrMsg('Unrecognized instruction: stress period')
             end if
 
         end do read_StressPeriod_instructions
@@ -7904,7 +7904,7 @@
                 read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
                 do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')TAB//' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
+                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do
                 exit FindStartString
@@ -7927,7 +7927,7 @@
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
 
         write(FNum,*) 'Title = "'//trim(Modflow%SWF%name)//'"'
 
@@ -8300,7 +8300,7 @@
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Tecplot file: '//trim(FName))
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
 
         write(FNum,*) 'Title = "'//trim(TMPLT%name)//'"'
 
@@ -8502,7 +8502,7 @@
         Modflow.FNameCLN_GSF=trim(Modflow.Prefix)//'.cln.gsf'
         call OpenAscii(Modflow.iCLN_GSF,Modflow.FNameCLN_GSF)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN_GSF))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCLN_GSF))
         write(Modflow.iCLN_GSF,'(a,a)') '# MODFLOW-USG Grid Specification File (CLN_GSF) Package written by Modflow-User-Tools version ',trim(MUTVersion)
         
         write(Modflow.iCLN_GSF,'(a)') trim(Modflow%CLN%meshtype)
@@ -8975,7 +8975,7 @@
         Modflow.FNameSWF_GSF=trim(Modflow.Prefix)//'.swf.gsf'
         call OpenAscii(Modflow.iSWF_GSF,Modflow.FNameSWF_GSF)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF_GSF))
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWF_GSF))
         write(Modflow.iSWF_GSF,'(a,'//FMT_R4//')') '# MODFLOW-USG Grid Specification File (SWF_GSF) Package written by Modflow-User-Tools version ',trim(MUTVersion)
         if(NodalControlVolume) then
             !------------------- write non-standard SWF_GSF file
@@ -16876,7 +16876,7 @@
             call ErrMsg('Units of length '//trim(value)//' not recognized. Must be feet, meters, or centimeters.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of length:   '//trim(Project.STR_LengthUnit)
+        write(TmpSTR,'(a)')    'Units of length:   '//trim(Project.STR_LengthUnit)
         call Msg(TmpSTR)
 
     end subroutine UnitsLength
@@ -16918,7 +16918,7 @@
             call ErrMsg('Units of time '//trim(value)//' not recognized. Must be seconds, minutes, hours, days or years.')
         end select
         
-        write(TmpSTR,'(a)')    TAB//'Units of time:   '//trim(Project.STR_TimeUnit)
+        write(TmpSTR,'(a)')    'Units of time:   '//trim(Project.STR_TimeUnit)
         call Msg(TmpSTR)
 
     end subroutine UnitsTime

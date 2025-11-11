@@ -108,7 +108,7 @@ Module Materials
 	    character(256) :: line
         integer(i4) :: id
 
-		call Msg(TAB//'Materials file '//trim(FName))
+		call Msg('Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Find largest material number
@@ -210,7 +210,7 @@ Module Materials
 	    character(256) :: line
         integer(i4) :: id
 
-		call Msg(TAB//'Materials file '//trim(FName))
+		call Msg('Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -272,7 +272,7 @@ Module Materials
 	    character(256) :: line
         integer(i4) :: id
 
-		call Msg(TAB//'Materials file '//trim(FName))
+		call Msg('Materials file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -328,7 +328,7 @@ Module Materials
 	    character(256) :: line
         integer(i4) :: id
 
-		call Msg(TAB//TAB//'ET file '//trim(FName))
+		call Msg('ET file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -402,7 +402,7 @@ Module Materials
 	    character(256) :: line
         integer(i4) :: id
 
-		call Msg(TAB//'SMS file '//trim(FName))
+		call Msg('SMS file '//trim(FName))
         call OpenAscii(itmp,FName)
 	    
         ! Count materials

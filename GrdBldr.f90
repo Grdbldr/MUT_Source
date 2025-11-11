@@ -219,8 +219,8 @@ module gb
         if(allocated(elength_in)) then
             elength_in(:)=RealInput
             write(TmpSTR,'(a, '//FMT_R8//')') 'Target Element Length: ',RealInput 
-			call Msg(TAB//trim(TmpSTR))
-			call Msg(TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+			call Msg(trim(TmpSTR))
+			call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
 
         else
             call ErrMsg('elength_in array not allocated before TargetElementLength command')
@@ -313,11 +313,11 @@ module gb
             read(FNumMUT,'(a)',iostat=status) instruction
             call LwrCse(instruction)
             if(index(instruction, 'end') /=0) then
-                call Msg(TAB//'end GridBuilderMods_InstructionLoop')
+                call Msg('end GridBuilderMods_InstructionLoop')
                 exit GridBuilderMods_InstructionLoop
             else
                 call LwrCse(instruction)
-                call Msg(TAB//instruction)
+                call Msg(instruction)
             end if    
           
             if(index(instruction, WellsFrom_ID_X_Y_File_CMD)  /= 0) then
@@ -325,8 +325,8 @@ module gb
                 ! Read a target element length
 				read(FNumMUT,*) well_esize			! target element size at well
 				write(TmpSTR,'(a, '//FMT_R8//')') 'Target Element size at well: ',well_esize 
-				call Msg(TAB//trim(TmpSTR))
-				call Msg(TAB//'Assumed units of length are '//TRIM(UnitsOfLength))
+				call Msg(trim(TmpSTR))
+				call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
 
             else if(index(instruction, RefineInsidePolygon_CMD)  /= 0) then
                 call RefineInsidePolygon(GB_GEN,FNumMUT)
@@ -380,7 +380,7 @@ module gb
 			call ErrMsg('File not found: '//trim(FNameLine))
         endif
                 
-        call Msg(TAB//FileReadSTR//'OuterBoundaryFrom_ID_X_Y file: '//trim(FNameLine))
+        call Msg(FileReadSTR//'OuterBoundaryFrom_ID_X_Y file: '//trim(FNameLine))
 
 		call OpenAscii(FnumLine,FNameLine)
         call LineFrom_ID_X_Y_File(FnumLine,OuterBoundary)
@@ -466,7 +466,7 @@ module gb
 			call ErrMsg('File not found: '//trim(FNameLine))
         endif
                 
-        call Msg(TAB//FileReadSTR//'RefineInsidePolygon file: '//trim(FNameLine))
+        call Msg(FileReadSTR//'RefineInsidePolygon file: '//trim(FNameLine))
 
 		call OpenAscii(FnumLine,FNameLine)
         call LineFrom_ID_X_Y_File(FnumLine,Polygon)
@@ -515,7 +515,7 @@ module gb
 			call ErrMsg('File not found: '//trim(FNameLine))
         endif
                 
-        call Msg(TAB//FileReadSTR//'WellsFrom_ID_X_Y file: '//trim(FNameLine))
+        call Msg(FileReadSTR//'WellsFrom_ID_X_Y file: '//trim(FNameLine))
 
 		call OpenAscii(FnumLine,FNameLine)
         call WellsFrom_ID_X_Y_File(FnumLine,Wells)
@@ -617,7 +617,7 @@ module gb
 		integer :: i,j
 
 		read(FNumMut,'(a80)') TmpSTR
-        call Msg(TAB//FileCreateSTR//'Grid generation file: '//trim(TmpSTR))
+        call Msg(FileCreateSTR//'Grid generation file: '//trim(TmpSTR))
 
 	    call getunit(itmp)
 		open(itmp,file=trim(TmpSTR),status='unknown',form='formatted')

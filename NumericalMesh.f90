@@ -119,7 +119,7 @@ module NumericalMesh
         FName=trim(M%name)//'.MeshBIN'
         call OpenBinary(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Binary mesh file: '//trim(FName))
+        call Msg(FileCreateSTR//'Binary mesh file: '//trim(FName))
         
         write(FNum) M%name
         
@@ -190,7 +190,7 @@ module NumericalMesh
         FName=trim(M%name)//'.MeshBIN'
         call OpenBinary(FNum,FName)
         call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Binary mesh file: '//trim(FName))
+        call Msg(FileCreateSTR//'Binary mesh file: '//trim(FName))
         
         read(FNum) M%name
         ! write(*,'(a)')'mesh name '// trim(M%name)
@@ -301,7 +301,7 @@ module NumericalMesh
     !    FName=trim(M%name)//'.tin'
     !    call OpenAscii(FNum,FName)
     !    call Msg('  ')
-    !    call Msg(TAB//FileCreateSTR//'Ascii mesh TIN file: '//trim(FName))
+    !    call Msg(FileCreateSTR//'Ascii mesh TIN file: '//trim(FName))
     !    write(FNum,'(a)') 'TIN                /* File type identifier */'
     !    write(FNum,'(a)') 'BEGT               /* Beginning of TIN group */'
     !    write(FNum,'(a)') 'TNAM '//trim(M%name)//'          /* Name of TIN */'
