@@ -50,11 +50,6 @@ module gb
 
 	integer(i4) :: ne_cur	! element
 
-	!------------------------------------------------------------------------------------------
-	!integer(i4)		:: nn			! number of nodes
-	!real(dp),allocatable	:: x(:)		! x coordinates
-	!real(dp),allocatable	:: y(:)		! y coordinates
-	
 	integer(i4) :: area						! number of areas
 	integer(i4)	:: onbn						! number of outer boundry nodes  
 	integer(i4),allocatable		:: obn(:)	! outer boundary node list
@@ -66,13 +61,6 @@ module gb
 	integer(i4), allocatable	:: ndrop_rate(:) 
 	logical,allocatable		:: hole(:)	! true if area not to be filled with elements
     
-	!integer(i4)		:: ne				! number of elements in mesh
-	!integer(i4),allocatable		:: in(:,:)		! element node lists
-	!integer(i4),allocatable		:: el_area	! element zone (subarea) numbers
-
-	!integer(i4), allocatable :: node(:) ! node bit set array 
-	!integer(i4), allocatable :: GB_GEN%element%is(:) ! element bit set array 
-
 
 	character*60 :: log_msg
 
@@ -503,8 +491,8 @@ module gb
             IsInPoly=in_poly(Polygon%NPoints,Polygon%Point%x,Polygon%Point%y,GB_GEN%Element(i)%xCircle,GB_GEN%Element(i)%yCircle)
 			if(IsInPoly) then
 				call set(GB_GEN%element(i)%is,chosen)
-                write(TMPStr,'(a,i8,a)') ' Element ',i,' marked for refinement'
-                write(*,*) trim(TMPStr)
+                !write(TMPStr,'(a,i8,a)') ' Element ',i,' marked for refinement'
+                !write(*,*) trim(TMPStr)
 			endif
         end do
         
@@ -1048,7 +1036,7 @@ module gb
 				call node_spacing(GB_GEN,nde,spacing)
 				if(ierr /= 0) return
 				if(spacing > well_esize) then
-                    write(*,*) 'well ',i,' spacing ',spacing
+                    !write(*,*) 'well ',i,' spacing ',spacing
 
 					call choose_e_connected(GB_GEN,nde)
 					stop_refining=.false.

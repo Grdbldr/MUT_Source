@@ -1195,6 +1195,7 @@ Module MeshGen
         character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
         character(MAX_INST) :: list_file_elevation_cmd		    =   'elevation from list file'
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
+        character(MAX_INST) :: ElevationFromQgisCSVFile_cmd			=   'elevation from qgis csv file'
         !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
         character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
@@ -1203,6 +1204,10 @@ Module MeshGen
         
         integer(i4) :: FNumMUT
         type (mesh) TMPLT
+        
+        integer(i4) :: FnumTop
+		character(MAX_STR) :: FNameTop
+
 
         integer(i4) :: j
         character(120) :: topfile
@@ -1254,6 +1259,19 @@ Module MeshGen
                 
             elseif(index(instruction, xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
+            
+            elseif(index(instruction, ElevationFromQgisCSVFile_cmd) /=0) then
+                read(FNumMUT,'(a)') FNameTop 
+                inquire(file=FNameTop,exist=FileExists)
+                if(.not. FileExists) then
+			        call ErrMsg('File not found: '//trim(FNameTop))
+                endif
+                
+                call Msg(TAB//FileReadSTR//'Top_elevation: QGIS CSV file: '//trim(FNameTop))
+
+		        call OpenAscii(FnumTop,FNameTop)
+
+                call ReadDRealArray(FnumTop,top_elev)
                 
        !     elseif(instruction .eq. raster_file_elevation_cmd) /=0) then
 			    !read(FNumMUT,'(a)') topfile
@@ -1285,7 +1303,7 @@ Module MeshGen
     end subroutine top_elevation
     
     !----------------------------------------------------------------------
-    subroutine xyzFromListFile(FNum,xi,yi,zi,nPoints)
+    subroutine xyzFromList(FNum,xi,yi,zi,nPoints)
         implicit none
         integer(i4) :: FNum
         
@@ -1354,7 +1372,7 @@ Module MeshGen
        
         continue
 
-    end subroutine xyzFromListFile
+    end subroutine xyzFromList
 
     !----------------------------------------------------------------------
     subroutine bilinear_function_in_xy(FNumMUT,nprop,TMPLT)

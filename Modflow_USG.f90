@@ -45,7 +45,8 @@
     character(MAX_INST) :: QuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
     character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
     character(MAX_INST) :: GenerateVariableRectangles_CMD  =   'generate variable rectangles'
-    ! There are many other possible 2d mesh definition options e.g.
+    character(MAX_INST) :: ReadMesh_CMD  =   'read mesh'
+! There are many other possible 2d mesh definition options e.g.
     !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
     
     character(MAX_INST) :: GenerateSWFDomain_CMD		=   'generate swf domain'
@@ -67,6 +68,7 @@
     character(MAX_INST) :: ChooseCellsFromGBElements_CMD        =   'choose cells from gb elements'
     character(MAX_INST) :: ChooseCellsFromGBNodes_CMD	        =   'choose cells from gb nodes'
     character(MAX_INST) :: ChooseCellsFromFile_CMD              =   'choose cells from file'
+    character(MAX_INST) :: ChooseCellsFromXYZList_CMD           =   'choose cells from xyz list'
     character(MAX_INST) :: ChooseCellsByChosenZones_CMD         =   'choose cells by chosen zones'
 
     character(MAX_INST) :: NewZone_CMD  	                    =   'new zone'
@@ -2201,6 +2203,12 @@
                 call DefineUserbin(USERBIN)
                 call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
                 
+            else if(index(instruction, ReadMesh_CMD) /= 0) then
+                read(FnumMUT,'(a)') FName
+                TMPLT%Name=TRIM(FName)
+                call ReadMeshBIN(TMPLT)
+                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+
             else if(index(instruction, MeshFromGb_CMD)  /= 0) then
                 call ReadGridBuilderMesh(FNumMut,TMPLT)
                 TMPLT.Name='TMPLT'
@@ -2410,6 +2418,19 @@
                     call ChooseCellsFromFile(FnumMUT,modflow.CLN)
                 end select
             
+            else if(index(instruction, ChooseCellsFromXYZList_CMD)  /= 0) then
+                select case(ActiveDomain)
+                case (iTMPLT)
+                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                    ! this will be done later
+                case (iGWF)
+                    call ChooseCellsFromXYZList(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ChooseCellsFromXYZList(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ChooseCellsFromXYZList(FnumMUT,modflow.CLN)
+                end select
+           
             else if(index(instruction, ChooseCellsByChosenZones_CMD)  /= 0) then
                 select case(ActiveDomain)
                 case (iTMPLT)
@@ -3286,7 +3307,7 @@
 	    real(dp) :: x1,y1,z1,dist_min,f1
 
         read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) TAB//'Find cell closest to XYZ: ',x1, y1, z1
+        write(TMPStr,'(a,3f12.2)') 'Find cell closest to XYZ: ',x1, y1, z1
         call Msg(TMPStr)
 
         dist_min=1.0e20
@@ -3299,12 +3320,63 @@
 	    end do
         call set(domain%cell(iCell)%is,chosen)
         
+        write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+        call Msg(tmpSTR)
         write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
 		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
         call Msg(tmpSTR)
-
+        
     end subroutine ChooseCellAtXYZ
+    
+        !----------------------------------------------------------------------
+    subroutine ChooseCellsFromXYZList(FNum,Domain)
+        implicit none
+        integer(i4) :: FNum
+        
+        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
+        integer(i4) :: nPoints  ! number of points in list
+        
+        type(ModflowDomain) Domain
+
+        integer(i4) :: i, j, iCell
+	    real(dp) :: x1,y1,z1,dist_min,f1
+
+        call xyzFromList(FNum,xi,yi,zi,nPoints)
+
+        
+        do i=1,nPoints
+            x1=xi(i)
+            y1=yi(i)
+            z1=zi(i)
+            write(TMPStr,'(a,3f12.2)') 'Find cell closest to XYZ: ',x1, y1, z1
+            call Msg(TMPStr)
+            dist_min=1.0e20
+            do j=1,domain%nCells
+                f1=sqrt((x1-domain%cell(j)%x)**2+((y1-domain%cell(j)%y))**2+((z1-domain%cell(j)%z))**2)
+                if(f1.lt.dist_min) then
+                    iCell=j
+                    dist_min=f1
+                endif
+            end do
+            call set(domain%cell(iCell)%is,chosen)
+            
+            write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+            call Msg(tmpSTR)
+            write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'At x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
+            call Msg(tmpSTR)
+	    end do
+  !      call set(domain%cell(iCell)%is,chosen)
+  !      
+  !      write(tmpSTR,'(a14,i8)') TAB//'Found cell  ',iCell
+  !      call Msg(tmpSTR)
+  !      write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
+  !      call Msg(tmpSTR)
+		!write(tmpSTR,'(a14,3('//FMT_R8//'),a)') TAB//'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
+  !      call Msg(tmpSTR)
+        
+    end subroutine ChooseCellsFromXYZList
+
     !----------------------------------------------------------------------
     subroutine ChooseCellbyXYZ_LayerRange(FNumMut,Domain)
         implicit none
@@ -4729,7 +4801,7 @@
                 
 
             if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
-                call xyzFromListFile(FNum,xi,yi,zi,nPoints)
+                call xyzFromList(FNum,xi,yi,zi,nPoints)
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,CLNDomain)

@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG   
-        character(37) :: MUTVersion=' 1.69 DEBUG GB'
+        character(37) :: MUTVersion=' 1.70 DEBUG GB'
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion=' 1.69 RELEASE GB'
+        character(37) :: MUTVersion=' 1.70 RELEASE GB'
     #endif
 
 

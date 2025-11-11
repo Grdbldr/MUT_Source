@@ -179,6 +179,7 @@ module MUT  !### Modflow-USG Tools
                 call FlagOuterBoundaryNodes(MyMeshGroup%mesh(MyMeshGroup%nMesh)) ! From faces connected to only 1 element 
                 call BuildMeshCentredIaJa(MyMeshGroup%mesh(MyMeshGroup%nMesh)) 
                 call SaveMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                !call SaveMeshTIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 if(EnableTecplotOutput) then
                     call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 endif
@@ -191,8 +192,8 @@ module MUT  !### Modflow-USG Tools
                 read(FNumMut,'(a80)') TMPStr 
                 MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TMPStr
                 call ReadMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
-                
-                
+
+               
                 continue
 
 

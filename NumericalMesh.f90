@@ -107,44 +107,6 @@ module NumericalMesh
 
 
     contains
-    subroutine SaveMeshASC(M)
-        implicit none
-        type(mesh) M
-        integer :: i, j
-        
-        character(128) :: FName
-        integer(i4) :: FNum
-        ! save mesh to binary file
-        FName=trim(M%name)//'.MeshASC'
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(TAB//FileCreateSTR//'Ascii mesh file: '//trim(FName))
-        write(FNum,*) M%name
-        write(FNum,*) M%nNodes
-        write(FNum,*) M%nElements
-        write(FNum,*) M%nNodesPerElement
-        do i=1,M%nNodes
-            write(FNum,*) M%node(i)%id,M%node(i)%x,M%node(i)%y,M%node(i)%z,M%node(i)%is
-        end do
-        write(FNum,*) M%idNode
-        do i=1,M%nElements
-            write(FNum,*) M%element(i)%id,M%element(i)%typ,M%element(i)%idZone,M%element(i)%iLayer
-            write(FNum,*) M%element(i)%x,M%element(i)%y,M%element(i)%z,M%element(i)%is
-            write(FNum,*) M%element(i)%area,M%element(i)%xyArea
-            write(FNum,*) M%element(i)%xCircle,M%element(i)%yCircle,M%element(i)%zCircle,M%element(i)%rCircle
-            do j=1,M%nNodesPerElement
-                write(FNum,*) M%element(i)%xSide,M%element(i)%ySide,M%element(i)%SideLength
-            end do
-        end do
-        write(FNum,*) M%nZones
-        do i=1,M%nZones
-                write(FNum,*) M%zone(i)%name
-                write(FNum,*) M%zone(i)%id,M%element(i)%is
-        end do
-        
-
-        call FreeUnit(FNum)
-    end subroutine SaveMeshASC
 
     subroutine SaveMeshBIN(M)
         implicit none
@@ -166,7 +128,7 @@ module NumericalMesh
             write(FNum) M%node(i)%id,M%node(i)%x,M%node(i)%y,M%node(i)%z,M%node(i)%is
         end do
         write(FNum) M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
-        write(*,*)'extents ', M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
+        ! write(*,*)'extents ', M%xMin, M%xMax, M%yMin, M%yMax, M%zMin, M%zMax
         
         write(FNum) M%nElements
         write(FNum) M%nNodesPerElement
@@ -186,7 +148,7 @@ module NumericalMesh
         write(FNum) M%nZones
         do i=1,M%nZones
                 write(FNum) M%zone(i)%name
-                write(*,'(a)')'written zone name '// trim(M%zone(i)%name)
+                ! write(*,'(a)')'written zone name '// trim(M%zone(i)%name)
                 write(FNum) M%zone(i)%id,M%element(i)%is
         end do
  
@@ -231,7 +193,7 @@ module NumericalMesh
         call Msg(TAB//FileCreateSTR//'Binary mesh file: '//trim(FName))
         
         read(FNum) M%name
-        write(*,'(a)')'mesh name '// trim(M%name)
+        ! write(*,'(a)')'mesh name '// trim(M%name)
         
         read(FNum) M%nNodes
         allocate(M%Node(M%nNodes), stat=ialloc)
@@ -259,12 +221,12 @@ module NumericalMesh
         end do
  
         read(FNum) M%nZones
-        write(*,*) 'nzones ',M%nZones
+        ! write(*,*) 'nzones ',M%nZones
         allocate(M%Zone(M%nZones),stat=ialloc)
         call AllocChk(ialloc,'ReadMeshBIN: M%Zone array')
         do i=1,M%nZones
             read(FNum) M%zone(i)%name
-            write(*,'(a)')'zone name '// trim(M%zone(i)%name)
+            ! write(*,'(a)')'zone name '// trim(M%zone(i)%name)
             read(FNum) M%zone(i)%id,M%element(i)%is
         end do
         
@@ -313,9 +275,48 @@ module NumericalMesh
 
 
         call FreeUnit(FNum)
+       
+        write(TMPStr,'(a,i8)') 'Number of nodes:', M%nNodes
+        call Msg(TMPStr)
+        write(TMPStr,'(a,i8)') 'Number of elements:', M%nElements
+        call Msg(TMPStr)
+        write(TMPStr,'(a,a)') 'Element type:', M%TecplotTyp
+        call Msg(TMPStr)
+        !write(TMPStr,'(a,3f10)') 'First node coordinates:', M%node(1)%x, M%node(1)%y, M%node(1)%z
+        !call Msg(TMPStr)
+        write(TMPStr,'(a,a)') 'First element type:', M%element(1)%typ
+        call Msg(TMPStr)
+        
     end subroutine ReadMeshBIN
 
-
+    !subroutine SaveMeshTin(M)
+    !    implicit none
+    !    type(mesh) M
+    !    
+    !    integer :: i
+    !    
+    !    character(128) :: FName
+    !    integer(i4) :: FNum
+    !    ! save mesh to TIN file
+    !    FName=trim(M%name)//'.tin'
+    !    call OpenAscii(FNum,FName)
+    !    call Msg('  ')
+    !    call Msg(TAB//FileCreateSTR//'Ascii mesh TIN file: '//trim(FName))
+    !    write(FNum,'(a)') 'TIN                /* File type identifier */'
+    !    write(FNum,'(a)') 'BEGT               /* Beginning of TIN group */'
+    !    write(FNum,'(a)') 'TNAM '//trim(M%name)//'          /* Name of TIN */'
+    !    !write(FNum,'(a, 3i5, a)') 'TCOL ',(M%id),'            /* TIN material id */
+    !    write(FNum,'(a, i8)') 'VERT ',M%nNodes,'            /* Beg. of vertices */'
+    !    do i=1,M%nNodes
+    !        write(FNum,'(3('//FMT_R8//'),i8)') M%node(i)%x,M%node(i)%y,M%node(i)%z,0
+    !    end do
+    !    write(FNum,'(a, i8)') 'TRI ',M%nElements,'            /* Beg. of triangles */'
+    !    do i=1,M%nElements
+    !        write(FNum,'(3i8)') M%idNode(1,i),M%idNode(2,i),M%idNode(3,i)
+    !    end do
+    !    write(FNum,'(a)') 'ENDT               /* End of TIN group */'
+    
+    !end subroutine SaveMeshTin
 
 	!-----------------------------------------------------------------------
 	subroutine MeshExtents(M)
@@ -338,6 +339,8 @@ module NumericalMesh
         type (mesh)  M
 
         integer(i4) :: i, j, k, l
+        
+        if(ALLOCATED(M%FaceHost)) return ! already built
         
         call StopWatch(1,'BuildFaceTopologyFrommesh')
         call Msg('Building face topology from model domain...') 
@@ -477,6 +480,8 @@ module NumericalMesh
         real(dp) :: xMidpoint(M%nNodesPerElement,M%nElements)
         real(dp) :: yMidpoint(M%nNodesPerElement,M%nElements)
         real(dp) :: zMidpoint(M%nNodesPerElement,M%nElements)
+
+        if(ALLOCATED(M%ia)) return ! already built
 
         call StopWatch(1,'BuildMeshCentredIaJa')
         call Msg(' ')
