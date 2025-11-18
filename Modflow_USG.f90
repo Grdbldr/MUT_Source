@@ -2236,6 +2236,10 @@
                 call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
                 call BuildModflowSWFDomain(Modflow)   
                 call AddSWFFiles(Modflow)
+                
+                if(EnableQGISOutput) then
+                    call CellsToQGIS(Modflow%SWF)
+                endif
 
                 JustBuilt=.true.
             
@@ -2995,6 +2999,30 @@
         Modflow%SWF%node%is=0
    
     end subroutine BuildModflowSWFDomain
+    !-------------------------------------------------------------
+    subroutine CellsToQGIS(SWFDomain)  ! write csv file with cell xyz coordinates for QGIS
+        implicit none
+        type (ModflowDomain) SWFDomain
+        
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i
+
+        ! csv output file for nodes
+        FName=trim(SWFDomain%name)//'_cells.csv'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'QGIS csv cells file: '//trim(FName))
+
+        write(FNum,'(a)') 'x,y,z'
+        do i=1,SWFDomain%nCells
+            write(FNum,'('//FMT_R8//',a,'//FMT_R8//',a,'//FMT_R8//')')SWFDomain%cell(i)%x,', ',SWFDomain%cell(i)%y,', ',SWFDomain%cell(i)%z
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine CellsToQGIS
 
     !----------------------------------------------------------------------
     subroutine ChooseAllZones(domain) 
@@ -3366,14 +3394,6 @@
             write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'At x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
             call Msg(tmpSTR)
 	    end do
-  !      call set(domain%cell(iCell)%is,chosen)
-  !      
-  !      write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
-  !      call Msg(tmpSTR)
-  !      write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
-  !      call Msg(tmpSTR)
-		!write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
-  !      call Msg(tmpSTR)
         
     end subroutine ChooseCellsFromXYZList
 
@@ -4581,7 +4601,7 @@
         write(FNum,*) 'Title = "'//trim(Modflow%CLN%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(Modflow%CLN%name)//' Zone","'//trim(Modflow%CLN%name)//' cell%z",'
+        VarSTR='variables="X","Y","Z","'//trim(Modflow%CLN%name)//' Zone","'//trim(Modflow%CLN%name)//' cell top",'
         nVar=5
             
         VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' CLN-GWF connection length",'
@@ -6321,6 +6341,32 @@
                 call FreeUnit(FNum)
             end if
 
+            if(domain%nObsPnt>0) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_OBS_scatter.tecplot.dat'
+            
+                call OpenAscii(FNum,FName)
+                call Msg('  ')
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' OBS"'
+
+                VarSTR='variables="X","Y","Z"'
+                nVar=3
+            
+                write(FNum,'(a)') trim(VarSTR)
+            
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nObsPnt,', t="'//trim(domain%name)//' OBS", datapacking=point'
+        
+                write(FNum,'(a)') trim(ZoneSTR)
+           
+                do i=1,domain%nObsPnt
+                    write(FNum,'(3('//FMT_R8//'))') domain%cell(domain%ObsPntCell(i))%x,domain%cell(domain%ObsPntCell(i))%y,domain%cell(domain%ObsPntCell(i))%z
+                end do
+           
+                call FreeUnit(FNum)
+            end if
+
+
+            
         end if
     end subroutine ModflowDomainScatterToTecplot
     
@@ -7932,7 +7978,7 @@
         write(FNum,*) 'Title = "'//trim(Modflow%SWF%name)//'"'
 
         ! static variables
-        VarSTR='variables="X","Y","Z","'//trim(Modflow%SWF%name)//' Zone","'//trim(Modflow%SWF%name)//' cell%z",'
+        VarSTR='variables="X","Y","Z","'//trim(Modflow%SWF%name)//' Zone","'//trim(Modflow%SWF%name)//' cell  top",'
         nVar=5
             
         VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' SWF-GWF connection length",'

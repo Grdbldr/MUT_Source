@@ -289,6 +289,45 @@ Module MeshGen
         call FreeUnit(FNum)
         
     end subroutine MeshToTecplot
+    !-------------------------------------------------------------
+    subroutine MeshToQGIS(LocalMesh)  ! write csv file with xyz coordinates for QGIS
+        implicit none
+        type(mesh) LocalMesh
+        
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i
+
+        ! csv output file for nodes
+        FName=trim(LocalMesh%name)//'_nodes.csv'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'QGIS csv node file: '//trim(FName))
+
+        write(FNum,'(a)') 'x,y,z'
+        do i=1,LocalMesh%nNodes
+            write(FNum,'('//FMT_R8//',a,'//FMT_R8//',a,'//FMT_R8//')')LocalMesh%node(i)%x,', ',LocalMesh%node(i)%y,', ',LocalMesh%node(i)%z
+        end do
+       
+        call FreeUnit(FNum)
+        
+        ! csv output file for elements
+        FName=trim(LocalMesh%name)//'_elements.csv'
+        
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'QGIS csv cell file: '//trim(FName))
+
+        write(FNum,'(a)') 'x,y,z'
+        do i=1,LocalMesh%nElements
+            write(FNum,'('//FMT_R8//',a,'//FMT_R8//',a,'//FMT_R8//')')LocalMesh%element(i)%x,', ',LocalMesh%element(i)%y,', ',LocalMesh%element(i)%z
+        end do
+       
+        call FreeUnit(FNum)
+        
+    end subroutine MeshToQGIS
+    
     !----------------------------------------------------------------------
     subroutine GenerateSegmentsFromXYZEndpoints(FNumMut,SEG_3D)
         implicit none
@@ -1264,7 +1303,7 @@ Module MeshGen
                 read(FNumMUT,'(a)') FNameTop 
                 inquire(file=FNameTop,exist=FileExists)
                 if(.not. FileExists) then
-			        call ErrMsg('File not found: '//trim(FNameTop))
+			        !call ErrMsg('File not found: '//trim(FNameTop))
                 endif
                 
                 call Msg(FileReadSTR//'Top_elevation: QGIS CSV file: '//trim(FNameTop))

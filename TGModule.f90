@@ -183,6 +183,9 @@ module MUT  !### Modflow-USG Tools
                 if(EnableTecplotOutput) then
                     call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 endif
+                if(EnableQGISOutput) then
+                    call MeshToQGIS(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                endif
                 
 
 

@@ -69,6 +69,7 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
     logical :: EnableTecplotOutput = .true.
+    logical :: EnableQGISOutput = .true.
 
 
     
