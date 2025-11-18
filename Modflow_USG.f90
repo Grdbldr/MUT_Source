@@ -139,6 +139,7 @@
 
     !---------------------------------------------------Observation points 
     character(MAX_INST) :: ObservationPoint_CMD		            =   'observation point'
+    character(MAX_INST) :: ObservationPointsFromCSVFile_CMD		=   'observation points from csv file'
         
     !---------------------------------------------------SMS Dataset
     character(MAX_INST) :: SMSParamterSetNumber_CMD		    =   'sms parameter set number'
@@ -2616,6 +2617,18 @@
                     call ObservationPoint(FnumMUT,modflow.SWF)
                 case (iCLN)
                     call ObservationPoint(FnumMUT,modflow.CLN)
+                end select
+           
+            else if(index(instruction, ObservationPointsFromCSVFile_CMD)  /= 0) then
+                select case(ActiveDomain)
+                !case (iTMPLT)
+                !    call ObservationPoint(FnumMUT,Modflow,Modflow.CLN)
+                case (iGWF)
+                    call ObservationPointsFromCSVFile(FnumMUT,modflow.GWF)
+                case (iSWF)
+                    call ObservationPointsFromCSVFile(FnumMUT,modflow.SWF)
+                case (iCLN)
+                    call ObservationPointsFromCSVFile(FnumMUT,modflow.CLN)
                 end select
             
             else if(index(instruction, GenOCFile_CMD)  /= 0) then
@@ -7616,6 +7629,67 @@
         
 
     end subroutine ObservationPoint
+    !----------------------------------------------------------------------
+    subroutine ObservationPointsFromCSVFile(FNumMUT,domain)
+        implicit none
+        integer(i4) :: FNumMUT
+        type (ModflowDomain) domain
+	    character(MAX_LBL) :: VarSTR
+        integer(i4) :: FnumCSV
+		character(MAX_STR) :: FNameCSV
+        integer(i4) :: i,icell
+        integer (i4) :: id
+        character(MAX_LBL) :: name
+        REAL(dp) :: xcoord,ycoord,zcoord
+        REAL(dp) :: dist_min,f1
+        
+        read(FNumMUT,'(a)') FNameCSV 
+        inquire(file=FNameCSV,exist=FileExists)
+        if(.not. FileExists) then
+			call ErrMsg('File not found: '//trim(FNameCSV))
+        endif
+        
+        call openAscii(FnumCSV,FNameCSV)
+        call Msg('CSV file : '//TRIM(FNameCSV))
+        
+
+        
+        read(FnumCSV,'(a)') VarSTR
+        call Msg('CSV file header: '//TRIM(VarSTR))
+        ReadLoop: do 
+            read(FnumCSV,*,iostat=status) id,name,xcoord,ycoord,zcoord
+            if(status/=0) then
+                exit ReadLoop
+            else
+                domain%nObsPnt=domain%nObsPnt+1
+                domain%ObsPntName(domain%nObsPnt)=trim(name)
+
+                call Msg(' ')
+                call Msg('------ next observation point ')
+                write(TMPStr,*) 'Find cell closest to user XYZ: ',xcoord,ycoord,zcoord
+                call Msg(TMPStr)
+
+                dist_min=1.0e20
+	            do i=1,domain%nCells
+		            f1=sqrt((xcoord-domain%cell(i)%x)**2+((ycoord-domain%cell(i)%y))**2+((zcoord-domain%cell(i)%z))**2)
+		            if(f1.lt.dist_min) then
+			            iCell=i
+			            dist_min=f1
+		            endif
+                end do
+        
+                domain%ObsPntCell(domain%nObsPnt)=iCell
+                write(TMPStr,'(a,a)') ' Observation point name: ',trim(domain%ObsPntName(domain%nObsPnt))
+                call Msg(TMPStr)
+
+                write(TMPStr,'(a,i10)') ' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
+                call Msg(TMPStr)
+                write(TMPStr,'(a,'//FMT_R8//',a)') ' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
+                call Msg(TMPStr)
+            endif
+        end do ReadLoop
+
+    end subroutine ObservationPointsFromCSVFile
     !-------------------------------------------------------------
     subroutine openBinaryMUSGFile(FileType,line,prefix,iUnit,FName)
         implicit none
@@ -8894,6 +8968,16 @@
             SMS_EPSRN(iSMSParameterSet)
 
         !------------------- OC file
+        ! check output times against total stress period duration
+        do i=1, modflow.nOutputTimes
+            if(modflow.OutputTimes(i) > sum(modflow.StressPeriodDuration(1:modflow.nPeriods))) then
+                write(TMPStr,'(a,'//FMT_R4//')') 'Sum of stress period durations ',sum(modflow.StressPeriodDuration(1:modflow.nPeriods))
+                call Msg(TMPStr)
+                write(TMPStr,'(a,'//FMT_R4//',a)') 'Output time ',modflow.OutputTimes(i),' exceeds sum of stress period durations. Please correct and try again.'
+                call ErrMsg(TMPStr)
+            end if
+        end do
+        
         write(Modflow.iOC,'(a,i5)') 'ATSA NPTIMES',modflow.nOutputTimes
         write(Modflow.iOC,*) (modflow.OutputTimes(i),i=1,modflow.nOutputTimes)
         write(Modflow.iOC,'(a,i5)') 'HEAD SAVE UNIT ',Modflow%GWF%iHDS
