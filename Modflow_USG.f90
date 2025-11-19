@@ -95,6 +95,7 @@
     character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	                =   'swf initial depth'
     character(MAX_INST) :: SWFInitialHeadFromTecplotFile_CMD	        =   'swf initial head from tecplot file'
     
+    character(MAX_INST) :: InitialHeadFromCSVFile_CMD	                =   'initial head from csv file'
     
 
     
@@ -2497,6 +2498,20 @@
                 case (iCLN)
                     call NewZoneFromChosenCells(modflow.CLN)
                 end select
+                
+                else if(index(instruction, InitialHeadFromCSVFile_CMD)  /= 0) then
+                    select case(ActiveDomain)
+                    case (iTMPLT)
+                        !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
+                        ! this will be done later
+                    case (iGWF)
+                        call InitialHeadFromCSVFile(FnumMUT,modflow.GWF)
+                    case (iSWF)
+                        call InitialHeadFromCSVFile(FnumMUT,modflow.SWF)
+                    case (iCLN)
+                        call InitialHeadFromCSVFile(FnumMUT,modflow.CLN)
+                    end select
+
 
             else if(index(instruction, FlagChosenNodesAsOuterBoundary_CMD)  /= 0) then
                 call Msg('*** This command is no longer necessary as outer boundary nodes are flagged automatically')
@@ -6862,6 +6877,11 @@
             
             
             call ModflowResultsToTecplot(Modflow,Modflow.GWF)
+            if(EnableQGISOutput) then
+                call Msg(' ')
+		        call Msg('Generating final heads csv file for GWF:')
+                call ModflowFinalHeadsToCSVFile(Modflow,Modflow.GWF)
+            endif
 
             
         else
@@ -6877,6 +6897,11 @@
     		    call Msg('Generating mesh-based Tecplot output files for CLN:')
     
                 call ModflowResultsToTecplot(Modflow,Modflow.CLN)
+            if(EnableQGISOutput) then
+                call Msg(' ')
+		        call Msg('Generating final heads csv file for CLN:')
+                call ModflowFinalHeadsToCSVFile(Modflow,Modflow.CLN)
+            endif
                 
             else
 		       call Msg('No cell-based Tecplot output files for CLN:')
@@ -6893,6 +6918,11 @@
     		    call Msg('Generating mesh-based Tecplot output files for SWF:')
 
                 call ModflowResultsToTecplot(Modflow,Modflow.SWF)
+                if(EnableQGISOutput) then
+                    call Msg(' ')
+		            call Msg('Generating final heads csv file for SWF:')
+                    call ModflowFinalHeadsToCSVFile(Modflow,Modflow.SWF)
+                endif
                 
             else
 		       call Msg('No cell-based Tecplot output files for SWF:')
@@ -7184,6 +7214,28 @@
 
     end subroutine ModflowResultsToTecplot
 
+    !-------------------------------------------------------------
+    subroutine ModflowFinalHeadsToCSVFile(Modflow,domain)
+        implicit none
+        type (ModflowProject) Modflow
+        type (ModflowDomain) Domain
+
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i
+
+        ! csv output file
+        FName=trim(domain%name)//'_FinalHeads.csv'
+        call OpenAscii(FNum,FName)
+        call Msg( 'To File: '//trim(FName))
+        write(TMPStr,'(a,'//FMT_R8//')') 'Final heads at SOLUTIONTIME=',modflow.TIMOT(Modflow.ntime)
+        if(allocated(domain%head)) then
+            write(FNum,'(a,'//FMT_R8//')') 'Final heads at SOLUTIONTIME=',modflow.TIMOT(Modflow.ntime)
+            write(FNum,'(5('//FMT_R8//'))') (domain%head(i,Modflow.ntime),i=1,domain%nCells)
+        end if
+        call FreeUnit(FNum)
+
+    end subroutine ModflowFinalHeadsToCSVFile
     !-------------------------------------------------------------
     subroutine ModflowTMPLTScatterToTecplot(Modflow,TMPLT)
         implicit none
@@ -8032,6 +8084,35 @@
         end do FindStartString
                 
     end subroutine SWFInitialHeadFromTecplotFile
+    !-------------------------------------------------------------
+    subroutine InitialHeadFromCSVFile(FnumMUT,domain)
+        implicit none
+
+        type (ModflowDomain) domain
+        
+        integer :: i
+        
+        integer(i4) :: FnumMUT
+        integer(i4) :: FNumRestart
+        character(MAX_STR) :: FNameRestart
+        
+        character(4000) :: line
+
+        read(FnumMUT,'(a)') FNameRestart
+        call OpenAscii(FNumRestart,FNameRestart)
+        call Msg(TRIM(domain.name)//' starting heads from CSV file: '//trim(FNameRestart))
+
+        read(FNumRestart,'(a)',iostat=status) line
+        call Msg(TRIM(domain.name)//' CSV file header: '//trim(line))
+        
+        read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
+        call Msg('First 10 starting heads:')
+        do i=1,10
+            write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
+            call Msg(trim(TmpSTR))
+        end do
+                
+    end subroutine InitialHeadFromCSVFile
     !-------------------------------------------------------------
     subroutine SWFToTecplot(Modflow)
         implicit none
