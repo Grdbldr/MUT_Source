@@ -126,7 +126,6 @@ module MUT  !### Modflow-USG Tools
                 
             ! Mesh generation options
             else if(index(MUT_CMD, MeshFromGb_CMD)  /= 0) then
-                NeedGBName=.true.
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
                 call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
                 call ReadGridBuilderMesh(FNumMut,MyMeshGroup%Mesh(MyMeshGroup%nMesh))                
@@ -138,6 +137,7 @@ module MUT  !### Modflow-USG Tools
                 ! Build the 2D template mesh from a uniform 2D rectangular mesh
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
                 call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                NeedMeshName=.true.
                 call GenerateUniformRectangles(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
                 
                 
@@ -154,6 +154,7 @@ module MUT  !### Modflow-USG Tools
                 
             else if(index(MUT_CMD, GenerateSegmentsFromXYZEndpoints_CMD)  /= 0) then
                 ! Build the 2D template mesh from a uniform 2D rectangular mesh
+                NeedMeshName=.true.
                 MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
                 call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
                 call GenerateSegmentsFromXYZEndpoints(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
@@ -172,6 +173,7 @@ module MUT  !### Modflow-USG Tools
                 read(FNumMut,'(a80)') TmpSTR
                 MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
                 call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
+                NeedMeshName=.true.
                 call GridBuilder(FNumMUT,MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
                 call TriangularElementProperties(MyMeshGroup%mesh(MyMeshGroup%nMesh))
                 ! These routines required for both node- and mesh-centred control volume cases

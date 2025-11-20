@@ -4,7 +4,7 @@ Module MeshGen
     use Tecplot
     implicit none
         
-    logical :: NeedGBName=.false. ! flag to indicate if GridBuilder name is needed
+    logical :: NeedMeshName=.false. ! flag to indicate if GridBuilder name is needed
 
 
     integer(i4) :: user_nz
@@ -75,7 +75,7 @@ Module MeshGen
         real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
         
         
-        if(NeedGBName) then
+        if(NeedMeshName) then
             read(FNumMut,'(a80)') TmpSTR
             GB_TRI_2D%Name=TmpSTR
             call Msg('Name: '//trim(GB_TRI_2D%Name))
@@ -176,7 +176,9 @@ Module MeshGen
         
         integer(i4) :: i,j
         real(dp) :: x(3),y(3)
-        real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3)
+        real(dp) :: xc,yc,lseg(3,3),aseg(3,3),dseg(3,3), xyTotalArea
+        
+        xyTotalArea=0.0
             
         do i=1,GB_TRI_2D%nElements
             ! xc and yc from circumcircles
@@ -186,6 +188,7 @@ Module MeshGen
                 y(j)=GB_TRI_2D%node(GB_TRI_2D%idNode(j,i))%y
             end do
             call InnerCircle(x,y,GB_TRI_2D%Element(i)%xyArea,xc,yc,GB_TRI_2D%Element(i)%rCircle,lseg,aseg,dseg)
+            xyTotalArea=xyTotalArea+GB_TRI_2D%Element(i)%xyArea
             
             GB_TRI_2D%Element(i)%SideLength(1)=lseg(1,2)
             GB_TRI_2D%Element(i)%SideLength(2)=lseg(2,3)
@@ -206,6 +209,10 @@ Module MeshGen
             GB_TRI_2D%Element(i)%z=zc/3
             GB_TRI_2D%Element(i)%zCircle=zc/3
         end do
+        
+        write(TMPStr,'(a,'//FMT_R4//')') 'Triangular mesh area:',xyTotalArea
+        call Msg(TMPStr)
+
     end subroutine TriangularElementProperties
 
     !-------------------------------------------------------------
@@ -353,9 +360,13 @@ Module MeshGen
 	    zp(:) = 0
         
         ! generate segments from XYZ triples
-        read(FNumMut,'(a80)') TmpSTR
-        SEG_3D%Name=TmpSTR
-        call Msg('Name: '//trim(SEG_3D%Name))
+        if(NeedMeshName) then
+            read(FNumMut,'(a80)') TmpSTR
+            SEG_3D%Name=TmpSTR
+            call Msg('Name: '//trim(SEG_3D%Name))
+        else
+            SEG_3D%Name='TMPLT'
+        end if
 
         SEG_3D%nNodesPerElement=2
         SEG_3D%Element(:)%Typ='segment'
@@ -512,11 +523,16 @@ Module MeshGen
         
         real(sp), allocatable :: xi(:)
         real(sp), allocatable :: yi(:)
+        
 
         !     generate uniform rectangles
-        read(FNumMut,'(a80)') TmpSTR
-        U_RECT_2D%Name=TmpSTR
-        call Msg('Name: '//trim(U_RECT_2D%Name))
+        if(NeedMeshName) then
+            read(FNumMut,'(a80)') TmpSTR
+            U_RECT_2D%Name=TmpSTR
+            call Msg('Name: '//trim(U_RECT_2D%Name))
+        else
+            U_RECT_2D%Name='TMPLT'
+        end if
 
         U_RECT_2D%nNodesPerElement=4
         U_RECT_2D%Element(:)%Typ='rectangle'
@@ -533,7 +549,7 @@ Module MeshGen
         write(TMPStr,'(a,'//FMT_R8//',a)') 'X Offset                ',xOffset,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
 
-        read(FNumMUT,*) yl, nby,yOffset
+        read(FNumMUT,*) yl, nby, yOffset
         write(TMPStr,'(a,'//FMT_R8//',a)') 'Mesh length in Y        ',yl,'     '//TRIM(UnitsOfLength)
         call Msg(TMPStr)
         write(TMPStr,'(a,i9)')      'Number of elements in Y ',nby

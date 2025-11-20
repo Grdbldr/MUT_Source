@@ -7014,6 +7014,10 @@
         if(allocated(domain%cbb_GWF)) then
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to GWF",'
             nVar=nVar+1
+            if(trim(domain%name)=='SWF') then  ! convert to areal flux i.e. divide by cell area  
+                VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to GWF (areal flux)",'
+                nVar=nVar+1
+            endif
         end if
         if(allocated(domain%cbb_FLOW_FACE)) then
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to FLOW_FACES",'
@@ -7104,6 +7108,10 @@
         if(allocated(domain%cbb_GWF)) then
             write(FNum,'(a)') '# cbb_GWF'
             write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,1),i=1,domain%nCells)
+            if(trim(domain%name)=='SWF') then  ! add areal flux value 
+                write(FNum,'(a)') '# # cbb_GWF (areal flux) '
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,1)/domain%cell(i)%xyArea,i=1,domain%nCells)
+            endif
         end if
         if(allocated(domain%cbb_FLOW_FACE)) then
             write(FNum,'(a)') '# cbb_FLOW_FACE'
@@ -7193,6 +7201,10 @@
             if(allocated(domain%cbb_GWF)) then
                 write(FNum,'(a)') '# cbb_GWF'
                 write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,j),i=1,domain%nCells)
+                if(trim(domain%name)=='SWF') then  ! add areal flux value 
+                    write(FNum,'(a)') '# # cbb_GWF (areal flux) '
+                    write(FNum,'(10('//FMT_R4//'))') (domain%cbb_GWF(i,1)/domain%cell(i)%xyArea,i=1,domain%nCells)
+                endif
             end if
             if(allocated(domain%cbb_FLOW_FACE)) then
                 write(FNum,'(a)') '# cbb_FLOW_FACE'
@@ -16109,12 +16121,14 @@
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,INSWF)
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ISSWADI,R,IOUT,INSWF)
         END IF
+        
 !        WRITE(IOUT,22)IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
 !22      FORMAT(5X,I10,1X,I6,1X,I10,3(1X,E15.6),1X,I10,1X,I10)
 !C11B------FILL PROPERTY ARRAYS WITH READ AND PREPARE INFORMATION
         ASWFNDS(I,1) = IFNO + NODES + NCLNNDS ! GLOBAL NODE NUMBER FOR CLN-CELL
         ASWFNDS(I,2) = IFTYP
         ASWFNDS(I,3) = FAREA
+        modflow%SWF%cell(i)%xyArea=FAREA ! Save FAREA for SWF_to_GWF (areal flux) calculation
         ASWFNDS(I,4) = FELEV
         Modflow%SWF%cell(i)%z=FELEV
         ISSWADISWF(I) = ISSWADI
