@@ -225,7 +225,7 @@ Module MeshGen
         integer(i4) :: i, j
 
         ! tecplot output file
-        FName=trim(LocalMesh%name)//'.tecplot.dat'
+        FName=trim(LocalMesh%name)//'o.tecplot.dat'
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
@@ -306,7 +306,7 @@ Module MeshGen
         integer(i4) :: i
 
         ! csv output file for nodes
-        FName=trim(LocalMesh%name)//'_nodes.csv'
+        FName=trim(LocalMesh%name)//'o.nodes.csv'
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
@@ -320,7 +320,7 @@ Module MeshGen
         call FreeUnit(FNum)
         
         ! csv output file for elements
-        FName=trim(LocalMesh%name)//'_elements.csv'
+        FName=trim(LocalMesh%name)//'o.elements.csv'
         
         call OpenAscii(FNum,FName)
         call Msg('  ')
