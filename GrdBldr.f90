@@ -189,15 +189,18 @@ module gb
         GB_GEN%nNodes=0
         allocate(GB_GEN%node(100),stat=ialloc)
         call AllocChk(ialloc,'GridBuilder: GB_GEN%node array')
-        GB_GEN%node%x = 0 ! automatic initialization
-        GB_GEN%node%y = 0 ! automatic initialization
-        GB_GEN%node%z = 0 ! automatic initialization
+        GB_GEN%node%x = 0.0d0 ! automatic initialization
+        GB_GEN%node%y = 0.0d0 ! automatic initialization
+        GB_GEN%node%z = 0.0d0 ! automatic initialization
 
         GB_GEN%nNodesPerElement=3
         GB_GEN%nElements=0
         allocate(GB_GEN%Element(100), &
             GB_GEN%idNode(GB_GEN%nNodesPerElement,100), stat=ialloc)
         call AllocChk(ialloc,'GridBuilder: GB_GEN%Element, GB_GEN%idNode arrays')
+        GB_GEN%element%x = 0.0d0 ! automatic initialization
+        GB_GEN%element%y = 0.0d0 ! automatic initialization
+        GB_GEN%element%z = 0.0d0 ! automatic initialization
         GB_GEN%Element(:)%idZone = 0 ! automatic initialization
         GB_GEN%idNode(:,:) = 0 ! automatic initialization
 
@@ -1898,6 +1901,7 @@ module gb
         GB_GEN%node(GB_GEN%nNodes)%id=GB_GEN%nNodes
 		GB_GEN%node(GB_GEN%nNodes)%x=xnew
 		GB_GEN%node(GB_GEN%nNodes)%y=ynew
+		GB_GEN%node(GB_GEN%nNodes)%z=0.0d0
 		GB_GEN%node(GB_GEN%nNodes)%is=0	
         
          ! write(*,*) GB_GEN%nNodes,' node ',GB_GEN%nNodes, xnew, ynew

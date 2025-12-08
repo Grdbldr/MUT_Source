@@ -2241,6 +2241,7 @@
                 
                 if(EnableQGISOutput) then
                     call CellsToQGIS(Modflow%SWF)
+                    !call MeshToQGIS(Modflow%SWF)
                 endif
 
                 JustBuilt=.true.
