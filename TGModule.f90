@@ -1,11 +1,14 @@
 module MUT  !### Modflow-USG Tools
     use GeneralRoutines
+    use error_param
+    use MeshGen
+    use gb
     use MUSG
     use tecplot
+    use NumericalMesh
     
     implicit none
 
-    !integer(i4), parameter :: maxnn=1000000,maxne=1000000,maxnef=2000000
     character(MAX_INST) :: MUT_CMD="none"
     character(MAX_INST) :: BuildModflowUSG_CMD="build modflow usg"
     character(MAX_INST) :: PostprocessExistingModflowModel_CMD="postprocess existing modflow model"
@@ -15,7 +18,7 @@ module MUT  !### Modflow-USG Tools
     integer(i4) :: FnumUserMUT
     character(40) :: prefix = ''
     integer(i4)	:: l_prfx  = 0
-
+    
     character(MAX_LBL) :: DirName ! directory name
 
     contains
@@ -35,6 +38,11 @@ module MUT  !### Modflow-USG Tools
     subroutine OpenMUT  !--- Modflow user tools  .mut
 
         write(*,'(a)')  'MUT version '//MUTVersion
+        
+        !#ifdef _DEBUG   
+        !    call openascii(iDBG,FNameDBG)
+        !#endif
+
 
         ! open the user MUT input file
         call EnterPrefix(prefix,l_prfx,FnumUserMUT,'mut')
@@ -70,7 +78,27 @@ module MUT  !### Modflow-USG Tools
     subroutine ProcessMUT !--- Command processor for Modflow-USG Tools (.mut file extension)
 
         type (ModflowProject) MyProject
+        
+        type(MeshGroup) MyMeshGroup
         !type (HGSProject) MyHGS
+        
+        ! Ways to define the 2D template mesh
+        character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'
+        character(MAX_INST) :: QuadtreeMeshFromGWV_CMD =   '2d quadtree mesh from groundwater vistas'
+        character(MAX_INST) :: GenerateUniformRectangles_CMD  =   'generate uniform rectangles'
+        character(MAX_INST) :: GenerateVariableRectangles_CMD  =   'generate variable rectangles'
+        character(MAX_INST) :: GenerateSegmentsFromXYZEndpoints_CMD  =   'generate segments from xyz endpoints'
+        character(MAX_INST) :: ReadMesh_CMD  =   'read mesh'
+        
+        ! There are many other possible 2d mesh definition options e.g.
+        !character(MAX_INST), parameter :: g_rects_i           =   'generate rectangles interactive' 
+        
+                
+        ! Ways to define a GridBuilder mesh
+        character(MAX_INST) :: GridBuilder_CMD          =   'build triangular mesh'
+        
+        integer(i4) :: ierror
+
         do
             read(FnumMUT,'(a)',iostat=status,end=10) MUT_CMD
             call LwrCse(MUT_CMD)
@@ -95,8 +123,86 @@ module MUT  !### Modflow-USG Tools
             else if(index(MUT_CMD, ElapsedTime_CMD) /= 0) then
                 read(FnumMUT,*) l1
                 call ElapsedTime(l1)
+                
+            ! Mesh generation options
+            else if(index(MUT_CMD, MeshFromGb_CMD)  /= 0) then
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                call ReadGridBuilderMesh(FNumMut,MyMeshGroup%Mesh(MyMeshGroup%nMesh))                
+                !TMPLT.Name='TMPLT'
+                !!call MeshFromGb(FnumMUT,TMPLT)
+                !call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            
+            else if(index(MUT_CMD, GenerateUniformRectangles_CMD)  /= 0) then
+                ! Build the 2D template mesh from a uniform 2D rectangular mesh
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                NeedMeshName=.true.
+                call GenerateUniformRectangles(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
+                
+                
+                
+                
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            !    JustBuilt=.true.
+            !
+            !else if(index(MUT_CMD, GenerateVariableRectangles_CMD)  /= 0) then
+            !    ! Build the 2D template mesh from a variable 2D rectangular mesh
+            !    call GenerateVariableRectangles(FnumMUT,TMPLT)
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+            !    JustBuilt=.true.
+                
+            else if(index(MUT_CMD, GenerateSegmentsFromXYZEndpoints_CMD)  /= 0) then
+                ! Build the 2D template mesh from a uniform 2D rectangular mesh
+                NeedMeshName=.true.
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                call GenerateSegmentsFromXYZEndpoints(FnumMUT,MyMeshGroup%Mesh(MyMeshGroup%nMesh))
+
+            
+            !else if(index(MUT_CMD, QuadtreeMeshFromGWV_CMD)  /= 0) then
+            !    ! Build the 2D template mesh from a grdbldr 2D mesh
+            !    call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
+            !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
+           
+                
+            ! GridBuilder options
+            else if(index(MUT_CMD, GridBuilder_CMD) /= 0) then
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                read(FNumMut,'(a80)') TmpSTR
+                MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TmpSTR
+                call Msg('New mesh name: '//trim(MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name))
+                NeedMeshName=.true.
+                call GridBuilder(FNumMUT,MyMeshGroup%mesh(MyMeshGroup%nMesh),iError)
+                call TriangularElementProperties(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                ! These routines required for both node- and mesh-centred control volume cases
+                call BuildFaceTopologyFrommesh(MyMeshGroup%mesh(MyMeshGroup%nMesh))  
+                call FlagOuterBoundaryNodes(MyMeshGroup%mesh(MyMeshGroup%nMesh)) ! From faces connected to only 1 element 
+                call BuildMeshCentredIaJa(MyMeshGroup%mesh(MyMeshGroup%nMesh)) 
+                call SaveMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                !call SaveMeshTIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                if(EnableTecplotOutput) then
+                    call MeshToTecplot(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                endif
+                if(EnableQGISOutput) then
+                    call MeshToQGIS(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+                endif
+                
 
 
+            else if(index(MUT_CMD, ReadMesh_CMD) /= 0) then
+                MyMeshGroup%nMesh=MyMeshGroup%nMesh+1
+                call GrowMeshArray(MyMeshGroup%Mesh,MyMeshGroup%nMesh-1,MyMeshGroup%nMesh)
+                read(FNumMut,'(a80)') TMPStr 
+                MyMeshGroup%mesh(MyMeshGroup%nMesh)%Name=TMPStr
+                call ReadMeshBIN(MyMeshGroup%mesh(MyMeshGroup%nMesh))
+
+               
+                continue
+
+
+            ! Modflow options
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
                 call BuildModflowUSG(FnumMUT,MyProject,prefix)
 

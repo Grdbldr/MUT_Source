@@ -4,7 +4,15 @@ module GeneralRoutines    !### bit setting routines
     use ifwin, only : GetCurrentDirectory
     implicit none
     
-    character(37) :: MUTVersion=' 1.65 BETA'
+    !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
+    #ifdef _DEBUG   
+        character(37) :: MUTVersion=' 1.71 DEBUG GB'
+        integer(i4) :: iDBG
+        character(9) :: FNameDBG='debug.txt'
+
+    #else
+        character(37) :: MUTVersion=' 1.71 RELEASE GB'
+    #endif
 
 
     
@@ -49,16 +57,19 @@ module GeneralRoutines    !### bit setting routines
     
     
     integer(i4) :: ilen
-    character(10) :: FileOpenSTR   ='---> Open '
-    character(9)  :: FileCreateSTR ='---> New '
-    character(10) :: FileReadSTR   ='<--- Read '
-    character(11) :: FileStripSTR  ='<--- Strip '
+    character(10) :: FileOpenSTR   ='---> Open: '
+    character(9)  :: FileCreateSTR ='---> New: '
+    character(29)  :: MUTFileSTR ='<--- MUT input file results: '
+    character(10) :: FileReadSTR   ='<--- Read: '
+    character(11) :: FileStripSTR  ='<--- Strip: '
     
     !---------------------------------------------- General declarations
     integer(i4) :: ncount
     character(MAX_LBL) :: UnitsOfLength='METERS'
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
+    logical :: EnableTecplotOutput = .true.
+    logical :: EnableQGISOutput = .true.
 
 
     
@@ -4253,6 +4264,28 @@ module GeneralRoutines    !### bit setting routines
     end subroutine AllocChk
     
     !---------------------------------------------- Increase array sizes at run-time 
+    subroutine GrowLogicalArray(iArray,nSizeIn,nSizeout)
+        implicit none
+        logical, allocatable :: iArray(:)
+        logical, allocatable :: iTMP(:)
+        integer(i4) :: nSizeIn, nSizeOut
+        
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+
+        allocate(iTMP(nSizeout),stat=ialloc)
+	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
+        iTMP(1:nSizeIn) = iArray
+        call move_alloc (iTMP, iArray)
+        
+    end subroutine GrowLogicalArray
 
     subroutine GrowIntegerArray(iArray,nSizeIn,nSizeout)
         implicit none
@@ -4260,8 +4293,18 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(iTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowIntegerArray iTMP array')
         iTMP(1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -4273,8 +4316,18 @@ module GeneralRoutines    !### bit setting routines
         integer(i4), allocatable :: iTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(iArray)) then
+            allocate(iArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
+        
         allocate(iTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'iTMP array')
+	    call AllocChk(ialloc,'GrowInteger2dArray iTMP array')
         iTMP (:,1:nSizeIn) = iArray
         call move_alloc (iTMP, iArray)
         
@@ -4286,8 +4339,18 @@ module GeneralRoutines    !### bit setting routines
         real(sp), allocatable :: rTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSizeout),stat=ialloc)
+            return
+        endif
+        
         allocate(rTMP(nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowRealArray rTMP array')
         rTMP (1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
@@ -4299,8 +4362,18 @@ module GeneralRoutines    !### bit setting routines
         real(sp), allocatable :: rTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
+        
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowReal2dArray rTMP array')
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
@@ -4312,6 +4385,16 @@ module GeneralRoutines    !### bit setting routines
         real(dp), allocatable :: rTMP(:)
         integer(i4) :: nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(rTMP(nSizeout),stat=ialloc)
 	    call AllocChk(ialloc,'rTMP array')
         rTMP (1:nSizeIn) = rArray
@@ -4326,13 +4409,45 @@ module GeneralRoutines    !### bit setting routines
         real(dp), allocatable :: rTMP(:,:)
         integer(i4) :: nSize1, nSizeIn, nSizeOut
         
+        if(nSizeout<nSizeIn) then
+            call Msg('Requested size less than current size: in GrowIntegerArray')    
+            return
+        endif
+        
+        if(.not. allocated(rArray)) then
+            allocate(rArray(nSize1,nSizeout),stat=ialloc)
+            return
+        endif
+
         allocate(rTMP(nSize1,nSizeout),stat=ialloc)
-	    call AllocChk(ialloc,'rTMP array')
+	    call AllocChk(ialloc,'GrowDReal2dArray rTMP array')
         rTMP (:,1:nSizeIn) = rArray
         call move_alloc (rTMP, rArray)
         
     end subroutine GrowDReal2dArray
+    
+    !---------------------------------------------- Read arrays 
+    subroutine ReadDRealArray(fnum,rArray)
+        implicit none
+        real(dp), allocatable :: rArray(:)
 
+        integer(i4) :: i, Fnum, fid
+	    character(MAX_LBL) :: VarSTR
+        
+	    read(FNum,'(a)') VarSTR
+        call Msg('ReadDRealArray file header: '//TRIM(VarSTR))
+        do i=1, SIZE(rArray)
+            read(FNum,*,iostat=status) fid,rArray(i)
+            if(status/=0) then
+                write(TMPStr,'(a,i8)') 'Array size: ',SIZE(rArray)
+                call Msg(TMPStr)
+                write(TMPStr,'(a,i8,a,i8)') 'Error reading real array at index ',i,' from file unit ',Fnum
+                call ErrMsg(TMPStr)
+            endif
+        end do
+        
+        
+    end subroutine ReadDRealArray
 
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.
@@ -4393,8 +4508,8 @@ module GeneralRoutines    !### bit setting routines
             end if
 		    call ErrMsg('Error opening file: '//fname)
         else
-            write(TmpSTR,'(i5)') iunit
-            call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
+            !write(TmpSTR,'(i5)') iunit
+            !call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
 	    end if
     end subroutine OpenBinary
 
@@ -4412,6 +4527,7 @@ module GeneralRoutines    !### bit setting routines
 	    end if
     end subroutine OpenDirect
 
+    !---------------------------------------------- User interface routines
     subroutine Msg(str) !--- Message to file and display.
 	    character(*) :: str
 	
@@ -4420,37 +4536,7 @@ module GeneralRoutines    !### bit setting routines
 	    write(*,'(a)') str(:l1)
     end subroutine Msg
 
-    subroutine LwrCse(string) !--- Make lowercase.
-	    implicit none
 
-        character*(*) :: string
-        integer(i4) :: length,i,j
-        length=len(string)
-        do i=1,length
-            j=ichar(string(i:i))
-            if(j.ge.65 .and. j.le.90) then
-                j=j+32
-                string(i:i)=char(j)
-            end if
-        end do
-
-    end subroutine LwrCse
-    
-    subroutine UprCse(string) !--- Make uppercase.
-	    implicit none
-
-        character*(*) :: string
-        integer(i4) :: length,i,j
-        length=len(string)
-        do i=1,length
-            j=ichar(string(i:i))
-            if(j.ge.97 .and. j.le.122) then
-                j=j-32
-                string(i:i)=char(j)
-            end if
-        end do
-
-    end subroutine UprCse
 
     subroutine EnterPrefix(prefix,lp,UserFNum,ext)
 	    implicit none
@@ -5166,6 +5252,37 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- String routines
 
+    subroutine LwrCse(string) !--- Make lowercase.
+	    implicit none
+
+        character*(*) :: string
+        integer(i4) :: length,i,j
+        length=len(string)
+        do i=1,length
+            j=ichar(string(i:i))
+            if(j.ge.65 .and. j.le.90) then
+                j=j+32
+                string(i:i)=char(j)
+            end if
+        end do
+
+    end subroutine LwrCse
+    
+    subroutine UprCse(string) !--- Make uppercase.
+	    implicit none
+
+        character*(*) :: string
+        integer(i4) :: length,i,j
+        length=len(string)
+        do i=1,length
+            j=ichar(string(i:i))
+            if(j.ge.97 .and. j.le.122) then
+                j=j-32
+                string(i:i)=char(j)
+            end if
+        end do
+    end subroutine UprCse
+
     integer(i4) function CountChars(achar,str) !--- Occurrences of a character in a string.
         character(1) :: achar
         character(*) :: str
@@ -5566,11 +5683,11 @@ module GeneralRoutines    !### bit setting routines
 				
 	    integer(i4) :: i, cn, n, npoly
 	    real(dp) :: px,py, vt
-	    real(dp) :: polyx(npoly),polyy(npoly)
+	    real(dp) :: polyx(0:npoly),polyy(0:npoly)
 
         cn = 0	! the crossing number counter
 
-	    do i=1,npoly-1
+	    do i=0,npoly-1
            if ((polyy(i) <= py .and. polyy(i+1) > py)   & ! an upward crossing
             .or.  (polyy(i) > py .and. polyy(i+1) <= py))  then ! a downward crossing
                 ! compute the actual edge-ray intersect x-coordinate
@@ -5589,6 +5706,9 @@ module GeneralRoutines    !### bit setting routines
 	    end if			
 
     end function in_poly
+    
+    !------------------------------------------------------------------------------------------------------
+
 
     SUBROUTINE INDEXX3(N,ARRIN,INDX)
 	    integer(i4) :: i, n, j, l, ir, indxt
