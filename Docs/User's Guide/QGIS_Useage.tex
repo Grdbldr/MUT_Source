@@ -1,0 +1,294 @@
+%QGIS useage
+\label{Appendix:qgis}
+
+\section{\qgis\ Set-up}
+    \label{qgis_setup} \index{\qgis\ Useage ! Installation and set-up}
+    \qgis\ software can be downloaded from \url{https://qgis.org/download/} where you can either make a donation or skip directly to the download page shown here:
+
+           \includegraphics[width=\textwidth]{QGIS_download.png}
+
+    We recommend downloading the {\sf Long Term Release} version, which may have a different version number than shown above.
+
+
+    When working on specific projects with \qgis, we recommend creating a folder inside your project directory called, for example, \texttt{KURT\_Model$\backslash$0\_incoming} and copying any raw project conceptual data files (e.g.\ \qgis-compatible, raster and shapefiles, \excel\ files etc.) into it, as shown here:
+
+            \includegraphics[width=.6\textwidth]{QGIS_FolderStructure}
+
+    When using and modifying the data in \qgis\, we then recommend saving it in a separate working folder called, for example, \texttt{KURT\_Model$\backslash$1\_data}
+
+    In \qgis, we can navigate to any folder and add it to the list of favourites as a convenience:
+
+            \includegraphics[width=\textwidth]{QGIS_Favourite}
+
+    All \qgis\ project and working data files should be saved in this folder (or sub-folders contained in it) to facilitate the sharing of \qgis\ projects and their associated data.
+
+\newpage
+\section{Setting the Coordinate Reference System (CRS)}
+    \label{qgis:CRS} \index{\qgis\ Useage ! Coordinate reference systems (CRS's)}
+    To change the displayed units from degrees latitude and longitude to metres, apply a pre-defined Universal Transverse Mercator (UTM) projection by double-clicking the {\sf Current CRS} field to open the {\sf Project Properties - CRS} dialogue:
+
+            \includegraphics[width=\textwidth]{QGIS_ProjectUTM52N.png}
+
+    In the example above the chosen projection is \texttt{EPSG:32652 - WGS 84 / UTM zone 52N}, which includes South Korea.   Initially, there may be no {\sf Recently Used Coordinate Reference Systems} to choose from so use the search field to locate it with the string, e.g.\ {\tt EPSG:32652}.  Once the desired projection is located choose it and click the {\sf Apply} button.
+
+    Now project the DEM by choosing {\sf Dem\_all\_5m.tif$\backslash$Layer CRS$\backslash$Set Layer CRS...} to open the dialogue or {\sf Dem\_all\_5m.tif$\backslash$Layer CRS$\backslash$Set to EPGS:32652} if it appears in the menu:
+
+            \includegraphics[width=\textwidth]{QGIS_ProjectDEM.png}
+
+    To re-centre the DEM, choose {\sf Dem\_all\_5m.tif$\backslash$Zoom to Layer(s)}. Note that the displayed coordinates are now in metres.
+
+\newpage
+\section{Layers}
+
+    \subsection{Layer Properties}
+        \label{qgis:DEM_Properties} \index{\qgis\ Useage ! Layer properties}
+        The layer  properties dialogue can be opened by double-clicking on the layer name or by right-clicking and choosing {\sf Properties} from the drop-down menu:\footnote{Note that detailed documentation for \qgis\ tools is often available through the {\sf Help} button in the lower right corner of the dialogue.}
+
+                \includegraphics[width=\textwidth]{QGIS_DEMPropertiesLatLong}
+
+        Note the following in the example shown above:
+        \begin{itemize}
+        \item Properties for the raster layer layer {\sf Dem\_all\_5m} are being viewed.
+        \item The raster has a pixel size of about 5-by-5-metres
+        \item The Coordinate Reference System (CRS) is in units of degrees latitude and longitude.
+        \item The {\sf Current CRS}  \includegraphics[height=0.7\baselineskip]{Button_CurrentCRS} is shown in the lower right hand corner of the \qgis\ window.
+        \end{itemize}
+
+
+    \newpage
+    \subsection{Layer Appearance (symbology)}
+        \label{qgis:symbology} \index{\qgis\ Useage ! Layer appearance (symbology)}
+        The layer symbology dialogue can be opened by double-clicking on the layer name or by right-clicking and choosing {\sf Properties} from the drop-down menu:
+
+                \includegraphics[width=\textwidth]{QGIS_DEMPropertiesSymbology}
+
+        In the example above we have chosen {\sf Render Type - Hillshade} for the raster layer {\sf Dem\_all\_5m.tif$\backslash$Properties$\backslash$Symbology}.
+
+
+    \newpage
+    \subsection{Layer Clipping}
+        \label{qgis:clip} \index{\qgis\ Useage ! Clipping a layer}
+        Once the extents of the model domain have been determined, the DEM can be clipped to a smaller size which saves disk space. Clip the raster by choosing ({\sf Raster$\backslash$Extraction$\backslash$Clip by extent}) and then the {\sf Clipping extent option$\backslash$Draw on Map Canvas}.  The mouse cursor will be shown as a 'plus' sign. Click and drag a rectangle delimiting the area to take into account, in this case enclosing the regional boundary.  The resulting clipped rectangular region is shown below as a hillshade inside the original unclipped DEM.
+
+            \includegraphics[width=\textwidth]{QGIS_ClippedDem}
+
+
+    \newpage
+    \subsection{Vector Layers}
+        \subsubsection{Loading Vector Layers}
+            To load a vector layer, simply drag and drop the vector file into the \qgis\ workspace:
+            \label{qgis:LoadVector} \index{\qgis\ Useage ! Loading a vector layer}
+
+        \newpage
+        \subsubsection{Selecting Features}
+            \label{qgis:SelectFeatures} \index{\qgis\ Useage ! Selecting features}
+            In \qgis\, features can be selected using the {\sf Selection Toolbar}, shown below in the orange box:
+
+                \includegraphics[width=0.9\textwidth]{QGIS_SelectFeatures.png}
+
+             In this example, we are using the option {\sf Select features by area or single click} \includegraphics{QGIS_SelectFeaturesButton.png} to choose points (white circles) in a vector layer called {\sf Regionalo.elements}.  The currently selected points are shown here as yellow-highlighted circles.  To choose multiple points, hold down the {\tt shift} key while left-clicking on the feature.
+
+
+        \newpage
+        \subsubsection{Extract Vertices}
+            \label{qgis:ExtractVertices} \index{\qgis\ Useage ! Extract vertices}
+            In \qgis\, vertices can be extracted from an active vector layer by choosing {\sf Vector$\backslash$Geometry Tools$\backslash$Extract Vertices} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportVertices_1.png}
+
+            This opens the {\sf Extract Vertices} dialogue:
+
+                    \includegraphics[width=0.6\textwidth]{QGIS_ExportVertices_2.png}
+
+            The active layer, in this case {\sf Regional Boundary}, is shown in the {\sf Input layer} field and can be changed if desired. Choose {\sf Run}.
+
+            This creates a new layer called {\sf Vertices}, and adds vertex locations along the local boundary as shown here by the pink circles:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportVertices_3.png}
+
+            Right-click on the {\sf vertices} layer and choose {\sf Open Attribute Table} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportVertices_4.png}
+
+            In this example, the table contains the {\sf distance} and {\sf angle}  from {\sf vertex\_index} $0$ to the other vertices in the polygon.
+
+        \newpage
+        \subsubsection{Add Geometry Attributes}
+            \label{qgis:AddGeometryAttributes} \index{\qgis\ Useage ! Add geometry attributes}
+            Geometry attributes (e.g.\ $xy$ coordinates, Delaunay triangle vertice id's) can be extracted from an active vector layer by choosing {\sf Vector$\backslash$Geometry Tools$\backslash$Add geometry attributes...} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{qgis_AddGeometryAttributes_1.png}
+
+            This opens the {\sf Add Geometry Attributes} dialogue:
+
+                    \includegraphics[width=0.6\textwidth]{qgis_AddGeometryAttributes_2.png}
+
+            The active layer, in this case {\sf vertices}, is shown in the {\sf Input layer} field. Choose {\sf Run}.
+
+            This creates a new layer called {\sf Added geom info}, and adds vertex locations along the local boundary as shown here by the purple circles:
+
+                    \includegraphics[width=0.9\textwidth]{qgis_AddGeometryAttributes_3.png}
+
+            Right-click on the {\sf Added geom info} layer and choose {\sf Open Attribute Table} to see the table shown below:
+
+                    \includegraphics[width=0.9\textwidth]{qgis_AddGeometryAttributes_4.png}
+
+            In this example, the table has two additional columns {\sf xcoord} and {\sf ycoord} containing the $x$ and $y$ coordinates respectively.
+
+        \newpage
+        \subsubsection{Georeference an Image}
+            \label{qgis:Georeference}  \index{\qgis\ Useage ! Georeference an image}
+
+            This image can be imported into \qgis\ using the {\sf Freehand Raster Georeferencer} plugin, which is installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below:
+
+                    \includegraphics[width=0.7\textwidth]{QGIS_FreehandPlugin.png}
+
+            Once installed, make sure the plugin toolbar is visible by choosing {\sf View$\backslash$Panels$\backslash$Freehand Raster Georeferencer}.  To import the regional boundary image file, click the {\sf AD} button as shown below left and choose the file shown in the browser window below right:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_load_reg_png}
+
+            Below we see the imported image superimposed over the \qgis\ workspace.
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_adjust_reg_png}
+
+            Note that the image boundaries are not lined up with the local and site shapefile boundaries.
+
+            Use the {\sf ADJ} button to move the sides of the image around until the boundaries are aligned as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_adjusted_reg_png}
+
+        \newpage
+        \subsubsection{Add a new shapefile}
+            \label{qgis:AddNewShapefile}  \index{\qgis\ Useage ! Add a new shapefile}
+            If the Manage Layers Toolbar is not visible,choose {\sf View$\backslash$Panels$\backslash$Manage Layers Toolbar}.  To create a new shapefile, choose the {\sf New Shapefile Layer...} button \includegraphics[height=0.7\baselineskip]{Button_NewShapefileLayer} to open the dialogue shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_AddNewShapefile.png}
+
+
+            In this example, the {\sf Geometry type} is set to {\sf Polygon}, the project CRS to  {\sf EPSG:32652 - WGS 84 / UTM zone 52N} and the shapefile name is {\sf Client Regional Boundary}.
+
+            In the example below, a shapefile suitable for storing  e.g.\ observation point data is defined:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_AddNewShapefile_points.png}
+
+            Here the {\sf Geometry type} is set to {\sf Multipoint} and the shapefile name is {\sf Observation Points v3}.  A new field called {\tt name} has been defined to store the observation point names of type string.
+
+
+        \newpage
+        \subsubsection{Digitize a new shapefile}
+            \label{qgis:DigitizeNewShapefile}  \index{\qgis\ Useage ! Digitize a new shapefile}
+            If the digitizing toolbar is not visible, choose {\sf View$\backslash$Panels$\backslash$Digitizing toolbar}.  To start digitizing choose the {\sf Toggle Editing} button \includegraphics[height=0.7\baselineskip]{Button_ToggleEditting}, then the {\sf Add Polygon Feature} button \includegraphics[height=0.7\baselineskip]{Button_AddPolygonFeature}.  The mouse cursor should now be shown as a crosshair.  Move the crosshair to a point on the regional boundary and click the left-mouse button to digitize a new boundary point.  The example below shows a partially digitized polygon:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_DigitizingNewShapefile}
+
+            Proceed around the polygon boundary, left-clicking the mouse to define new polygon vertices, and finally right-clicking the mouse to close it.
+        \newpage
+        \subsubsection{Point Sampling From a Raster Layer}
+            \label{qgis:PointSamplingTool} \index{\qgis\ Useage ! Point sampling tool}
+            The {\sf PointSamplingTool} can be used to map elevations from a raster layer (i.e.\ a DEM) to the vertices of a vector layer. This plugin may need to be installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below:
+
+                    \includegraphics[width=\textwidth]{QGIS_PointSamplingToolPlugin_1.png}
+
+            Once installed, the {\sf Point sampling tool} button \includegraphics[height=0.7\baselineskip]{QGIS_PointSamplingToolIcon.png} should appear in the {\sf Plugins toolbar}.
+
+            First, activate the layer, then click on {\sf Point sampling tool} button \includegraphics[height=0.7\baselineskip]{QGIS_PointSamplingToolIcon.png} to open the {\sf Point Sampling Tool} dialogue shown below:
+
+                    \includegraphics[width=0.6\textwidth]{QGIS_PointSamplingToolPlugin_2.png}
+
+            In this example the field {\sf Layer containing sampling points:} is referring to a vector layer of points {\sf Regionalo.nodes}.
+
+            The field {\sf Layers with fields/bands to get values from:} contains a list of vector and raster layers available to sample from.  Click on a layer to choose it and it will be indicated with a light gray shading. In this case the layer {\sf Dem\_all\_5m clipped smoothed v1: Band 1 (raster)} is the only one chosen.
+
+            The field {\sf Output point vector layer:} contains the full path and name of the file to store the sampled elevations in. Click the {\sf Ok} button to do the sampling and then close the dialogue.
+
+            This creates a new layer called {\sf Regionalo.nodes elevation.gpkg}.  Right-click on it and choose {\sf Open Attribute Table}, which is shown below:
+
+                    \includegraphics[width=\textwidth]{QGIS_PointSamplingToolPlugin_3.png}
+
+            This is the list of sampled elevations, one for each point in the layer {\sf Regionalo.nodes}.
+
+
+        \newpage
+        \subsubsection{Export to a CSV File}
+            \label{qgis:ExportToCSVFile} \index{\qgis\ Useage ! Export to a CSV file}
+            The attribute table of an active vector layer can be exported to a {\tt CSV} file by right-clicking on the vector name and choosing {\sf Export$\backslash$Save features as...} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportToCSVFile_1.png}
+
+            This opens the {\sf Save Features as} dialogue shown below left:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportToCSVFile_2.png}
+
+            The {\sf Format} field drop-down menu is shown to the right, with the {\sf Comma Separated Value [CSV]} option highlighted.
+
+            The {\sf File Name} field requires the full path and name of the {\tt CSV} file.  The browse button {\sf ...} at the end of the field is the easiest way to enter the information.
+
+            Check that the {\sf CRS} field is set to the correct coordinate system. Choose {\sf Ok}.
+
+            This creates a new layer whose name is taken from the {\tt CSV} file name, in this example {\sf Regional Boundary xy}.  Right-click on the {\sf Regional Boundary xy} layer and choose {\sf Open Attribute Table} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ExportToCSVFile_3.png}
+
+
+        \newpage
+        \subsubsection{Import from a CSV File}
+            \label{qgis:ImportFromCSVFile} \index{\qgis\ Useage ! Import from a CSV file}
+            A new layer can be created by importing data from a {\tt CSV} file.  Choose {\sf Layer$\backslash$Add layer$\backslash$Add text delimited layer...} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ImportFromCSVFile_1.png}
+
+            This opens the {\sf Delimited Text} dialogue shown below:
+
+                    \includegraphics[width=0.6\textwidth]{QGIS_ImportFromCSVFile_2.png}
+
+            The {\sf File Name} field requires the full path and name of the {\tt CSV} file.  The browse button {\sf ...} at the end of the field is the easiest way to enter the information. Choose {\sf Ok}.
+
+            This creates a new layer whose name is taken from the {\tt CSV} file name, in this example {\sf Regionalo.nodes}, and plots the vertices (nodes)as yellow-orange circles shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ImportFromCSVFile_3.png}
+
+
+            Right-click on the {\sf Regionalo.nodes} layer and choose {\sf Open Attribute Table} as shown below:
+
+                    \includegraphics[width=0.9\textwidth]{QGIS_ImportFromCSVFile_4.png}
+
+            This {\tt CSV} file contains a set of $xyz$ coordinates.
+
+
+    \newpage \subsection{Raster Layers}
+    \subsection{Raster Layers}
+        \subsubsection{Loading Raster Layers}
+            \label{qgis:LoadRasterLayer} \index{\qgis\ Useage ! Loading a raster layer}
+            To load a raster layer, simply drag and drop the raster file into the \qgis\ workspace:
+
+                    \includegraphics[width=\textwidth]{QGIS_demDrag.png}
+
+            In this example, a raster file \texttt{Dem\_all\_5m.tif} was loaded.  The raster appears in the display with a gray-shading indicating elevation and as an entry in the {\sf Layers} window on the lower left part of the \qgis\ window.  The elevation range (10 to 800 m) and shading scale for the DEM are indicated.
+
+        \newpage
+        \subsubsection{Smoothing a Raster Layer}
+            \label{qgis:smoothing} \index{\qgis\ Useage ! Smoothing a raster layer}
+            A smoothed version a raster layer can be created using the \saga\ plugin {\sf$\backslash$Smoothing(ViGrA)}. This plugin must first be installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below on the left:
+
+                    \includegraphics[width=\textwidth]{QGIS_SagaPlugin}
+
+            If the Processing Toolbox panel (above right) is not open choose {\sf View$\backslash$Panels$\backslash$Processing Toolbox}, then search for the string e.g. 'smoothing' to locate the  plugin.
+
+                    \includegraphics[width=\textwidth]{QGIS_SmoothingDialogue}
+
+            In the example shown above we have chosen to smooth the raster layer {\sf Dem\_all\_5m\_clipped}.  Double-click the {\sf Smoothing(ViGrA)} plugin in to open the dialogue shown below:
+
+            Click the {\sf Run} button to generate a smoothed DEM with a default {\sf Size of smoothing filter} of 2.  The image below shows that a new DEM called {\sf Output} has been created with an elevation range (-9,999 to 792 m).
+
+                    \includegraphics[width=\textwidth]{QGIS_SmoothingDEMInitial.png}
+
+
+            The regions of -9,999 m elevation show up as black areas around the outside edges of the DEM.  To improve the image choose {\sf Output$\backslash$Properties$\backslash$Symbology} and change the {\sf Color gradient$\backslash$Min} value to e.g. 10 m.
+
+            After testing with {\sf Size of smoothing filter} of 2, 5, and 10 m, it was found that the 10 m was sufficient to remove the artefacts.  A portion of the DEM  is shown below both before and after smoothing:
+
+                    \includegraphics[width=\textwidth]{QGIS_DEMSmoothing.png}
+
+
+
+

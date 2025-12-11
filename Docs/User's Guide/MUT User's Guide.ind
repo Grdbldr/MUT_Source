@@ -19,6 +19,24 @@
     \subitem  {\tt \_build.lay} 
       \subsubitem  {\sf GWF Cells} frame, \hyperpage{72}
       \subsubitem  {\sf GWF} frame, \hyperpage{68}
+  \item \qgis\ Useage 
+    \subitem  Add a new shapefile, \hyperpage{129}
+    \subitem  Add geometry attributes, \hyperpage{123}
+    \subitem  Clipping a layer, \hyperpage{118}
+    \subitem  Coordinate reference systems (CRS's), \hyperpage{114}
+    \subitem  Digitize a new shapefile, \hyperpage{131}
+    \subitem  Export to a CSV file, \hyperpage{134}
+    \subitem  Extract vertices, \hyperpage{121}
+    \subitem  Georeference an image, \hyperpage{126}
+    \subitem  Import from a CSV file, \hyperpage{136}
+    \subitem  Installation and set-up, \hyperpage{112}
+    \subitem  Layer appearance (symbology), \hyperpage{117}
+    \subitem  Layer properties, \hyperpage{116}
+    \subitem  Loading a raster layer, \hyperpage{139}
+    \subitem  Loading a vector layer, \hyperpage{119}
+    \subitem  Point sampling tool, \hyperpage{132}
+    \subitem  Selecting features, \hyperpage{120}
+    \subitem  Smoothing a raster layer, \hyperpage{140}
   \item \swf\ Domain 
     \subitem  boundary conditions, \hyperpage{52}
     \subitem  cell connection properties, \hyperpage{49}
@@ -42,11 +60,11 @@
   \indexspace
 
   \item Excel 
-    \subitem  cell protection, \hyperpage{113}
+    \subitem  cell protection, \hyperpage{144}
 
   \indexspace
 
-  \item generate uniform rectangles, \hyperpage{6}, \hyperpage{24}
+  \item generate uniform rectangles, \hyperpage{4}, \hyperpage{24}
   \item Grid generation 
     \subitem  \gwf\ Domain 
       \subsubitem  New layer, \hyperpage{30}
@@ -54,9 +72,10 @@
   \indexspace
 
   \item Input instructions 
-    \subitem  2d mesh from gb, \hyperpage{23}
+    \subitem  2d mesh from gb, \hyperpage{21}
     \subitem  active domain, \hyperpage{34}
-    \subitem  build modflow usg, \hyperpage{20}
+    \subitem  build modflow usg, \hyperpage{18}
+    \subitem  build triangular mesh, \hyperpage{23}
     \subitem  choose all cells, \hyperpage{34}
     \subitem  choose all nodes, \hyperpage{54}
     \subitem  choose all zones, \hyperpage{40}
@@ -92,7 +111,7 @@
     \subitem  generate layered gwf domain, \hyperpage{26}
     \subitem  generate output control file, \hyperpage{62}
     \subitem  generate swf domain, \hyperpage{49}
-    \subitem  generate uniform rectangles, \hyperpage{6}, 
+    \subitem  generate uniform rectangles, \hyperpage{4}, 
 		\hyperpage{24}
     \subitem  gwf alpha, \hyperpage{39}
     \subitem  gwf beta, \hyperpage{39}
@@ -118,6 +137,7 @@
     \subitem  Offset base, \hyperpage{31}
     \subitem  postprocess existing modflow model, \hyperpage{86}
     \subitem  Proportional sublayering, \hyperpage{31}
+    \subitem  refine inside polygon, \hyperpage{23}
     \subitem  sms database, \hyperpage{64}
     \subitem  sms parameter set number, \hyperpage{64}
     \subitem  stress period, \hyperpage{59}
@@ -140,10 +160,11 @@
     \subitem  top elevation, \hyperpage{27}
     \subitem  type, \hyperpage{59}
     \subitem  Uniform sublayering, \hyperpage{31}
-    \subitem  units of length, \hyperpage{21}
-    \subitem  units of time, \hyperpage{21}
+    \subitem  units of length, \hyperpage{19}
+    \subitem  units of time, \hyperpage{19}
+    \subitem  wells from id\_x\_y file, \hyperpage{24}
     \subitem  Zone by template, \hyperpage{26}
-  \item Installation, \hyperpage{8}
+  \item Installation, \hyperpage{6}
 
   \indexspace
 

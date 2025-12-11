@@ -1,5 +1,7 @@
 \label{texfile:TemplateMesh}
-The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.   Below is an example\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
+The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.
+
+Below is an example\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
   showing an exploded view of a template mesh ({\sf TMPLT}, bottom image) that was used as a basis for generating  finite-element meshs for the \gwf\ ({\sf TMPLT\_GWF}, middle image) and \swf\ ({\sf TMPLT\_SWF}, upper image) domains:
 
     \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
@@ -46,6 +48,75 @@ Most input instructions, including \textsf{2d mesh from gb}, do not include leng
 When databases are used to define material parameter values (see page~\pageref{page:LookupTable}), fields defining the length and time units of each record are included. In this case \mut\ will automatically convert the parameter values to the unit system that has been defined for the \mfus\ model.
 
 \pagebreak
+\mut\ now has the capability of generating a 2D-triangular-element mesh from a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  Below we will discuss an example where regional (outer) and site boundaries are first defined using the \qgis\ software, then saved and imported by \mut\ to generate a template mesh.
+
+The $xy$ coordinates of the outer boundary were obtained from \qgis\ by :
+\begin{itemize}
+    \item Extracting the vertices (\ref{qgis:ExtractVertices}) from the  {\sf Regional Boundary} layer to obtain a new {\sf vertices} layer.
+    \item Adding geometry attributes (\ref{qgis:AddGeometryAttributes}) to the {\sf vertices} layer, creating a new layer {\sf Added geom info}.
+    \item Exporting the {\sf Added geom info} layer (\ref{qgis:ExportToCSVFile}) to the {\tt CSV} file: \newline
+    {\tt 1\_data$\backslash$5\_ExportToMUT$\backslash$Regional Boundary xy.csv}
+\end{itemize}
+
+The file can be opened in \excel\ and modified as shown below:
+
+        \includegraphics[width=\textwidth]{Excel_ModifyRegionalBoundaryCSV.png}
+
+The $xy$ coordinates of the site boundary were obtained from \qgis\ in a similar fashion and saved to the file {\tt 2\_models$\backslash$2DMesh\_Regional$\backslash$ImportSiteBoundary\_xy.csv}.  The site boundary was used to define a region of mesh refinement in the regional model domain.
+
+The $xy$ coordinates of the Shaft observation point were saved to the file {\tt Shaft\_xy.csv}.  This file was used to define a zone of refinement at the location of the Shaft observation point.
+
+The contents of the {\tt 2\_models$\backslash$2DMesh\_Regional} folder prior to mesh generation are shown below:
+
+        \includegraphics[width=\textwidth]{MUT_InitialGridGenFolder.png}
+
+This \mut\ input file {\tt \_build.mut} generates a triangular mesh. The file contents are shown below:
+
+        \includegraphics[width=.8\textwidth]{MUT_2DMeshInput.png}
+
+This instruction starts the grid generation procedure:
+
+\ins{build triangular mesh}
+    {This subtask currently requires the following input:
+     \begin{itemize}
+        \item \str{MeshName} Mesh name, in this case {\sf Regional}
+        \item \str{FName} Name of the file containing the $xy$ coordinate list around the outer boundary, in this case {\sf  ImportRegionalBoundary\_xy.csv}
+        \item \rnum{TargetLength} [$L$] Target element length, in this case 300 m.
+    \end{itemize}
+
+    {\em Optional grid modification instructions may be inserted here...}
+
+    An end instruction is required to stop the subtask e.g.:
+
+    {\Large \sf end build triangular mesh}
+}
+
+There are currently 2 {\em Optional grid modification instructions}:
+
+\ins{refine inside polygon}
+    {
+        \squish
+     \begin{itemize}
+        \item \str{FName} Name of the file containing the $xy$ coordinate list around the zone of refinement, in this case {\sf  ImportSiteBoundary\_xy.csv}.
+    \end{itemize}
+    }
+
+\ins{wells from id\_x\_y file}
+    {
+         \squish
+   \begin{itemize}
+        \item \str{FName} File name of the file containing the point $xy$ coordinate list.
+        \item \rnum{WellTargetLength} [$L$] Target element length near the well, in this case 10 m.
+    \end{itemize}
+    }
+
+These optional instructions must follow the {\sf TargetLength} input line but can be repeated to define, for example:
+\begin{itemize}
+\item Different or nested areas of mesh refinement.
+\item Multiple wells with different target lengths.
+\end{itemize}
+
+
 To generate uniform 2D rectangular element template meshes\footnote{See for example the verification cases \texttt{1\_VSF\_Column} or \texttt{6\_Abdul\_MODHMS}} use this instruction:
 
 \ins{generate uniform rectangles}
@@ -84,7 +155,7 @@ Some key features to note are:
     \label{page:MeshCentredApproach}
     \phantomsection\label{page:MeshCentredApproach}
 \begin{itemize}
-    \item Inner circles (dashed circle in yellow triangle), which are tangent to all three element sides, are defined for each triangular element.  
+    \item Inner circles (dashed circle in yellow triangle), which are tangent to all three element sides, are defined for each triangular element.
     \item The blue-filled circles show the locations of the defined \mf\ cell control volumes.
     \item The vertical connection area of the cell is defined by the triangular element area (yellow-shaded triangle).
     \item The horizontal connection length of the cell is defined by the triangular element side length between neighbouring elements.

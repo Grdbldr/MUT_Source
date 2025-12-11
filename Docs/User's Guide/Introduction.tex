@@ -4,9 +4,11 @@
     \item \mut\ is designed to work with a modified version of \mfu,  where a new surface water flow package, called \swf, has been added. Like the Connected Linear Network (\cln) package, the \swf\ package represents a new domain type that is fully-coupled to the 3D groundwater flow (\gwf) domain. There can also be cell-to-cell flows between the \swf\ and \cln\ domains.  The \swf\ domain uses the diffusion-wave approach to simulate 2D surface-water flow. We will refer to this new version of \mfu\ as \mfus\ in this manual.
     \item We currently develop and run it on a \windows\ 10-based computing platform, writing the software using the \ifort\ compiler running inside the \vstudio\ interactive development environment, which includes software version control tools through \github.
     \item A text-based approach is used for the \mut\ interface, in which we first develop an input file of instructions that define our \mfus\ project,  then run \mut\ to read it and write a complete \mfus\ data set. \mut\ also writes output files for \tecplot, a third-party visualization software package, which provides a 3D graphical visualization tool to review the model numerical mesh and material properties in the data set. In future, \mut\ could be extended to support other third-party visualization packages, for example the open source program Paraview.
+    \item We will introduce the use of \qgis\footnote{\qgis\ is a geographic information system (GIS) software that is free and open-source. It supports viewing, editing, printing, and analysis of geospatial data in a range of data formats.} software to view and process project data consisting of physiography (e.g.\ DEM's, often provided as raster-formatted TIF files) and model boundaries (e.g.\ often provide as shapefiles).
     \item \mut\ can post-process a \mfus\ simulation to provide a \tecplot\ visualization of temporal model results, including hydraulic heads, saturations, water depths and flow budget data.  \textit{If applied to output files which were produced by an earlier version of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superceded.}
 \end{itemize}
 
+Changes made to \mut\  since version 1.34 are listed in Appendix~\ref{changes:2025.1}
 
 \section{Conventions Used in this Manual} \label{section:AboutManual}
 
@@ -43,11 +45,11 @@ This manual uses the following formatting conventions when introducing new \mut\
 
         Variable names are rendered in an underlined bold font, followed by one of the following data type requirement subscripts:
         \begin{description}
-            \item [\rnum{}] A real number, e.g.\ {\tt "24.32"} or {\tt "1.5E-08"}.  
+            \item [\rnum{}] A real number, e.g.\ {\tt "24.32"} or {\tt "1.5E-08"}.
             \item [\inum{}] An integer number, e.g.\ {\tt "25"}.
             \item [\str{}] A text string, e.g.\ {\tt "centimeters"}.
        \end{description}
-       
+
        Variable dimension indicators are $L$ for length and  $T$ for time (future implementations of \mut\ that support mass  transport will use $M$ for mass). Some examples of variables with more complex dimensionality are:
         \begin{description}
             \item [Hydraulic conductivity] [$L$   $T^{-1}$], length over time.
@@ -62,7 +64,7 @@ This manual uses the following formatting conventions when introducing new \mut\
          \mfus\ currently supports units of feet, meters or centimeters.
 
   \item Some instructions are subtasks, which are procedures that process a local set of instructions until an \textsf{end} instruction is encountered.  Documentation for a subtask suggests appending the subtask name to the {\sf end} instruction, e.g.:
-  
+
       {\Large \sf end read some data }
 
       This makes the input file more readable, and debugging easier if subtasks are nested.

@@ -25,14 +25,16 @@ module MUT  !### Modflow-USG Tools
 
     subroutine Header
         call date_and_time(DateSTR, TIME = TimeSTR, ZONE = TimezoneSTR)
-        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ')
-        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ')
-        call Msg( '@@                                                                      @@ ')
-        call Msg( '@@                    MUT         '//MUTVersion//'@@ ')
-        call Msg( '@@                    Run date '//DateStr//'                             @@ ')
-        call Msg( '@@                                                                      @@ ')
-        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ')
-        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ')
+        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        call Msg( '@@                                                @@')
+        write(TMPStr,'(T1,a,T5,a,T20,a,t51,a)') '@@','MUT version:',trim(MUTVersion),'@@'
+        call Msg(TMPStr)
+        write(TMPStr,'(T1,a,T5,a,T20,a,t51,a)') '@@','Run date:',trim(DateStr),'@@'
+        call Msg(TMPStr)
+        call Msg( '@@                                                @@')
+        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        call Msg( '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
     end subroutine  header
 
     subroutine OpenMUT  !--- Modflow user tools  .mut
