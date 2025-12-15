@@ -14,13 +14,13 @@ A \mut\ input file is a plain ascii text file that you can edit with your prefer
 The \mut\ input file name can have a prefix of your choice, followed by the extension \texttt{.mut}. Examples of valid \mut\ input file names are \texttt{\_build.mut} or \texttt{good.mut}. Most often, the easiest approach is to copy an existing input file and modify it as required.  This helps reduce set-up time and avoid potential errors that are introduced when creating input files from scratch.
 
 To illustrate our model build workflow, we will refer to the various conceptual models developed for our existing suite of examples described in  Chapter~\ref{chapter:ModelVerification}.  As you read along, we urge you to carry out the steps we describe as we move through the workflow.  We recommend copying the contents of an existing model to a new location (e.g.\ copy the folder \texttt{1\_VSF\_Column} to \texttt{C:$\backslash$SandBox}).
-\pagebreak 
+\pagebreak
 If you did so, your working directory would look something like this:
 
     \includegraphics[width=\textwidth]{3_1_vsf_column_folderinit}
 
 In the \texttt{1\_VSF\_Column} example, there is a \mut\ input file for the model build called \texttt{\_build.mut} and a \tecplot\ layout file called \texttt{\_build.lay} used to visualize the model build results.  The rest of the files are related to post-processing \mfus\ model results and will be discussed later in chapter~\ref{chapter:ModelExecution}.
- 
+
  In our preferred workflow we would first start a command prompt in the folder which contains the \mut\ input file by:
 \begin{enumerate}
    \item  Navigating to the folder in File Explorer (e.g.\ \texttt{C:$\backslash$SandBox$\backslash$1\_VSF\_Column}).
@@ -106,7 +106,25 @@ Several new output files have been created, of which it may be noted:
 \begin{itemize}
     \item Build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name. \mut\ deletes previously generated build output files and writes a fresh set each time it is run.  This can prevent confusion that might arise if out-of-date output files were present.\footnote{For example, if we define a recharge boundary condition, \mut\ will create the file \texttt{\textit{prefix}o.Modflow.SWF\_RCH.Tecplot.dat} which shows the locations and recharge values assigned to Modflow cells.  If we then removed the recharge condition from the input file, but did not delete this output file, we may assume the recharge condition still applies.}
     \item \tecplot\ output files are indicated by the suffix \texttt{.tecplot.dat}.
-    \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired but there are advantages to keeping this 'generic' one, such as portability of post-processing scripts or \tecplot\ layout files that follow this generic naming convention.
+
+    \newpage
+    By default, \mut\ writes \tecplot\ file output but this can be prevented by the following instruction:
+
+        \ins{disable tecplot output}
+            {\tecplot-formatted output files will not be written.}
+
+    \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired using this instruction:
+        
+        \ins{modflow prefix}
+            {
+            \squish
+            \begin{enumerate}
+            \item \str{NewPrefix} \mfus prefix \str{NewPrefix}.
+            \end{enumerate}
+            \squish
+            }
+            
+        There may be advantages to using a standard prefix naming convention, such as portability of post-processing scripts or \tecplot\ layout files.
     \item Several scratch files (with prefix \texttt{scratcho}) are written. These are used for debugging during code development and can be ignored in most cases.
     \item If the run is successful the last line written will be \texttt{Normal exit}, otherwise an error message will be given.
 \end{itemize}

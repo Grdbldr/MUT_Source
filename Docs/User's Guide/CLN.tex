@@ -20,7 +20,7 @@ A \cln\ domain can be added to the \mfus\ model using this instruction:
     {This subtask is currently limited to defining the \cln\ domain from a single pair of $xyz$ coordinates and a specified number of cells.
 
     An end instruction is required to stop the subtask e.g.:
-    
+
     {\Large \sf end generate cln domain}
     }
 
@@ -85,6 +85,19 @@ Some key features of this example are:
     \item The top of the \gwf\ domain slopes from $z=3.0$ at $x=-100.0$ to $z=0.0$ at $x=200.0$.  These are extended beyond the limits of the mesh so that the correct elevations are generated at the limits of the domain. Recall that the $x$-range must cover the entire template mesh.
     \item Because \cln\ domains are not necessarily dependent on \gwf\ meshes, it does not use the template mesh, but instead generates a \cln\ domain using the  \texttt{cln from xyz pair} instruction.  The instruction is set up to generate 101 \cln\ cells that slope from $z=2.005$ at $x=-.5$ to $z=0.995$ at $x=100.5$
 \end{itemize}
+
+\ins{cln from xyz list}
+    {This subtask creates a \cln\ domain from a list of $xyz$ coordinates.
+    \begin{enumerate}
+        \item \rnum{x1} [$L$], \rnum{y1} [$L$], \rnum{z1} [$L$]  An $xyz$ coordinate triplet.
+    \end{enumerate}
+
+    An end instruction is required to stop the subtask e.g.:
+
+    {\Large \sf end cln from xyz list}
+    }
+
+
 
 \subsubsection{Cell Connection Properties}  \index{\cln\ Domain ! cell connection properties}
 
@@ -155,6 +168,22 @@ To assign an initial head to the \cln\ model domain, you must first make a cell 
         \end{enumerate}
           An initial depth of \rnum{Depth} is used to calculate an initial head at each of the chosen cells.
     }
+
+By default, the instruction {\sf postprocess existing modflow model} writes hydraulic heads at the last output time to a {\tt csv} file called {\tt CLN\_FinalHeads.csv}. This file can be used to start a subsequent \mfus\ model simulation by first activating the \cln\ domain then using this instruction:
+
+\ins{initial head from csv file}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
+        \end{enumerate}
+    }
+
+The following example uses the instruction to start a simulation with \cln\ heads from a previous run:
+
+            \includegraphics[width=\textwidth]{MUT_InitialCLNHead.png}
+
+
 
 \subsubsection{Boundary Conditions}  \index{\cln\ Domain ! boundary conditions}
 To assign boundary conditions  to the \cln\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.

@@ -165,6 +165,35 @@ To assign an initial head to the \swf\ model domain, you must first make a cell 
           An initial depth of \rnum{IDepth} is used to calculate an initial head at each of the chosen cells.
     }
 
+By default, the instruction {\sf postprocess existing modflow model} writes hydraulic heads at the last output time to a {\tt csv} file called {\tt SWF\_FinalHeads.csv}. This file can be used to start a subsequent \mfus\ model simulation by first activating the \swf\ domain then using this instruction:
+
+\ins{initial head from csv file}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
+        \end{enumerate}
+    }
+
+The following example uses the instruction to start a simulation with \swf\ heads from a previous run:
+
+            \includegraphics[width=\textwidth]{MUT_InitialSWFHead.png}
+            
+The instruction {\sf postprocess existing modflow model}  also writes heads at all output times to a \tecplot-formatted output file, and earlier times can also be used to start a subsequent \mfus\ model simulation by first activating the \swf\ domain then using this instruction:
+
+\ins{swf initial head from tecplot file}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
+        \end{enumerate}
+    }
+
+
+This file can be created using \tecplot, as discussed for the \gwf\ domain on Page~\pageref{page:TecplotWriteData}.
+
+
+
 \subsubsection{Boundary Conditions}  \index{\swf\ Domain ! boundary conditions}
 To assign boundary conditions  to the \swf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
 

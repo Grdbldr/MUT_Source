@@ -13,7 +13,6 @@ Some key features of this example are:
   \item The \swf\ domain has been assigned the same elevation as the \gwf\ domain i.e.\ they are coincident.
 \end{itemize}
 
-\pagebreak
  In this example, the template mesh was defined using these instructions:
  \squish
 \begin{verbatim}
@@ -28,13 +27,13 @@ The instruction \textsf{2d mesh from gb}, which requires a single line of input 
         \begin{enumerate}
         \item \str{Prefix}  The \gb\footnote{\gb\ is a legacy 2D triangular finite-element grid generator.} dataset prefix, including the path to it.
         \end{enumerate}
-        Given \str{Prefix}, this instruction reads the 2D finite-element grid data and uses it to define the 2D template mesh.  \str{Prefix} should contain a relative path to the dataset.  Examples of relative paths are:
+        Given \str{Prefix}, this instruction reads the 2D finite-element grid data and uses it to define the 2D template mesh.  \str{Prefix} should contain a relative path\footnote{Examples of relative paths are: \label{footnote:RelativePath}
         \begin{description}
         \item[.$\backslash$gb$\backslash$grid] The \mut\ input folder contains a local folder \texttt{gb} with the data set prefix \texttt{grid}.
         \item[..$\backslash$gb$\backslash$grid] The parent folder to the \mut\ input folder contains a folder \texttt{gb} with the data set prefix \texttt{grid}.
         \item[C:$\backslash$gb$\backslash$grid] Absolute path to a drive \texttt{C:} folder \texttt{gb} with the data set prefix \texttt{grid}.  Absolute paths are not recommended as they may lead to portability issues.
-        \end{description}
-        \squish
+        \end{description} }
+        to the dataset.
     }
 
 Most input instructions, including \textsf{2d mesh from gb}, do not include length or time unit information, and \mut\ assumes the current units (i.e.\ either the default units of meters and seconds or other explicitly defined units) apply to the given input data. When supplying input data {\em you must be careful to supply the values in the unit system defined for the model}.  As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco} file, for example:
@@ -48,31 +47,19 @@ Most input instructions, including \textsf{2d mesh from gb}, do not include leng
 When databases are used to define material parameter values (see page~\pageref{page:LookupTable}), fields defining the length and time units of each record are included. In this case \mut\ will automatically convert the parameter values to the unit system that has been defined for the \mfus\ model.
 
 \pagebreak
-\mut\ now has the capability of generating a 2D-triangular-element mesh from a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  Below we will discuss an example where regional (outer) and site boundaries are first defined using the \qgis\ software, then saved and imported by \mut\ to generate a template mesh.
+\mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \texttt{MUT\_Examples$\backslash$\_BuildTriangularMesh$\backslash$\_2DMesh\_Regional}} mesh generation folder are shown below:
 
-The $xy$ coordinates of the outer boundary were obtained from \qgis\ by :
-\begin{itemize}
-    \item Extracting the vertices (\ref{qgis:ExtractVertices}) from the  {\sf Regional Boundary} layer to obtain a new {\sf vertices} layer.
-    \item Adding geometry attributes (\ref{qgis:AddGeometryAttributes}) to the {\sf vertices} layer, creating a new layer {\sf Added geom info}.
-    \item Exporting the {\sf Added geom info} layer (\ref{qgis:ExportToCSVFile}) to the {\tt CSV} file: \newline
-    {\tt 1\_data$\backslash$5\_ExportToMUT$\backslash$Regional Boundary xy.csv}
-\end{itemize}
+        \includegraphics[width=\textwidth]{MESH_RegionalInitialFolderFiles.png}
 
-The file can be opened in \excel\ and modified as shown below:
-
-        \includegraphics[width=\textwidth]{Excel_ModifyRegionalBoundaryCSV.png}
-
-The $xy$ coordinates of the site boundary were obtained from \qgis\ in a similar fashion and saved to the file {\tt 2\_models$\backslash$2DMesh\_Regional$\backslash$ImportSiteBoundary\_xy.csv}.  The site boundary was used to define a region of mesh refinement in the regional model domain.
-
-The $xy$ coordinates of the Shaft observation point were saved to the file {\tt Shaft\_xy.csv}.  This file was used to define a zone of refinement at the location of the Shaft observation point.
-
-The contents of the {\tt 2\_models$\backslash$2DMesh\_Regional} folder prior to mesh generation are shown below:
-
-        \includegraphics[width=\textwidth]{MUT_InitialGridGenFolder.png}
-
+\qgis\ was used to define the following files:
+\begin{description}
+    \item [ImportRegionalBoundary\_xy.csv] The regional boundary that forms the outer boundary of the 2D mesh.
+    \item [ImportSiteBoundary\_xy.csv]The site boundary that defines a zone of refinement.
+    \item [Well.id\_x\_y] The well location that defines a point of refinement.
+\end{description}
 This \mut\ input file {\tt \_build.mut} generates a triangular mesh. The file contents are shown below:
 
-        \includegraphics[width=.8\textwidth]{MUT_2DMeshInput.png}
+        \includegraphics[width=\textwidth]{MUT_2DMeshInput.png}
 
 This instruction starts the grid generation procedure:
 
@@ -116,6 +103,28 @@ These optional instructions must follow the {\sf TargetLength} input line but ca
 \item Multiple wells with different target lengths.
 \end{itemize}
 
+The contents of the mesh generation folder are shown below after grid generation:
+
+        \includegraphics[width=\textwidth]{MESH_RegionalFinalFolderFiles.png}
+Note the following files that have been created:
+\begin{description}
+    \item [Regional.MeshBIN] This binary file contains the mesh structure and can be read by \mut\ using the instruction {\sf read mesh}, described below.
+    \item [Regionalo.nodes.csv] This {\tt csv} file contains node $xyz$ coordinates that can be imported by \qgis\ to, for example, visualize with other map data or to sample DEM elevation data (initially, all $z$ coordinates are set to zero by the grid generator) at node coordinates.
+    \item [Regionalo.elements.csv] As above but for triangular-element centroid coordinates.
+    \item [Regionalo.tecplot.dat] A \tecplot-formatted output file of the generated mesh. Shown below, the \tecplot\ layout file {\tt \_build.lay} has been loaded into \tecplot\ and the {\sf Data Set Information} dialogue has been opened:
+
+        \includegraphics[width=\textwidth]{MUT_2DMeshInTecplot.png}
+
+        The layout file is configured to load the data file {\tt Regionalo.tecplot.dat} by default.
+
+\end{description}
+
+
+By default, \mut\ writes {\tt csv} files for \qgis\ but this can be prevented by the following instruction:
+
+        \ins{disable qgis output}
+            {\qgis-formatted output files will not be written.}
+
 
 To generate uniform 2D rectangular element template meshes\footnote{See for example the verification cases \texttt{1\_VSF\_Column} or \texttt{6\_Abdul\_MODHMS}} use this instruction:
 
@@ -129,6 +138,21 @@ To generate uniform 2D rectangular element template meshes\footnote{See for exam
     A 2D finite-element mesh composed of uniform rectangular elements will be generated. In this case, the
     grid is formed by subdividing the domain in the $x$-direction into \inum{nRectX} rectangles, each of length
     \rnum{xLength}/\inum{nRectX}. The domain is subdivided in a similar fashion in the $y$-direction, using the second set of input parameters.
+    }
+
+To generate variable 2D rectangular element template meshes use this instruction:
+
+\ins{generate variable rectangles}
+    {\index{generate variable rectangles}
+    \squish
+    \begin{enumerate}
+    \item \inum{nx}  Desired number of cells \inum{nx} in the $x$-direction +1.
+    \item \rnum{xi(i)}, i=1,\inum{nx} Array of \inum{nx} $x$-coordinates.
+    \item \inum{ny}  Desired number of cells \inum{ny} in the $y$-direction +1.
+    \item \rnum{yi(i)}, i=1,\inum{ny} Array of \inum{ny} $y$-coordinates.
+    \end{enumerate}
+    A 2D finite-element mesh composed of variably-sized rectangular elements will be generated. In this case, the
+    grid is formed by subdividing the domain in the $x$-direction into \inum{nx}-1 rectangles, each of variable length. The domain is subdivided in a similar fashion in the $y$-direction, using the second set of input parameters.
     }
 
 %\includegraphics[width=.15\textwidth]{ModelDevelopment} \textit{Do we have a working quadtree example to add here as an option.}
@@ -146,6 +170,16 @@ To generate uniform 2D rectangular element template meshes\footnote{See for exam
 %
 %    \includegraphics[width=.15\textwidth]{UnderConstruction}
 %    }
+
+Once a template mesh has been defined by any of the mesh generation options described above, it is automatically saved to a {\tt MeshBIN} file, which can later be loaded into memory using the instruction {\sf read mesh}, which requires the following input:
+
+\ins{read mesh}
+    {\squish
+    \begin{enumerate}
+        \item \str{Prefix}  The {\tt MeshBIN} file prefix, including the path to it (see Footnote~\ref{footnote:RelativePath}).
+    \end{enumerate}
+    \squish
+    }
 
 There are two ways that \mf\ cell control volumes can be defined from the template mesh.  By default, \mut\ uses a mesh-centred approach as shown here for a triangular-element template mesh:
 
@@ -167,7 +201,7 @@ To use a node-centred control volume approach, add this instruction {\em before}
 
 \ins{nodal control volumes}
     {The node-centered approach will be used to define \mf\ cell centres instead of the default mesh-centered approach.
-     }
+     \squish}
 
 The result of using a node-centred approach is shown here for a triangular-element template mesh:
 

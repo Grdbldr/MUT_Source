@@ -61,7 +61,7 @@ To assign an elevation to the top layer of template nodes use this instruction:
     \squish
     }
 
-The \gb\ nodal property file uses a legacy binary file format. You can develop your own ascii input files and read them using this instruction:
+The \gb\ nodal property file uses a legacy binary file format. You can develop your own ascii input files and read elevation data from them using this instruction:
 
  \ins{elevation from list file}
     {\squish
@@ -363,6 +363,17 @@ These instructions can now be used to choose \gwf\ cells in various ways\label{p
         The cells in Modflow layer number \inum{Layer} will be chosen.  Remember that Modflow layers are one cell high and are numbered from the top to the bottom of the model domain.\footnote{ See the example \texttt{1\_VSF\_Column} which uses the previous two instructions to define a constant head at  the base  and a recharge boundary condition at the top of the 1D column.}
     }
 
+\ins{choose cells from xyz list}
+    {This subtask reads $xyz$ coordinates from a list.
+    \begin{enumerate}
+        \item \rnum{x1} [$L$], \rnum{y1} [$L$], \rnum{z1} [$L$]  An $xyz$ coordinate triplet.
+    \end{enumerate}
+
+    An end instruction is required to stop the subtask e.g.:
+
+    {\Large \sf end choose cells from xyz list}
+    }
+
 \ins{choose cells from file}
     {
         \squish
@@ -392,7 +403,6 @@ These instructions can now be used to choose \gwf\ cells in various ways\label{p
 
 The previous two instructions are used to choose cells for the mesh-centered and node-centered approaches respectively.
 
-\pagebreak
 Cell selection instructions are cumulative.  For example, you can modify the current selection by repeating instructions like  \textsf{choose cell at xyz} or \textsf{choose cells by layer} with different inputs and then assign properties to the current selection.  This instruction clears the selection before beginning new cell selection(s):
 
 \ins{clear chosen cells}
@@ -509,7 +519,14 @@ Some key features to note are:
 
 Editing the \texttt{csv} files directly is not recommended. To modify existing or define new database files, please refer to the guidelines given in Appendix~\ref{Appendix:ExcelUseage}.
 
-The following section describes instructions used to assign values to individual materials properties for the current cell selection.  When using these instruction, {\em you must be careful to supply the values in the unit system defined for the model}. This first instruction is used to define the horizontal hydraulic conductivity, \texttt{Kh}:
+The following section describes instructions used to assign values to individual materials properties for the current cell selection.  When using these instruction, {\em you must be careful to supply the values in the unit system defined for the model}. 
+
+By default, \mfus\ simulates variably-saturated flow in the \gwf\ domain.  This instruction can be used to switch to a confined, saturated flow solution:
+
+\ins{saturated flow}
+{\squish}
+
+This instruction is used to define the horizontal hydraulic conductivity, \texttt{Kh}:
 
 \ins{gwf kh}
     {
@@ -713,7 +730,6 @@ In this example, we introduce the following instruction for selecting arbitrary 
     Cells whose centroid falls within the given $x$, $y$, $z$ and layer ranges are selected.
     }
 
-\pagebreak
 The model zones were defined using these instructions:
 \begin{verbatim}
     active domain
@@ -793,6 +809,54 @@ As a reminder, \mut\ will echo the assumed units to the screen and \texttt{o.eco
 
 \end{verbatim}
 
+By default, the instruction {\sf postprocess existing modflow model} writes hydraulic heads at the last output time to a {\tt csv} file called {\tt GWF\_FinalHeads.csv}. This file can be used to start a subsequent \mfus\ model simulation by first activating the \gwf\ domain then using this instruction:
+
+\ins{initial head from csv file}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
+        \end{enumerate}
+    }
+
+The following example uses the instruction to start a simulation with \gwf\ heads from a previous run:
+
+            \includegraphics[width=\textwidth]{MUT_InitialGWFHead.png}
+
+The instruction {\sf postprocess existing modflow model}  also writes heads at all output times to a \tecplot-formatted output file, and earlier times can also be used to start a subsequent \mfus\ model simulation by first activating the \gwf\ domain then using this instruction:
+
+\ins{gwf initial head from tecplot file}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
+        \end{enumerate}
+    }
+
+\label{page:TecplotWriteData}
+This file can be created using \tecplot, as shown in the example below:
+
+            \includegraphics[width=\textwidth]{MUT_IHeadFromTecplot.png}
+
+Note the following:
+\begin{itemize}
+    \item The post-processed data file {\tt \_posto.modflow.GWF.tecplot.dat} for the example {\tt 6\_Abdul\_Prism\_Cell} has been loaded into \tecplot.
+    \item The {\sf Data Set Information} dialogue is open showing {\sf Zone 7:GWF} corresponds to {\sf Solution Time} 1500.
+    \item The {\sf Write Data} dialogue is open and configured to write {\sf Field data} using {\sf Format: Block} from {\sf Zone(s): 7:GWF, Variable(s): 8: GWF Heads}.
+    \item The data is being written to a file called {\tt Head\_1500.GWF.tecplot.dat}, shown below.
+\end{itemize}
+
+            \includegraphics[width=\textwidth]{MUT_IHeadFromTecplot_2.png}
+
+ For earlier output times, the post-processed heads can be By default, the instruction {\sf postprocess existing modflow model} writes hydraulic heads at the last output time to a {\tt csv} file called {\tt GWF\_FinalHeads.csv}. This file can be used to start a subsequent \mfus\ model simulation by first activating the \gwf\ domain then using this instruction:
+
+To assign an initial head equal to the local ground surface elevation use this instruction:
+
+\ins{gwf initial head equals surface elevation}
+     {For each column of cells in the \gwf\ domain, each cell in the column is assigned an initial head equal to the top elevation (i.e. ground surface elevation) of the cell at the top of the column.
+    }
+
+This is commonly used as an initial guess when starting a simulation with no previous head solution.
 
 To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elevation), use this instruction:
 \ins{gwf initial head function of z}
@@ -819,7 +883,7 @@ This is commonly used to generate an initial head for a simple column model\foot
       0.0  -100.0
     100.0     0.0
 \end{verbatim}
-\pagebreak
+
 Some key features of this example are:
 \begin{itemize}
   \item The two given $z,head$ pairs define an initial head  that varies from $head=-100.0$ at $z=0$ to $head=0.0$ at $z=100.0$.  You may supply as many pairs as needed to define the initial head.
@@ -827,6 +891,28 @@ Some key features of this example are:
   \item the $z$-range of the supplied pairs should cover the entire $z$-range of the model domain.
   \item For each node in the model domain  mesh, the $z$ coordinate is used to interpolate an initial head (i.e. $head$ value) using the appropriate $z, head$ pair.
 \end{itemize}
+
+To assign a linearly varying head that is a function of saturation versus depth, use this instruction:
+\ins{gwf initial head from depth-saturation table}
+    {
+    \squish
+    \begin{enumerate}
+    \item \rnum{dpth(1)} [$L$], \rnum{sat(1)} [$L$]  First depth \rnum{dpth(1)}, saturation \rnum{sat(1)} pair.
+    \item \rnum{dpth(2)} [$L$], \rnum{sat(2)} [$L$]  Second depth \rnum{dpth(2)}, saturation \rnum{sat(2)} pair.
+    \item \textbf{...}\\
+     \hspace*{-.27in}\rule{0.in}{.24in} n. \rnum{dpth(n)} [$L$], \rnum{sat(n)} [$L$]  nth depth \rnum{dpth(n)}, saturation \rnum{sat(n)} pair.
+    \end{enumerate}
+
+     For each column of cells in the \gwf\ domain, each local cell in the column is assigned a depth calculated from the top elevation (i.e. ground surface elevation) of the cell at the top of the column minus the local cell elevation.  A saturation is then looked up from the depth-saturation table.  A pressure head is than interpolated from the pressure-saturation table defined for the \gwf\ material.
+
+     An end instruction is required to stop the subtask e.g.:
+
+    {\Large \sf end gwf initial head from depth-saturation table}
+    }
+
+This was used to generate an initial head for the example simulation \texttt{9\_Smith\_Woolhiser} as shown here:
+
+            \includegraphics[width=\textwidth]{MUT_IheadDepthSat.png}
 
 \subsubsection{Boundary Conditions}  \index{\gwf\ Domain ! boundary conditions}
 To assign boundary conditions  to the \gwf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.

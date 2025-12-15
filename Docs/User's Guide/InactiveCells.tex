@@ -1,0 +1,8 @@
+\label{section:InactiveCells}
+In \mfus, inactive cells are grid cells that are excluded from the groundwater flow simulation. These cells are marked as inactive to keep them out of the computational domain, meaning no calculations or flow processes are performed in those cells. This is useful for representing areas outside the modeled region or areas where groundwater flow is not relevant, such as dry land or impermeable regions. Using inactive cells helps improve model performance and accuracy by focusing computations only on the active parts of the model domain.
+
+The following instruction can be used to make a selected set of cells incative:
+
+\ins{flag chosen cells inactive}
+    {All chosen cells will be flagged as inactive.
+    }

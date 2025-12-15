@@ -1250,7 +1250,7 @@ Module MeshGen
         character(MAX_INST) :: gb_file_elevation_cmd		    =   'elevation from gb file'
         character(MAX_INST) :: list_file_elevation_cmd		    =   'elevation from list file'
         character(MAX_INST) :: xz_pairs_elevation_cmd			=   'elevation from xz pairs'
-        character(MAX_INST) :: ElevationFromQgisCSVFile_cmd		=   'elevation from qgis csv file'
+       
         !character(MAX_INST) :: gms_file_elevation_cmd		=   'elevation from gms file'
         !character(MAX_INST) :: raster_file_elevation_cmd		=   'elevation from raster file'
         character(MAX_INST) :: bilinear_function_elevation_cmd=   'elevation from bilinear function in xy'
@@ -1315,19 +1315,6 @@ Module MeshGen
             elseif(index(instruction, xz_pairs_elevation_cmd) /=0) then
                 call xz_pairs_elevation(FNumMUT,top_elev,TMPLT)
             
-            elseif(index(instruction, ElevationFromQgisCSVFile_cmd) /=0) then
-                read(FNumMUT,'(a)') FNameTop 
-                inquire(file=FNameTop,exist=FileExists)
-                if(.not. FileExists) then
-			        call ErrMsg('File not found: '//trim(FNameTop))
-                endif
-                
-                call Msg(FileReadSTR//'Top_elevation: QGIS CSV file: '//trim(FNameTop))
-
-		        call OpenAscii(FnumTop,FNameTop)
-
-                call ReadDRealArray(FnumTop,top_elev)
-                
        !     elseif(instruction .eq. raster_file_elevation_cmd) /=0) then
 			    !read(FNumMUT,'(a)') topfile
 			    !write(ieco,*) 'System top from file ',topfile

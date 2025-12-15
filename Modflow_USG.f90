@@ -17,9 +17,13 @@
     ! Pre-processing i.e. building a modflow structure
     ! By default, we will assume a node-centred control volume
     
-    ! By default, Tecplot output is disabled
-    ! This option enables Tecplot output
+    ! By default, Tecplot output is enabled
+    ! This option disables Tecplot output
     character(MAX_INST) :: DisableTecplotOutput_CMD='disable tecplot output'
+    
+    ! By default, QGIS output is enabled
+    ! This option disables QGIS output
+    character(MAX_INST) :: DisableQGISOutput_CMD='disable qgis output'
     
     
 
@@ -153,9 +157,6 @@
 
     character(MAX_INST) :: StressPeriod_CMD='stress period'
 
-    ! Post-processing modflow output files
-    character(MAX_INST) :: ModflowOutputToModflowStructure_CMD='modflow output to modflow structure'
-    
     integer(i4)  :: FNum
     character(MAX_STR) :: line
 
@@ -2164,6 +2165,9 @@
                 EnableTecplotOutput=.false.
                 call Msg('*** Tecplot Output Disabled')
 
+            elseif (index(instruction, DisableQGISOutput_CMD)  /= 0) then
+                EnableQGISOutput=.false.
+                call Msg('*** QGIS Output Disabled')
                 
             ! Units set assignment
             else if(index(instruction, UnitsTime_CMD)  /= 0) then
@@ -4823,7 +4827,7 @@
         
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
-        character(MAX_INST) :: CLNFromListFile_cmd		=   'cln from list file'
+        character(MAX_INST) :: CLNFromXYZList_cmd		=   'cln from xyz list'
         
         real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
         integer(i4) :: nPoints  ! number of points in list
@@ -4850,8 +4854,9 @@
             end if
                 
 
-            if(index(Instruction, CLNFromListFile_cmd)  /= 0) then
-                call xyzFromList(FNum,xi,yi,zi,nPoints)
+            if(index(Instruction, CLNFromXYZList_cmd)  /= 0) then
+                ! call xyzFromList(FNum,xi,yi,zi,nPoints)
+                call ErrMsg('cln from xyz list not fully implemented yet')
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,CLNDomain)
@@ -5270,16 +5275,16 @@
                 do i=1,TMPLT%nElements
                     iGWF_Cell=(j-1)*TMPLT%nElements+i
                     GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
-                    #ifdef _DEBUG 
-                        write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
-                    #endif
+                    !#ifdef _DEBUG 
+                    !    write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
+                    !#endif
                     do k=1,GWFDomain%ia(i)
                         kCell=(j-1)*TMPLT%nElements+abs(GWFDomain%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                         GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element ',kCell
-                        #endif
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element ',kCell
+                        !#endif
                     
                         GWFDomain%ConnectionLength(k,iGWF_Cell)=GWFDomain%ConnectionLength(k,i)
                         GWFDomain%PerpendicularArea(k,iGWF_Cell)=GWFDomain%PerpendicularArea(k,i)
@@ -5292,18 +5297,18 @@
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iDown=iGWF_Cell+TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element below ',iDown
-                        #endif
-
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element below ',iDown
+                        !#endif
+                        !
                     end if
                     if(j > 1) then ! upward connection
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iUp=iGWF_Cell-TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element above ',iUp
-                        #endif
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element above ',iUp
+                        !#endif
                     end if
                 end do
             end do

@@ -1,0 +1,40 @@
+\label{section:ObservationPoints}
+Observation points are used to output cell properties such as simulated hydraulic head or surface water depth during a numerical simulation.  The following instructions can be used to define new observation points:
+
+\ins{observation point}
+{
+    \squish
+    \begin{enumerate}
+        \item \str{Name} Observation point name \str{Name}.
+        \item \rnum{x} [$L$],\rnum{y} [$L$], \rnum{z} [$L$].  Observation point location as $xyz$ triplet.
+    \end{enumerate}
+    \squish
+}
+
+The example below\footnote{See example \texttt{6\_Abdul\_Prism\_Cell}} shows observation points being defined for both the \gwf\ and \swf\ domains:
+
+        \includegraphics[width=\textwidth]{MUT_ObsPoints.png}
+
+These coordinates are mesh cell locations that were determined using the \tecplot\ Probe Tool.
+
+The following instruction reads observation point data from a {\tt csv} file:
+
+\ins{observation points from csv file}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{FName}  Observtion points {\tt csv} file name.
+        \end{enumerate}
+          \mut\ uses the file \str{FName} to read the names and $xyz$ coordinates of the observation points.
+    }
+
+ The contents of  a {\tt csv} file containing observation point data that was created in \qgis\ are shown below:
+
+        \includegraphics[width=\textwidth]{MUT_ObservationPtsCSV.png}
+
+Note the following:
+\begin{itemize}
+    \item The first line of the file, which contains the list of field names generated in \qgis, is read and ignored.
+    \item The remainder of the file contains observation point data records (id's, names and $xyz$ coordinates) which are added until the end of file is reached.
+\end{itemize}
+
