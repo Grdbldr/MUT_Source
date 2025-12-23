@@ -2,6 +2,7 @@ Module MeshGen
     use GeneralRoutines
     use NumericalMesh
     use Tecplot
+    use ErrorHandling, only: ERR_FILE_IO, ERR_INVALID_INPUT, ERR_LOGIC, ERR_MATH, HandleError
     implicit none
         
     logical :: NeedMeshName=.false. ! flag to indicate if GridBuilder name is needed
@@ -48,7 +49,7 @@ Module MeshGen
 
         inquire(file=fname,exist=FileExists,form=file_type)
         if(.not. FileExists) then
-            call ErrMsg(' File not found: '//fname)
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(fname), 'list_file_elevation')
         end if
 
 
@@ -87,7 +88,7 @@ Module MeshGen
 
         inquire(file=trim(GBPathToFile)//'.grd',exist=FileExists)
         if(.not. FileExists) then
-            call ErrMsg('File not found: '//trim(GBPathToFile)//'.grd')
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(GBPathToFile)//'.grd', 'read_gridbuilder_file')
         end if
         
         call Msg(FileReadSTR//'GridBuilder file: '//trim(GBPathToFile)//'.grd')
@@ -288,7 +289,7 @@ Module MeshGen
                 end if
             else
                 write(TmpSTR,'(i2)')LocalMesh%nNodesPerElement
-                call ErrMsg(trim(LocalMesh%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                call HandleError(ERR_INVALID_INPUT, trim(LocalMesh%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet', 'write_mesh_to_tecplot')
             end if
 
         end do
@@ -412,7 +413,7 @@ Module MeshGen
         if(TotalLength < 0.0001) then
             call Msg('NOTE: Total Length of new CLN is less than 0.0001')
         else if(TotalLength < 1e-10) then   
-            call ErrMsg('Total Length of new CLN is essentially zero')
+            call HandleError(ERR_MATH, 'Total Length of new CLN is essentially zero', 'create_cln_from_two_points')
         endif
         
         dx=(xp(2) - xp(1))/nElements
@@ -1105,7 +1106,7 @@ Module MeshGen
        !     
 
             else
-			    call ErrMsg('Unrecognized instruction: new layer')
+			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: new layer', 'read_layer_instructions')
             end if
 
         end do read_layer_instructions
@@ -1134,7 +1135,7 @@ Module MeshGen
                         write(*,*) ' Error: Base of layer ',nlayers,' >= top'
                         write(*,*) ' At x: ',TMPLT%node(j)%x,' y: ',TMPLT%node(j)%y
                         write(*,*) ' Base elev= ', base_elev(j),' top elev= ',top_elev(j)
-                        call ErrMsg('Base elevation > top. See above.')
+                        call HandleError(ERR_LOGIC, 'Base elevation > top. See above.', 'read_layer_instructions')
                     else
                         base_elev(j) = top_elev(j) - z_added
                         node_fixed = node_fixed + 1
@@ -1226,7 +1227,7 @@ Module MeshGen
 
         inquire(file=fname,exist=FileExists,form=file_type)
         if(.not. FileExists) then
-            call ErrMsg(' File not found: '//fname)
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(fname), 'list_file_elevation')
         end if
 
 
@@ -1331,7 +1332,7 @@ Module MeshGen
 
 
             else
-			    call ErrMsg('Unrecognized instruction: top elevation')
+			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: top elevation', 'read_top')
             end if
 
         end do read_top
@@ -1402,7 +1403,7 @@ Module MeshGen
 			    read(instruction,*,iostat=status) xi(nPoints),yi(nPoints),zi(nPoints)
 
 			    if(status /= 0) then
-				    call ErrMsg('Bad xyz triple')
+				    call HandleError(ERR_INVALID_INPUT, 'Bad xyz triple', 'read_top')
                 endif
                 
                 write(TmpSTR,'(i8,2x,3('//FMT_R8//'),a)') nPoints,xi(nPoints),yi(nPoints),zi(nPoints),'     '//TRIM(UnitsOfLength)
@@ -1492,12 +1493,12 @@ Module MeshGen
 
 			    if(npairs > 1) then
 			        if(xp(npairs) <= xp(npairs-1)) then
-				        call ErrMsg('X values must be entered in ascending order')
+				        call HandleError(ERR_INVALID_INPUT, 'X values must be entered in ascending order', 'read_top')
 				    endif
 			    endif
 
 			    if(status /= 0) then
-				    call ErrMsg('Bad xz pair')
+				    call HandleError(ERR_INVALID_INPUT, 'Bad xz pair', 'read_top')
                 endif
                 
                 write(TmpSTR,'(i8,2x,2('//FMT_R8//'),a)') npairs,xp(npairs),zp(npairs),'     '//TRIM(UnitsOfLength)

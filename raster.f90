@@ -1,5 +1,6 @@
 module Raster
 	use GeneralRoutines
+	use ErrorHandling, only: ERR_FILE_IO, ERR_INVALID_INPUT, HandleError
 	implicit none
 
     character(256) :: Raster_CMD  
@@ -66,10 +67,7 @@ module Raster
             call Msg('Raster:'//Raster_CMD)
             
             if(status/=0) then
- 		        write(ErrStr,'(a)') 'File: a.Raster'
-		        l1=len_trim(ErrStr)
-		        write(ErrStr,'(a)') ErrStr(:l1)//New_line(a)//'Error reading file'
-			    call ErrMsg(ErrStr)
+                call HandleError(ERR_FILE_IO, 'Error reading file', 'read_instructions')
             end if
             
             if(index(Raster_CMD, Raster_Read_CMD)  /= 0) then
@@ -97,7 +95,7 @@ module Raster
                 exit
             
             else
-                call ErrMsg('Raster?:'//Raster_CMD)
+                call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: '//trim(Raster_CMD), 'read_instructions')
             end if
         end do
 

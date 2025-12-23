@@ -1,6 +1,7 @@
 module NumericalMesh
     use BasicTypes
     use GeneralRoutines
+    use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
     implicit none
     
     real(sp) :: MinSeparationDistance=0.0001
@@ -409,7 +410,7 @@ module NumericalMesh
 	        M.LocalFaceNodes(1,6)=2; M.LocalFaceNodes(2,6)=6; M.LocalFaceNodes(3,6)=7; M.LocalFaceNodes(4,6)=3    ! right
             
         case default
-            call ErrMsg('Tecplot Element Type '//trim(M%TecplotTyp)//' not supported')
+            call HandleError(ERR_INVALID_INPUT, 'Tecplot Element Type '//trim(M%TecplotTyp)//' not supported', 'set_local_face_nodes')
         end select  
   
         ! *** ASSUMPTION: If two face centroids are coincident, then the faces are shared by neighbouring elements

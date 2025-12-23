@@ -8,6 +8,7 @@ module gb
 	use error_param
     use BasicTypes
     use MeshGen
+    use ErrorHandling, only: ERR_FILE_IO, ERR_INVALID_INPUT, ERR_LOGIC, HandleError
 
 	implicit none
     
@@ -226,7 +227,7 @@ module gb
 			call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
 
         else
-            call ErrMsg('elength_in array not allocated before TargetElementLength command')
+            call HandleError(ERR_LOGIC, 'elength_in array not allocated before TargetElementLength command', 'TargetElementLength')
         endif
 
         
@@ -334,7 +335,7 @@ module gb
             else if(index(instruction, RefineInsidePolygon_CMD)  /= 0) then
                 call RefineInsidePolygon(GB_GEN,FNumMUT)
             else
-                call ErrMsg('MUSG?:'//instruction)
+                call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: '//trim(instruction), 'GridBuilderMods_InstructionLoop')
             end if
         end do GridBuilderMods_InstructionLoop
 
@@ -380,7 +381,7 @@ module gb
 		read(FNumMUT,'(a)') FNameLine 
         inquire(file=FNameLine,exist=FileExists)
         if(.not. FileExists) then
-			call ErrMsg('File not found: '//trim(FNameLine))
+			call HandleError(ERR_FILE_IO, 'File not found: '//trim(FNameLine), 'OuterBoundaryFrom_ID_X_Y')
         endif
                 
         call Msg(FileReadSTR//'OuterBoundaryFrom_ID_X_Y file: '//trim(FNameLine))
@@ -466,7 +467,7 @@ module gb
 		read(FNumMUT,'(a)') FNameLine 
         inquire(file=FNameLine,exist=FileExists)
         if(.not. FileExists) then
-			call ErrMsg('File not found: '//trim(FNameLine))
+			call HandleError(ERR_FILE_IO, 'File not found: '//trim(FNameLine), 'RefineInsidePolygon')
         endif
                 
         call Msg(FileReadSTR//'RefineInsidePolygon file: '//trim(FNameLine))
@@ -476,7 +477,7 @@ module gb
         
         if(Polygon%LineTyp /= 'Polygon') then
             write(TmpSTR,'(a)') 'RefineInsidePolygon file '//trim(FNameLine)//' must be of type polygon'
-            call ErrMsg(TmpSTR)
+            call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'RefineInsidePolygon')
         endif
                 
         Polygon%Name=Trim(FNameline)
@@ -515,7 +516,7 @@ module gb
 		read(FNumMUT,'(a)') FNameLine 
         inquire(file=FNameLine,exist=FileExists)
         if(.not. FileExists) then
-			call ErrMsg('File not found: '//trim(FNameLine))
+			call HandleError(ERR_FILE_IO, 'File not found: '//trim(FNameLine), 'WellsFrom_ID_X_Y')
         endif
                 
         call Msg(FileReadSTR//'WellsFrom_ID_X_Y file: '//trim(FNameLine))
@@ -693,7 +694,7 @@ module gb
 
 		i=1
 		dist_min=1.0e20
-		97    continue
+		do
 			!if(plan_view)then
 				f1=sqrt((x1-GB_GEN%node(i)%x)**2+((y1-GB_GEN%node(i)%y))**2)
 			!else
@@ -704,7 +705,8 @@ module gb
 				dist_min=f1
 			endif
 			i=i+1
-		if (i.LE.GB_GEN%nNodes) goto 97
+			if (i.GT.GB_GEN%nNodes) exit
+		end do
 	end subroutine find_node
 	!----------------------------------------------------------------------
 	 subroutine set_ob_ab(GB_GEN)
@@ -739,7 +741,7 @@ module gb
 		if(ierr /= 0) return
 
 		tol=(GB_GEN%xmax-GB_GEN%xmin)/1.e-5
-		10    continue
+		relaxation_loop: do
 			maxdiff=0.0
 			do i=1,GB_GEN%nNodes
 				if (.not. bcheck(GB_GEN%node(i)%is,any_bndy) .and. .not. bcheck(GB_GEN%node(i)%is,well)) then
@@ -755,7 +757,8 @@ module gb
 					GB_GEN%node(i)%y=ym/nicon(i)
 				endif
 			end do
-		if (maxdiff.gt.tol) goto 10
+			if (maxdiff.le.tol) exit relaxation_loop
+		end do relaxation_loop
 
 	end subroutine relax_grid
 	!----------------------------------------------------------------------
@@ -811,19 +814,16 @@ module gb
 				do j=1,nicon(i)
 					ic=icon(i,j)
 					if(bcheck(GB_GEN%node(ic)%is,out_bndy)) then
-						k=1
-						30 continue  ! loop over outer boundary
+						boundary_loop: do k=1,onbn-1
 							n1=obn(k)
 							n2=obn(k+1)
 							if(n1.eq.i .and. n2.eq.ic) then
 								i1=ic
-								goto 110
+								exit boundary_loop
 							endif
-							k=k+1
-						if(k.lt.onbn) goto 30
+						end do boundary_loop
 					endif
 				end do
-				110       continue
 
 				do j=1,nicon(i)
 					i2=icon(i,j)
@@ -897,7 +897,7 @@ module gb
 
 		l=n/2+1
 		ir=n
-		10    continue
+		heap_sort_loop: do
 			if(l.gt.1)then
 				l=l-1
 				indxt=indx(l)
@@ -909,27 +909,29 @@ module gb
 				ir=ir-1
 				if(ir.eq.1)then
 					indx(1)=indxt
-					goto 30
+					exit heap_sort_loop
 				endif
 			endif
 			i=l
 			j=l+l
-			20 if(j.le.ir)then
-				if(j.lt.ir)then
-					if(arrin(indx(j)).lt.arrin(indx(j+1)))j=j+1
+			sift_down_loop: do
+				if(j.le.ir)then
+					if(j.lt.ir)then
+						if(arrin(indx(j)).lt.arrin(indx(j+1)))j=j+1
+					endif
+					if(q.lt.arrin(indx(j)))then
+						indx(i)=indx(j)
+						i=j
+						j=j+j
+					else
+						j=ir+1
+					endif
+					cycle sift_down_loop
 				endif
-				if(q.lt.arrin(indx(j)))then
-					indx(i)=indx(j)
-					i=j
-					j=j+j
-				else
-					j=ir+1
-				endif
-				go to 20
-			endif
+				exit sift_down_loop
+			end do sift_down_loop
 			indx(i)=indxt
-		go to 10
-		30    return
+		end do heap_sort_loop
 	end subroutine indexx
 
 	!*** Well positioning and refinement routines ***
@@ -1116,26 +1118,34 @@ module gb
 		nnn=GB_GEN%nNodes
         gbNodesIn=GB_GEN%nNodes
 		nne=GB_GEN%nElements
-		do l=1,GB_GEN%nElements
+			do l=1,GB_GEN%nElements
 			if (bcheck(GB_GEN%element(l)%is,chosen)) then
 				call refine_element(GB_GEN,l,.true.,nil,nnn,nne,nnl)
-				if(ierr /= 0) goto 1000
+				if(ierr /= 0) then
+					deallocate(nnl)
+					return
+				endif
 			endif
         end do
 		
         if (nnn.gt.gbNodesIn) then
-			15      sn=nnn
+			refinement_loop: do
+				sn=nnn
 				do  l=1,GB_GEN%nElements
 					if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
 						call check_two(GB_GEN,l,nil,nnn,nne,nnl)
-						if(ierr /= 0) goto 1000
+						if(ierr /= 0) exit refinement_loop
 					endif
 				end do
-			if(nnn.gt.sn) goto 15
+				if(nnn.le.sn) exit refinement_loop
+			end do refinement_loop
 			do  l=1,GB_GEN%nElements
 				if (.not. bcheck(GB_GEN%element(l)%is,chosen)) then
 					call check_one(GB_GEN,l,nil,nnl)
-					if(ierr /= 0) goto 1000
+					if(ierr /= 0) then
+						deallocate(nnl)
+						return
+					endif
 				endif
 			end do
 		endif
@@ -1145,7 +1155,7 @@ module gb
 		!recalc_segs=.true.
 		recalc_nicon=.true.
 
-		1000 deallocate(nnl)
+		deallocate(nnl)
 
 	end subroutine refine_chosen
 	!----------------------------------------------------------------------
@@ -1208,7 +1218,7 @@ module gb
 		node_exists=.false.
 		if (nil.gt.0)then
 			i=1
-			10      continue
+			do
 				if (abs(xm-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 					if(abs(ym-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 						node_exists=.true.
@@ -1219,9 +1229,11 @@ module gb
 					endif
 				endif
 				i=i+1
-			if (i.LE.nil .aND. .not. node_exists) goto 10
-		endif
-		if (.not. node_exists) then
+				if (i.GT.nil .or. node_exists) exit
+			end do
+        endif
+
+        if (.not. node_exists) then
             ! write(*,*) GB_GEN%nNodes,' check_exist'
             gbnNodesBefore=GB_GEN%nNodes
 			call new_node(GB_GEN,xm,ym)
@@ -1268,7 +1280,7 @@ module gb
 		x3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x
 		y3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y
 		i=1
-		10    continue
+		do
 			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					nSplitSides=nSplitSides+1
@@ -1285,7 +1297,8 @@ module gb
 				endif
 			endif
 			i=i+1
-		if(i.le.nil .and. nSplitSides.le.1) goto 10
+			if(i.gt.nil .or. nSplitSides.gt.1) exit
+		end do
 		if (nSplitSides.gt.1) then
 			call refine_element(GB_GEN,l,.true.,nil,nnn,nne,nnl)  ! fred was false
 			if(ierr /= 0) return
@@ -1312,7 +1325,7 @@ module gb
 		x3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%x+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%x
 		y3=0.5*GB_GEN%node(GB_GEN%idNode(3,l))%y+0.5*GB_GEN%node(GB_GEN%idNode(1,l))%y
 		i=1
-		10    continue
+		do
 			if (abs(x1-GB_GEN%node(nnl(i))%x).lt.1.e-5) then
 				if(abs(y1-GB_GEN%node(nnl(i))%y).lt.1.e-5) then
 					n1=nnl(i)
@@ -1350,7 +1363,8 @@ module gb
 				endif
 			endif
 			i=i+1
-		if(i.le.nil .and. .not. done) goto 10
+			if(i.gt.nil .or. done) exit
+		end do
 
 	end subroutine check_one
 
@@ -2009,7 +2023,7 @@ module gb
 		integer(i4) :: i, k, narea, un, new
 
 		i=1
-		10    continue
+		do
 			if(bn(narea,i).eq.new) then
 				return
 			endif
@@ -2017,7 +2031,8 @@ module gb
 				k=i
 			endif
 			i=i+1
-		if(i.le.nbn(narea)) goto 10
+			if(i.gt.nbn(narea)) exit
+		end do
 
 		call reallocate_boundary_arrays(narea,nbn(narea)+1)
 		if(ierr /= 0) return
@@ -2039,7 +2054,7 @@ module gb
 		integer(i4) :: i, k, un, new
 
 		i=1
-		10    continue
+		do
 			if(obn(i).eq.new) then
 				return
 			endif
@@ -2047,7 +2062,8 @@ module gb
 				k=i
 			endif
 			i=i+1
-		if(i.le.onbn) goto 10
+			if(i.gt.onbn) exit
+		end do
 
 		call reallocate_outer_boundary_arrays(onbn+1)
 		if(ierr /= 0) return

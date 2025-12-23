@@ -1,5 +1,6 @@
 Module Materials
     use GeneralRoutines
+    use ErrorHandling, only: ERR_FILE_IO, HandleError
     implicit none
 
         integer(i4) :: nGWFMaterials
@@ -109,6 +110,10 @@ Module Materials
         integer(i4) :: id
 
 		call Msg('Materials file '//trim(FName))
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(FName), 'DB_ReadGWFMaterials')
+        end if
         call OpenAscii(itmp,FName)
 	    
         ! Find largest material number
@@ -211,6 +216,10 @@ Module Materials
         integer(i4) :: id
 
 		call Msg('Materials file '//trim(FName))
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(FName), 'DB_ReadCLNMaterials')
+        end if
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -273,6 +282,10 @@ Module Materials
         integer(i4) :: id
 
 		call Msg('Materials file '//trim(FName))
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(FName), 'DB_ReadSWFMaterials')
+        end if
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -329,6 +342,10 @@ Module Materials
         integer(i4) :: id
 
 		call Msg('ET file '//trim(FName))
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(FName), 'DB_ReadET')
+        end if
         call OpenAscii(itmp,FName)
 	    
         ! Count materials
@@ -403,6 +420,10 @@ Module Materials
         integer(i4) :: id
 
 		call Msg('SMS file '//trim(FName))
+        inquire(file=FName,exist=FileExists)
+        if(.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'File not found: '//trim(FName), 'DB_ReadSMS')
+        end if
         call OpenAscii(itmp,FName)
 	    
         ! Count materials

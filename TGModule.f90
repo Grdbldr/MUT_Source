@@ -6,6 +6,7 @@ module MUT  !### Modflow-USG Tools
     use MUSG
     use tecplot
     use NumericalMesh
+    use ErrorHandling, only: ERR_FILE_IO, ERR_INVALID_INPUT, HandleError
     
     implicit none
 
@@ -109,10 +110,7 @@ module MUT  !### Modflow-USG Tools
 
 
             if(status/=0) then
- 		        write(ErrStr,'(a)') 'File: a.mut'
-		        l1=len_trim(ErrStr)
-		        write(ErrStr,'(a)') ErrStr(:l1)//New_line(a)//'Error reading file'
-			    call ErrMsg(ErrStr)
+                call HandleError(ERR_FILE_IO, 'Error reading file', 'read_instructions')
            end if
 
             if(index(MUT_CMD, StopWatch_CMD) /= 0) then
@@ -212,7 +210,7 @@ module MUT  !### Modflow-USG Tools
                 call PostprocessExistingModflowModel(FnumMUT,MyProject,prefix)
 
             else
-                call ErrMsg('MUT?:'//MUT_CMD)
+                call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: '//trim(MUT_CMD), 'read_instructions')
             end if
         end do
 

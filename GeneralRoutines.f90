@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG  
-        character(37) :: MUTVersion='2025.1  DEBUG' 
+        character(37) :: MUTVersion='2025.2  DEBUG' 
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion='2025.1 RELEASE' 
+        character(37) :: MUTVersion='2025.2 RELEASE' 
     #endif
 
 
@@ -4156,6 +4156,7 @@ module GeneralRoutines    !### bit setting routines
     
     !---------------------------------------------- USERBIN routine
     subroutine DefineUserbin(str) !--- Message to file and display. Stop.
+        implicit none
     	character(*) :: str
         
         if(LocalUserbin) then
@@ -4168,26 +4169,8 @@ module GeneralRoutines    !### bit setting routines
  
 
     !---------------------------------------------- Message routines
-    subroutine ErrMsg(str) !--- Message to file and display. Stop.
-	    character(*) :: str
-
-	    write(*,'(a)') ' '
-	    write(*,'(a)') '!?!?'
-	    write(*,'(a)') '!?!? Input error...'
-	    write(*,'(a)') str
-	    write(*,'(a)') '!?!? ...stopping execution.'
-
-	    write(ErrFNum,'(a)') ' '
-	    write(ErrFNum,'(a)') '!?!?'
-	    write(ErrFNum,'(a)') '!?!? Input error...'
-	    write(ErrFNum,'(a)') str
-	    write(ErrFNum,'(a)') '!?!? ...stopping execution.'
-
-	    stop
-
-    end subroutine ErrMsg
-
     subroutine WarnMsg(str) !--- Message to file and display. Continue.
+        implicit none
 	    character(*) :: str
 	
 	    write(*,'(a)') ' '
@@ -4202,12 +4185,34 @@ module GeneralRoutines    !### bit setting routines
 
     end subroutine WarnMsg
 
+    subroutine ErrMsg(str) !--- Message to file and display. Stop.
+        implicit none
+        character(*) :: str
+
+        write(*,'(a)') ' '
+        write(*,'(a)') '!?!?'
+        write(*,'(a)') '!?!? Input error...'
+        write(*,'(a)') str
+        write(*,'(a)') '!?!? ...stopping execution.'
+
+        write(ErrFNum,'(a)') ' '
+        write(ErrFNum,'(a)') '!?!?'
+        write(ErrFNum,'(a)') '!?!? Input error...'
+        write(ErrFNum,'(a)') str
+        write(ErrFNum,'(a)') '!?!? ...stopping execution.'
+
+        stop
+
+    end subroutine ErrMsg
+
     subroutine PercentDone(icur,iend)
+        implicit none
         integer(i4) :: icur, iend
         write(*,'(1a1,a,f6.2,$)') char(13),'Percent complete: ', float(icur)/float(iend)*100
     end subroutine PercentDone
 
     subroutine StopWatch(iwatch,istr)
+        implicit none
         integer(i4) :: iwatch
         character(*) :: istr
         character(MAX_LBL) :: EtimeMsg
@@ -4224,6 +4229,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine StopWatch
 
     subroutine SplitTime(iwatch)
+        implicit none
         integer(i4) :: iwatch
         character(MAX_LBL) :: EtimeMsg
 
@@ -4235,6 +4241,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine SplitTime
 
     subroutine ElapsedTime(iwatch)
+        implicit none
         integer(i4) :: iwatch
         character(MAX_LBL) :: EtimeMsg
 
@@ -4250,6 +4257,7 @@ module GeneralRoutines    !### bit setting routines
     !---------------------------------------------- Array allocation routines
     subroutine AllocChk(ialloc,string) !--- Array allocation error message to file and display. Stop
         !   Purpose:
+        implicit none
         character*(*) string
 	 	integer(i4) ialloc
 
@@ -4442,7 +4450,7 @@ module GeneralRoutines    !### bit setting routines
                 write(TMPStr,'(a,i8)') 'Array size: ',SIZE(rArray)
                 call Msg(TMPStr)
                 write(TMPStr,'(a,i8,a,i8)') 'Error reading real array at index ',i,' from file unit ',Fnum
-                call ErrMsg(TMPStr)
+                call ErrMsg(trim(TMPStr))
             endif
         end do
         
@@ -4452,6 +4460,7 @@ module GeneralRoutines    !### bit setting routines
     !---------------------------------------------- FileIO routines
     subroutine GetUnit(iunit) !--- number. Next available.
         use global, only: niunit
+        implicit none
         integer(i4) :: iunit
 	    iunit=NIUNIT+1  ! don't mess with modflow unit numbers which are less NIUNIT
 	    do
@@ -4468,6 +4477,7 @@ module GeneralRoutines    !### bit setting routines
 
 
     subroutine FreeUnit(iunit) !--- number. Make available.
+        implicit none
         integer(i4) :: iunit
         if(file_open_flag(iunit)) then
 		    file_open_flag(iunit)=.false.
@@ -4480,6 +4490,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine FreeUnit
 
     subroutine OpenAscii(iunit,fname) !--- Return unit # of file or stop
+        implicit none
         integer(i4) :: iunit
         character(*) :: fname
         
@@ -4487,7 +4498,7 @@ module GeneralRoutines    !### bit setting routines
         open(iunit,file=fname,form='formatted',iostat=status)
 	    if(status /= 0) then
 	        call FreeUnit(iunit)
-		    call ErrMsg('Error opening file: '//fname)
+		    call ErrMsg('Error opening file: '//trim(fname))
         else
             !write(TmpSTR,'(i5)') iunit
             !call Msg(' unit, ASCII file: '//trim(TmpSTR)//', '//trim(fname))
@@ -4495,18 +4506,20 @@ module GeneralRoutines    !### bit setting routines
     end subroutine OpenAscii
 
     subroutine OpenBinary(iunit,fname) !--- Return unit # of file or report error and stop.
+        implicit none
         integer(i4) :: iunit
         character(*) :: fname
 
 	    call GetUnit(iunit)
         open(iunit,file=fname,form='unformatted',iostat=status)
 	    if(status /= 0) then
+            call FreeUnit(iunit)
+            inquire(file=fname,exist=FileExists)
             if(.not. FileExists) then
-        	    call FreeUnit(iunit)
-                inquire(file=fname,exist=FileExists)
-                call ErrMsg(' File not found: '//fname)
+                call ErrMsg('File not found: '//trim(fname))
+            else
+                call ErrMsg('Error opening file: '//trim(fname))
             end if
-		    call ErrMsg('Error opening file: '//fname)
         else
             !write(TmpSTR,'(i5)') iunit
             !call Msg(' unit, BINARY file: '//trim(TmpSTR)//', '//trim(fname))
@@ -4514,6 +4527,7 @@ module GeneralRoutines    !### bit setting routines
     end subroutine OpenBinary
 
        subroutine OpenDirect(iunit,fname) !--- Return unit # of file or stop
+        implicit none
         integer(i4) :: iunit
         character(*) :: fname
 
@@ -4521,7 +4535,7 @@ module GeneralRoutines    !### bit setting routines
         open(iunit,file=fname,form='formatted',access='Direct',iostat=status)
 	    if(status /= 0) then
 	        call FreeUnit(iunit)
-		    call ErrMsg('Error opening file: '//fname)
+		    call ErrMsg('Error opening file: '//trim(fname))
         else
             ! write(*,*) 'unit: ',iunit,trim(fname)
 	    end if
@@ -4529,6 +4543,7 @@ module GeneralRoutines    !### bit setting routines
 
     !---------------------------------------------- User interface routines
     subroutine Msg(str) !--- Message to file and display.
+        implicit none
 	    character(*) :: str
 	
 	    write(FnumEco,'(a)') str
@@ -4684,7 +4699,7 @@ module GeneralRoutines    !### bit setting routines
             else if(line(1:7) == 'include') then ! include a file
                 inquire(file=line(9:len),exist=FileExists)
                 if(.not. FileExists) then
-				    call ErrMsg('File not found: '//line(8:))
+				    call ErrMsg('File not found: '//trim(line(8:)))
                 else
 				    call getunit(FnumInclude)
                     open(FnumInclude,file=line(9:len),status='unknown',form='formatted')
@@ -5859,6 +5874,123 @@ module GeneralRoutines    !### bit setting routines
 
     END SUBROUTINE INDEXX_char
 
+    !-----------------------------------------------Unit Conversion routines
+    
+    real(sp) function LengthConverter(Project_LengthUnit,Material_LengthUnit)
+        ! Convert length units from Material_LengthUnit to Project_LengthUnit
+        implicit none
+        character(*) :: Project_LengthUnit
+        character(*) :: Material_LengthUnit
+        
+        select case(Project_LengthUnit)
+        case ('FEET')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=1.0
+            case ('METERS')
+                LengthConverter=3.280839895
+            case ('CENTIMETERS')
+                LengthConverter=0.032808399
+            end select
+
+        case ('METERS')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=0.3048
+            case ('METERS')
+                LengthConverter=1.0
+            case ('CENTIMETERS')
+                LengthConverter=0.01
+            end select
+
+        case ('CENTIMETERS')
+            select case(Material_LengthUnit)
+            case ('FEET')
+                LengthConverter=30.48
+            case ('METERS')
+                LengthConverter=100.0
+            case ('CENTIMETERS')
+                LengthConverter=1.0
+            end select
+        end select
+    
+    end function LengthConverter
+    
+    real(sp) function TimeConverter(Project_TimeUnit,Material_TimeUnit)
+        ! Convert time units from Material_TimeUnit to Project_TimeUnit
+        implicit none
+        character(*) :: Project_TimeUnit
+        character(*) :: Material_TimeUnit
+        
+        select case(Project_TimeUnit)
+        case ('SECONDS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0
+            case ('MINUTES')
+                TimeConverter=60.0
+            case ('HOURS')
+                TimeConverter=60.0*60.0
+            case ('DAYS')
+                TimeConverter=60.0*60.0*24.0
+            case ('YEARS')
+                TimeConverter=60.0*60.0*24.0*365.0
+            end select
+        case ('MINUTES')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0/60.0
+            case ('MINUTES')
+                TimeConverter=1.0
+            case ('HOURS')
+                TimeConverter=60.0
+            case ('DAYS')
+                TimeConverter=60.0*24.0
+            case ('YEARS')
+                TimeConverter=60.0*24.0*365.0
+            end select
+        case ('HOURS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0/60.0/60.0
+            case ('MINUTES')
+                TimeConverter=1.0/60.0
+            case ('HOURS')
+                TimeConverter=1.0
+            case ('DAYS')
+                TimeConverter=24.0
+            case ('YEARS')
+                TimeConverter=24.0*365.0
+            end select
+        case ('DAYS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                 TimeConverter=1.0/60.0/60.0/24.0
+            case ('MINUTES')
+                 TimeConverter=1.0/60.0/24.0
+            case ('HOURS')
+                 TimeConverter=1.0/24.0
+            case ('DAYS')
+                TimeConverter=1.0
+            case ('YEARS')
+                TimeConverter=365.0
+            end select
+        case ('YEARS')
+            select case(Material_TimeUnit)
+            case ('SECONDS')
+                TimeConverter=1.0/60.0/60.0/24.0/365.0
+            case ('MINUTES')
+                TimeConverter=1.0/60.0/24.0/365.0
+            case ('HOURS')
+                TimeConverter=1.0/24.0/365.0
+            case ('DAYS')
+                TimeConverter=1.0/365.0
+            case ('YEARS')
+                TimeConverter=1.0
+            end select
+        end select
+    
+    end function TimeConverter
 
     
 end module GeneralRoutines

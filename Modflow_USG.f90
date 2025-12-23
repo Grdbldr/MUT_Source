@@ -1,4 +1,4 @@
-﻿module MUSG !
+module MUSG !
     use GeneralRoutines
     !use ProcessCSV
     use NumericalMesh    
@@ -8,7 +8,23 @@
     use global
     use CLN1MODULE
     use SWF1MODULE
+    use MUSG_Core, only: cell, ModflowDomain, ModflowProject, NodalControlVolume
+    use MUSG_Database
+    use MUSG_BoundaryConditions
+    use MUSG_StressPeriods
+    use MUSG_OutputControl
+    use MUSG_MaterialProperties
+    use MUSG_Selection
+    use MUSG_ObservationPoints
+    use MUSG_InstructionParser
+    use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, ERR_LOGIC, ERR_MATH, HandleError
     implicit none
+    
+    ! Domain type constants (local to avoid conflict with ModflowProject file unit fields)
+    integer(i4), parameter :: iTMPLT=0
+    integer(i4), parameter :: iGWF=1
+    integer(i4), parameter :: iSWF=2
+    integer(i4), parameter :: iCLN=3
     
     ! Pre/Post-processor for Modflow project files Fall 2023
     ! Added instructions
@@ -36,12 +52,8 @@
     character(MAX_INST) :: UnitsLength_CMD	        =   'units of length'
     
     !---------------------------------------------------Database
-    character(MAX_INST) :: LocalUserbin_CMD	        =   'use local databases'
-    character(MAX_INST) :: SMS_Database_CMD	        =   'sms database'
-    character(MAX_INST) :: GWFMaterialsDatabase_CMD	=   'gwf materials database'
-    character(MAX_INST) :: CLNMaterialsDatabase_CMD	=   'cln materials database'
-    character(MAX_INST) :: SWFMaterialsDatabase_CMD	=   'swf materials database'
-    character(MAX_INST) :: ET_Database_CMD	        =   'et database'
+    ! Database command strings moved to MUSG_Database module
+    ! Keeping local references for backward compatibility during transition
     
 
     ! Ways to define the 2D template mesh
@@ -148,7 +160,7 @@
     character(MAX_INST) :: ObservationPointsFromCSVFile_CMD		=   'observation points from csv file'
         
     !---------------------------------------------------SMS Dataset
-    character(MAX_INST) :: SMSParamterSetNumber_CMD		    =   'sms parameter set number'
+    ! SMSParamterSetNumber_CMD is now provided by MUSG_Database module
 
 
     ! --------------------------------------------------Modflow project definition section
@@ -164,469 +176,11 @@
     
     integer(i4) :: ActiveDomain=0
     character(5) :: ActiveDomainSTR
-    integer(i4), parameter :: iTMPLT=0
-    integer(i4), parameter :: iGWF=1
-    integer(i4), parameter :: iSWF=2
-    integer(i4), parameter :: iCLN=3
-
-    ! By default, 2D finite-elements in template mesh are used to define control volumes
-    logical :: NodalControlVolume=.false.
+    ! iTMPLT, iGWF, iSWF, iCLN are now defined above as parameters
 
     ! Added for Modflow-USG Tools
-    
-    type cell 
-        real(dp) :: x
-        real(dp) :: y
-        real(dp) :: z
-        real(dp) :: Area   ! true area of the cell (currently not used)
-        real(dp) :: xyArea   ! area of the cell in xy plane
-        real(dp) :: Top    ! top elevation of the cell 
-        real(dp) :: Bottom ! bottom elevation of the cell
-        character(len=:), allocatable :: name
-        integer(i4) :: id
-        integer(i4) :: is
-        integer(i4) :: idZone
-        integer(i4) :: iLayer ! layer number for extruded mesh
-        
-        ! General cell properties used buy all domain type
-        real(dp) :: StartingHeads           ! STRT in modflow i.e. initial heads
-        
-        ! GWF cell properties 
-        real(sp) :: Kh
-        real(sp) :: Kv
-        real(sp) :: Ss
-        real(sp) :: Sy
-        real(sp) :: Alpha
-        real(sp) :: Beta
-        real(sp) :: Sr
-        real(sp) :: Brooks
-        
-        ! SWF cell properties 
-        real(sp) :: Sgcl                    ! SWF-GWF connection length
-        real(dp) :: CriticalDepthLength     ! SWBC assigned critical depth boundary cell length value
-
-        
-        ! GWF cell properties 
-        real(dp) :: Length          
-        real(dp) :: LowestElevation
-        real(dp) :: SlopeAngle
-    end type cell 
-
-
-    type,  extends(mesh)  :: ModflowDomain
-        ! common to all types of domains: GWF, CLN, SWF, ...
-        
-        integer(i4) :: nCells ! number of cells in domain
-        type(cell), allocatable :: cell(:) ! array of cells
-        integer(i4) :: nNodesPerCell ! number of nodes in cell
-        
-        real(dp), allocatable :: ConnectionLength(:,:)    ! variable named CLN in modflow, not to be confused with CLN (Connected Linear Network)
-        real(dp), allocatable :: PerpendicularArea(:,:)   ! FAHL in modflow
-
-
-        
-        
-        logical :: IsDefined=.false.      ! this type of domain has been defined 
-        character(128) :: MeshType      ! structured or unstructured?
-        
-        integer(i4) :: iz      ! is 1 if the elevations of node and mesh elements vertices are supplied; 0 otherwise
-        integer(i4) :: ic      ! is 1 if the cell specifications associated with each node are supplied; 0 otherwise
-
-        integer(i4) :: NCLNGWC      ! # of CLN to GWF connections
-        integer(i4) :: NCONDUITYP   ! number of circular CLN's
-        integer(i4) :: NRECTYP      ! number of rectangular CLN's
-        
-        !real(dp), allocatable :: StartingHeads(:)   ! STRT in modflow i.e. initial heads
-        integer(i4) :: nCHDCells=0        
-        real(dp), allocatable :: ConstantHead(:)  ! CHD assigned head value
-
-        real(dp), allocatable :: Recharge(:)  ! RCH assigned recharge value
-        integer(i4) :: nRCHoption  ! RCH option (nrchop in Modflow)
-        
-        integer(i4) :: nDRNCells=0        
-        real(dp), allocatable :: DrainElevation(:)  ! DRN assigned Drain Elevation value
-        real(dp), allocatable :: DrainConductance(:)  ! DRN assigned Drain Conductance value
-
-        integer(i4) :: nWELCells=0        
-        real(dp), allocatable :: PumpingRate(:)  ! WEL assigned Pumping Rate value
-        
-        !real(dp), allocatable :: CriticalDepthLength(:)  ! SWBC assigned critical depth boundary cell length value
-        integer(i4) :: nSWBCCells=0        
-        
-        integer(i4), allocatable :: ibound(:)
-        integer(i4), allocatable :: laybcd(:)  ! size nLayers, non-zero value indicates layer has a quasi-3D confining bed below
-        integer(i4) :: nodelay    ! for now assume a constant for stacked mesh with no vertical refinement
-        
-        integer(i4), allocatable :: LayTyp(:)  ! size nLayers, layer type
-        integer(i4), allocatable :: LayAvg(:)  ! size nLayers, layer type
-        real(dp), allocatable :: chani(:)  ! size nLayers, layer type
-        integer(i4), allocatable :: layvka(:)  ! size nLayers, layer type
-        integer(i4), allocatable :: laywet(:)  ! size nLayers, layer type
-        
-   
-        
-        
-        real(sp), allocatable :: hnew(:)  ! initial head
-        
-        ! .HDS file
-        character(128) :: FNameHDS
-        integer(i4) :: iHDS
-        real(sp), allocatable :: Head(:,:)
-        
-        ! .DDN file
-        character(128) :: FNameDDN
-        integer(i4) :: iDDN
-	    real(sp), allocatable :: Drawdown(:,:)
-        
-        ! .CBB file 
-        integer(i4) :: nComp
-        character(128) :: FNameCBB
-        integer(i4) :: iCBB
-        real(sp), allocatable :: Cbb_STORAGE(:,:)
-	    real(sp), allocatable :: Cbb_CONSTANT_HEAD(:,:)
-	    real(sp), allocatable :: Cbb_RECHARGE(:,:)
-	    real(sp), allocatable :: Cbb_WELLS(:,:)
-	    real(sp), allocatable :: Cbb_DRAINS(:,:)
-	    real(sp), allocatable :: Cbb_CLN(:,:)
-	    real(sp), allocatable :: Cbb_SWF(:,:)
-	    real(sp), allocatable :: Cbb_FLOW_FACE(:,:)
-	    real(sp), allocatable :: Cbb_GWF(:,:)
-	    real(sp), allocatable :: Cbb_SWBC(:,:)
-        
-        real(sp), allocatable :: laycbd(:)
-        
-        ! CLN properties (zoned)
-        integer(i4), allocatable    :: Geometry(:)           ! circular or rectangular
-        integer(i4), allocatable    :: Direction(:)          ! vertical, horizontal or angled
-        real(sp), allocatable       :: CircularRadius(:)    ! dimension of CLN
-        real(sp), allocatable       :: RectangularWidth(:)    ! dimension of CLN
-        real(sp), allocatable       :: RectangularHeight(:)    ! dimension of CLN
-        real(sp), allocatable       :: LongitudinalK(:)    ! dimension of CLN
-        integer(i4), allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
-
-        ! SWF properties (zoned)
-        !real(sp), allocatable :: Sgcl(:)   ! SWF-GWF connection length
-        real(sp), allocatable :: Manning(:)   ! Manning's coefficient of friction
-        real(sp), allocatable :: DepressionStorageHeight(:)
-        real(sp), allocatable :: ObstructionStorageHeight(:)
-        real(sp), allocatable :: H1DepthForSmoothing(:)   ! SWF depth smoothing parameter
-        real(sp), allocatable :: H2DepthForSmoothing(:)   ! SWF depth smoothing parameter
-        
-        ! Observation Points
-        ! .OBS file
-        character(128) :: FNameOBS
-        integer(i4) :: iOBS
-
-        integer(i4) :: nObsPnt=0
-        character(MAX_LBL) :: ObsPntName(MAX_OBS)
-        integer(i4) :: ObsPntCell(MAX_OBS)
-            
-    end type ModflowDomain
- 
-
-    type ModflowProject
- 
-        type(mesh) TMPLT
-        type(ModflowDomain) GWF
-        type(ModflowDomain) CLN
-        type(ModflowDomain) SWF
-        
-        character(128) :: MUTPrefix
-        character(128) :: Prefix='Modflow'
-        
-        
-        ! By default, RICHARDS equation for variably-saturated flow is used
-        logical :: SaturatedFlow=.false.
-        
-        logical :: TagFiles
-        logical :: GenOCFile
-
-        ! GSF file required for grid dimensions but not listed in NAM file
-        character(128) :: FNameGSF
-        integer(i4) :: iGSF
-        
-        ! CLN_GSF file required for grid dimensions but not listed in NAM file
-        character(128) :: FNameCLN_GSF
-        integer(i4) :: iCLN_GSF
-        
-        ! SWF_GSF file required for grid dimensions but not listed in NAM file
-        character(128) :: FNameSWF_GSF
-        integer(i4) :: iSWF_GSF
-        
-        ! NAM file
-        character(128) :: FNameNAM
-        integer(i4) :: iNAM
-        
-        ! DISU file
-        character(128) :: FNameDISU
-        integer(i4) :: iDISU
-
-        ! LIST file
-        character(128) :: FNameLIST
-        integer(i4) :: iLIST
-        
-        ! Units
-        character(MAX_LBL) :: STR_TimeUnit
-        integer(i4) :: TimeUnits=1    ! default 1 is seconds
-        character(MAX_LBL) :: STR_LengthUnit
-        integer(i4) :: LengthUnits=2   ! default 2 is meters
-        
-        ! BAS6 file
-        character(128) :: FNameBAS6
-        integer(i4) :: iBAS6
-        ! BAS6 options 
-        logical :: xsection=.false.
-        logical :: chtoch=.false.
-        logical :: free=.false.
-        logical :: printtime=.false.
-        logical :: unstructured=.false.
-        logical :: printfv=.false.
-        logical :: converge=.false.
-        logical :: richards=.false.
-        logical :: dpin=.false.
-        logical :: dpout=.false.
-        logical :: dpio=.false.
-        logical :: ihm=.false.
-        logical :: syall=.false.
-        integer(i4) :: ixsec = 0    
-        integer(i4) :: ichflg = 0   
-        integer(i4) :: ifrefm = 0   
-        integer(i4) :: iprtim = 0   
-        integer(i4) :: iunstr = 0   
-        integer(i4) :: iprconn = 0  
-        integer(i4) :: ifrcnvg = 0 
-        integer(i4) :: iunsat=1
-        integer(i4) :: idpin = 0    
-        integer(i4) :: idpout = 0   
-        integer(i4) :: ihmsim = 0   
-        integer(i4) :: iuihm = 0    
-        integer(i4) :: isyall = 0   
-
-        ! SMS file
-        character(128) :: FNameSMS
-        integer(i4) :: iSMS
-
-        ! OC file
-        character(128) :: FNameOC
-        integer(i4) :: iOC
-        integer(i4) :: ntime = 0
-        real(sp), allocatable :: timot(:)
-        real(dp), allocatable :: OutputTimes(:)
-        integer(i4) :: nOutputTimes
-        
-        !Stress Periods
-        integer(i4) :: nPeriods = 0
-        real(sp), allocatable :: StressPeriodDuration(:)
-        integer(i4), allocatable :: StressPeriodnTsteps(:)
-        real(sp), allocatable :: StressPeriodnTstepMult(:)
-        character(2), allocatable :: StressPeriodType(:)
-        ! Stress period defaults
-        real(sp) :: StressPeriodDeltat=1.000000e-03
-        real(sp) :: StressPeriodTminat=1.000000e-05
-        real(sp) :: StressPeriodTmaxat=60.0d0
-        real(sp) :: StressPeriodTadjat=1.100000e+00
-        real(sp) :: StressPeriodTcutat=2.000000e+00        
-        
-        ! LPF file
-        character(128) :: FNameLPF
-        integer(i4) :: iLPF
-
-        ! RCH file
-        character(128) :: FNameRCH
-        integer(i4) :: iRCH
-        
-        !RST file for transient recharge
-        character(128) :: FNameRTS
-        integer(i4) :: iRTS
-        
-        
-        ! RIV file
-        character(128) :: FNameRIV
-        integer(i4) :: iRIV
-        
-        ! WEL file
-        character(128) :: FNameWEL
-        integer(i4) :: iWEL
-        
-        ! CHD file
-        character(128) :: FNameCHD
-        integer(i4) :: iCHD
-
-        ! EVT file
-        character(128) :: FNameEVT
-        integer(i4) :: iEVT
-        
-        ! DRN file
-        character(128) :: FNameDRN
-        integer(i4) :: iDRN
- 
-        ! CLN file
-        character(128) :: FNameCLN
-        integer(i4) :: iCLN
-
-        ! SWF file
-        character(128) :: FNameSWF
-        integer(i4) :: iSWF
-
-        ! SWBC file
-        character(128) :: FNameSWBC
-        integer(i4) :: iSWBC
-       
-        ! GNC file
-        character(128) :: FNameGNC
-        integer(i4) :: iGNC
-
-        ! LAK file
-        character(128) :: FNameLAK
-        integer(i4) :: iLAK=0
-
-        ! OBPT file
-        character(128) :: FNameOBPT
-        integer(i4) :: iOBPT
-       
-        ! CBCCLN file
-        character(128) :: FNameCBCCLN
-        integer(i4) :: iCBCCLN
-  
-        ! Scan file
-        integer(i4) :: nDim=10000
-        integer(i4) :: nKeyWord
-        character(MAX_STR), ALLOCATABLE :: KeyWord(:) ! read buffer for location data
-        character(128) :: FNameSCAN
-        integer(i4) :: iSCAN
-        
-        ! Modflow file extensions MUT currently does not recognize or process
-        integer(i4) ::iBCF6
-        integer(i4) ::iEVS 
-        integer(i4) ::iGHB 
-        !integer(i4) ::iRTS 
-        integer(i4) ::iTIB 
-        integer(i4) ::iDPF 
-        integer(i4) ::iPCB 
-        integer(i4) ::iBCT 
-        integer(i4) ::iFHB 
-        integer(i4) ::iRES 
-        integer(i4) ::iSTR 
-        integer(i4) ::iIBS 
-        integer(i4) ::iHFB6
-        integer(i4) ::iDIS 
-        integer(i4) ::iPVAL
-        integer(i4) ::iSGB 
-        integer(i4) ::iHOB 
-        integer(i4) ::iDPT 
-        integer(i4) ::iZONE
-        integer(i4) ::iMULT
-        integer(i4) ::iDROB
-        integer(i4) ::iRVOB
-        integer(i4) ::iGBOB
-        integer(i4) ::iDDF 
-        integer(i4) ::iCHOB
-        integer(i4) ::iETS 
-        integer(i4) ::iDRT 
-        integer(i4) ::iQRT 
-        integer(i4) ::iGMG 
-        integer(i4) ::ihyd 
-        integer(i4) ::iSFR 
-        integer(i4) ::iMDT 
-        integer(i4) ::iGAGE
-        integer(i4) ::iLVDA
-        integer(i4) ::iSYF 
-        integer(i4) ::ilmt6
-        integer(i4) ::iMNW1
-        integer(i4) ::iKDEP
-        integer(i4) ::iSUB 
-        integer(i4) ::iUZF 
-        integer(i4) ::igwm 
-        integer(i4) ::iSWT 
-        integer(i4) ::iPATH
-        integer(i4) ::iPTH 
-        integer(i4) ::iTVM 
-
-
-        !character(128) :: Name
-        !integer(i4) :: LengthName
-        !logical :: Exists=.false.
-	    !integer(i4) :: Unit
-
-        ! logical :: blockel
-        !
-        !
-        !logical,allocatable :: nchosen(:)
-        !
-        !integer(i4) :: iz
-        !integer(i4) :: ic
-        !
-	    !real(dp), allocatable :: Kx(:)
-	    !real(dp), allocatable :: Thick(:)
-	    !real(dp), allocatable :: T(:)
-	    !real(dp), allocatable :: Ky(:)
-	    !real(dp), allocatable :: Kz(:)
-	    !real(dp), allocatable :: Ss(:)					
-	    !real(dp), allocatable :: Sy(:)
-	    !real(dp), allocatable :: Vanis(:)
-     !   
-        ! River Flows
-        integer(i4) :: nlines
-	    integer(i4), allocatable :: StressPeriod(:)
-	    integer(i4), allocatable :: RiverCell(:)
-	    real(dp), allocatable :: RiverFlow(:)
-	    real(dp), allocatable :: RiverHead(:)
-	    real(dp), allocatable :: RiverElev(:)
-	    real(dp), allocatable :: RiverCond(:)
-	    real(dp), allocatable :: RiverConc(:)
-
-        ! Head Calibration
-        ! StressPeriod,WellName,X83_ft,Y89_ft,Zmin,Zmax,ZMidpoint,Observed_ft,Simulated_ft,Residual_ft,Residual_ft_Jeff
-        integer(i4) :: nlinesHead
-	    integer(i4), allocatable :: StressPeriodHead(:)
-	    character(30), allocatable :: WellNameHead(:)
-	    real(dp), allocatable :: Xhead(:)
-	    real(dp), allocatable :: YHead(:)
-	    real(dp), allocatable :: ZminHead(:)
-	    real(dp), allocatable :: ZmaxHead(:)
-	    real(dp), allocatable :: ZMidpointHead(:)
- 	    real(dp), allocatable :: Observed_ft(:)
- 	    real(dp), allocatable :: Simulated_ft(:)
- 	    real(dp), allocatable :: Residual_ft(:)
-        
-        ! Well Construction
-        ! Name	X	Y	Bottom_elevation_ft	Top_elevation_ft	casing_radius_ft	Well_on	Well_off
-        integer(i4) :: nWellConst
-	    character(30), allocatable :: NameWellConst(:)
-	    real(dp), allocatable :: XWellConst(:)
-	    real(dp), allocatable :: YWellConst(:)
-	    real(dp), allocatable :: BotElevWellConst(:)
-	    real(dp), allocatable :: TopElevWellConst(:)
-	    real(dp), allocatable :: CasingRadiusWellConst(:)
-	    character(30), allocatable :: TonWellConst(:)
-	    character(30), allocatable :: ToffWellConst(:)
-
-
-        ! EI Well Construction
-        ! Name	X	Y	Top_elevation_ft	L1   Offset  L2
-        integer(i4) :: n_EIWell
-	    character(30), allocatable :: Name_EIWell(:)
-	    real(dp), allocatable :: X_EIWell(:)
-	    real(dp), allocatable :: Y_EIWell(:)
-	    real(dp), allocatable :: TopElev_EIWell(:)
-	    real(dp), allocatable :: ScreenALength_EIWell(:)
-	    real(dp), allocatable :: ScreenBOffset_EIWell(:)
-	    real(dp), allocatable :: ScreenBLength_EIWell(:)
-	    real(dp), allocatable :: ScreenCOffset_EIWell(:)
-	    real(dp), allocatable :: ScreenCLength_EIWell(:)
-        
-        ! CLN file
-        
-      !!! URWORD        
-      !!integer(i4) :: linlen
-      !!integer(i4) :: ncode, icol, iout, in
-      !!integer(i4) :: istart
-      !!real(sp) :: r
-      !!integer(i4) :: istop,n
-
-        
-
-    end type ModflowProject
+    ! NOTE: Type definitions (cell, ModflowDomain, ModflowProject) have been moved to MUSG_Core module
+    ! The old type definitions have been removed to avoid conflicts with imported types.
 
     ! other local variables
     integer(i4), Parameter :: MAXCLN=10000  ! assuming never more than 10000 CLN's
@@ -732,1331 +286,35 @@
     end subroutine  AppendAuxdata
     
     !----------------------------------------------------------------------
-    subroutine AssignAlphatoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)' 
-
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Alpha of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Alpha=value
-            end if
-        end do
-    
-    end subroutine AssignAlphatoDomain
-    
-    !----------------------------------------------------------------------
-    subroutine AssignBetatoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R8//')') value
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Beta of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Beta=value
-            end if
-        end do
-    
-    end subroutine AssignBetatoDomain
+    ! Material property assignment routines are now in MUSG_MaterialProperties module
+    ! This includes:
+    !   - AssignAlphatoDomain, AssignBetatoDomain, AssignBrookstoDomain
+    !   - AssignKhtoDomain, AssignKvtoDomain, AssignSytoDomain, AssignSstoDomain, AssignSrtoDomain
+    !   - AssignSgcltoDomain, AssignStartingDepthtoDomain, AssignStartingHeadtoDomain
+    !   - AssignMaterialtoGWF, AssignMaterialtoCLN, AssignMaterialtoSWF
+    !   - CLN_AssignCircularRadius, CLN_AssignRectangularWidthHeight
+    !   - AssignManningtoSWF, AssignDepressiontoSWF, AssignObstructiontoSWF
+    !   - AssignDepthForSmoothingtoSWF
 
     !----------------------------------------------------------------------
-    subroutine AssignBrookstoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R8//')') value
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Brooks of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Brooks=value
-            end if
-        end do
-    
-    end subroutine AssignBrookstoDomain
+    ! AssignCHDtoDomain is now in MUSG_BoundaryConditions module
 
     !----------------------------------------------------------------------
-    subroutine AssignCHDtoDomain(FNumMUT,modflow,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) modflow
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: head
-        
-        read(FNumMUT,*) head
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
-		call Msg(trim(TmpSTR))
-
-
-        if(.not. allocated(domain%ConstantHead)) then 
-            allocate(domain%ConstantHead(domain%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell constant head array')            
-            domain%ConstantHead(:)=-999.d0
-        end if
-        
-        call Msg('    Cell    Constant head')
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                call set(domain%cell(i)%is,ConstantHead)
-                domain%nCHDCells=domain%nCHDCells+1
-                domain%ConstantHead(i)=head
-                write(TmpSTR,'(i8,2x,'//FMT_R8//',a)') i,domain%ConstantHead(i),'     '//TRIM(UnitsofLength)
-                call Msg(trim(TmpSTR))
-            end if
-        end do
-        
-        if(modflow.iCHD == 0) then ! Initialize CHD file and write data to NAM
-            Modflow.FNameCHD=trim(Modflow.Prefix)//'.chd'
-            call OpenAscii(Modflow.iCHD,Modflow.FNameCHD)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameCHD))
-            write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
-            write(Modflow.iCHD,'(a,a)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',trim(MUTVersion)
-        !else
-        !    pause 'next stress period?'
-        end if
-
-    end subroutine AssignCHDtoDomain
-
-    !----------------------------------------------------------------------
-    subroutine AssignCriticalDepthtoDomain(modflow,domain) 
-        implicit none
-
-        type (ModflowProject) modflow
-        type (ModflowDomain) domain
-        
-        integer(i4) :: i, j, k, j1, j2
-        real(dp) :: AddToLength
-        
-		call Msg('Define all chosen '//trim(domain%name)//' Cells to be critical depth')
-
-        call Msg('Assumes appropriate '//trim(domain%name)//' SWBC nodes flagged as boundary nodes') 
-        
-        if(NodalControlVolume) then
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    do k=1,domain%nElements
-                        do j=1,domain%nFacesPerElement
-                            if(domain%FaceNeighbour(j,k) == 0) then ! only consider faces that are on the outer boundary
-                                j1=domain%idNode(domain%LocalFaceNodes(1,j),k)
-                                j2=domain%idNode(domain%LocalFaceNodes(2,j),k)
-                                if(j1==i) then ! this node represents a chosen cell 
-                                    if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
-                                        call set(domain%cell(i)%is,CriticalDepth)
-                                        domain%nSWBCCells=domain%nSWBCCells+1
-                                    endif
-                                    AddToLength=sqrt((domain%node(j1)%x - domain%element(k)%xSide(j))**2 + &
-                                                     (domain%node(j1)%y - domain%element(k)%ySide(j))**2) ! + (domain%node%x(j1) - domain%xSide(j,k))**2)
-                                    domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
-                                endif
-                                if(j2==i) then ! this node represents a chosen cell 
-                                    if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
-                                        call set(domain%cell(i)%is,CriticalDepth)
-                                        domain%nSWBCCells=domain%nSWBCCells+1
-                                    endif
-                                    AddToLength=sqrt((domain%node(j2)%x - domain%element(k)%xSide(j))**2 + &
-                                                     (domain%node(j2)%y - domain%element(k)%ySide(j))**2) ! + (domain%node%x(j2) - domain%xSide(j,k))**2)
-                                    domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+AddToLength
-                                endif
-                            endif
-                        enddo 
-                    enddo
-                endif
-            end do
-        else    
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    do j=1,domain%nFacesPerElement
-                        if(domain%FaceNeighbour(j,i) == 0) then ! add sidelength to CriticalDepthLength
-                            if(.not. bcheck(domain%cell(i)%is,CriticalDepth)) then
-                                call set(domain%cell(i)%is,CriticalDepth)
-                                domain%nSWBCCells=domain%nSWBCCells+1
-                            endif
-                            domain%cell(i)%CriticalDepthLength=domain%cell(i)%CriticalDepthLength+domain%Element(i)%SideLength(j)
-                        endif
-                    enddo
-                endif
-            enddo
-        endif
- 
-        if(Modflow.iSWBC == 0) then ! Initialize SWBC file and write data to NAM
-            Modflow.FNameSWBC=trim(Modflow.Prefix)//'.swbc'
-            call OpenAscii(Modflow.iSWBC,Modflow.FNameSWBC)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
-            write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
-            write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
-        !else
-        !    pause 'next stress period?'
-        end if
-
-
-    end subroutine AssignCriticalDepthtoDomain    
+    ! AssignCriticalDepthtoDomain is now in MUSG_BoundaryConditions module    
     
     !----------------------------------------------------------------------
-    subroutine AssignCriticalDepthtoCellsSide1(modflow,domain) 
-        implicit none
-
-        type (ModflowProject) modflow
-        type (ModflowDomain) domain
-        
-        integer(i4) :: i
-        
-		call Msg('Define all chosen '//trim(domain%name)//' Cells to be critical depth')
-
-        call Msg('Assumes SWBC Critical Depth Length equals sqrt(cell area)') 
-        
-        if(NodalControlVolume) then
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    call set(domain%cell(i)%is,CriticalDepth)
-                    domain%nSWBCCells=domain%nSWBCCells+1
-                    domain%cell(i)%CriticalDepthLength=SQRT(domain%Element(i)%xyArea)
-                endif
-            end do
-        else    
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    call set(domain%cell(i)%is,CriticalDepth)
-                    domain%nSWBCCells=domain%nSWBCCells+1
-                    domain%cell(i)%CriticalDepthLength=SQRT(domain%Element(i)%xyArea)
-                    
-                end if
-            end do
-        end if
- 
-        if(Modflow.iSWBC == 0) then ! Initialize SWBC file and write data to NAM
-            Modflow.FNameSWBC=trim(Modflow.Prefix)//'.swbc'
-            call OpenAscii(Modflow.iSWBC,Modflow.FNameSWBC)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameSWBC))
-            write(Modflow.iNAM,'(a,i4,a)') 'SWBC  ',Modflow.iSWBC,' '//trim(Modflow.FNameSWBC)
-            write(Modflow.iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
-        !else
-        !    pause 'next stress period?'
-        end if
-
-
-    end subroutine AssignCriticalDepthtoCellsSide1
+    ! AssignCriticalDepthtoCellsSide1 is now in MUSG_BoundaryConditions module
 
     !----------------------------------------------------------------------
-    subroutine AssignDepthForSmoothingtoSWF(FnumMUT,domain)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: value1, value2
-        
-        read(FNumMUT,*) value1, value2
-        write(TmpSTR,'('//FMT_R4//',a)') value1,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(domain%name)//' H1 depth for smoothing: '//trim(TmpSTR))
-        write(TmpSTR,'('//FMT_R4//',a)') value2,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(domain%name)//' H2 depth for smoothing: '//trim(TmpSTR))
-
-        
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                domain%H1DepthForSmoothing(i)=value1
-                domain%H2DepthForSmoothing(i)=value2
-            end if
-        end do
-
-    end subroutine AssignDepthForSmoothingtoSWF
-
-    !----------------------------------------------------------------------
-    subroutine AssignDRNtoDomain(FNumMUT,modflow,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) modflow
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: cond
-        
-        read(FNumMUT,*) cond
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//trim(domain%name)//' drain conductance: ',cond,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg(trim(TmpSTR))
-
-
-        if(.not. allocated(domain%DrainConductance)) then 
-            allocate(domain%DrainConductance(domain%nCells),domain%DrainElevation(domain%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell drain arrays')            
-            domain%ConstantHead(:)=-999.d0
-        end if
-        
-        call Msg('        Cell      DrainElevation             DrainConductance')
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                call set(domain%cell(i)%is,Drain)
-                domain%nDRNCells=domain%nDRNCells+1
-                domain%DrainElevation(i)=domain%cell(i)%Top
-                domain%DrainConductance(i)=cond
-                write(TmpSTR,'(i8,2x,'//FMT_R8//',a,'//FMT_R8//',a)') i,domain%DrainElevation(i),'     '//TRIM(UnitsOfLength), domain%DrainConductance(i),'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-                call Msg(trim(TmpSTR))
-            end if
-        end do
-        
-        if(modflow.iDRN == 0) then ! Initialize DRN file and write data to NAM
-            Modflow.FNameDRN=trim(Modflow.Prefix)//'.drn'
-            call OpenAscii(Modflow.iDRN,Modflow.FNameDRN)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameDRN))
-            write(Modflow.iNAM,'(a,i4,a)') 'DRN  ',Modflow.iDRN,' '//trim(Modflow.FNameDRN)
-            write(Modflow.iDRN,'(a,a)') '# MODFLOW-USG DRN file written by Modflow-User-Tools version ',trim(MUTVersion)
-        !else
-        !    pause 'next stress period?'
-        end if
-
-    end subroutine AssignDRNtoDomain
+    ! AssignDRNtoDomain is now in MUSG_BoundaryConditions module
     
     !----------------------------------------------------------------------
-    subroutine AssignKhtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Kh of '//trim(TmpSTR))
-        
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Kh=value
-            end if
-        end do
-    
-    end subroutine AssignKhtoDomain
-    !----------------------------------------------------------------------
-    subroutine AssignKvtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'     '//TRIM(UnitsOfTime)//'^(-1)'
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Kv of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Kv=value
-            end if
-        end do
-    
-    end subroutine AssignKvtoDomain
-   
-    !----------------------------------------------------------------------
-    subroutine AssignDepressiontoSWF(FnumMUT,domain)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(domain%name)//' Depression Storage Height: '//trim(TmpSTR))
-
-
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                domain%DepressionStorageHeight(i)=value
-            end if
-        end do
-    
-    end subroutine AssignDepressiontoSWF
-
-    !----------------------------------------------------------------------
-    subroutine AssignManningtoSWF(FnumMUT,domain)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1/3)    '//TRIM(UnitsOfTime)
-		call Msg(trim(domain%name)//' Manning''s coefficient of friction: '//trim(TmpSTR))
-
-
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                domain%Manning(i)=value
-            end if
-        end do
-    
-    end subroutine AssignManningtoSWF
-
-    !----------------------------------------------------------------------
-    subroutine AssignObstructiontoSWF(FnumMUT,domain)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(domain%name)//' Obstruction Storage Height: '//trim(TmpSTR))
-
-
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                domain%ObstructionStorageHeight(i)=value
-            end if
-        end do
-    
-    end subroutine AssignObstructiontoSWF
-
-    !----------------------------------------------------------------------
-    subroutine AssignMaterialtoGWF(FNumMUT, Domain) 
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        integer(i4) :: iMaterial
-        
-        real(sp) :: LengthConversionFactor
-        real(sp) :: TimeConversionFactor
-        
-        read(FNumMUT,*) iMaterial
-        
-        do i=1,nGWFMaterials
-            if(iMaterial == GWF_MaterialID(i)) then
-                iMaterial=i
-                exit
-            endif
-        end do
-        
-        write(TmpSTR,'(i5)') iMaterial
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial)))
-        
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Kh_Kx:             ',Kh_Kx(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Kv_Kz:             ',Kv_Kz(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'   '//TRIM(GWF_TimeUnit(iMaterial))//'^(-1)'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Storage:  ',SpecificStorage(iMaterial)  ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)    ,'     DIMENSIONLESS'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Beta:              ',Beta(iMaterial)             ,'     DIMENSIONLESS'
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Sr:                ',Sr(iMaterial)               ,'     DIMENSIONLESS'
-        call Msg(TmpSTR)
-        select case(UnsaturatedFunctionType(iMaterial))
-        case ('Van Genuchten')
-            write(TmpSTR,'(a)')    'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
-            call Msg(TmpSTR)
-        case ('Brooks-Corey')
-            write(TmpSTR,'(a)')        'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//')')'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
-            call Msg(TmpSTR)
-        case default
-            call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
-        end select
-        
-        LengthConversionFactor=LengthConverter(UnitsOfLength,GWF_LengthUnit(iMaterial))
-        TimeConversionFactor=TimeConverter(UnitsOfTime,GWF_TimeUnit(iMaterial))
-        if(LengthConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material length unit:    '//trim(GWF_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(GWF_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-            
-         if(TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material time unit:    '//trim(GWF_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(GWF_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-
-       
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                if(domain%name == 'GWF') then
-                    domain%cell(i)%Kh=Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain%cell(i)%Kv=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
-                    domain%cell(i)%Ss=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
-                    domain%cell(i)%Sy=SpecificYield(iMaterial)                                           ! -
-                    domain%cell(i)%Alpha=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
-                    domain%cell(i)%Beta=Beta(iMaterial)                                                  ! -
-                    domain%cell(i)%Sr=Sr(iMaterial)                                                      ! -
-                    
-                    select case(UnsaturatedFunctionType(iMaterial))
-                    case ('Van Genuchten')
-                        domain%cell(i)%Brooks= -BrooksCoreyExponent(iMaterial)
-                    case ('Brooks-Corey')
-                        domain%cell(i)%Brooks=BrooksCoreyExponent(iMaterial)
-                    case default
-                        call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
-                    end select
-
-                endif
-            end if
-        end do
-        
-        if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** After Unit Conversion **** ')
-            write(TmpSTR,'(i5)') iMaterial
-		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(GWF_MaterialName(iMaterial))//' after unit conversion')
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Kh_Kx:             ',Kh_Kx(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Kv_Kz:             ',Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor  ,'     '//TRIM(UnitsOfLength)//'   '//TRIM(UnitsOfTime)//'^(-1)'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Storage:  ',SpecificStorage(iMaterial)/LengthConversionFactor             ,'     '//TRIM(UnitsOfLength)//'^(-1)'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)                                      ,'     DIMENSIONLESS'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)/LengthConversionFactor                       ,'     '//TRIM(UnitsOfLength)//'^(-1)'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Beta:              ',Beta(iMaterial)                                               ,'     DIMENSIONLESS'
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Sr:                ',Sr(iMaterial)                                                 ,'     DIMENSIONLESS'
-            call Msg(TmpSTR)
-            select case(UnsaturatedFunctionType(iMaterial))
-            case ('Van Genuchten')
-                write(TmpSTR,'(a)')    'Unsaturated Function Type:   '//trim(UnsaturatedFunctionType(iMaterial))
-                call Msg(TmpSTR)
-            case ('Brooks-Corey')
-                write(TmpSTR,'(a)')        'Unsaturated Function Type: '//trim(UnsaturatedFunctionType(iMaterial))
-                call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//')')'Brooks Corey Exponent:     ',BrooksCoreyExponent(iMaterial)
-                call Msg(TmpSTR)
-            case default
-                call ErrMsg('Unsaturated Function Type '//trim(UnsaturatedFunctionType(iMaterial))//' not supported')
-            end select
-
-        end if     
-        
-      
-        continue
-    
-    end subroutine AssignMaterialtoGWF
-    
-    real(sp) function LengthConverter(Project_LengthUnit,Material_LengthUnit)
-        implicit none
-        character(*) :: Project_LengthUnit
-        character(*) :: Material_LengthUnit
-        
-        select case(Project_LengthUnit)
-        case ('FEET')
-            select case(Material_LengthUnit)
-            case ('FEET')
-                LengthConverter=1.0
-            case ('METERS')
-                LengthConverter=3.280839895
-            case ('CENTIMETERS')
-                LengthConverter=0.032808399
-            end select
-
-        case ('METERS')
-            select case(Material_LengthUnit)
-            case ('FEET')
-                LengthConverter=0.3048
-            case ('METERS')
-                LengthConverter=1.0
-            case ('CENTIMETERS')
-                LengthConverter=0.01
-            end select
-
-        case ('CENTIMETERS')
-            select case(Material_LengthUnit)
-            case ('FEET')
-                LengthConverter=30.48
-            case ('METERS')
-                LengthConverter=100.0
-            case ('CENTIMETERS')
-                LengthConverter=1.0
-            end select
-        end select
-    
-    end function LengthConverter
-    
-    real(sp) function TimeConverter(Project_TimeUnit,Material_TimeUnit)
-        implicit none
-        character(*) :: Project_TimeUnit
-        character(*) :: Material_TimeUnit
-        
-        select case(Project_TimeUnit)
-        case ('SECONDS')
-            select case(Material_TimeUnit)
-            case ('SECONDS')
-                TimeConverter=1.0
-            case ('MINUTES')
-                TimeConverter=60.0
-            case ('HOURS')
-                TimeConverter=60.0*60.0
-            case ('DAYS')
-                TimeConverter=60.0*60.0*24.0
-            case ('YEARS')
-                TimeConverter=60.0*60.0*24.0*365.0
-            end select
-        case ('MINUTES')
-            select case(Material_TimeUnit)
-            case ('SECONDS')
-                TimeConverter=1.0/60.0
-            case ('MINUTES')
-                TimeConverter=1.0
-            case ('HOURS')
-                TimeConverter=60.0
-            case ('DAYS')
-                TimeConverter=60.0*24.0
-            case ('YEARS')
-                TimeConverter=60.0*24.0*365.0
-            end select
-        case ('HOURS')
-            select case(Material_TimeUnit)
-            case ('SECONDS')
-                TimeConverter=1.0/60.0/60.0
-            case ('MINUTES')
-                TimeConverter=1.0/60.0
-            case ('HOURS')
-                TimeConverter=1.0
-            case ('DAYS')
-                TimeConverter=24.0
-            case ('YEARS')
-                TimeConverter=24.0*365.0
-            end select
-        case ('DAYS')
-            select case(Material_TimeUnit)
-            case ('SECONDS')
-                 TimeConverter=1.0/60.0/60.0/24.0
-            case ('MINUTES')
-                 TimeConverter=1.0/60.0/24.0
-            case ('HOURS')
-                 TimeConverter=1.0/24.0
-            case ('DAYS')
-                TimeConverter=1.0
-            case ('YEARS')
-                TimeConverter=365.0
-            end select
-        case ('YEARS')
-            select case(Material_TimeUnit)
-            case ('SECONDS')
-                 TimeConverter=1.0/60.0/60.0/24.0/365.0
-            case ('MINUTES')
-                 TimeConverter=1.0/60.0/24.0/365.0
-            case ('HOURS')
-                 TimeConverter=1.0/24.0/365.0
-            case ('DAYS')
-                 TimeConverter=1.0/365.0
-            case ('YEARS')
-                TimeConverter=1.0
-            end select
-        end select
-    
-    end function TimeConverter
-    !----------------------------------------------------------------------
-    subroutine AssignMaterialtoCLN(FnumMUT,CLN)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) CLN
-        
-        integer(i4) :: i
-        integer(i4) :: iMaterial
-
-        real(sp) :: LengthConversionFactor
-        real(sp) :: TimeConversionFactor
-
-        read(FNumMUT,*) iMaterial
-        write(TmpSTR,'(i5)') iMaterial
-        
-		call Msg('Assigning all chosen '//trim(CLN.name)//' zones properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial)))
-        select case(Geometry(iMaterial))
-        case ('Circular')
-            write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Circular Radius:    ',CircularRadius(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-        case ('Rectangular')
-            write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Width:  ',RectangularWidth(iMaterial)     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Height: ',RectangularHeight(iMaterial)    ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-        case default
-            call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
-        end select
-
-        write(TmpSTR,'(a)')            'Direction:          '//Direction(iMaterial)
-        call Msg(TmpSTR)
-        
-        write(TmpSTR,'(a)')            'Flow Treatment:     '//FlowTreatment(iMaterial) 
-        call Msg(TmpSTR)
-
-        write(TmpSTR,'(a,'//FMT_R4//',a)')    'Longitudinal K:     ',LongitudinalK(iMaterial)        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
-        call Msg(TmpSTR)
-        
-        LengthConversionFactor=LengthConverter(UnitsOfLength,CLN_LengthUnit(iMaterial))
-        TimeConversionFactor=TimeConverter(UnitsOfTime,CLN_TimeUnit(iMaterial))
-        if(LengthConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material length unit:    '//trim(CLN_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(CLN_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-            
-         if(TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material time unit:    '//trim(CLN_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(CLN_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-
-      
-        do i=1,CLN.nZones
-            if(bcheck(CLN%zone(i)%is,chosen)) then
-                select case(Geometry(iMaterial))
-                case ('Circular')
-                    CLN.Geometry(i)=1
-                    CLN.NCONDUITYP=CLN.NCONDUITYP+1
-                case ('Rectangular')
-                    CLN.Geometry(i)=2
-                    CLN.NRECTYP=CLN.NRECTYP+1
-                case default
-                    call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
-                end select
-
-                select case(Direction(iMaterial))
-                case ('Vertical')
-                    CLN.Direction(i)=0
-                case ('Horizontal')
-                    CLN.Direction(i)=1
-                case ('Angled')
-                    CLN.Direction(i)=2
-                case default
-                    call ErrMsg('Direction type '//trim(Direction(iMaterial))//' not supported')
-                end select
-                
-                select case(FlowTreatment(iMaterial))
-                case ('Confined\Laminar')
-                    CLN.FlowTreatment(i)=1
-                case ('Confined\Darcy-Weisbach')
-                    CLN.FlowTreatment(i)=2
-                case ('Confined\Heizen-Williams')
-                    CLN.FlowTreatment(i)=3
-                case ('Confined/Mannings')
-                    CLN.FlowTreatment(i)=4
-                case ('Unconfined\Laminar')
-                    CLN.FlowTreatment(i)=-1
-                case ('Unconfined\Darcy-Weisbach')
-                    CLN.FlowTreatment(i)=-2
-                case ('Unconfined\Heizen-Williams')
-                    CLN.FlowTreatment(i)=-3
-                case ('Unconfined/Mannings')
-                    CLN.FlowTreatment(i)=-4
-                case default
-                    call ErrMsg('Flow treatment type '//trim(FlowTreatment(iMaterial))//' not supported')
-                end select
-                
-                CLN.CircularRadius(i)=CircularRadius(iMaterial)*LengthConversionFactor         ! L
-                CLN.RectangularWidth(i)=RectangularWidth(iMaterial)*LengthConversionFactor         ! L
-                CLN.RectangularHeight(i)=RectangularHeight(iMaterial)*LengthConversionFactor         ! L
-                CLN.LongitudinalK(i)=LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor         ! L/T
-            end if
-        end do
-        
-        if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** After Unit Conversion **** ')
-            write(TmpSTR,'(i5)') iMaterial
-		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(CLN_Name(iMaterial))//' after unit conversion')
-            select case(Geometry(iMaterial))
-            case ('Circular')
-                write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
-                call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Circular Radius:    ',CircularRadius(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-                call Msg(TmpSTR)
-            case ('Rectangular')
-                write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
-                call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Width:  ',RectangularWidth(iMaterial)*LengthConversionFactor      ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-                call Msg(TmpSTR)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Height: ',RectangularHeight(iMaterial)*LengthConversionFactor     ,'     '//TRIM(CLN_LengthUnit(iMaterial))
-                call Msg(TmpSTR)
-            case default
-                call ErrMsg('Geometry type '//trim(Geometry(iMaterial))//' not supported')
-            end select
-
-            write(TmpSTR,'(a)')            'Direction:          '//Direction(iMaterial)
-            call Msg(TmpSTR)
-        
-            write(TmpSTR,'(a)')            'Flow Treatment:     '//FlowTreatment(iMaterial) 
-            call Msg(TmpSTR)
-
-            write(TmpSTR,'(a,'//FMT_R4//')')    'Longitudinal K:     ',LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
-            call Msg(TmpSTR)
-
-        end if     
-    
-    end subroutine AssignMaterialtoCLN
+    ! AssignRCHtoDomain is now in MUSG_BoundaryConditions module
     
     !----------------------------------------------------------------------
-    subroutine AssignMaterialtoSWF(FnumMUT,domain)
-        implicit none
-
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        integer(i4) :: iMaterial
-
-        real(sp) :: LengthConversionFactor
-        real(sp) :: TimeConversionFactor
-        
-        read(FNumMUT,*) iMaterial
-        write(TmpSTR,'(i5)') iMaterial
-        
-		call Msg('Assigning all chosen '//trim(domain%name)//' zones properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial)))
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)     ,'     '//TRIM(SWF_LengthUnit(iMaterial))//'^(-1/3)  '//TRIM(SWF_TimeUnit(iMaterial))
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Depression Storage Height:  ',DepressionStorageHeight(iMaterial) ,'     '//TRIM(SWF_LengthUnit(iMaterial))
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial),'     '//TRIM(SWF_LengthUnit(iMaterial))
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
-        call Msg(TmpSTR)
-        write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(SWF_LengthUnit(iMaterial))
-        call Msg(TmpSTR)
-
-                
-        LengthConversionFactor=LengthConverter(UnitsOfLength,SWF_LengthUnit(iMaterial))
-        TimeConversionFactor=TimeConverter(UnitsOfTime,SWF_TimeUnit(iMaterial))
-        if(LengthConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Length Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material length unit:    '//trim(SWF_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow length unit:     '//trim(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Length Conversion Factor:     ',LengthConversionFactor,'     '//TRIM(UnitsOfLength)//' per '//TRIM(SWF_LengthUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-            
-         if(TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** Time Units Conversion **** ')
-            write(TmpSTR,'(a)')'Material time unit:    '//trim(SWF_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a)')'Modflow time unit:     '//trim(UnitsOfTime)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Time Conversion Factor:     ',TimeConversionFactor,'     '//TRIM(UnitsOfTime)//' per '//TRIM(SWF_TimeUnit(iMaterial))
-            call Msg(TmpSTR)
-        endif
-
-       
-
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                domain%Manning(i)=ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor ! L^(-1/3) T
-                domain%DepressionStorageHeight(i)=DepressionStorageHeight(iMaterial)*LengthConversionFactor         ! L
-                domain%ObstructionStorageHeight(i)=ObstructionStorageHeight(iMaterial)*LengthConversionFactor       ! L
-                domain%H1DepthForSmoothing(i)=SWFSmoothingDepth1(iMaterial)*LengthConversionFactor                  ! L
-                domain%H2DepthForSmoothing(i)=SWFSmoothingDepth2(iMaterial)*LengthConversionFactor                  ! L
-            end if                                                                               
-        end do                                                                                   
-
-        if(LengthConversionFactor /= 1.0 .OR. TimeConversionFactor /= 1.0) then
-            call Msg(' ')
-            call Msg('**** After Unit Conversion **** ')
-            write(TmpSTR,'(i5)') iMaterial
-		    call Msg('Properties of material '//trim(TmpSTR)//', '//trim(SWF_MaterialName(iMaterial))//' after unit conversion')
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Manning''s Coefficient:      ',ManningCoefficient(iMaterial)*LengthConversionFactor**(-1/3)*TimeConversionFactor      ,'     '//TRIM(UnitsOfLength)//'^(-1/3)  '//TRIM(UnitsOfTime)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Depression Storage Height:  ',DepressionStorageHeight(iMaterial)*LengthConversionFactor ,'     '//TRIM(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'Obstruction Storage Height: ',ObstructionStorageHeight(iMaterial)*LengthConversionFactor,'     '//TRIM(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 1:      ',SWFSmoothingDepth1(iMaterial)*LengthConversionFactor      ,'     '//TRIM(UnitsOfLength)
-            call Msg(TmpSTR)
-            write(TmpSTR,'(a,'//FMT_R4//',a)')'SWF Smoothing Depth 2:      ',SWFSmoothingDepth2(iMaterial)      ,'     '//TRIM(UnitsOfLength)
-            call Msg(TmpSTR)
-
-        end if     
-
-    end subroutine AssignMaterialtoSWF
-
+    ! AssignTransientRCHtoDomain is now in MUSG_BoundaryConditions module
     !----------------------------------------------------------------------
-    subroutine AssignRCHtoDomain(FNumMUT,modflow,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) modflow
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: rech
-        integer(i4) :: nRCHoption
-        
-        read(FNumMUT,*) rech
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
-		call Msg(trim(TmpSTR))
-        read(FNumMUT,*) nRCHoption
-        write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain%name//' recharge option: ',nRCHoption
-		call Msg(trim(TmpSTR))
-        domain%nRCHoption=nRCHoption
-        IF(nRCHoption.EQ.1) then
-            call Msg('Option 1 -- recharge to top layer')
-        else IF(nRCHoption.EQ.2) then
-            call Msg('option 2 -- recharge to one specified node in each vertical column') 
-        else IF(nRCHoption.EQ.3) then
-            call Msg('Option 3 -- recharge to highest active node in each vertical column')
-        else IF(nRCHoption.EQ.4) then
-            call Msg('Option 4 -- recharge to swf domain on top of each vertical column')
-        endif
-
-        
-        if(.not. allocated(domain%Recharge)) then ! 
-            allocate(domain%Recharge(domain%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell recharge array')            
-            domain%Recharge(:)=-999.d0
-        end if
-        
-        do i=1,domain%nCells
-            call set(domain%cell(i)%is,Recharge)
-            domain%Recharge(i)=rech
-        end do
-
-        if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
-            Modflow.FNameRCH=trim(Modflow.Prefix)//'.rch'
-            call OpenAscii(Modflow.iRCH,Modflow.FNameRCH)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
-            write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
-            write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB  
-            write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
-
-
-        else
-            write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
-        end if
-    end subroutine AssignRCHtoDomain
-    
-    !----------------------------------------------------------------------
-    subroutine AssignTransientRCHtoDomain(FNumMUT,modflow,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) modflow
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: rech
-        integer(i4) :: nRCHoption
-        
-        read(FNumMUT,'(a)') modflow.FNameRTS
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain.name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
-		call Msg(trim(TmpSTR))
-        read(FNumMUT,*) nRCHoption
-        write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain.name//' recharge option: ',nRCHoption
-		call Msg(trim(TmpSTR))
-        domain.nRCHoption=nRCHoption
-        IF(nRCHoption.EQ.1) then
-            call Msg('Option 1 -- recharge to top layer')
-        else IF(nRCHoption.EQ.2) then
-            call Msg('option 2 -- recharge to one specified node in each vertical column') 
-        else IF(nRCHoption.EQ.3) then
-            call Msg('Option 3 -- recharge to highest active node in each vertical column')
-        else IF(nRCHoption.EQ.4) then
-            call Msg('Option 4 -- recharge to swf domain on top of each vertical column')
-        endif
-
-        
-        if(.not. allocated(domain%Recharge)) then ! 
-            allocate(domain%Recharge(domain%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell recharge array')            
-            domain%Recharge(:)=-999.d0
-        end if
-        
-        do i=1,domain%nCells
-            call set(domain%cell(i)%is,Recharge)
-            domain%Recharge(i)=rech
-        end do
-        
-        if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
-            Modflow.FNameRCH=trim(Modflow.Prefix)//'.rch'
-            call OpenAscii(Modflow.iRCH,Modflow.FNameRCH)
-            call OpenAscii(Modflow.iRTS,Modflow.FNameRTS)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
-            write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
-            write(Modflow.iNAM,'(a,i4,a)') 'RTS  ',Modflow.iRTS,' '//trim(Modflow.FNameRTS)
-            write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow.iRCH,*) domain.nRCHoption, domain.iCBB, 'RTS 1'
-            write(modflow.iRCH,*) 1, 'INRCHZONES ',1165    ! inrech (defaults to read one layer of recharge values), 'INRCHZONES ',1165 (defaults to read current size of rainfall.rts)
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
-
-
-        else
-             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
-        end if
-    end subroutine AssignTransientRCHtoDomain
-    !----------------------------------------------------------------------
-    subroutine AssignWELtoDomain(FNumMUT,modflow,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) modflow
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i, itmp, itmpcln
-        real(dp) :: PumpRate
-        
-        read(FNumMUT,*) PumpRate
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' PumpingRate: ',PumpRate,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_Timeunit)//'^(-1)'
-		call Msg(trim(TmpSTR))
-        
-        if(.not. allocated(domain%PumpingRate)) then ! 
-            allocate(domain%PumpingRate(domain%nCells),stat=ialloc)
-            call AllocChk(ialloc,'Cell PumpingRate array')            
-            domain%PumpingRate(:)=-999.d0
-        end if
-
-        itmp=0
-        itmpcln=0
-
-        if(domain%name == 'GWF') then
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    domain%nWELCells=domain%nWELCells+1
-                    call set(domain%cell(i)%is,Well)
-                    domain%PumpingRate(i)=PumpRate
-                    itmp=itmp+1
-                endif
-            end do
-        else if(domain%name == 'CLN') then
-            do i=1,domain%nCells
-                if(bcheck(domain%cell(i)%is,chosen)) then
-                    domain%nWELCells=domain%nWELCells+1
-                    call set(domain%cell(i)%is,Well)
-                    domain%PumpingRate(i)=PumpRate
-                    itmpcln=itmpcln+1
-                endif
-            end do
-        endif    
-        
-
-        if(modflow.iWEL == 0) then ! Initialize WEL file and write data to NAM
-            Modflow.FNameWEL=trim(Modflow.Prefix)//'.WEL'
-            call OpenAscii(Modflow.iWEL,Modflow.FNameWEL)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameWEL))
-            write(Modflow.iNAM,'(a,i4,a)') 'WEL  ',Modflow.iWEL,' '//trim(Modflow.FNameWEL)
-            write(Modflow.iWEL,'(a,a)') '# MODFLOW-USG WEL file written by Modflow-User-Tools version ',trim(MUTVersion)
-            if(itmp>0 .AND. itmpcln>0) then
-                call ErrMsg('WEL package can currently only be used for GWF or CLN domains but not both at the same time')
-            else if(itmp>0) then
-                write(Modflow.iWEL,'(2i8)') itmp, Modflow%GWF%icbb
-                write(Modflow.iWEL,'(3i8)') itmp, 0, 0 
-            else if(itmpcln>0) then
-                write(Modflow.iWEL,'(2i8)') itmpcln, Modflow%CLN%icbb
-                write(Modflow.iWEL,'(3i8)') 0, 0, itmpcln 
-            endif
-                
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(bcheck(domain%cell(i)%is,Well)) then
-                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain%PumpingRate(i),0
-                    endif
-                end do
-            else if(domain%name == 'CLN') then
-                do i=1,domain%nCells
-                    if(bcheck(domain%cell(i)%is,Well)) then
-                        write(Modflow.iWEL,'(i8,('//FMT_R8//'),i8)') i,domain%PumpingRate(i),0
-                    endif
-                end do
-            endif
-        !else
-        !    pause 'next stress period?'
-        end if
-    
-    end subroutine AssignWELtoDomain
-    
-    !----------------------------------------------------------------------
-    subroutine CLN_AssignCircularRadius(FnumMUT,CLN)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) CLN
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(CLN.name)//' CLN circular radius: '//trim(TmpSTR))
-
-
-        do i=1,CLN.nZones
-            if(bcheck(CLN%zone(i)%is,chosen)) then
-                CLN.CircularRadius(i)=value
-            end if
-        end do
-    
-    end subroutine CLN_AssignCircularRadius
-    !----------------------------------------------------------------------
-    subroutine CLN_AssignRectangularWidthHeight(FnumMUT,CLN)
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) CLN
-        
-        integer(i4) :: i
-        real(sp) :: width, height
-        
-        read(FNumMUT,*) width, height
-        write(TmpSTR,'(2'//FMT_R4//',a)')  width, height,'     '//TRIM(UnitsOfLength)
-		call Msg(trim(CLN.name)//' CLN rectangular width and height: '//trim(TmpSTR))
-
-
-        do i=1,CLN.nZones
-            if(bcheck(CLN%zone(i)%is,chosen)) then
-                CLN.RectangularWidth(i)=width
-                CLN.RectangularHeight(i)=height
-            end if
-        end do
-    
-    end subroutine CLN_AssignRectangularWidthHeight
-    !----------------------------------------------------------------------
-    subroutine AssignSgcltoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells an Sgcl of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Sgcl=value
-            end if
-        end do
-    
-    end subroutine AssignSgcltoDomain
-
-    !----------------------------------------------------------------------
-    subroutine AssignSrtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//')') value
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Sr of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Sr=value
-            end if
-        end do
-    
-    end subroutine AssignSrtoDomain
-
-    !----------------------------------------------------------------------
-    subroutine AssignSstoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfLength)//'^(-1)'
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Ss of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Ss=value
-            end if
-        end do
-    
-    end subroutine AssignSstoDomain
-
-    !----------------------------------------------------------------------
-    subroutine AssignStartingDepthtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a starting depth of '//trim(TmpSTR))
-
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%StartingHeads=domain%cell(i)%z+value
-            end if
-        end do
-    
-    end subroutine AssignStartingDepthtoDomain
-
-    !----------------------------------------------------------------------
-    subroutine AssignStartingHeadtoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(dp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R8//',a)') value,'     '//TRIM(UnitsOfLength)
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells starting heads of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%StartingHeads=value
-            end if
-        end do
-    
-    end subroutine AssignStartingHeadtoDomain
-    
-    !----------------------------------------------------------------------
-    subroutine AssignSytoDomain(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-        
-        integer(i4) :: i
-        real(sp) :: value
-        
-        read(FNumMUT,*) value
-        write(TmpSTR,'('//FMT_R4//')') value
-		call Msg('Assigning all chosen '//trim(domain%name)//' cells a Sy of '//trim(TmpSTR))
-
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) then
-                domain%cell(i)%Sy=value
-            end if
-        end do
-    
-    end subroutine AssignSytoDomain
+    ! AssignWELtoDomain is now in MUSG_BoundaryConditions module
 
     !-------------------------------------------------------------
     subroutine BuildModflowUSG(FNumMUT, Modflow,prefix) !--- Build Modflow USG data structure from instructions
@@ -2141,105 +399,57 @@
 
 
             if(status/=0) then
- 		        write(ErrStr,'(a)') 'File: a.MUSG'
+		        write(ErrStr,'(a)') 'File: a.MUSG'
 		        l1=len_trim(ErrStr)
 		        write(ErrStr,'(a)') ErrStr(:l1)//New_line(a)//'Error reading file'
-			    call ErrMsg(ErrStr)
+			    call HandleError(ERR_FILE_IO, ErrStr, 'BuildModflowUSG')
             end if
             
             
             ! ========================================================================
             ! Pre-processing instructions 
             
-
-            if(index(instruction, NodalControlVolumes_CMD)  /= 0) then
-                ! Generate node centred control volume domains (default is mesh centred)
-                NodalControlVolume=.true.
-                call Msg('*** Control volumes (i.e. modflow cells) will be centred at 2D mesh nodes')
-
-            elseif (index(instruction, SaturatedFlow_CMD)  /= 0) then
-                Modflow.SaturatedFlow=.true.
-                call Msg('*** Saturated flow approach is used ')
-
-            elseif (index(instruction, DisableTecplotOutput_CMD)  /= 0) then
-                EnableTecplotOutput=.false.
-                call Msg('*** Tecplot Output Disabled')
-
-            elseif (index(instruction, DisableQGISOutput_CMD)  /= 0) then
-                EnableQGISOutput=.false.
-                call Msg('*** QGIS Output Disabled')
+            ! Simple flag-setting instructions - handled by MUSG_InstructionParser
+            if(index(instruction, NodalControlVolumes_CMD) /= 0 .or. &
+               index(instruction, SaturatedFlow_CMD) /= 0 .or. &
+               index(instruction, DisableTecplotOutput_CMD) /= 0 .or. &
+               index(instruction, DisableQGISOutput_CMD) /= 0) then
+                call HandleSimpleFlagInstruction(instruction, Modflow)
                 
-            ! Units set assignment
-            else if(index(instruction, UnitsTime_CMD)  /= 0) then
-                call UnitsTime(FnumMUT,Modflow)
-            else if(index(instruction, UnitsLength_CMD)  /= 0) then
-                call UnitsLength(FnumMUT,Modflow)
+            ! Units instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, UnitsTime_CMD) /= 0 .or. &
+                    index(instruction, UnitsLength_CMD) /= 0) then
+                call HandleUnitsInstruction(instruction, FNumMUT, Modflow)
                 
                 
                 
-            ! Databases
-            else if(index(instruction, LocalUserbin_CMD)  /= 0) then
-                LocalUserbin=.true.
-                read(FnumMUT,'(a)') LocalUserbinPath
-                call msg('Path to local database files: '//trim(LocalUserbinPath))
-    
-            else if(index(instruction, SMS_Database_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call DefineUserbin(USERBIN)
-                call DB_ReadSMS(trim(USERBIN)//'\'//trim(FName)) 
-            else if(index(instruction, SMSParamterSetNumber_CMD)  /= 0) then
-                call SMSParamterSetNumber(FnumMUT)
-            
-            else if(index(instruction, GWFMaterialsDatabase_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call DefineUserbin(USERBIN)
-                call DB_ReadGWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
-
-            else if(index(instruction, CLNMaterialsDatabase_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call DefineUserbin(USERBIN)
-                call DB_ReadCLNMaterials(trim(USERBIN)//'\'//trim(FName)) 
-            
-            else if(index(instruction, SWFMaterialsDatabase_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call DefineUserbin(USERBIN)
-                call DB_ReadSWFMaterials(trim(USERBIN)//'\'//trim(FName)) 
-            
-            else if(index(instruction, ET_Database_CMD)  /= 0) then
-                read(FnumMUT,'(a)') FName
-                call DefineUserbin(USERBIN)
-                call DB_ReadET(trim(USERBIN)//'\'//trim(FName)) 
+            ! Database instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, LocalUserbin_CMD) /= 0 .or. &
+                    index(instruction, SMS_Database_CMD) /= 0 .or. &
+                    index(instruction, SMSParamterSetNumber_CMD) /= 0 .or. &
+                    index(instruction, GWFMaterialsDatabase_CMD) /= 0 .or. &
+                    index(instruction, CLNMaterialsDatabase_CMD) /= 0 .or. &
+                    index(instruction, SWFMaterialsDatabase_CMD) /= 0 .or. &
+                    index(instruction, ET_Database_CMD) /= 0) then
+                call HandleDatabaseInstruction(instruction, FNumMUT) 
                 
-            else if(index(instruction, ReadMesh_CMD) /= 0) then
-                read(FnumMUT,'(a)') FName
-                TMPLT%Name=TRIM(FName)
-                call ReadMeshBIN(TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
-
-            else if(index(instruction, MeshFromGb_CMD)  /= 0) then
-                call ReadGridBuilderMesh(FNumMut,TMPLT)
-                TMPLT.Name='TMPLT'
-                !call MeshFromGb(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
-            
-            else if(index(instruction, GenerateUniformRectangles_CMD)  /= 0) then
-                ! Build the 2D template mesh from a uniform 2D rectangular mesh
-                call GenerateUniformRectangles(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
-                JustBuilt=.true.
-            
-            else if(index(instruction, GenerateVariableRectangles_CMD)  /= 0) then
-                ! Build the 2D template mesh from a variable 2D rectangular mesh
-                call GenerateVariableRectangles(FnumMUT,TMPLT)
-                call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
-                JustBuilt=.true.
+            ! Mesh generation instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, ReadMesh_CMD) /= 0 .or. &
+                    index(instruction, MeshFromGb_CMD) /= 0 .or. &
+                    index(instruction, GenerateUniformRectangles_CMD) /= 0 .or. &
+                    index(instruction, GenerateVariableRectangles_CMD) /= 0) then
+                call HandleMeshGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt)
+                ! TemplateBuild is called after mesh generation to determine cell connections
+                call TemplateBuild(Modflow,TMPLT)
             
             !else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
             !    ! Build the 2D template mesh from a grdbldr 2D mesh
             !    call Quadtree2DMeshFromGWV(FnumMUT,TMPLT)
             !    call TemplateBuild(Modflow,TMPLT) ! Determine TMPLT cell connections (mc or nc), boundary nodes
            
+            ! Domain generation instructions - handled by MUSG_InstructionParser
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
+                call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
                 call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
                 call BuildModflowSWFDomain(Modflow)   
                 call AddSWFFiles(Modflow)
@@ -2252,12 +462,14 @@
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
+                call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
                 call GenerateLayeredGWFDomain(FnumMUT,TMPLT,Modflow%GWF) ! inherit cell connection from TMPLT and extend for GWF domain layers
                 call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,Modflow%GWF)
                 
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
+                call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
                 call GenerateCLNDomain(FnumMUT,Modflow%CLN)
                 call BuildModflowCLNDomain(Modflow)
                 call AddCLNFiles(Modflow)
@@ -2265,238 +477,34 @@
 
          
             else if(index(instruction, ActiveDomain_CMD)  /= 0) then
-                read(FNumMUT,'(a)') ActiveDomainSTR
-                call LwrCse(ActiveDomainSTR)
-                select case(ActiveDomainSTR)
-                case ('TMPLT')
-                    ActiveDomain=iTMPLT
-                case ('gwf')
-                    ActiveDomain=iGWF
-                case ('swf')
-                    ActiveDomain=iSWF
-                case ('cln')
-                    ActiveDomain=iCLN
-                case default
-                    call ErrMsg('Domain type '//trim(ActiveDomainSTR)//' not supported')
-                end select
-                call Msg(trim(ActiveDomainSTR))
+                ActiveDomain = HandleActiveDomainInstruction(FNumMUT)
                 
 
-            else if(index(instruction, ChooseAllNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllNodes(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseAllNodes(modflow.GWF)
-                case (iSWF)
-                    call ChooseAllNodes(modflow.SWF)
-                case (iCLN)
-                    call ChooseAllNodes(modflow.CLN)
-                end select
-
-             else if(index(instruction, ClearAllNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ClearAllNodes(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ClearAllNodes(modflow.GWF)
-                case (iSWF)
-                    call ClearAllNodes(modflow.SWF)
-                case (iCLN)
-                    call ClearAllNodes(modflow.CLN)
-                end select
-             
-             else if(index(instruction, ChooseNodeAtXYZ_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call ChooseNodeAtXYZTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call ChooseNodeAtXYZ(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseNodeAtXYZ(FnumMUT,Modflow.SWF)
-                case (iCLN)
-                    call ChooseNodeAtXYZ(FnumMUT,modflow.CLN)
-                end select
-
-             else if(index(instruction, ChooseAllCells_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseAllCells(modflow.GWF)
-                case (iSWF)
-                    call ChooseAllCells(modflow.SWF)
-                case (iCLN)
-                    call ChooseAllCells(modflow.CLN)
-                end select
+            ! Selection instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, ChooseAllNodes_CMD) /= 0 .or. &
+                    index(instruction, ClearAllNodes_CMD) /= 0 .or. &
+                    index(instruction, ChooseNodeAtXYZ_CMD) /= 0 .or. &
+                    index(instruction, ChooseGBNodes_CMD) /= 0 .or. &
+                    index(instruction, ChooseAllCells_CMD) /= 0 .or. &
+                    index(instruction, ClearAllCells_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellAtXYZ_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsByLayer_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellbyXYZ_LayerRange_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsFromFile_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsFromXYZList_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsByChosenZones_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsFromGBElements_CMD) /= 0 .or. &
+                    index(instruction, ChooseCellsFromGBNodes_CMD) /= 0 .or. &
+                    index(instruction, ChooseAllZones_CMD) /= 0 .or. &
+                    index(instruction, ClearAllZones_CMD) /= 0 .or. &
+                    index(instruction, ChooseZoneNumber_CMD) /= 0) then
+                call HandleSelectionInstruction(instruction, FNumMUT, ActiveDomain, Modflow, TMPLT)
                 
-             else if(index(instruction, ChooseCellsByLayer_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseCellsByLayer(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsByLayer(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsByLayer(FnumMUT,modflow.CLN)
-                end select
-
-             
-             else if(index(instruction, ChooseCellAtXYZ_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseCellAtXYZ(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellAtXYZ(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellAtXYZ(FnumMUT,modflow.CLN)
-                end select
-                
-             else if(index(instruction, ChooseCellbyXYZ_LayerRange_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellbyXYZ_LayerRange(FnumMUT,modflow.CLN)
-                end select
-                
-            
-            else if(index(instruction, ClearAllCells_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ClearAllCells(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ClearAllCells(modflow.GWF)
-                case (iSWF)
-                    call ClearAllCells(modflow.SWF)
-                case (iCLN)
-                    call ClearAllCells(modflow.CLN)
-                end select
-
-            
-            else if(index(instruction, ChooseGBNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call ChooseGBNodesTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call ChooseGBNodes(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseGBNodes(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseGBNodes(FnumMUT,modflow.CLN)
-                end select
-            
-            else if(index(instruction, ChooseCellsFromGBElements_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call ChooseCellsFromGBElementsTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call ChooseCellsFromGBElements(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsFromGBElements(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsFromGBElements(FnumMUT,modflow.CLN)
-                end select
-
-            else if(index(instruction, ChooseCellsFromGBNodes_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    call ChooseCellsFromGBNodesTemplate(FnumMUT,TMPLT)
-                case (iGWF)
-                    call ChooseCellsFromGBNodes(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsFromGBNodes(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsFromGBNodes(FnumMUT,modflow.CLN)
-                end select
-                
-            else if(index(instruction, ChooseCellsFromFile_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                    ! this will be done later
-                case (iGWF)
-                    call ChooseCellsFromFile(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsFromFile(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsFromFile(FnumMUT,modflow.CLN)
-                end select
-            
-            else if(index(instruction, ChooseCellsFromXYZList_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                    ! this will be done later
-                case (iGWF)
-                    call ChooseCellsFromXYZList(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsFromXYZList(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsFromXYZList(FnumMUT,modflow.CLN)
-                end select
-           
-            else if(index(instruction, ChooseCellsByChosenZones_CMD)  /= 0) then
-                select case(ActiveDomain)
-                case (iTMPLT)
-                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                    ! this will be done later
-                case (iGWF)
-                    call ChooseCellsByChosenZones(modflow.GWF)
-                case (iSWF)
-                    call ChooseCellsByChosenZones(modflow.SWF)
-                case (iCLN)
-                    call ChooseCellsByChosenZones(modflow.CLN)
-                end select
-                
-             else if(index(instruction, ChooseAllZones_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseAllZones(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseAllZones(modflow.GWF)
-                case (iSWF)
-                    call ChooseAllZones(modflow.SWF)
-                case (iCLN)
-                    call ChooseAllZones(modflow.CLN)
-                end select
-             
-             else if(index(instruction, ClearAllZones_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ClearAllZones(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ClearAllZones(modflow.GWF)
-                case (iSWF)
-                    call ClearAllZones(modflow.SWF)
-                case (iCLN)
-                    call ClearAllZones(modflow.CLN)
-                end select
-
-             else if(index(instruction, ChooseZoneNumber_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ChooseZoneNumber(FnumMUT,modflow,TMPLT)
-                case (iGWF)
-                    call ChooseZoneNumber(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ChooseZoneNumber(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ChooseZoneNumber(FnumMUT,modflow.CLN)
-                end select
-                
+            ! Zone management - handled by MUSG_InstructionParser
             else if(index(instruction, NewZone_CMD)  /= 0) then
+                call HandleZoneManagementInstruction(instruction, ActiveDomain, Modflow, TMPLT)
+                ! Route to appropriate domain (routines still in Modflow_USG.f90)
                 select case(ActiveDomain)
-                case (iTMPLT)
-                    !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                    ! this will be done later
                 case (iGWF)
                     call NewZoneFromChosenCells(modflow.GWF)
                 case (iSWF)
@@ -2505,26 +513,19 @@
                     call NewZoneFromChosenCells(modflow.CLN)
                 end select
                 
-                else if(index(instruction, InitialHeadFromCSVFile_CMD)  /= 0) then
-                    select case(ActiveDomain)
-                    case (iTMPLT)
-                        !call ChooseCellsFromFileTemplate(FnumMUT,TMPLT)
-                        ! this will be done later
-                    case (iGWF)
-                        call InitialHeadFromCSVFile(FnumMUT,modflow.GWF)
-                    case (iSWF)
-                        call InitialHeadFromCSVFile(FnumMUT,modflow.SWF)
-                    case (iCLN)
-                        call InitialHeadFromCSVFile(FnumMUT,modflow.CLN)
-                    end select
-
+            ! Initial conditions - handled by MUSG_InstructionParser
+            else if(index(instruction, InitialHeadFromCSVFile_CMD)  /= 0) then
+                call HandleInitialConditionInstruction(instruction, FNumMUT, ActiveDomain, Modflow)
 
             else if(index(instruction, FlagChosenNodesAsOuterBoundary_CMD)  /= 0) then
                 call Msg('*** This command is no longer necessary as outer boundary nodes are flagged automatically')
                 call Msg('*** Remove it to avoid pausing here.')
                 pause
             
+            ! Flagging instructions - handled by MUSG_InstructionParser
             else if(index(instruction, FlagChosenCellInactive_CMD)  /= 0) then
+                call HandleFlaggingInstruction(instruction, ActiveDomain, Modflow, TMPLT)
+                ! Route to appropriate domain (routines still in Modflow_USG.f90)
                 select case(ActiveDomain)
                 case (iTMPLT)
                     call FlagChosenCellsInactiveTMPLT(TMPLT)
@@ -2536,130 +537,68 @@
                     call FlagChosenCellsInactive(modflow.CLN)
                 end select
                 
-            ! GWF properties assignment
-            else if(index(instruction, AssignMaterialtoGWF_CMD)  /= 0) then
-                call AssignMaterialtoGWF(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignKhtoGWF_CMD)  /= 0) then
-                call AssignKhtoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignKvtoGWF_CMD)  /= 0) then
-                call AssignKvtoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignSstoGWF_CMD)  /= 0) then
-                call AssignSstoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignSytoGWF_CMD)  /= 0) then
-                call AssignSytoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignAlphatoGWF_CMD)  /= 0) then
-                call AssignAlphatoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignBetatoGWF_CMD)  /= 0) then
-                call AssignBetatoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignSrtoGWF_CMD)  /= 0) then
-                call AssignSrtoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, AssignBrookstoGWF_CMD)  /= 0) then
-                call AssignBrookstoDomain(FnumMUT,modflow.GWF)
-
-            else if(index(instruction, AssignStartingheadtoGWF_CMD)  /= 0) then
-                call AssignStartingHeadtoDomain(FnumMUT,modflow.GWF)
-            else if(index(instruction, GWFInitialHeadFromTecplotFile_CMD)  /= 0) then
-                call GWFInitialHeadFromTecplotFile(FnumMUT,modflow.GWF)
-            else if(index(instruction, GWFInitialHeadEqualsSurfaceElevation_CMD)  /= 0) then
-                call GWFInitialHeadEqualsSurfaceElevation(modflow.GWF)
-
-            else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD)  /= 0) then
-                call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
-            else if(index(instruction, InitialHeadFromDepthSatToGWF_CMD)  /= 0) then
-                call InitialHeadFromDepthSatToGWF(FnumMUT,modflow.GWF)
-
-            ! CLN properties assignment
-            else if(index(instruction, AssignMaterialtoCLN_CMD)  /= 0) then
-                call AssignMaterialtoCLN(FnumMUT,modflow.CLN)
-            else if(index(instruction, AssignStartingDepthtoCLN_CMD)  /= 0) then
-                call AssignStartingDepthtoDomain(FnumMUT,modflow.CLN)
-                
-            ! SWF properties assignment
-            else if(index(instruction, AssignMaterialtoSWF_CMD)  /= 0) then
-                call AssignMaterialtoSWF(FnumMUT,modflow.SWF)
-            else if(index(instruction, AssignSgcltoSWF_CMD)  /= 0) then
-                call AssignSgcltoDomain(FnumMUT,modflow.SWF)
+            ! Material property instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, AssignMaterialtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignKhtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignKvtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignSstoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignSytoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignAlphatoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignBetatoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignSrtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignBrookstoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignStartingheadtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignMaterialtoCLN_CMD) /= 0 .or. &
+                    index(instruction, AssignStartingDepthtoCLN_CMD) /= 0 .or. &
+                    index(instruction, AssignMaterialtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignSgcltoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignStartingDepthtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignManningtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignDepressiontoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignObstructiontoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignDepthForSmoothingtoSWF_CMD) /= 0) then
+                call HandleMaterialPropertyInstruction(instruction, FNumMUT, ActiveDomain, Modflow)
             
-            else if(index(instruction, AssignStartingDepthtoSWF_CMD)  /= 0) then
-                call AssignStartingDepthtoDomain(FnumMUT,modflow.SWF)
+            ! GWF initial conditions - handled by MUSG_InstructionParser
+            else if(index(instruction, GWFInitialHeadFromTecplotFile_CMD)  /= 0 .or. &
+                    index(instruction, GWFInitialHeadEqualsSurfaceElevation_CMD) /= 0 .or. &
+                    index(instruction, InitialHeadFunctionOfZtoGWF_CMD) /= 0 .or. &
+                    index(instruction, InitialHeadFromDepthSatToGWF_CMD) /= 0) then
+                call HandleInitialConditionInstruction(instruction, FNumMUT, ActiveDomain, Modflow)
+            
+            ! SWF initial conditions - handled by MUSG_InstructionParser
             else if(index(instruction, SWFInitialHeadFromTecplotFile_CMD)  /= 0) then
-                call SWFInitialHeadFromTecplotFile(FnumMUT,modflow.SWF)
-            
-            else if(index(instruction, AssignManningtoSWF_CMD)  /= 0) then
-                call AssignManningtoSWF(FnumMUT,modflow.SWF)
-            else if(index(instruction, AssignDepressiontoSWF_CMD)  /= 0) then
-                call AssignDepressiontoSWF(FnumMUT,modflow.SWF)
-            else if(index(instruction, AssignObstructiontoSWF_CMD)  /= 0) then
-                call AssignObstructiontoSWF(FnumMUT,modflow.SWF)
-            else if(index(instruction, AssignDepthForSmoothingtoSWF_CMD)  /= 0) then
-                call AssignDepthForSmoothingtoSWF(FnumMUT,modflow.SWF)
+                call HandleInitialConditionInstruction(instruction, FNumMUT, ActiveDomain, Modflow)
 
-            ! GWF boundary contitions
-            else if(index(instruction, AssignCHDtoGWF_CMD)  /= 0) then
-                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)
-            else if(index(instruction, AssignDRNtoGWF_CMD)  /= 0) then
-                call AssignDRNtoDomain(FnumMUT,Modflow,Modflow.GWF)
-            else if(index(instruction, AssignRCHtoGWF_CMD)  /= 0) then
-                call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
-            else if(index(instruction, AssignWELtoGWF_CMD)  /= 0) then
-                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.GWF)
-
-            ! SWF boundary contitions
-            else if(index(instruction, AssignCHDtoSWF_CMD)  /= 0) then
-                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
+            ! Boundary condition instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, AssignCHDtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignDRNtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignRCHtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignWELtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignCHDtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignRCHtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignTransientRCHtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignWELtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignCriticalDepthtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignCriticalDepthtoCellsSide1_CMD) /= 0 .or. &
+                    index(instruction, AssignCHDtoCLN_CMD) /= 0 .or. &
+                    index(instruction, AssignWELtoCLN_CMD) /= 0) then
+                call HandleBoundaryConditionInstruction(instruction, FNumMUT, Modflow)
             
-            else if(index(instruction, AssignRCHtoSWF_CMD)  /= 0) then
-                call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
-            else if(index(instruction, AssignTransientRCHtoSWF_CMD)  /= 0) then
-                call AssignTransientRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
-            
-            else if(index(instruction, AssignWELtoSWF_CMD)  /= 0) then
-                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.SWF)
-            else if(index(instruction, AssignCriticalDepthtoSWF_CMD)  /= 0) then
-                call AssignCriticalDepthtoDomain(Modflow,Modflow.SWF)
-            else if(index(instruction, AssignCriticalDepthtoCellsSide1_CMD)  /= 0) then
-                call AssignCriticalDepthtoCellsSide1(Modflow,Modflow.SWF)
-            
-            ! CLN boundary contitions
-            else if(index(instruction, AssignCHDtoCLN_CMD)  /= 0) then
-                call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.CLN)
-            else if(index(instruction, AssignWELtoCLN_CMD)  /= 0) then
-                call AssignWELtoDomain(FnumMUT,Modflow,Modflow.CLN)
-            
-            ! Observation points
+            ! Observation points - handled by MUSG_InstructionParser
             else if(index(instruction, ObservationPoint_CMD)  /= 0) then
-
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ObservationPoint(FnumMUT,Modflow,Modflow.CLN)
-                case (iGWF)
-                    call ObservationPoint(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ObservationPoint(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ObservationPoint(FnumMUT,modflow.CLN)
-                end select
+                call HandleObservationPointInstruction(FNumMUT, ActiveDomain, Modflow)
            
             else if(index(instruction, ObservationPointsFromCSVFile_CMD)  /= 0) then
-                select case(ActiveDomain)
-                !case (iTMPLT)
-                !    call ObservationPoint(FnumMUT,Modflow,Modflow.CLN)
-                case (iGWF)
-                    call ObservationPointsFromCSVFile(FnumMUT,modflow.GWF)
-                case (iSWF)
-                    call ObservationPointsFromCSVFile(FnumMUT,modflow.SWF)
-                case (iCLN)
-                    call ObservationPointsFromCSVFile(FnumMUT,modflow.CLN)
-                end select
+                call HandleObservationPointsFromCSVFileInstruction(FNumMUT, ActiveDomain, Modflow)
             
-            else if(index(instruction, GenOCFile_CMD)  /= 0) then
-                call GenOCFile(FNumMUT,Modflow)
-                
-            else if(index(instruction, StressPeriod_CMD)  /= 0) then
-                call StressPeriod(FNumMUT,Modflow)
+            ! Stress period and output control instructions - handled by MUSG_InstructionParser
+            else if(index(instruction, GenOCFile_CMD) /= 0 .or. &
+                    index(instruction, StressPeriod_CMD) /= 0) then
+                call HandleStressPeriodAndOutputControlInstruction(instruction, FNumMUT, Modflow)
                 
             else
-                call ErrMsg('MUSG?:'//instruction)
+                call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: '//trim(instruction), 'BuildModflowUSG')
             end if
         end do BuildModflowUSG_InstructionLoop
 
@@ -3059,858 +998,15 @@
     end subroutine CellsToQGIS
 
     !----------------------------------------------------------------------
-    subroutine ChooseAllZones(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-        ncount=0
-        do i=1,domain%nZones
-            call set(domain%zone(i)%is,chosen)
-            ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' zone numbers currently chosen: '
-        call Msg(trim(TmpSTR))
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                write(TmpSTR,'(a,i5)') TAB,i
-                call Msg(trim(TmpSTR))
-            endif
-        end do
-
-	    if(ncount == 0) call ErrMsg('No Zones chosen')
-	    
-    end subroutine ChooseAllZones
-    !----------------------------------------------------------------------
-    subroutine ChooseZoneNumber(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-        integer(i4) :: number
-
-		read(FNumMUT,*) number
-        write(TmpSTR,'(a,i8)') 'Adding zone number: ',number
-		call Msg(trim(TmpSTR))
-        
-        if(number <= 0 .or. number > domain%nZones) then
-            write(TmpSTR,'(a,i8)') 'Number must be between 1 and ',domain%nZones
-            call Errmsg(trim(TmpSTR))
-        end if
-
-        call set(domain%zone(number)%is,chosen)
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' zone numbers currently chosen: '
-        call Msg(trim(TmpSTR))
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                write(TmpSTR,'(a,i5)') TAB,i
-                call Msg(trim(TmpSTR))
-            endif
-        end do
-                
-    
-    end subroutine ChooseZoneNumber
-    !----------------------------------------------------------------------
-    subroutine ChooseAllNodes(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-        
-        ncount=0
-        do i=1,domain%nNodes
-            call set(domain%node(i)%is,chosen)
-            ncount=ncount+1
-        end do
-
-        write(ieco,*) 'Nodes chosen: ',ncount
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-    end subroutine ChooseAllNodes
-
-    !----------------------------------------------------------------------
-    subroutine ChooseGBNodes(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i, j
-	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iNode
-
-        character(MAX_STR) :: FName
-        character*80 :: dummy
-        logical :: togon(domain%nNodes)
-
-        read(FNumMUT,'(a)') fname
-		call Msg('Choose nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain%nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain%name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,domain%nLayers)
-            nLayer_top=min(nLayer_top,domain%nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg('From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg('To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain%nNodes
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iNode=(j-1)*domain%nNodes+i
-                        call set(domain%node(iNode)%is,chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-       
-         else
-            ncount=0
-            do i=1,domain%nNodes
-                if(togon(i)) then
-                    call set(domain%node(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseGBNodes
-    !----------------------------------------------------------------------
-    subroutine ChooseGBNodesTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (mesh) TMPLT
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-        character(MAX_STR) :: FName
-        character*80 :: dummy
-        logical :: togon(TMPLT%nNodes)
-
-        read(FNumMUT,'(a)') fname
-		call Msg('Choose nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT%nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        ncount=0
-        do i=1,TMPLT%nNodes
-            if(togon(i)) then
-                call set(TMPLT%node(i)%is,chosen)
-                ncount=ncount+1
-            end if
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No nodes chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseGBNodesTemplate
-    !----------------------------------------------------------------------
-    subroutine ChooseAllCells(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-
-        ncount=0
-        do i=1,domain%nCells
-            call set(domain%cell(i)%is,chosen)
-            ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-
-    end subroutine ChooseAllCells
-    !----------------------------------------------------------------------
-    subroutine ChooseNodeAtXYZTemplate(FNumMut,Domain)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type(mesh) Domain
-
-	    integer(i4) :: i,iNode
-	    real(dp) :: x1,y1,z1,dist_min,f1
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) 'Find node closest to XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain%nNodes
-		    f1=sqrt((x1-domain%node(i)%x)**2+((y1-domain%node(i)%y))**2+((z1-domain%node(i)%z))**2)
-		    if(f1.lt.dist_min) then
-			    inode=i
-			    dist_min=f1
-		    endif
-	    end do
-        call set(domain%node(iNode)%is,chosen)
-        
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-
-    end subroutine ChooseNodeAtXYZTemplate
-    !----------------------------------------------------------------------
-    subroutine ChooseNodeAtXYZ(FNumMut,Domain)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type(ModflowDomain) Domain
-
-	    integer(i4) :: i,iNode
-	    real(dp) :: x1,y1,z1,dist_min,f1
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) 'Find node closest to XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain%nNodes
-		    f1=sqrt((x1-domain%node(i)%x)**2+((y1-domain%node(i)%y))**2+((z1-domain%node(i)%z))**2)
-		    if(f1.lt.dist_min) then
-			    inode=i
-			    dist_min=f1
-		    endif
-	    end do
-        call set(domain%node(iNode)%is,chosen)
-        
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%node(iNode)%x,domain%node(iNode)%y,domain%node(iNode)%z,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%node(iNode)%x-x1,domain%node(iNode)%y-y1,domain%node(iNode)%z-z1,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-
-    end subroutine ChooseNodeAtXYZ
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsByLayer(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i, iLyr
-	    integer(i4) :: ncount
-
-        read(FNumMut,*) iLyr
-        write(TMPStr,*) 'Choose cells in layer: ',iLyr
-        call Msg(TMPStr)
-
-        ncount=0
-        do i=1,domain%nCells
-            if(domain%cell(i)%iLayer == iLyr) then
-                call set(domain%cell(i)%is,chosen)
-                ncount=ncount+1
-            endif
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen in layer: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-
-    end subroutine ChooseCellsByLayer
-    !----------------------------------------------------------------------
-    subroutine ChooseCellAtXYZ(FNumMut,Domain)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type(ModflowDomain) Domain
-
-	    integer(i4) :: i,iCell
-	    real(dp) :: x1,y1,z1,dist_min,f1
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,'(a,3f12.2)') 'Find cell closest to XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain%nCells
-		    f1=sqrt((x1-domain%cell(i)%x)**2+((y1-domain%cell(i)%y))**2+((z1-domain%cell(i)%z))**2)
-		    if(f1.lt.dist_min) then
-			    iCell=i
-			    dist_min=f1
-		    endif
-	    end do
-        call set(domain%cell(iCell)%is,chosen)
-        
-        write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
-        call Msg(tmpSTR)
-        write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Found x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-		write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'Delta x, y, z  ',domain%cell(iCell)%x-x1,domain%cell(iCell)%y-y1,domain%cell(iCell)%z-z1,'     '//TRIM(UnitsOfLength)
-        call Msg(tmpSTR)
-        
-    end subroutine ChooseCellAtXYZ
-    
-        !----------------------------------------------------------------------
-    subroutine ChooseCellsFromXYZList(FNum,Domain)
-        implicit none
-        integer(i4) :: FNum
-        
-        real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
-        integer(i4) :: nPoints  ! number of points in list
-        
-        type(ModflowDomain) Domain
-
-        integer(i4) :: i, j, iCell
-	    real(dp) :: x1,y1,z1,dist_min,f1
-
-        call xyzFromList(FNum,xi,yi,zi,nPoints)
-
-        
-        do i=1,nPoints
-            x1=xi(i)
-            y1=yi(i)
-            z1=zi(i)
-            write(TMPStr,'(a,3f12.2)') 'Find cell closest to XYZ: ',x1, y1, z1
-            call Msg(TMPStr)
-            dist_min=1.0e20
-            do j=1,domain%nCells
-                f1=sqrt((x1-domain%cell(j)%x)**2+((y1-domain%cell(j)%y))**2+((z1-domain%cell(j)%z))**2)
-                if(f1.lt.dist_min) then
-                    iCell=j
-                    dist_min=f1
-                endif
-            end do
-            call set(domain%cell(iCell)%is,chosen)
-            
-            write(tmpSTR,'(a14,i8)') 'Found cell  ',iCell
-            call Msg(tmpSTR)
-            write(tmpSTR,'(a14,3('//FMT_R8//'),a)') 'At x, y, z  ',domain%cell(iCell)%x,domain%cell(iCell)%y,domain%cell(iCell)%z,'     '//TRIM(UnitsOfLength)
-            call Msg(tmpSTR)
-	    end do
-        
-    end subroutine ChooseCellsFromXYZList
-
-    !----------------------------------------------------------------------
-    subroutine ChooseCellbyXYZ_LayerRange(FNumMut,Domain)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type(ModflowDomain) Domain
-
-	    integer(i4) :: i
-	    real(dp) :: x1,x2
-	    real(dp) :: y1,y2
-	    real(dp) :: z1,z2
-	    integer(i4) :: ltop,lbot,ntemp,ielmin,ielmax
-
-        call Msg('Find cells whose centroids are in the range defined by: ')
-        read(FNumMut,*) x1,x2
-        write(TMPStr,*) 'X range: ',x1, x2
-        call Msg(TMPStr)
-
-        read(FNumMut,*) y1,y2
-        write(TMPStr,*) 'Y range: ',y1, y2
-        call Msg(TMPStr)
-
-        read(FNumMut,*) z1,z2
-        write(TMPStr,*) 'Z range: ',z1, z2
-        call Msg(TMPStr)
-
-        read(FNumMut,*) ltop,lbot
-        write(TMPStr,*) 'Layer range: ',ltop, lbot
-        call Msg(TMPStr)
-
-        if(ltop.gt.lbot) then
-            ntemp=ltop
-            ltop=lbot
-            lbot=ntemp
-        end if
-        ielmin=(ltop-1)*domain%nodelay
-        ielmax=lbot*domain%nodelay + 1
-
-        x1=x1-small
-        x2=x2+small
-        y1=y1-small
-        y2=y2+small
-        z1=z1-small
-        z2=z2+small
-
-        ncount=0
-        do i=1,domain%nCells
-            if(domain%cell(i)%x.ge.x1 .and. domain%cell(i)%x.le.x2 .and. domain%cell(i)%y.ge.y1 .and. domain%cell(i)%y.le.y2 .and. domain%cell(i)%z.ge.z1 .and. domain%cell(i)%z.le.z2) then
-                if(i .gt. ielmin .and. i .lt. ielmax) then
-                    call set(domain%cell(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end if
-        end do
-    
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-    end subroutine ChooseCellbyXYZ_LayerRange
-
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsFromFile(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount, iCell,status2
-
-        character*80 fname
-        logical togon(domain%nCells)
-
-		read(FNumMUT,'(a)') fname
-		call Msg('Choose Cells from ascii file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown')
-        togon(:)=.false.
-        do
-            read(itmp,*,iostat=status2) iCell
-            if(status2/=0) exit
-            togon(iCell)=.true.
-        enddo
-        
-        ncount=0
-        do i=1,domain%nCells
-            if(togon(i)) then
-                call set(domain%cell(i)%is,chosen)
-                ncount=ncount+1
-            end if
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseCellsFromFile
-
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsByChosenZones(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i, j
-	    integer(i4) :: ncount
-
-
-       
-        ncount=0
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) then
-                do j=1,domain%nCells
-                    if(domain%cell(j)%idZone == i) then
-                        call set(domain%cell(j)%is,chosen)
-                        ncount=ncount+1
-                    end if
-                end do
-            end if
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-
-
-    end subroutine ChooseCellsByChosenZones
-
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsFromGBElements(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i, j
-	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iCell
-
-        character*80 fname
-        character*80 dummy
-        logical togon(domain%nElements)
-
-		read(FNumMUT,'(a)') fname
-		call Msg('Choose Cells from gb chosen elements file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain%nElements)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain%name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,domain%nLayers)
-            nLayer_top=min(nLayer_top,domain%nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg('From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg('To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain%nCells
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*domain%nElements+i
-                        call set(domain%cell(iCell)%is,chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,domain%nCells
-                if(togon(i)) then
-                    call set(domain%cell(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseCellsFromGBElements
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsFromGBElementsTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (mesh) TMPLT
-
-        integer(i4) :: i, j
-	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
-
-        character*80 fname
-        character*80 dummy
-        logical togon(TMPLT%nElements)
-
-		read(FNumMUT,'(a)') fname
-		call Msg('Choose Elements from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT%nElements)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(TMPLT%name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT%nLayers)
-            nLayer_top=min(nLayer_top,TMPLT%nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg('From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg('To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,TMPLT%nElements
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iElement=(j-1)*TMPLT%nElements+i
-                        call set(TMPLT%element(iElement)%is,chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,TMPLT%nElements
-                if(togon(i)) then
-                    call set(TMPLT%element(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' Elements chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Elements chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseCellsFromGBElementsTemplate
-   
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsFromGBNodes(FNumMUT,domain) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i, j
-	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iCell
-
-        character*80 fname
-        character*80 dummy
-        logical togon(domain%nNodes)
-
-		read(FNumMUT,'(a)') fname
-		call Msg('Choose Cells from GB chosen nodes file '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,domain%nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(domain%name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,domain%nLayers)
-            nLayer_top=min(nLayer_top,domain%nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg('From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg('To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,domain%nCells
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iCell=(j-1)*domain%nNodes+i
-                        call set(domain%cell(iCell)%is,chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,domain%nCells
-                if(togon(i)) then
-                    call set(domain%cell(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseCellsFromGBNodes
-    !----------------------------------------------------------------------
-    subroutine ChooseCellsFromGBNodesTemplate(FNumMUT,TMPLT) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (mesh) TMPLT
-
-        integer(i4) :: i, j
-	    integer(i4) :: nLayer_bot, nLayer_top, ncount, iElement
-
-        character*80 fname
-        character*80 dummy
-        logical togon(TMPLT%nNodes)
-
-		read(FNumMUT,'(a)') fname
-		call Msg('Choose Nodes from '//trim(fname))
-
-        call getunit(itmp)
-        open(itmp,file=fname,status='unknown',form='unformatted')
-        read(itmp) dummy
-        read(itmp,iostat=status) (togon(i),i=1,TMPLT%nNodes)
-        if(status /= 0) then
-		    call ErrMsg('While reading: '//fname)
-        end if
-        
-        if(TMPLT%name == 'GWF') then
-
-            read(FNumMUT,*) nLayer_top,nLayer_bot
-        
-            nLayer_bot=max(nLayer_bot,1)
-            nLayer_bot=min(nLayer_bot,TMPLT%nLayers)
-            nLayer_top=min(nLayer_top,TMPLT%nLayers)
-            nLayer_top=max(nLayer_top,1)
-        
-            write(TmpSTR,'(i5)') nLayer_top
-		    call Msg('From Layer: '//trim(TmpSTR))
-            write(TmpSTR,'(i5)') nLayer_bot
-		    call Msg('To Layer:   '//trim(TmpSTR))
-
-            ncount=0
-            do i=1,TMPLT%nNodes
-                if(togon(i)) then
-                    do j=nLayer_top,nLayer_bot
-                        iElement=(j-1)*TMPLT%nNodes+i
-                        call set(TMPLT%element(iElement)%is,chosen)
-                        ncount=ncount+1
-                    end do
-                end if
-            end do
-        else
-            ncount=0
-            do i=1,TMPLT%nNodes
-                if(togon(i)) then
-                    call set(TMPLT%element(i)%is,chosen)
-                    ncount=ncount+1
-                end if
-            end do
-        end if
-
-        write(TmpSTR,'(a,i10)') trim(TMPLT%name)//' Nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Nodes chosen')
-	    
-        call freeunit(itmp)
-
-
-    end subroutine ChooseCellsFromGBNodesTemplate
-    
-    !----------------------------------------------------------------------
-    subroutine ClearAllCells(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-
-        do i=1,domain%nCells
-            call clear(domain%cell(i)%is,chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain%nCells
-            if(bcheck(domain%cell(i)%is,chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Cells chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some Cells chosen')
-
-    end subroutine ClearAllCells
-    
-    !----------------------------------------------------------------------
-    subroutine ClearAllNodes(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-        do i=1,domain%nNodes
-            call clear(domain%node(i)%is,chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain%nNodes
-            if(bcheck(domain%node(i)%is,chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' nodes chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some nodes chosen')
-
-
-    end subroutine ClearAllNodes
-    
-    !----------------------------------------------------------------------
-    subroutine ClearAllZones(domain) 
-        implicit none
-
-        type (ModflowDomain) Domain
-
-        integer(i4) :: i
-	    integer(i4) :: ncount
-
-        do i=1,domain%nZones
-            call clear(domain%zone(i)%is,chosen)
-        end do
-        
-        ncount=0
-        do i=1,domain%nZones
-            if(bcheck(domain%zone(i)%is,chosen)) ncount=ncount+1
-        end do
-
-        write(TmpSTR,'(a,i10)') trim(domain%name)//' Zones chosen: ',ncount
-        call Msg(trim(TmpSTR))
-        
-	    if(ncount /= 0) call ErrMsg('Some Zones chosen')
-
-    end subroutine ClearAllZones
+    ! Cell/node/zone selection routines are now in MUSG_Selection module
+    ! This includes:
+    !   - ChooseAllZones, ChooseZoneNumber, ChooseAllNodes, ChooseGBNodes
+    !   - ChooseGBNodesTemplate, ChooseAllCells, ChooseNodeAtXYZTemplate, ChooseNodeAtXYZ
+    !   - ChooseCellsByLayer, ChooseCellAtXYZ, ChooseCellsFromXYZList
+    !   - ChooseCellbyXYZ_LayerRange, ChooseCellsFromFile, ChooseCellsByChosenZones
+    !   - ChooseCellsFromGBElements, ChooseCellsFromGBElementsTemplate
+    !   - ChooseCellsFromGBNodes, ChooseCellsFromGBNodesTemplate
+    !   - ClearAllCells, ClearAllNodes, ClearAllZones
 
     !-------------------------------------------------------------
     subroutine CLN_IaJaStructure(CLNDomain)
@@ -4026,7 +1122,7 @@
             read(Modflow.iCLN,'(a)',iostat=status) line
             call LwrCse(line)
             if(status /= 0) then
-                call ErrMsg('While reading CLN')
+                call HandleError(ERR_FILE_IO, 'Error reading CLN file', 'BuildModflowUSG')
             endif
             
             IF(index(line,'options') .ne. 0) THEN
@@ -4696,7 +1792,7 @@
                 write(FNum,'(8i8)') (Modflow%CLN%idNode(j,i),j=1,2) !, Modflow%CLN%idNode(3,i) 
             else
                 write(TmpSTR,'(i2)') Modflow%CLN%nNodesPerElement
-                call ErrMsg(trim(Modflow%CLN%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                call HandleError(ERR_INVALID_INPUT, trim(Modflow%CLN%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet', 'ModflowDomainScatterToTecplot')
             end if
         end do
        
@@ -4856,13 +1952,13 @@
 
             if(index(Instruction, CLNFromXYZList_cmd)  /= 0) then
                 ! call xyzFromList(FNum,xi,yi,zi,nPoints)
-                call ErrMsg('cln from xyz list not fully implemented yet')
+                call HandleError(ERR_LOGIC, 'cln from xyz list not fully implemented yet', 'BuildModflowUSG')
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,CLNDomain)
                 
             else
-			    call ErrMsg('Unrecognized instruction: generate cln domain')
+			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: generate cln domain', 'BuildModflowUSG')
             end if
 
         end do read_Instructions
@@ -4952,7 +2048,7 @@
         if(TotalLength < 0.0001) then
             call Msg('NOTE: Total Length of new CLN is less than 0.0001')
         else if(TotalLength < 1e-10) then   
-            call ErrMsg('Total Length of new CLN is essentially zero')
+            call HandleError(ERR_MATH, 'Total Length of new CLN is essentially zero', 'create_cln_from_two_points')
         endif
         
         dx=(xp(2) - xp(1))/nCells
@@ -5147,13 +2243,13 @@
 
             if(index(instruction, zone_by_template_cmd)  /= 0) then
 			    if(layer_defined) then
-                    call ErrMsg('   Use this instruction before defining any new layers')
+                    call HandleError(ERR_INVALID_INPUT, 'Use this instruction before defining any new layers', 'BuildModflowUSG')
 			    end if
                 zone_by_template=.true.
 
             else if(index(instruction, top_elevation_cmd)  /= 0) then
 			    if(layer_defined) then
-                    call ErrMsg('   Use this instruction before defining any new layers')
+                    call HandleError(ERR_INVALID_INPUT, 'Use this instruction before defining any new layers', 'BuildModflowUSG')
 			    end if
                 call top_elevation(FNumMUT,TMPLT)
 			    do j=1,TMPLT%nNodes
@@ -5165,12 +2261,12 @@
 			    layer_defined=.true.
 
             else
-			    call ErrMsg('Unrecognized instruction: generate gwf domain')
+			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: generate gwf domain', 'BuildModflowUSG')
             end if
 
         end do read_slice2lyr
         
-        if(.not. layer_defined) call ErrMsg('You must define at least 1 layer') 
+        if(.not. layer_defined) call HandleError(ERR_INVALID_INPUT, 'You must define at least 1 layer', 'BuildModflowUSG') 
         
         
         GWFDomain%nNodes=TMPLT%nNodes*nsheet
@@ -5382,7 +2478,7 @@
 
 
             else
-			    call ErrMsg('Unrecognized instruction: generate swf domain')
+			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: generate swf domain', 'BuildModflowUSG')
             end if
 
         end do read_slice2lyr
@@ -5394,53 +2490,8 @@
     end subroutine GenerateSWFDomain
     
     !-------------------------------------------------------------
-    subroutine GenOCFile(FNumMUT,Modflow)
-        implicit none
-        
-        character(MAX_INST) :: instruction
-
-        integer(i4) :: FNumMUT
-        
-        integer(i4) :: i
-        
-        real(sp) :: OutputTimes(1000)
-        
-        type (ModflowProject) Modflow
-        
-        modflow.nOutputTimes=0
-        
-	    ! Change default behaviours and top elevation
-        read_oc: do
-            read(FNumMUT,'(a)',iostat=status) instruction
-            if(status /= 0) exit
-
-            call LwrCse(instruction)
-            if(index(instruction, 'end') /=0) then
-                call Msg('end generate output control file')
-                exit read_oc
-            else
-                modflow.nOutputTimes=modflow.nOutputTimes+1
-                read(instruction,*) OutputTimes(modflow.nOutputTimes)
-                call Msg(instruction)
-            end if  
-        end do read_oc
-        
-        allocate(modflow.OutputTimes(modflow.nOutputTimes),stat=ialloc)
-        call AllocChk(ialloc,'Output time array')
-        
-        modflow.OutputTimes(:modflow.nOutputTimes)=OutputTimes(:modflow.nOutputTimes)
-        
-        call Msg(' ')
-        call Msg('   #     Output time')
-        call Msg('--------------------')
-        do i=1,modflow.nOutputTimes
-            write(TmpSTR,'(i4,2x,'//FMT_R8//',a)') i, modflow.OutputTimes(i),'     '//TRIM(modflow.STR_TimeUnit)
-            call Msg(trim(TmpSTR))
-        end do
-    
-        return
-        
-    end subroutine GenOCFile
+    !----------------------------------------------------------------------
+    ! GenOCFile is now in MUSG_OutputControl module
     
     !-------------------------------------------------------------
     subroutine GrowKeyWordArray(Modflow,ndim) !--- during run if necessary 
@@ -5512,58 +2563,16 @@
     end subroutine GWF_IBOUNDv2_ToTecplot
 
 
-!-------------------------------------------------------------
-    subroutine GWFInitialHeadEqualsSurfaceElevation(domain)
-        implicit none
-
-        type (ModflowDomain) domain
-        
-        integer :: i, modi, nsurf
-        
-        do i=1,domain%nCells
-			modi=mod(i,domain%nodelay)
-			if (modi==0) modi=domain%nodelay
-			nsurf = modi 
-
-			domain%cell(i)%StartingHeads = domain%cell(nsurf)%Top
-		end do
-
-                
-    end subroutine GWFInitialHeadEqualsSurfaceElevation
-!-------------------------------------------------------------
-    subroutine GWFInitialHeadFromTecplotFile(FnumMUT,domain)
-        implicit none
-
-        type (ModflowDomain) domain
-        
-        integer :: i
-        
-        integer(i4) :: FnumMUT
-        integer(i4) :: FNumRestart
-        character(MAX_STR) :: FNameRestart
-        
-        character(4000) :: line
-
-        read(FnumMUT,'(a)') FNameRestart
-        call OpenAscii(FNumRestart,FNameRestart)
-        call Msg( 'GWF restart from tecplot file: '//trim(FNameRestart))
-
-        FindStartString: do
-            read(FNumRestart,'(a)',iostat=status) line
-            if(status /= 0) return
-            
-            if(index(line,'DT=(SINGLE )').gt.0) then
-                read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
-                call Msg('First 10 starting heads:')
-                do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
-                    call Msg(trim(TmpSTR))
-                end do
-                exit FindStartString
-            end if
-        end do FindStartString
-                
-    end subroutine GWFInitialHeadFromTecplotFile
+    !----------------------------------------------------------------------
+    ! Initial condition routines are now in MUSG_InitialConditions module
+    ! This includes:
+    !   - InitialHeadFromCSVFile
+    !   - GWFInitialHeadFromTecplotFile
+    !   - GWFInitialHeadEqualsSurfaceElevation
+    !   - InitialHeadFunctionOfZtoGWF
+    !   - InitialHeadFromDepthSatToGWF
+    !   - SWFInitialHeadFromTecplotFile
+    !   - Helper functions: myMOD, interpol_table, pw_from_sw
     !-------------------------------------------------------------
     subroutine GWFToTecplot(Modflow)
         implicit none
@@ -5700,7 +2709,7 @@
                 write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i),j=1,8) 
             else
                 write(TmpSTR,'(i2)') Modflow%GWF%nNodesPerElement
-                call ErrMsg(trim(Modflow%GWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                call HandleError(ERR_INVALID_INPUT, trim(Modflow%GWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet', 'ModflowDomainScatterToTecplot')
             end if
         end do
        
@@ -5709,278 +2718,11 @@
     end subroutine GWFToTecplot
 
     !----------------------------------------------------------------------
-    subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
-        implicit none
-        integer(i4) :: FNumMUT
-        type(ModflowDomain) domain
-
-        integer(i4) :: i, j
-	    integer(i4) :: npairs
-	    real(dp) :: t
-                
-        character(256) :: instruction
-
-	    real(dp) :: zp(1000)
-	    real(dp) :: InitHead(1000)
-	    zp(:) = 0
-	    InitHead(:) = 0
-
-
-        call Msg('                Z              Head')
-
-	    npairs=0
-	    read_zhead_pairs:do
-		    read(FNumMUT,'(a)',iostat=status) instruction
-		    if(status /= 0) exit
-
-		    len=len_trim(instruction)
-            call LwrCse(instruction)
-
-            if(index(instruction,'end') /= 0) then
-                call Msg('end gwf initial head function of z')
-                exit read_zhead_pairs
-		    else
-			    npairs=npairs+1
-			    read(instruction,*,iostat=status) zp(npairs),InitHead(npairs)
-
-			    if(npairs > 1) then
-			        if(zp(npairs) <= zp(npairs-1)) then
-				        call ErrMsg('Z values must be entered in ascending order')
-				    endif
-			    endif
-
-			    if(status /= 0) then
-				    call ErrMsg('Bad z-head pair')
-                endif
-                
-                write(TmpSTR,'(i8,2x,2('//FMT_R8//'))') npairs,zp(npairs),InitHead(npairs)
-                call Msg(trim(TmpSTR))
-
-		    endif
-	    end do read_zhead_pairs
-
-        do i=1,domain%nCells
-		    do j=1,npairs-1
-			    if(domain%cell(i)%z >= zp(j) .and. domain%cell(i)%z <= zp(j+1)) then  ! interpolate
-	                t=(domain%cell(i)%z-zp(j))/(zp(j+1)-zp(j))
-				    domain%cell(i)%StartingHeads=(1.0-t)*InitHead(j)+t*InitHead(j+1)
-			    end if
-		    end do
-        end do
-        
-        call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
-
-
-    end subroutine InitialHeadFunctionOfZtoGWF
-
-       
-     !----------------------------------------------------------------------
-    subroutine InitialHeadFromDepthSatToGWF(FNumMUT,domain)
-        implicit none
-        integer(i4) :: FNumMUT
-        type(ModflowDomain) domain
-
-        integer(i4) :: i
-	    integer(i4) :: npairs
-        
-        integer(i4) :: iCell
-        real(dp) :: depth
-        real(dp) :: sw
-                
-        character(256) :: instruction
-
-	    real(dp) :: dpth(1000)
-	    real(dp) :: satn(1000)
-	    dpth(:) = 0
-	    satn(:) = 0
-
-
-        call Msg('                Depth               Sat')
-
-	    npairs=0
-	    read_DepthSaturation_pairs:do
-		    read(FNumMUT,'(a)',iostat=status) instruction
-		    if(status /= 0) exit
-
-		    len=len_trim(instruction)
-            call LwrCse(instruction)
-
-            if(index(instruction,'end') /= 0) then
-                call Msg('end gwf initial head function of z')
-                exit read_DepthSaturation_pairs
-		    else
-			    npairs=npairs+1
-			    read(instruction,*,iostat=status) dpth(npairs),satn(npairs)
-
-			    if(npairs > 1) then
-			        if(dpth(npairs) <= dpth(npairs-1)) then
-				        call ErrMsg('Depth values must be entered in ascending order')
-				    endif
-			    endif
-
-			    if(status /= 0) then
-				    call ErrMsg('Bad z-saturation pair')
-                endif
-                
-                write(TmpSTR,'(i8,2x,2('//FMT_R8//'))') npairs,dpth(npairs),satn(npairs)
-                call Msg(trim(TmpSTR))
-
-		    endif
-        end do read_DepthSaturation_pairs
-        
-        
-        do i=1,domain%nCells
-            
-            !find the cell number on the surface that corresponds to cell i
-            iCell = myMOD(i,domain%nodelay)
-			depth=domain%cell(iCell)%Top-domain%cell(i)%z
-
-			call interpol_table(npairs,dpth,satn,depth,sw)
-            if(i==2001) then
-            continue
-            endif
-            
-			domain%cell(i)%StartingHeads=pw_from_sw(i,sw,domain)
-
-        end do
-        
-        continue
-        
-!crgm This code snippet converts head hd to saturated thickness thck then this gets set to saturation on return
-!       Uses the van genuchten or brooks-corey function 
-!     ELSEIF(METHOD.EQ.4)THEN
-!C6---------vanG FUNCTION WITH MODIFICATIONS FOR BUBBLEPT AND FULLYDRY
-        !bpn = 0.0 
-        !if(ibpn.eq.1)then
-        !  bpn = bp(N)
-        !endif
-        !TTOP = BBOT + TOTTHICK
-        !pc = 0.5*(ttop+bbot) - (hd-bpn)
-        !if(pc.le.0)then
-        !  thck = 1.0
-        !else
-        !  gamma = 1.-1./beta(n)
-        !  Seff = (1. + (alpha(n)*pc)**beta(n))**gamma
-        !  Seff = 1.0 / Seff
-        !  if(idry.eq.0) then
-        !    thck = seff * (1-sr(n)) + sr(n)
-        !  else
-        !    thck = seff
-        !  endif  
-        !endif
-
-
-      !  do i=1,domain%nCells
-		    !do j=1,npairs-1
-			   ! if(domain%cell(i)%z >= dpth(j) .and. domain%cell(i)%z <= dpth(j+1)) then  ! interpolate
-	     !           t=(domain%cell(i)%z-dpth(j))/(dpth(j+1)-dpth(j))
-				  !  domain%cell(i)%StartingHeads=(1.0-t)*satn(j)+t*satn(j+1)
-			   ! end if
-		    !end do
-      !  end do
-      !  
-      !  call Msg('Assumed units of length are '//TRIM(UnitsOfLength))
-
-
-    end subroutine InitialHeadFromDepthSatToGWF
-    !----------------------------------------------------------------------
-    subroutine interpol_table(nsize,xtable,ytable,xval,yval)
-        implicit none
-
-        integer(i4) :: j,jlower,jupper,jmid,nsize
-        real(dp) :: xval,yval
-        real(dp) :: xtable(100)
-        real(dp) :: ytable(100)
-
-        jlower=0
-        jupper=nsize+1
-        10    if(jupper-jlower.gt.1)then
-            jmid=(jupper+jlower)/2
-            if((xtable(nsize).gt.xtable(1)).eqv.(xval.gt.xtable(jmid)))then
-                jlower=jmid
-            else
-                jupper=jmid
-            endif
-            go to 10
-        endif
-        j=jlower
-
-
-        if(j==0) then
-            yval=ytable(1)
-        else if (j==nsize) then
-            yval=ytable(nsize)
-        else
-            yval = ytable(j) + (xval-xtable(j))*(ytable(j+1)-ytable(j)) / (xtable(j+1)-xtable(j))
-        endif
-
-        return
-    end subroutine interpol_table
-    !----------------------------------------------------------------------
-    function pw_from_sw(iCell,sw,domain)
-        !
-        !  ...Compute the pressure for water saturation, sw
-        !     Written by Kerry MacQuarrie, Nov. 1995
-        !
-        ! rgm 2025  modfied for Modflow unsat functions
-    
-        ! *** only implemented for van Genuchten or Brooks-Corey functions (method 4 in modflow)
-
-        !
-        implicit none
-        type(ModflowDomain) domain
-
-        integer(i4) :: iCell   ! cell number
-        real(dp) :: pw_from_sw
-        !
-        real(dp) :: c1, eps_conv, aconstant, sw, se
-        real(dp) :: v_gamma, v_beta, v_alpha, gamma
-        real(dp) :: sat_1, sat_2, sat_shift, pres_1, pres_2, dp_ds
-
-        parameter (c1 = 1.0d0, eps_conv = 1.0d-4)
-        parameter (sat_shift = 1.0d-6)
-        parameter (aconstant = c1-eps_conv)
-
-
-        ! Compute effective saturation
-        se = (sw - domain%Cell(iCell)%Sr) / (c1 - domain%Cell(iCell)%Sr)
-        ! Compute some constants
-        gamma = 1.-1./domain%Cell(iCell)%Beta
-        v_gamma = c1/gamma
-        v_beta  = c1/domain%Cell(iCell)%Beta
-        v_alpha = c1/domain%Cell(iCell)%Alpha
-
-        if (se .gt. aconstant) then ! use linear interpolation
-
-            sat_1  = aconstant
-            pres_1 = v_alpha * ( (sat_1)**(-v_gamma) - c1 )**(v_beta)
-            sat_2  = c1 ! note that the pressure at sat=1.0 is 0.0
-            dp_ds  = pres_1/eps_conv
-            pw_from_sw = dp_ds*(se-sat_1) + pres_1
-
-        else if(se .lt. eps_conv) then ! use linear interpolation
-
-            sat_1  = eps_conv
-            pres_1 = v_alpha * ( (sat_1)**(-v_gamma) - c1 )**(v_beta)
-            sat_2  = eps_conv + sat_shift
-            pres_2 = v_alpha * ( (sat_2)**(-v_gamma) - c1 )**(v_beta)
-            dp_ds  = (pres_2 - pres_1)/sat_shift
-            pw_from_sw = dp_ds*(se-sat_1) + pres_1
-
-        else ! invert van Genuchten relation directly
-            pw_from_sw = v_alpha * ( (se)**(-v_gamma) - c1 )**(v_beta)
-
-        end if
-
-        ! Substract air entry pressure (which is actually "-") and change sign
-
-       	if(UnsaturatedFunctionType(domain%cell(iCell)%idZone) == 'Van Genuchten') then
-			pw_from_sw = -pw_from_sw
-		else if(UnsaturatedFunctionType(domain%cell(iCell)%idZone) == 'Brooks-Corey') then
-			pw_from_sw = -(pw_from_sw - domain%cell(icell)%Brooks)
-		endif
-
-    end function pw_from_sw
+    ! Helper functions for initial conditions are now in MUSG_InitialConditions module
+    ! This includes:
+    !   - myMOD (custom modulo function)
+    !   - interpol_table (table interpolation)
+    !   - pw_from_sw (pressure from saturation)
 
    !-------------------------------------------------------------
     subroutine InitializeModflowFiles(Modflow)
@@ -6280,7 +3022,7 @@
                 else if(domain%Name == 'SWF') then
                     write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCells,', t="'//trim(domain%name)//' RCH", datapacking=point'
                 else if(domain%Name == 'CLN') then
-                    call ErrMsg('Code for ModflowDomainScatterToTecplot for CLN RCH domain required')
+                    call HandleError(ERR_LOGIC, 'Code for ModflowDomainScatterToTecplot for CLN RCH domain required', 'ModflowDomainScatterToTecplot')
                 end if    
         
                 write(FNum,'(a)') trim(ZoneSTR)
@@ -7388,7 +4130,7 @@
         call Msg(trim(TmpSTR))
         write(TmpSTR,'(a,i10)') 'Cells added to new zone: ',ncount
         call Msg(trim(TmpSTR))
-	    if(ncount == 0) call ErrMsg('No Cells chosen')
+	    if(ncount == 0) call HandleError(ERR_INVALID_INPUT, 'No Cells chosen', 'CreateNewZone')
 
     end subroutine NewZoneFromChosenCells
     
@@ -7662,105 +4404,10 @@
     end subroutine NodeCentredSWFCellGeometry
 
     !----------------------------------------------------------------------
-    subroutine ObservationPoint(FNumMUT,domain)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) domain
-
-	    ! Assign the cell containing XYZ input coordinate as named obervation point and output head, sat, depth, conc ... 
-
-        integer(i4) :: i
-	    integer(i4) :: iCell
-	    real(dp) :: x1,y1,z1,dist_min,f1
-        
-        domain%nObsPnt=domain%nObsPnt+1
-
-        read(FNumMUT,'(a)') domain%ObsPntName(domain%nObsPnt)
-        call Msg(trim(domain%name)//' observation point name: '//trim(domain%ObsPntName(domain%nObsPnt)))
-
-        read(FNumMut,*) x1,y1,z1
-        write(TMPStr,*) 'Find cell closest to user XYZ: ',x1, y1, z1
-        call Msg(TMPStr)
-
-        dist_min=1.0e20
-	    do i=1,domain%nCells
-		    f1=sqrt((x1-domain%cell(i)%x)**2+((y1-domain%cell(i)%y))**2+((z1-domain%cell(i)%z))**2)
-		    if(f1.lt.dist_min) then
-			    iCell=i
-			    dist_min=f1
-		    endif
-        end do
-        
-        domain%ObsPntCell(domain%nObsPnt)=iCell
-        write(TMPStr,'(a,i10,a)') ' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
-        call Msg(TMPStr)
-        write(TMPStr,'(a,'//FMT_R8//',a)') ' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
-        call Msg(TMPStr)
-        
-
-    end subroutine ObservationPoint
-    !----------------------------------------------------------------------
-    subroutine ObservationPointsFromCSVFile(FNumMUT,domain)
-        implicit none
-        integer(i4) :: FNumMUT
-        type (ModflowDomain) domain
-	    character(MAX_LBL) :: VarSTR
-        integer(i4) :: FnumCSV
-		character(MAX_STR) :: FNameCSV
-        integer(i4) :: i,icell
-        integer (i4) :: id
-        character(MAX_LBL) :: name
-        REAL(dp) :: xcoord,ycoord,zcoord
-        REAL(dp) :: dist_min,f1
-        
-        read(FNumMUT,'(a)') FNameCSV 
-        inquire(file=FNameCSV,exist=FileExists)
-        if(.not. FileExists) then
-			call ErrMsg('File not found: '//trim(FNameCSV))
-        endif
-        
-        call openAscii(FnumCSV,FNameCSV)
-        call Msg('CSV file : '//TRIM(FNameCSV))
-        
-
-        
-        read(FnumCSV,'(a)') VarSTR
-        call Msg('CSV file header: '//TRIM(VarSTR))
-        ReadLoop: do 
-            read(FnumCSV,*,iostat=status) id,name,xcoord,ycoord,zcoord
-            if(status/=0) then
-                exit ReadLoop
-            else
-                domain%nObsPnt=domain%nObsPnt+1
-                domain%ObsPntName(domain%nObsPnt)=trim(name)
-
-                call Msg(' ')
-                call Msg('------ next observation point ')
-                write(TMPStr,*) 'Find cell closest to user XYZ: ',xcoord,ycoord,zcoord
-                call Msg(TMPStr)
-
-                dist_min=1.0e20
-	            do i=1,domain%nCells
-		            f1=sqrt((xcoord-domain%cell(i)%x)**2+((ycoord-domain%cell(i)%y))**2+((zcoord-domain%cell(i)%z))**2)
-		            if(f1.lt.dist_min) then
-			            iCell=i
-			            dist_min=f1
-		            endif
-                end do
-        
-                domain%ObsPntCell(domain%nObsPnt)=iCell
-                write(TMPStr,'(a,a)') ' Observation point name: ',trim(domain%ObsPntName(domain%nObsPnt))
-                call Msg(TMPStr)
-
-                write(TMPStr,'(a,i10)') ' Observation point cell: ',domain%ObsPntCell(domain%nObsPnt)
-                call Msg(TMPStr)
-                write(TMPStr,'(a,'//FMT_R8//',a)') ' Distance from user XYZ: ',dist_min,'     '//TRIM(UnitsOfLength)
-                call Msg(TMPStr)
-            endif
-        end do ReadLoop
-
-    end subroutine ObservationPointsFromCSVFile
+    ! Observation point routines are now in MUSG_ObservationPoints module
+    ! This includes:
+    !   - ObservationPoint
+    !   - ObservationPointsFromCSVFile
     !-------------------------------------------------------------
     subroutine openBinaryMUSGFile(FileType,line,prefix,iUnit,FName)
         implicit none
@@ -7785,7 +4432,7 @@
         FName=line(l1+1:)
         inquire(file=FName,exist=FileExists)
         if(.not. FileExists) then
-            call ErrMsg('No file found: '//FName)
+            call HandleError(ERR_FILE_IO, 'No file found: '//trim(FName), 'read_instructions')
         end if
         call Msg('Opened binary '//trim(FileType)//' file: '//FName)
 	    call getunit(iUnit)
@@ -7818,7 +4465,7 @@
         FName=line(l1:)
         inquire(file=FName,exist=FileExists)
         if(.not. FileExists) then
-            call ErrMsg('No file found: '//FName)
+            call HandleError(ERR_FILE_IO, 'No file found: '//trim(FName), 'read_instructions')
         end if
 	    call getunit(iUnit)
         open(iUnit,file=FName,status='unknown',form='formatted')  
@@ -7980,158 +4627,11 @@
     end subroutine SMSParamterSetNumber
    
     !----------------------------------------------------------------------
-    subroutine StressPeriod(FNumMUT,modflow)
-        implicit none
-        
-        integer(i4) :: FNumMUT
-        type (ModflowProject) Modflow
-        
-        integer(i4), parameter :: MAXStressPeriods=100
-        character(MAX_INST) :: Type_CMD	                =   'type'
-        character(MAX_INST) :: Duration_CMD	            =   'duration'
-        character(MAX_INST) :: NumberOfTimesteps_CMD	=   'number of timesteps'
-        character(MAX_INST) :: Deltat_CMD	            =   'deltat'
-        character(MAX_INST) :: Tminat_CMD	            =   'tminat'
-        character(MAX_INST) :: Tmaxat_CMD	            =   'tmaxat'
-        character(MAX_INST) :: Tadjat_CMD	            =   'tadjat'
-        character(MAX_INST) :: Tcutat_CMD	            =   'tcutat'
-        Modflow.nPeriods=Modflow.nPeriods+1  
-        write(TmpSTR,'(a,i8)')'Stress period ',Modflow.nPeriods
-        call Msg(trim(TmpSTR))
-        
-        if(Modflow.nPeriods == 1) then
-            allocate(Modflow.StressPeriodDuration(MAXStressPeriods), Modflow.StressPeriodnTsteps(MAXStressPeriods), &
-            Modflow.StressPeriodnTstepMult(MAXStressPeriods), Modflow.StressPeriodType(MAXStressPeriods),stat=ialloc)
-            Modflow.StressPeriodDuration(:)=1.0d0
-            Modflow.StressPeriodnTsteps(:)=1
-            Modflow.StressPeriodnTstepMult(:)=1.1d0
-            Modflow.StressPeriodType(:)='TR'
-        end if
-        
-        read_StressPeriod_instructions: do
-            read(FNumMUT,'(a)',iostat=status) instruction
-            if(status /= 0) exit
-
-            call LwrCse(instruction)
-            
-            if(index(instruction,'end') /=0) then
-                call Msg('end stress period')
-                exit read_StressPeriod_instructions
-            end if
-
-            if(index(instruction,Type_cmd) /=0) then
-                read(FNumMUT,'(a)') modflow.StressPeriodType(Modflow.nPeriods)
-                if(modflow.StressPeriodType(Modflow.nPeriods) /= 'SS' .and. modflow.StressPeriodType(Modflow.nPeriods) /= 'TR') then
-                    call ErrMsg('Stress Period type must begin with either SS or TR')
-                end if
-                write(TmpSTR,'(a)')'Type: '//trim(modflow.StressPeriodType(Modflow.nPeriods))
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Duration_cmd) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodDuration(Modflow.nPeriods)
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Duration: ',modflow.StressPeriodDuration(Modflow.nPeriods),'     '//TRIM(modflow.STR_TimeUnit)
-                call Msg(trim(TmpSTR))
-                
-            else if(index(instruction,NumberOfTimesteps_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodnTsteps(Modflow.nPeriods)
-                write(TmpSTR,'(a,i5)')'Number of time steps: ',modflow.StressPeriodnTsteps(Modflow.nPeriods)
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Deltat_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodDeltat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Starting time step size: ',modflow.StressPeriodDeltat,'     '//TRIM(modflow.STR_TimeUnit)
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Tminat_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodTminat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Minimum time step size: ',modflow.StressPeriodTminat,'     '//TRIM(modflow.STR_TimeUnit)
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Tmaxat_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodTmaxat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Maximum time step size: ',modflow.StressPeriodTmaxat,'     '//TRIM(modflow.STR_TimeUnit)
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Tadjat_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodtadjat
-                write(TmpSTR,'(a,'//FMT_R4//')')'Time step size adjustment factor: ',modflow.StressPeriodtadjat
-                call Msg(trim(TmpSTR))
-
-            else if(index(instruction,Tcutat_CMD) /=0) then
-                read(FNumMUT,*) modflow.StressPeriodTcutat
-                write(TmpSTR,'(a,'//FMT_R4//',a)')'Time step size cutting factor: ',modflow.StressPeriodTcutat
-                call Msg(trim(TmpSTR))
-
-            else
-			    call ErrMsg('Unrecognized instruction: stress period')
-            end if
-
-        end do read_StressPeriod_instructions
-    end subroutine StressPeriod
+    ! StressPeriod is now in MUSG_StressPeriods module
 
     !-------------------------------------------------------------
-    subroutine SWFInitialHeadFromTecplotFile(FnumMUT,domain)
-        implicit none
-
-        type (ModflowDomain) domain
-        
-        integer :: i
-        
-        integer(i4) :: FnumMUT
-        integer(i4) :: FNumRestart
-        character(MAX_STR) :: FNameRestart
-        
-        character(4000) :: line
-
-        read(FnumMUT,'(a)') FNameRestart
-        call OpenAscii(FNumRestart,FNameRestart)
-        call Msg( 'SWF restart from tecplot file: '//trim(FNameRestart))
-
-        FindStartString: do
-            read(FNumRestart,'(a)',iostat=status) line
-            if(status /= 0) return
-            
-            if(index(line,'DT=(SINGLE )').gt.0) then
-                read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
-                call Msg('First 10 starting heads:')
-                do i=1,10
-                    write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
-                    call Msg(trim(TmpSTR))
-                end do
-                exit FindStartString
-            end if
-        end do FindStartString
-                
-    end subroutine SWFInitialHeadFromTecplotFile
-    !-------------------------------------------------------------
-    subroutine InitialHeadFromCSVFile(FnumMUT,domain)
-        implicit none
-
-        type (ModflowDomain) domain
-        
-        integer :: i
-        
-        integer(i4) :: FnumMUT
-        integer(i4) :: FNumRestart
-        character(MAX_STR) :: FNameRestart
-        
-        character(4000) :: line
-
-        read(FnumMUT,'(a)') FNameRestart
-        call OpenAscii(FNumRestart,FNameRestart)
-        call Msg(TRIM(domain.name)//' starting heads from CSV file: '//trim(FNameRestart))
-
-        read(FNumRestart,'(a)',iostat=status) line
-        call Msg(TRIM(domain.name)//' CSV file header: '//trim(line))
-        
-        read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
-        call Msg('First 10 starting heads:')
-        do i=1,10
-            write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
-            call Msg(trim(TmpSTR))
-        end do
-                
-    end subroutine InitialHeadFromCSVFile
+    !----------------------------------------------------------------------
+    ! SWFInitialHeadFromTecplotFile and InitialHeadFromCSVFile are now in MUSG_InitialConditions module
     !-------------------------------------------------------------
     subroutine SWFToTecplot(Modflow)
         implicit none
@@ -8219,7 +4719,7 @@
                 end if
             else
                 write(TmpSTR,'(i2)') Modflow%SWF%nNodesPerElement
-                call ErrMsg(trim(Modflow%SWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                call HandleError(ERR_INVALID_INPUT, trim(Modflow%SWF%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet', 'ModflowDomainScatterToTecplot')
             end if
         end do
        
@@ -8274,7 +4774,7 @@
                         case ( 3 )
                             domain%PerpendicularArea(j,i)=domain%Element(i)%SideLength(3)   
                         case ( 4 )  ! must be 8-node block
-                            call ErrMsg('Need to create sideLength for 2D rectangle/3D block case')
+                            call HandleError(ERR_LOGIC, 'Need to create sideLength for 2D rectangle/3D block case', 'set_connection_geometry')
                     end select
                     domain%ConnectionLength(j,i)=domain%Element(i)%rCircle
                     domain%PerpendicularArea(j,i)=domain%PerpendicularArea(j,i)*1.0d0  ! assume thickness of 1?
@@ -8377,7 +4877,7 @@
 					    domain%element(i)%xSide(domain%ThroughFace(j,i))=xs1*(1.0-rseg)+xs2*rseg
 					    domain%element(i)%ySide(domain%ThroughFace(j,i))=ys1*(1.0-rseg)+ys2*rseg
                     else
-                        call ErrMsg('Lines do not intersect')
+                        call HandleError(ERR_MATH, 'Lines do not intersect', 'set_connection_geometry')
                     end if
                 end if
 
@@ -8579,7 +5079,7 @@
                 end if
             else
                 write(TmpSTR,'(i2)')TMPLT%nNodesPerElement
-                call ErrMsg(trim(TMPLT%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet')
+                call HandleError(ERR_INVALID_INPUT, trim(TMPLT%name)//': '//trim(TmpSTR)//' Nodes Per Element not supported yet', 'TemplateScatterToTecplot')
             end if
 
         end do
@@ -9074,7 +5574,7 @@
                 write(TMPStr,'(a,'//FMT_R4//')') 'Sum of stress period durations ',sum(modflow.StressPeriodDuration(1:modflow.nPeriods))
                 call Msg(TMPStr)
                 write(TMPStr,'(a,'//FMT_R4//',a)') 'Output time ',modflow.OutputTimes(i),' exceeds sum of stress period durations. Please correct and try again.'
-                call ErrMsg(TMPStr)
+                call HandleError(ERR_INVALID_INPUT, trim(TMPStr), 'WriteOutputControl')
             end if
         end do
         
@@ -15042,7 +11542,7 @@
                         read(FNum,err=9400,end=9400) (domain%cbb_SWBC(I,j),I=1,NVAL)
 
                     else 
-                        call ErrMsg(trim(domain%FNameCBB)//': TEXT variable '//text//' not currently recognized ')
+                        call HandleError(ERR_INVALID_INPUT, trim(domain%FNameCBB)//': TEXT variable '//trim(text)//' not currently recognized', 'read_budget_file')
                     end if
                 else if(ICODE .eq. -1) then
                     call Msg( 'The budget data is written in the compact budget style.')
@@ -17078,82 +13578,6 @@
 
 	    return
     end subroutine Read_SWF_GSF
-   
-    !----------------------------------------------------------------------
-    subroutine UnitsLength(FnumMUT,Project) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) Project
-        
-        character(MAX_LBL) :: value
-        
-        read(FNumMUT,'(a)') value
-        call LwrCse(value)
-        
-        select case(value)
-        case ('feet')
-            Project.STR_LengthUnit='FEET'
-            UnitsOfLength=Project.STR_LengthUnit
-            Project.LengthUnits=1
-        case ('meters')
-            Project.STR_LengthUnit='METERS'
-            UnitsOfLength=Project.STR_LengthUnit
-            Project.LengthUnits=2
-        case ('centimeters')
-            Project.STR_LengthUnit='CENTIMETERS'
-            UnitsOfLength=Project.STR_LengthUnit
-            Project.LengthUnits=3
-        case default
-            call ErrMsg('Units of length '//trim(value)//' not recognized. Must be feet, meters, or centimeters.')
-        end select
-        
-        write(TmpSTR,'(a)')    'Units of length:   '//trim(Project.STR_LengthUnit)
-        call Msg(TmpSTR)
-
-    end subroutine UnitsLength
-
-    !----------------------------------------------------------------------
-    subroutine UnitsTime(FNumMUT,Project) 
-        implicit none
-
-        integer(i4) :: FNumMUT
-        type (ModflowProject) Project
-        
-        character(MAX_LBL) :: value
-        
-        read(FNumMUT,'(a)') value
-        call LwrCse(value)
-       
-        select case(value)
-        case ('seconds')
-            Project.STR_TimeUnit='SECONDS'
-            UnitsOfTime=Project.STR_TimeUnit
-            Project.TimeUnits=1
-       case ('minutes')
-            Project.STR_TimeUnit='MINUTES'
-            UnitsOfTime=Project.STR_TimeUnit
-            Project.TimeUnits=2
-        case ('hours')
-            Project.STR_TimeUnit='HOURS'
-            UnitsOfTime=Project.STR_TimeUnit
-            Project.TimeUnits=3
-        case ('days')
-            Project.STR_TimeUnit='DAYS'
-            UnitsOfTime=Project.STR_TimeUnit
-            Project.TimeUnits=4
-        case ('years')
-            Project.STR_TimeUnit='YEARS'
-            UnitsOfTime=Project.STR_TimeUnit
-            Project.TimeUnits=5
-        case default
-            call ErrMsg('Units of time '//trim(value)//' not recognized. Must be seconds, minutes, hours, days or years.')
-        end select
-        
-        write(TmpSTR,'(a)')    'Units of time:   '//trim(Project.STR_TimeUnit)
-        call Msg(TmpSTR)
-
-    end subroutine UnitsTime
 
     
     
