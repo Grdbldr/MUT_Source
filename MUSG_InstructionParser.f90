@@ -158,6 +158,7 @@ module MUSG_InstructionParser
         ! Handle domain generation instructions (GenerateSWFDomain, GenerateLayeredGWFDomain, GenerateCLNDomain)
         ! Note: The actual domain generation routines are in Modflow_USG.f90 due to complex dependencies
         ! This handler just identifies which instruction was called
+        ! Note: JustBuilt is set in BuildModflowUSG after the domain is actually built, not here
         implicit none
         character(*), intent(in) :: instruction
         integer(i4), intent(in) :: FNumMUT
@@ -170,20 +171,12 @@ module MUSG_InstructionParser
         character(MAX_INST) :: GenerateLayeredGWFDomain_CMD = 'generate layered gwf domain'
         character(MAX_INST) :: GenerateCLNDomain_CMD = 'generate cln domain'
         
+        ! JustBuilt is set in BuildModflowUSG after the domain is actually built
+        ! This handler doesn't modify JustBuilt - it's just a placeholder parameter
         JustBuilt = .false.
         
         ! These routines are called from BuildModflowUSG after this handler returns
         ! The handler just identifies the instruction type
-        
-        if(index(instruction, GenerateSWFDomain_CMD) /= 0) then
-            JustBuilt=.true.
-            
-        else if(index(instruction, GenerateLayeredGWFDomain_CMD) /= 0) then
-            JustBuilt=.true.
-            
-        else if(index(instruction, GenerateCLNDomain_CMD) /= 0) then
-            JustBuilt=.false. ! CLN doesn't set JustBuilt
-        end if
     end subroutine HandleDomainGenerationInstruction
     
     !----------------------------------------------------------------------

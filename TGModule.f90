@@ -42,9 +42,9 @@ module MUT  !### Modflow-USG Tools
 
         write(*,'(a)')  'MUT version '//MUTVersion
         
-        !#ifdef _DEBUG   
-        !    call openascii(iDBG,FNameDBG)
-        !#endif
+        #ifdef _DEBUG   
+            call openascii(iDBG,FNameDBG)
+        #endif
 
 
         ! open the user MUT input file

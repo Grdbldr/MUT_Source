@@ -344,6 +344,9 @@ module MUSG !
             backspace(FNumMUT)
         endif
         call InitializeModflowFiles(Modflow)
+        
+        ! Initialize JustBuilt to .false. at the start of each build
+        JustBuilt = .false.
 
         BuildModflowUSG_InstructionLoop:do
             
@@ -473,7 +476,8 @@ module MUSG !
                 call GenerateCLNDomain(FnumMUT,Modflow%CLN)
                 call BuildModflowCLNDomain(Modflow)
                 call AddCLNFiles(Modflow)
-                !JustBuilt=.true.
+                
+                JustBuilt=.true.
 
          
             else if(index(instruction, ActiveDomain_CMD)  /= 0) then
@@ -2371,16 +2375,16 @@ module MUSG !
                 do i=1,TMPLT%nElements
                     iGWF_Cell=(j-1)*TMPLT%nElements+i
                     GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
-                    !#ifdef _DEBUG 
-                    !    write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
-                    !#endif
+                    #ifdef _DEBUG 
+                        write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
+                    #endif
                     do k=1,GWFDomain%ia(i)
                         kCell=(j-1)*TMPLT%nElements+abs(GWFDomain%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                         GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
-                        !#ifdef _DEBUG 
-                        !    write(iDBG,*) 'Connection to element ',kCell
-                        !#endif
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element ',kCell
+                        #endif
                     
                         GWFDomain%ConnectionLength(k,iGWF_Cell)=GWFDomain%ConnectionLength(k,i)
                         GWFDomain%PerpendicularArea(k,iGWF_Cell)=GWFDomain%PerpendicularArea(k,i)
@@ -2393,18 +2397,18 @@ module MUSG !
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iDown=iGWF_Cell+TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
-                        !#ifdef _DEBUG 
-                        !    write(iDBG,*) 'Connection to element below ',iDown
-                        !#endif
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element below ',iDown
+                        #endif
                         !
                     end if
                     if(j > 1) then ! upward connection
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iUp=iGWF_Cell-TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
-                        !#ifdef _DEBUG 
-                        !    write(iDBG,*) 'Connection to element above ',iUp
-                        !#endif
+                        #ifdef _DEBUG 
+                            write(iDBG,*) 'Connection to element above ',iUp
+                        #endif
                     end if
                 end do
             end do
