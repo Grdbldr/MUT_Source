@@ -76,4 +76,4 @@
 \contentsline {subsubsection}{\numberline {A.3.5.1}Loading Raster Layers}{150}{subsubsection.A.3.5.1}
 \contentsline {subsubsection}{\numberline {A.3.5.2}Smoothing a Raster Layer}{151}{subsubsection.A.3.5.2}
 \contentsline {chapter}{\numberline {B}\textsc {Microsoft Excel}\ Database Files}{154}{appendix.B}
-\contentsline {chapter}{\numberline {C}\textsc {Microsoft Excel}\ Modifications}{159}{appendix.C}
+\contentsline {chapter}{\numberline {C}\textsc {Mut}\ Modifications}{159}{appendix.C}
