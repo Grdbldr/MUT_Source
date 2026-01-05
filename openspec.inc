@@ -2,6 +2,9 @@
 !  of the values are extensions to ANSI Fortran 90 and 95.  One of the
 !  specifiers is not included in ANSI FORTRAN 77. The included
 !  specifiers are ACCESS, FORM and ACTION.
+!  Note: ACCESS and FORM may appear unused in some compilation units
+!  but are used in Modflow_USG.f90 (e.g., lines 14464, 14762).
+!  These warnings can be suppressed at the compiler level if desired.
 !
    CHARACTER*20 ACCESS
    CHARACTER*20 FORM

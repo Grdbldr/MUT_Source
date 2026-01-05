@@ -185,6 +185,7 @@ module gb
 		ierr=0
 
         
+        GB_GEN%Name='gb_mesh'
         GB_GEN%TecplotTyp='fetriangle'
         
         GB_GEN%nNodes=0

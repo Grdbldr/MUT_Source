@@ -17,6 +17,7 @@ module MUSG !
     use MUSG_Selection
     use MUSG_ObservationPoints
     use MUSG_InstructionParser
+    use CLNIntersection
     use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, ERR_LOGIC, ERR_MATH, HandleError
     implicit none
     
@@ -1955,8 +1956,7 @@ module MUSG !
                 
 
             if(index(Instruction, CLNFromXYZList_cmd)  /= 0) then
-                ! call xyzFromList(FNum,xi,yi,zi,nPoints)
-                call HandleError(ERR_LOGIC, 'cln from xyz list not fully implemented yet', 'BuildModflowUSG')
+                call CLNFromXYZList(FNum, CLNDomain)
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,CLNDomain)
@@ -2143,6 +2143,148 @@ module MUSG !
 
         continue 
     end subroutine CLNFromXYZPair
+    
+    !----------------------------------------------------------------------
+    subroutine CLNFromXYZList(FNum,CLNDomain)
+        implicit none
+        integer(i4) :: FNum
+        type(ModflowDomain) CLNDomain
+        
+        type(t_cln_structure) :: cln_struct
+        character(MAX_STR) :: filename
+        integer(i4) :: i
+        integer(i4) :: nNodesInit, nElementsInit
+        integer(i4) :: nSizeInit
+        type(node), allocatable :: nodeTMP(:)
+        
+        ! Read filename from instruction
+        read(FNum,'(a)') filename
+        call Msg('Reading CLN from XYZ list file: '//trim(filename))
+        
+        ! Use CLNIntersection module to read the XYZ list
+        call ReadCLNFromXYZList(trim(filename), cln_struct)
+        
+        nNodesInit = CLNDomain%nNodes
+        nElementsInit = CLNDomain%nElements
+        CLNDomain%nZones = CLNDomain%nZones + 1
+        
+        ! Allocate nodes if needed
+        nSizeInit = max(cln_struct%nCells + 1, CLNDomain%nNodes)
+        if(.not. allocated(CLNDomain%node)) then
+            allocate(CLNDomain%node(nSizeInit), stat=ialloc)
+            call AllocChk(ialloc, 'CLNDomain%node array')
+            CLNDomain%node%x = -999.0d0
+            CLNDomain%node%y = -999.0d0
+            CLNDomain%node%z = -999.0d0
+        endif
+        
+        allocate(nodeTMP(nSizeInit*2), stat=ialloc)
+        call AllocChk(ialloc, 'nodeTMP arrays')
+        nodeTMP%x = -999.0d0
+        nodeTMP%y = -999.0d0
+        nodeTMP%z = -999.0d0
+        
+        ! Add nodes from CLN structure (each cell has start and end points)
+        ! First node is the start of the first cell
+        CLNDomain%nNodes = CLNDomain%nNodes + 1
+        if(CLNDomain%nNodes > size(CLNDomain%node)) then
+            nodeTMP(1:size(CLNDomain%node)) = CLNDomain%node
+            call move_alloc(nodeTMP, CLNDomain%node)
+            nSizeInit = size(CLNDomain%node) * 2
+            allocate(nodeTMP(nSizeInit), stat=ialloc)
+            call AllocChk(ialloc, 'nodeTMP arrays')
+            nodeTMP%x = -999.0d0
+            nodeTMP%y = -999.0d0
+            nodeTMP%z = -999.0d0
+        endif
+        CLNDomain%node(CLNDomain%nNodes)%x = cln_struct%cell(1)%x1
+        CLNDomain%node(CLNDomain%nNodes)%y = cln_struct%cell(1)%y1
+        CLNDomain%node(CLNDomain%nNodes)%z = cln_struct%cell(1)%z1
+        
+        ! Add end point of each cell as a node
+        do i = 1, cln_struct%nCells
+            CLNDomain%nNodes = CLNDomain%nNodes + 1
+            if(CLNDomain%nNodes > size(CLNDomain%node)) then
+                nodeTMP(1:size(CLNDomain%node)) = CLNDomain%node
+                call move_alloc(nodeTMP, CLNDomain%node)
+                nSizeInit = size(CLNDomain%node) * 2
+                allocate(nodeTMP(nSizeInit), stat=ialloc)
+                call AllocChk(ialloc, 'nodeTMP arrays')
+                nodeTMP%x = -999.0d0
+                nodeTMP%y = -999.0d0
+                nodeTMP%z = -999.0d0
+            endif
+            CLNDomain%node(CLNDomain%nNodes)%x = cln_struct%cell(i)%x2
+            CLNDomain%node(CLNDomain%nNodes)%y = cln_struct%cell(i)%y2
+            CLNDomain%node(CLNDomain%nNodes)%z = cln_struct%cell(i)%z2
+        end do
+        
+        ! Trim node array to final size
+        nSizeInit = CLNDomain%nNodes
+        deallocate(nodeTMP)
+        allocate(nodeTMP(nSizeInit), stat=ialloc)
+        call AllocChk(ialloc, 'nodeTMP arrays')
+        nodeTMP%x = -999.0d0
+        nodeTMP%y = -999.0d0
+        nodeTMP%z = -999.0d0
+        nodeTMP(1:nSizeInit) = CLNDomain%node
+        call move_alloc(nodeTMP, CLNDomain%node)
+        
+        ! Allocate elements if needed
+        if(.not. allocated(CLNDomain%element)) then
+            CLNDomain%nElements = CLNDomain%nNodes - 1
+            allocate(CLNDomain%Element(CLNDomain%nElements), &
+                     CLNDomain%idNode(CLNDomain%nNodesPerElement, CLNDomain%nElements), stat=ialloc)
+            call AllocChk(ialloc, 'CLNDomain element arrays')
+            CLNDomain%Element(:)%idZone = 0
+            CLNDomain%idNode(:,:) = 0
+            CLNDomain%element%iLayer = 0
+            CLNDomain%element%x = 0.0d0
+            CLNDomain%element%y = 0.0d0
+            CLNDomain%element%z = 0.0d0
+            CLNDomain%element%Area = 0.0d0
+            CLNDomain%element%xyArea = 0.0d0
+            CLNDomain%cell%Length = -999.0d0
+            CLNDomain%cell%LowestElevation = -999.0d0
+            CLNDomain%cell%SlopeAngle = -999.0d0
+        else
+            nSizeInit = CLNDomain%nElements
+            CLNDomain%nElements = CLNDomain%nNodes - 1
+            call growInteger2dArray(CLNDomain%idNode, 2, nSizeInit, CLNDomain%nElements)
+            call growElementArray(CLNDomain%Element, nSizeInit, CLNDomain%nElements)
+        end if
+        
+        ! Generate line element incidences
+        do i = nElementsInit + 1, CLNDomain%nElements
+            CLNDomain%element(i)%idZone = CLNDomain%nZones
+            CLNDomain%idNode(1, i) = nNodesInit + (i - nElementsInit)
+            CLNDomain%idNode(2, i) = nNodesInit + (i - nElementsInit) + 1
+            CLNDomain%element(i)%x = (CLNDomain%node(CLNDomain%idNode(2, i))%x + &
+                                      CLNDomain%node(CLNDomain%idNode(1, i))%x) / 2.0d0
+            CLNDomain%element(i)%y = (CLNDomain%node(CLNDomain%idNode(2, i))%y + &
+                                      CLNDomain%node(CLNDomain%idNode(1, i))%y) / 2.0d0
+            CLNDomain%element(i)%z = (CLNDomain%node(CLNDomain%idNode(2, i))%z + &
+                                      CLNDomain%node(CLNDomain%idNode(1, i))%z) / 2.0d0
+            CLNDomain%cell(i)%Length = sqrt((CLNDomain%node(CLNDomain%idNode(2, i))%x - &
+                                             CLNDomain%node(CLNDomain%idNode(1, i))%x)**2 + &
+                                            (CLNDomain%node(CLNDomain%idNode(2, i))%y - &
+                                             CLNDomain%node(CLNDomain%idNode(1, i))%y)**2 + &
+                                            (CLNDomain%node(CLNDomain%idNode(2, i))%z - &
+                                             CLNDomain%node(CLNDomain%idNode(1, i))%z)**2)
+            CLNDomain%cell(i)%LowestElevation = min(CLNDomain%node(CLNDomain%idNode(2, i))%z, &
+                                                     CLNDomain%node(CLNDomain%idNode(1, i))%z)
+            CLNDomain%cell(i)%SlopeAngle = asin(abs(CLNDomain%node(CLNDomain%idNode(2, i))%z - &
+                                                     CLNDomain%node(CLNDomain%idNode(1, i))%z) / &
+                                                 CLNDomain%cell(i)%Length) * 180.0d0 / PI
+        end do
+        
+        call Msg(' ')
+        write(TmpSTR, '(a,i8)') 'Number of nodes         ', CLNDomain%nNodes
+        call Msg(TmpSTR)
+        write(TmpSTR, '(a,i8)') 'Number of elements      ', CLNDomain%nElements
+        call Msg(TmpSTR)
+        
+    end subroutine CLNFromXYZList
     
    
     subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,GWFDomain)
