@@ -21,6 +21,12 @@ module MUT  !### Modflow-USG Tools
     integer(i4)	:: l_prfx  = 0
     
     character(MAX_LBL) :: DirName ! directory name
+    
+    type MeshGroup
+        integer (i4) :: nMesh=0
+        type(mesh), allocatable :: mesh(:) ! array of meshes
+    end type MeshGroup
+
 
     contains
 

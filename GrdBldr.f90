@@ -185,7 +185,6 @@ module gb
 		ierr=0
 
         
-        GB_GEN%Name='gb_mesh'
         GB_GEN%TecplotTyp='fetriangle'
         
         GB_GEN%nNodes=0
@@ -1251,11 +1250,10 @@ module gb
 	!----------------------------------------------------------------------
 	subroutine delete_nnl(nnl,i,nil)
 		implicit none
-		type(mesh) GB_GEN
-
-		integer(i4) :: i,j, nil
-
-		integer(i4) :: nnl(4*GB_GEN%nNodes)
+		integer(i4), intent(inout) :: nnl(:)
+		integer(i4), intent(in) :: i, nil
+		integer(i4) :: j
+		! nnl is the list of new node indices; bounds come from caller (refine_chosen)
 	
 		do j=i,nil-1
 			nnl(j)=nnl(j+1)

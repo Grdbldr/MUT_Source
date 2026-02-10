@@ -2234,6 +2234,7 @@ module MUSG !
         if(.not. allocated(CLNDomain%element)) then
             CLNDomain%nElements = CLNDomain%nNodes - 1
             allocate(CLNDomain%Element(CLNDomain%nElements), &
+                     CLNDomain%Cell(CLNDomain%nElements), &
                      CLNDomain%idNode(CLNDomain%nNodesPerElement, CLNDomain%nElements), stat=ialloc)
             call AllocChk(ialloc, 'CLNDomain element arrays')
             CLNDomain%Element(:)%idZone = 0
@@ -5303,7 +5304,7 @@ module MUSG !
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  IA()'
         write(Modflow.iCLN,'(10i4)') (Modflow%CLN%ia(i),i=1,Modflow%CLN%nCells)
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
-        do i=1,Modflow%GWF%nCells
+        do i=1,Modflow%CLN%nCells
             write(Modflow.iCLN,'(20i8)') (abs(Modflow%CLN%ConnectionList(j,i)),j=1,Modflow%CLN%ia(i))
         end do
         

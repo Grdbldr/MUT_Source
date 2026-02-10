@@ -1,7 +1,7 @@
 module NumericalMesh
     use BasicTypes
     use GeneralRoutines
-    use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
+    use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, HandleError
     implicit none
     
     real(sp) :: MinSeparationDistance=0.0001
@@ -98,10 +98,6 @@ module NumericalMesh
 
     end type mesh
    
-    type MeshGroup
-        integer (i4) :: nMesh=0
-        type(mesh), allocatable :: mesh(:) ! array of meshes
-    end type MeshGroup
 
     integer(i4), allocatable :: seg_node(:,:)
     integer(i4) :: nSeg        
@@ -187,13 +183,22 @@ module NumericalMesh
         
         character(128) :: FName
         integer(i4) :: FNum
-        ! save mesh to binary file
+        ! read mesh from binary file
         FName=trim(M%name)//'.MeshBIN'
+        inquire(file=FName, exist=FileExists)
+        if (.not. FileExists) then
+            call HandleError(ERR_FILE_IO, 'Binary mesh file not found: '//trim(FName)// &
+                '. Build the 2D mesh first (e.g. run _2DMesh_Regional build).', 'ReadMeshBIN')
+        end if
         call OpenBinary(FNum,FName)
         call Msg('  ')
-        call Msg(FileCreateSTR//'Binary mesh file: '//trim(FName))
+        call Msg(FileReadSTR//'Binary mesh file: '//trim(FName))
         
-        read(FNum) M%name
+        read(FNum, iostat=status) M%name
+        if (status /= 0) then
+            call HandleError(ERR_FILE_IO, 'Binary mesh file is empty or corrupted: '//trim(FName)// &
+                '. Build the 2D mesh first (e.g. run _2DMesh_Regional build).', 'ReadMeshBIN')
+        end if
         ! write(*,'(a)')'mesh name '// trim(M%name)
         
         read(FNum) M%nNodes
