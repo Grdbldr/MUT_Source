@@ -352,6 +352,7 @@ module MUSG_MaterialProperties
                     domain%cell(i)%Kv=Kv_Kz(iMaterial)*LengthConversionFactor/TimeConversionFactor       ! L/T
                     domain%cell(i)%Ss=Specificstorage(iMaterial)/LengthConversionFactor                  ! 1/L
                     domain%cell(i)%Sy=SpecificYield(iMaterial)                                           ! -
+                    domain%cell(i)%Porosity=Porosity(iMaterial)                                            ! for seepage velocity
                     domain%cell(i)%Alpha=Alpha(iMaterial)/LengthConversionFactor                         ! 1/L
                     domain%cell(i)%Beta=Beta(iMaterial)                                                  ! -
                     domain%cell(i)%Sr=Sr(iMaterial)                                                      ! -

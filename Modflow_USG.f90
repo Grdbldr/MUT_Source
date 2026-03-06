@@ -70,6 +70,7 @@ module MUSG !
 
     ! Generate a CLN network
     character(MAX_INST) :: GenerateCLNDomain_CMD		=   'generate cln domain'
+    character(MAX_INST) :: CLNMeshIntersection_CMD		=   'cln mesh intersection'
     
     ! Generate a layered 3D modflow mesh from a 2D mesh
     character(MAX_INST) :: GenerateLayeredGWFDomain_CMD		=   'generate layered gwf domain'
@@ -481,6 +482,9 @@ module MUSG !
                 JustBuilt=.true.
 
          
+            else if(index(instruction, CLNMeshIntersection_CMD) /= 0) then
+                call CLNMeshIntersectionFromInstruction(FNumMUT)
+         
             else if(index(instruction, ActiveDomain_CMD)  /= 0) then
                 ActiveDomain = HandleActiveDomainInstruction(FNumMUT)
                 
@@ -873,6 +877,7 @@ module MUSG !
         Modflow%GWF%cell%Beta=-999.d0
         Modflow%GWF%cell%Sr=-999.d0
         Modflow%GWF%cell%Brooks=-999.d0
+        Modflow%GWF%cell%Porosity=1.0
         Modflow%GWF%cell%StartingHeads=-999.d0
 
         Modflow%GWF%Cell%is=0
@@ -1919,6 +1924,42 @@ module MUSG !
     end subroutine FlagChosenCellsInactiveTMPLT
     
 
+    !----------------------------------------------------------------------
+    ! Read instruction lines and run CLN-mesh intersection utility.
+    ! Instruction format (next 4 lines after 'cln mesh intersection'):
+    !   Line 1: CLN input file path
+    !   Line 2: Mesh base name (file <mesh_name>.MeshBIN will be read)
+    !   Line 3: CLN output file path
+    !   Line 4: 'xyz' for XYZ list format, anything else for full CLN structure format
+    !----------------------------------------------------------------------
+    subroutine CLNMeshIntersectionFromInstruction(FNum)
+        implicit none
+        integer(i4), intent(in) :: FNum
+        character(MAX_STR) :: cln_filename, mesh_name, output_cln_filename, format_line
+        logical :: use_xyz_format
+        
+        read(FNum, '(a)', iostat=status) cln_filename
+        if (status /= 0) then
+            call HandleError(ERR_FILE_IO, 'Missing CLN input filename after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
+        end if
+        read(FNum, '(a)', iostat=status) mesh_name
+        if (status /= 0) then
+            call HandleError(ERR_FILE_IO, 'Missing mesh name after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
+        end if
+        read(FNum, '(a)', iostat=status) output_cln_filename
+        if (status /= 0) then
+            call HandleError(ERR_FILE_IO, 'Missing CLN output filename after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
+        end if
+        read(FNum, '(a)', iostat=status) format_line
+        if (status /= 0) then
+            format_line = ' '
+        end if
+        call LwrCse(format_line)
+        use_xyz_format = (index(trim(format_line), 'xyz') > 0)
+        
+        call RunCLNMeshIntersection(trim(adjustl(cln_filename)), trim(adjustl(mesh_name)), &
+            trim(adjustl(output_cln_filename)), use_xyz_format)
+    end subroutine CLNMeshIntersectionFromInstruction
 
     !----------------------------------------------------------------------
     subroutine GenerateCLNDomain(FNum,CLNDomain)
@@ -3617,6 +3658,9 @@ module MUSG !
             
             ! Hardwired to read CLN and FAHL arrays for now 
             call ReadDISU_pt3(Modflow)  
+            
+            ! Restore GWF connectivity for post-processing (velocity calculation)
+            call RestoreGWFConnectivityFromDISU(Modflow)
 
             !end if
         else
@@ -3773,6 +3817,7 @@ module MUSG !
             
             
             call ModflowResultsToTecplot(Modflow,Modflow.GWF)
+            call GWFVelocityToTecplot(Modflow)
             if(EnableQGISOutput) then
                 call Msg(' ')
 		        call Msg('Generating final heads csv file for GWF:')
@@ -4121,6 +4166,229 @@ module MUSG !
         call FreeUnit(FNum)
 
     end subroutine ModflowResultsToTecplot
+
+    !-------------------------------------------------------------
+    ! Compute Darcy and seepage velocity from head for GWF; write to Tecplot.
+    subroutine GWFVelocityToTecplot(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+
+        integer(i4) :: Fnum
+        character(MAX_STR) :: FName
+        integer(i4) :: i, j, jconn, itime, inode
+        integer(i4) :: nCells, nNodes, nElements, ntime
+        logical :: have_connectivity
+        real(dp) :: A(3,3), rhs(3), g(3), drx, dry, drz, dh
+        real(dp) :: det, vx_d, vy_d, vz_d, n_eff
+        real(dp) :: sum_drz2, sum_dh_drz, sum_dry2, sum_dh_dry
+        real(dp), parameter :: min_dr_vert = 1.0e-9_dp
+        real(dp), parameter :: weak_z_ratio = 0.01_dp
+        real(dp), parameter :: weak_y_ratio = 0.01_dp
+        real(dp), allocatable :: Vx_darcy(:), Vy_darcy(:), Vz_darcy(:)
+        real(dp), allocatable :: Vx_seep(:), Vy_seep(:), Vz_seep(:)
+        real(dp), allocatable :: mag_darcy(:), mag_seep(:)
+        real(dp), allocatable :: xc(:), yc(:), zc(:)
+        real(sp), parameter :: small_porosity = 1.0e-6_sp
+        real(dp), parameter :: det_tol = 1.0e-20_dp
+        real(dp), parameter :: min_dr = 1.0e-12_dp
+        real(dp), parameter :: reg_eps = 1.0e-10_dp
+
+        nCells = Modflow%GWF%nCells
+        nNodes = Modflow%GWF%nNodes
+        nElements = Modflow%GWF%nElements
+        ntime = Modflow%ntime
+
+        if (.not. allocated(Modflow%GWF%head)) return
+
+        have_connectivity = allocated(Modflow%GWF%ia) .and. allocated(Modflow%GWF%ConnectionList)
+
+        allocate(Vx_darcy(nCells), Vy_darcy(nCells), Vz_darcy(nCells), &
+                 Vx_seep(nCells), Vy_seep(nCells), Vz_seep(nCells), &
+                 mag_darcy(nCells), mag_seep(nCells))
+
+        ! Cell centroids for velocity gradient. Prefer node-based; fallback to cell x,y,z and DISU Top/Bottom for z.
+        allocate(xc(nCells), yc(nCells), zc(nCells))
+        if (allocated(Modflow%GWF%idNode) .and. allocated(Modflow%GWF%node) .and. Modflow%GWF%nNodesPerCell >= 1) then
+            do i = 1, nCells
+                xc(i) = 0.0_dp
+                yc(i) = 0.0_dp
+                zc(i) = 0.0_dp
+                do j = 1, Modflow%GWF%nNodesPerCell
+                    inode = Modflow%GWF%idNode(j,i)
+                    if (inode >= 1 .and. inode <= nNodes) then
+                        xc(i) = xc(i) + real(Modflow%GWF%node(inode)%x, dp)
+                        yc(i) = yc(i) + real(Modflow%GWF%node(inode)%y, dp)
+                        zc(i) = zc(i) + real(Modflow%GWF%node(inode)%z, dp)
+                    end if
+                end do
+                xc(i) = xc(i) / real(Modflow%GWF%nNodesPerCell, dp)
+                yc(i) = yc(i) / real(Modflow%GWF%nNodesPerCell, dp)
+                zc(i) = zc(i) / real(Modflow%GWF%nNodesPerCell, dp)
+            end do
+        else
+            do i = 1, nCells
+                xc(i) = real(Modflow%GWF%cell(i)%x, dp)
+                yc(i) = real(Modflow%GWF%cell(i)%y, dp)
+                zc(i) = real(Modflow%GWF%cell(i)%z, dp)
+            end do
+        end if
+        ! If z has no range (GSF/node z missing or constant), use DISU cell elevations so Vz is non-zero
+        if (maxval(zc) - minval(zc) < 1.0e-10_dp) then
+            do i = 1, nCells
+                zc(i) = 0.5_dp * (real(Modflow%GWF%cell(i)%Top, dp) + real(Modflow%GWF%cell(i)%Bottom, dp))
+            end do
+        end if
+
+        FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.Velocity.tecplot.dat'
+        call OpenAscii(FNum, FName)
+        call Msg('To File: '//trim(FName))
+
+        write(FNum,*) 'Title = "Modflow GWF Darcy and Seepage Velocity: '//trim(Modflow.Prefix)//'"'
+        VarSTR = 'variables="X","Y","Z","GWF Head","Darcy Vx","Darcy Vy","Darcy Vz","Darcy magnitude","Seepage Vx","Seepage Vy","Seepage Vz","Seepage magnitude"'
+        write(FNum,'(a)') trim(VarSTR)
+
+        do itime = 1, ntime
+            ! Initialize to zero for inactive / no-gradient cells
+            Vx_darcy(:) = 0.0_dp
+            Vy_darcy(:) = 0.0_dp
+            Vz_darcy(:) = 0.0_dp
+            Vx_seep(:) = 0.0_dp
+            Vy_seep(:) = 0.0_dp
+            Vz_seep(:) = 0.0_dp
+            mag_darcy(:) = 0.0_dp
+            mag_seep(:) = 0.0_dp
+            ! Compute velocity for this time step (only if connectivity is available)
+            do i = 1, nCells
+                A(:,:) = 0.0_dp
+                rhs(:) = 0.0_dp
+                sum_drz2 = 0.0_dp
+                sum_dh_drz = 0.0_dp
+                sum_dry2 = 0.0_dp
+                sum_dh_dry = 0.0_dp
+                if (.not. have_connectivity) cycle
+                if (allocated(Modflow%GWF%ibound) .and. Modflow%GWF%ibound(i) == 0) cycle
+                do j = 2, Modflow%GWF%ia(i)
+                    jconn = Modflow%GWF%ConnectionList(j,i)
+                    if (jconn < 1 .or. jconn > nCells) cycle
+                    if (allocated(Modflow%GWF%ibound) .and. Modflow%GWF%ibound(jconn) == 0) cycle
+                    drx = xc(jconn) - xc(i)
+                    dry = yc(jconn) - yc(i)
+                    drz = zc(jconn) - zc(i)
+                    if (abs(drx) <= min_dr .and. abs(dry) <= min_dr .and. abs(drz) <= min_dr) cycle
+                    dh = real(Modflow%GWF%head(jconn,itime) - Modflow%GWF%head(i,itime), dp)
+                    A(1,1) = A(1,1) + drx*drx
+                    A(1,2) = A(1,2) + drx*dry
+                    A(1,3) = A(1,3) + drx*drz
+                    A(2,2) = A(2,2) + dry*dry
+                    A(2,3) = A(2,3) + dry*drz
+                    A(3,3) = A(3,3) + drz*drz
+                    rhs(1) = rhs(1) + dh*drx
+                    rhs(2) = rhs(2) + dh*dry
+                    rhs(3) = rhs(3) + dh*drz
+                    if (abs(drz) > min_dr_vert) then
+                        sum_drz2 = sum_drz2 + drz*drz
+                        sum_dh_drz = sum_dh_drz + dh*drz
+                    end if
+                    if (abs(dry) > min_dr_vert) then
+                        sum_dry2 = sum_dry2 + dry*dry
+                        sum_dh_dry = sum_dh_dry + dh*dry
+                    end if
+                end do
+                A(2,1) = A(1,2)
+                A(3,1) = A(1,3)
+                A(3,2) = A(2,3)
+                det = A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
+                if (abs(det) < det_tol) then
+                    ! Near-singular (e.g. coplanar 8-node neighbors): regularize diagonal
+                    A(1,1) = A(1,1) + reg_eps
+                    A(2,2) = A(2,2) + reg_eps
+                    A(3,3) = A(3,3) + reg_eps
+                    det = A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
+                    if (abs(det) < det_tol) cycle
+                end if
+                g(1) = (rhs(1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(rhs(2)*A(3,3)-rhs(3)*A(2,3)) + A(1,3)*(rhs(2)*A(3,2)-rhs(3)*A(2,2)))/det
+                g(2) = (A(1,1)*(rhs(2)*A(3,3)-rhs(3)*A(2,3)) - rhs(1)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*rhs(3)-rhs(2)*A(3,1)))/det
+                g(3) = (A(1,1)*(A(2,2)*rhs(3)-rhs(2)*A(2,3)) - A(1,2)*(A(2,1)*rhs(3)-rhs(2)*A(3,1)) + rhs(1)*(A(2,1)*A(3,2)-A(2,2)*A(3,1)))/det
+                ! When y or z component is weak in the 3x3 system, use direction-only least-squares gradient.
+                if (sum_dry2 > min_dr_vert*min_dr_vert) then
+                    if (A(2,2) < weak_y_ratio * max(A(1,1), A(3,3), 1.0_dp) .or. abs(g(2)) < 1.0e-30_dp) then
+                        g(2) = sum_dh_dry / sum_dry2
+                    end if
+                end if
+                if (sum_drz2 > min_dr_vert*min_dr_vert) then
+                    if (A(3,3) < weak_z_ratio * max(A(1,1), A(2,2), 1.0_dp) .or. abs(g(3)) < 1.0e-30_dp) then
+                        g(3) = sum_dh_drz / sum_drz2
+                    end if
+                end if
+                vx_d = -real(Modflow%GWF%cell(i)%Kh, dp)*g(1)
+                vy_d = -real(Modflow%GWF%cell(i)%Kh, dp)*g(2)
+                vz_d = -real(Modflow%GWF%cell(i)%Kv, dp)*g(3)
+                Vx_darcy(i) = vx_d
+                Vy_darcy(i) = vy_d
+                Vz_darcy(i) = vz_d
+                n_eff = max(real(Modflow%GWF%cell(i)%Porosity, dp), small_porosity)
+                Vx_seep(i) = vx_d / n_eff
+                Vy_seep(i) = vy_d / n_eff
+                Vz_seep(i) = vz_d / n_eff
+                mag_darcy(i) = sqrt(vx_d*vx_d + vy_d*vy_d + vz_d*vz_d)
+                mag_seep(i) = mag_darcy(i) / n_eff
+            end do
+
+            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)') 'ZONE t="GWF Velocity" SOLUTIONTIME=', Modflow%TIMOT(itime), &
+                ',N=', nNodes, ', E=', nElements, ', datapacking=block, zonetype='//trim(Modflow%GWF%TecplotTyp)
+            CellCenteredSTR = ', VARLOCATION=([4,5,6,7,8,9,10,11,12]=CELLCENTERED)'
+            if (itime == 1) then
+                call AppendAuxdata(Modflow, ZoneSTR)
+                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
+                write(FNum,'(a)') '# x'
+                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%x, i=1, nNodes)
+                write(FNum,'(a)') '# y'
+                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%y, i=1, nNodes)
+                write(FNum,'(a)') '# z'
+                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%z, i=1, nNodes)
+            else
+                call AppendAuxdata(Modflow, ZoneSTR)
+                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//', VARSHARELIST=([1,2,3]=1), CONNECTIVITYSHAREZONE=1'
+            end if
+            write(FNum,'(a)') '# Head'
+            write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%head(i,itime), i=1, nCells)
+            write(FNum,'(a)') '# Darcy Vx'
+            write(FNum,'(5('//FMT_R8//'))') (Vx_darcy(i), i=1, nCells)
+            write(FNum,'(a)') '# Darcy Vy'
+            write(FNum,'(5('//FMT_R8//'))') (Vy_darcy(i), i=1, nCells)
+            write(FNum,'(a)') '# Darcy Vz'
+            write(FNum,'(5('//FMT_R8//'))') (Vz_darcy(i), i=1, nCells)
+            write(FNum,'(a)') '# Darcy magnitude'
+            write(FNum,'(5('//FMT_R8//'))') (mag_darcy(i), i=1, nCells)
+            write(FNum,'(a)') '# Seepage Vx'
+            write(FNum,'(5('//FMT_R8//'))') (Vx_seep(i), i=1, nCells)
+            write(FNum,'(a)') '# Seepage Vy'
+            write(FNum,'(5('//FMT_R8//'))') (Vy_seep(i), i=1, nCells)
+            write(FNum,'(a)') '# Seepage Vz'
+            write(FNum,'(5('//FMT_R8//'))') (Vz_seep(i), i=1, nCells)
+            write(FNum,'(a)') '# Seepage magnitude'
+            write(FNum,'(5('//FMT_R8//'))') (mag_seep(i), i=1, nCells)
+            if (itime == 1) then
+                do i = 1, nElements
+                    if (Modflow%GWF%nNodesPerCell == 8) then
+                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1, Modflow%GWF%nNodesPerCell)
+                    else if (Modflow%GWF%nNodesPerCell == 6) then
+                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,3), Modflow%GWF%idNode(3,i), (Modflow%GWF%idNode(j,i), j=4,6), Modflow%GWF%idNode(6,i)
+                    else if (Modflow%GWF%nNodesPerCell == 3) then
+                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,3)
+                    else if (Modflow%GWF%nNodesPerCell == 4) then
+                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,4)
+                    else if (Modflow%GWF%nNodesPerCell == 2) then
+                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,2)
+                    end if
+                end do
+            end if
+        end do
+
+        deallocate(Vx_darcy, Vy_darcy, Vz_darcy, Vx_seep, Vy_seep, Vz_seep, mag_darcy, mag_seep)
+        deallocate(xc, yc, zc)
+        call FreeUnit(FNum)
+    end subroutine GWFVelocityToTecplot
 
     !-------------------------------------------------------------
     subroutine ModflowFinalHeadsToCSVFile(Modflow,domain)
@@ -12162,6 +12430,7 @@ module MUSG !
         
  
         real(sp), DIMENSION(:),    ALLOCATABLE  ::TEMP
+        integer(i4), DIMENSION(:), ALLOCATABLE  ::IATMP
         CHARACTER*24 ANAME(6)
         DATA ANAME(1) /'  NO. OF NODES PER LAYER'/
         DATA ANAME(2) /'                     TOP'/
@@ -12253,15 +12522,21 @@ module MUSG !
         DO IJA = 1,NJA
             IF(JA(IJA).LT.0) JA(IJA) = -JA(IJA)
         end do
-        !5B------MAKE IA CUMULATIVE FROM CONNECTION-PER-NODE
-        DO II=2,NODES+1
+        !5B------MAKE IA CUMULATIVE FROM CONNECTION-PER-NODE, THEN CONVERT TO START INDICES
+        ! File stores connections-per-node; after first loop gIA(i) = sum(counts 1..i)
+        DO II=2,NODES
             gIA(II) = gIA(II) + gIA(II-1)
         end do
-        !---------IA(N+1) IS CUMULATIVE_IA(N) + 1
-        DO II=NODES+1,2,-1
-            gIA(II) = gIA(II-1) + 1
-        end do
+        ! Copy cumulative counts before overwriting (gIA(NODES+1) not read)
+        ALLOCATE(IATMP(NODES))
+        IATMP(1:NODES) = gIA(1:NODES)
+        ! Start index in JA for node i: gIA(1)=1, gIA(i)=1+cumulative(i-1)
         gIA(1) = 1
+        DO II=2,NODES
+            gIA(II) = 1 + IATMP(II-1)
+        end do
+        gIA(NODES+1) = 1 + IATMP(NODES)
+        DEALLOCATE(IATMP)
         
         !----------------------------------------------------------------------
         !15------RETURN.
@@ -12304,6 +12579,81 @@ module MUSG !
        
         RETURN
     END SUBROUTINE ReadDISU_pt3
+
+    !-------------------------------------------------------------
+    ! Restore GWF connectivity (ia, ConnectionList) from DISU global arrays
+    ! for use in post-processing (e.g. velocity calculation)
+    subroutine RestoreGWFConnectivityFromDISU(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+        
+        integer(i4) :: i, j, nconn, jstart, jend, jidx
+        integer(i4) :: ialloc
+        
+        if (.not. Modflow%GWF%IsDefined) return
+        if (Modflow%GWF%nCells <= 0) return
+        if (.not. allocated(gIA)) return
+        if (.not. allocated(JA)) return
+        if (size(gIA) < Modflow%GWF%nCells + 1) return
+        
+        ! Allocate if not already allocated
+        if (.not. allocated(Modflow%GWF%ia)) then
+            allocate(Modflow%GWF%ia(Modflow%GWF%nCells), stat=ialloc)
+            call AllocChk(ialloc, 'GWF%ia array in RestoreGWFConnectivityFromDISU')
+        end if
+        if (.not. allocated(Modflow%GWF%ConnectionList)) then
+            allocate(Modflow%GWF%ConnectionList(MAX_CNCTS, Modflow%GWF%nCells), stat=ialloc)
+            call AllocChk(ialloc, 'GWF%ConnectionList array in RestoreGWFConnectivityFromDISU')
+        end if
+        
+        ! Convert gIA (cumulative) / JA (flat) format to ia / ConnectionList format
+        ! gIA is cumulative: gIA(1)=1, gIA(i+1)-gIA(i) = number of connections for node i (including self)
+        ! JA(gIA(i):gIA(i+1)-1) contains connections for node i
+        ! When written to DISU, abs(ConnectionList) is used, so JA entries are all positive
+        ! First entry JA(gIA(i)) is typically the self-reference (node i)
+        do i = 1, Modflow%GWF%nCells
+            jstart = gIA(i)
+            jend = gIA(i+1) - 1
+            nconn = jend - jstart + 1  ! total connections including self
+            
+            if (nconn > MAX_CNCTS) then
+                write(TmpSTR,'(a,i8,a,i8)') 'Cell ', i, ' has ', nconn, ' connections, exceeds MAX_CNCTS'
+                call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'RestoreGWFConnectivityFromDISU')
+                return
+            end if
+            
+            Modflow%GWF%ia(i) = nconn
+            Modflow%GWF%ConnectionList(1, i) = -i  ! self (negative indicates start of list)
+            
+            ! Copy neighbors from JA array
+            ! JA(jstart) is typically the self-reference (i), so we start from jstart+1
+            ! Copy exactly (nconn - 1) neighbors to positions 2 through nconn
+            jidx = 2
+            do j = jstart + 1, jend  ! skip first entry (self)
+                if (jidx > MAX_CNCTS) then
+                    write(TmpSTR,'(a,i8,a)') 'Cell ', i, ' exceeds MAX_CNCTS when copying neighbors'
+                    call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'RestoreGWFConnectivityFromDISU')
+                    return
+                end if
+                Modflow%GWF%ConnectionList(jidx, i) = abs(JA(j))  ! ensure positive
+                jidx = jidx + 1
+            end do
+            
+            ! Fill remaining slots with zeros if needed (shouldn't happen if format is correct)
+            do j = jidx, MAX_CNCTS
+                Modflow%GWF%ConnectionList(j, i) = 0
+            end do
+        end do
+        
+        ! Copy DISU TOP/BOT to GWF cell elevations for velocity gradient (avoids zero Vz when GSF z is missing)
+        if (allocated(TOP) .and. allocated(BOT) .and. size(TOP) >= Modflow%GWF%nCells) then
+            do i = 1, Modflow%GWF%nCells
+                Modflow%GWF%cell(i)%Top = real(TOP(i), dp)
+                Modflow%GWF%cell(i)%Bottom = real(BOT(i), dp)
+            end do
+        end if
+        
+    end subroutine RestoreGWFConnectivityFromDISU
 
     subroutine ReadDISU_StressPeriodData(Modflow)
     

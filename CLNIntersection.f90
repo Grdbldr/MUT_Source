@@ -20,6 +20,7 @@ module CLNIntersection
     public :: FindCLN_MeshIntersections
     public :: SplitCLNCells
     public :: WriteCLNStructure
+    public :: RunCLNMeshIntersection
     
     !----------------------------------------------------------------------
     ! Data Structures
@@ -736,6 +737,40 @@ module CLNIntersection
         call Msg(TMPStr)
         
     end subroutine WriteCLNStructure
+    
+    !----------------------------------------------------------------------
+    ! Run full CLN-mesh intersection pipeline (main interface)
+    ! Reads CLN structure, reads mesh, finds intersections, splits cells, writes output.
+    ! Mesh is read from <mesh_name>.MeshBIN (see NumericalMesh.ReadMeshBIN).
+    !----------------------------------------------------------------------
+    subroutine RunCLNMeshIntersection(cln_filename, mesh_name, output_cln_filename, use_xyz_format)
+        implicit none
+        character(*), intent(in) :: cln_filename
+        character(*), intent(in) :: mesh_name   ! Base name for mesh file (mesh_name.MeshBIN)
+        character(*), intent(in) :: output_cln_filename
+        logical, intent(in) :: use_xyz_format   ! .true. = XYZ list format; .false. = full CLN structure format
+        
+        type(t_cln_structure) :: cln_struct
+        type(t_cln_structure) :: new_cln_struct
+        type(t_intersection_list) :: intersections
+        type(mesh) :: M
+        
+        M%name = trim(mesh_name)
+        call ReadMeshBIN(M)
+        
+        if (use_xyz_format) then
+            call ReadCLNFromXYZList(trim(cln_filename), cln_struct)
+        else
+            call ReadCLNStructure(trim(cln_filename), cln_struct)
+        end if
+        
+        call FindCLN_MeshIntersections(cln_struct, M, intersections)
+        call SplitCLNCells(cln_struct, intersections, new_cln_struct)
+        call WriteCLNStructure(trim(output_cln_filename), new_cln_struct)
+        
+        call Msg('CLN-mesh intersection utility completed.')
+        
+    end subroutine RunCLNMeshIntersection
 
 end module CLNIntersection
 

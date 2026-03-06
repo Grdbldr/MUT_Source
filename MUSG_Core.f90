@@ -48,6 +48,7 @@ module MUSG_Core
         real(sp) :: Beta
         real(sp) :: Sr
         real(sp) :: Brooks
+        real(sp) :: Porosity   ! for seepage velocity (default 1.0)
         
         ! SWF cell properties 
         real(sp) :: Sgcl                    ! SWF-GWF connection length
