@@ -483,7 +483,7 @@ module MUSG !
 
          
             else if(index(instruction, CLNMeshIntersection_CMD) /= 0) then
-                call CLNMeshIntersectionFromInstruction(FNumMUT)
+                call CLNMeshIntersectionFromInstruction(FNumMUT, Modflow)
          
             else if(index(instruction, ActiveDomain_CMD)  /= 0) then
                 ActiveDomain = HandleActiveDomainInstruction(FNumMUT)
@@ -1926,39 +1926,34 @@ module MUSG !
 
     !----------------------------------------------------------------------
     ! Read instruction lines and run CLN-mesh intersection utility.
-    ! Instruction format (next 4 lines after 'cln mesh intersection'):
-    !   Line 1: CLN input file path
-    !   Line 2: Mesh base name (file <mesh_name>.MeshBIN will be read)
-    !   Line 3: CLN output file path
-    !   Line 4: 'xyz' for XYZ list format, anything else for full CLN structure format
+    ! CLN input is always read from a user-defined XYZ file.
+    ! Mesh data comes from in-memory GWF (and optionally SWF) domains.
+    ! Format: 2 lines after 'cln mesh intersection'
+    !   Line 1: CLN input XYZ file path
+    !   Line 2: CLN output file path
     !----------------------------------------------------------------------
-    subroutine CLNMeshIntersectionFromInstruction(FNum)
+    subroutine CLNMeshIntersectionFromInstruction(FNum, Modflow)
         implicit none
         integer(i4), intent(in) :: FNum
-        character(MAX_STR) :: cln_filename, mesh_name, output_cln_filename, format_line
-        logical :: use_xyz_format
+        type(ModflowProject), intent(inout) :: Modflow
+        character(MAX_STR) :: cln_filename, output_cln_filename
         
         read(FNum, '(a)', iostat=status) cln_filename
         if (status /= 0) then
-            call HandleError(ERR_FILE_IO, 'Missing CLN input filename after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
-        end if
-        read(FNum, '(a)', iostat=status) mesh_name
-        if (status /= 0) then
-            call HandleError(ERR_FILE_IO, 'Missing mesh name after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
+            call HandleError(ERR_FILE_IO, 'Missing CLN input XYZ filename after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
         end if
         read(FNum, '(a)', iostat=status) output_cln_filename
         if (status /= 0) then
             call HandleError(ERR_FILE_IO, 'Missing CLN output filename after cln mesh intersection', 'CLNMeshIntersectionFromInstruction')
         end if
-        read(FNum, '(a)', iostat=status) format_line
-        if (status /= 0) then
-            format_line = ' '
-        end if
-        call LwrCse(format_line)
-        use_xyz_format = (index(trim(format_line), 'xyz') > 0)
         
-        call RunCLNMeshIntersection(trim(adjustl(cln_filename)), trim(adjustl(mesh_name)), &
-            trim(adjustl(output_cln_filename)), use_xyz_format)
+        if (Modflow%SWF%IsDefined .and. Modflow%SWF%nCells > 0) then
+            call RunCLNMeshIntersectionWithDomains(trim(adjustl(cln_filename)), trim(adjustl(output_cln_filename)), &
+                Modflow%GWF, Modflow%SWF)
+        else
+            call RunCLNMeshIntersectionWithDomains(trim(adjustl(cln_filename)), trim(adjustl(output_cln_filename)), &
+                Modflow%GWF)
+        end if
     end subroutine CLNMeshIntersectionFromInstruction
 
     !----------------------------------------------------------------------
@@ -5542,6 +5537,284 @@ module MUSG !
     end subroutine WriteCHDFile
 
     !-------------------------------------------------------------
+    subroutine FindCLNtoGWFConnections(Modflow)
+        implicit none
+        type (ModflowProject), intent(inout) :: Modflow
+        
+        integer(i4) :: i, j, iCell, k
+        real(dp) :: x1, y1, z1, dist_min, f1
+        real(dp) :: totalFLENGW, totalCLNLength
+        integer(i4) :: FNumTec
+        character(MAX_STR) :: FName
+        
+        type(t_cln_structure) :: cln_struct
+        type(t_intersection_list) :: intersections
+        integer(i4) :: nCellInt, nUnique, nTotalPoints, nMaxConn, iGWF, nConnections
+        real(dp) :: mx, my, mz, tempDist, flengw_val
+        real(dp), allocatable :: sortDist(:), sortX(:), sortY(:), sortZ(:)
+        real(dp), allocatable :: tecX(:), tecY(:), tecZ(:), tecFLENGW(:)
+        integer(i4), allocatable :: tecCLN(:), tecGWF(:), tecType(:)
+        integer(i4), allocatable :: connCLN(:), connGWF(:)
+        real(dp), allocatable :: connFLENGW(:)
+        logical :: swapped
+        
+        call Msg('  ')
+        call Msg('Finding CLN to GWF cell connections...')
+        
+        if (.not. allocated(Modflow%CLN%CLNGWFCellID)) then
+            allocate(Modflow%CLN%CLNGWFCellID(Modflow%CLN%nCells), stat=ialloc)
+            call AllocChk(ialloc, 'CLN CLNGWFCellID array')
+        end if
+        
+        do i = 1, Modflow%CLN%nCells
+            x1 = Modflow%CLN%cell(i)%x
+            y1 = Modflow%CLN%cell(i)%y
+            z1 = Modflow%CLN%cell(i)%z
+            
+            dist_min = 1.0d20
+            iCell = 0
+            do j = 1, Modflow%GWF%nCells
+                f1 = sqrt((x1 - Modflow%GWF%cell(j)%x)**2 + &
+                          (y1 - Modflow%GWF%cell(j)%y)**2 + &
+                          (z1 - Modflow%GWF%cell(j)%z)**2)
+                if (f1 < dist_min) then
+                    iCell = j
+                    dist_min = f1
+                end if
+            end do
+            Modflow%CLN%CLNGWFCellID(i) = iCell
+            
+            write(TMPStr, '(a,i8,a,i8,a,f12.4)') '  CLN cell ', i, ' -> GWF cell ', iCell, '  dist=', dist_min
+            call Msg(TMPStr)
+        end do
+        
+        ! Length check: sum of FLENGW (cell lengths) should equal total CLN domain length
+        totalFLENGW = 0.0d0
+        do i = 1, Modflow%CLN%nCells
+            totalFLENGW = totalFLENGW + Modflow%CLN%cell(i)%Length
+        end do
+        
+        totalCLNLength = 0.0d0
+        do i = 1, Modflow%CLN%nNodes - 1
+            totalCLNLength = totalCLNLength + sqrt( &
+                (Modflow%CLN%node(i+1)%x - Modflow%CLN%node(i)%x)**2 + &
+                (Modflow%CLN%node(i+1)%y - Modflow%CLN%node(i)%y)**2 + &
+                (Modflow%CLN%node(i+1)%z - Modflow%CLN%node(i)%z)**2)
+        end do
+        
+        write(TMPStr, '(a,'//FMT_R8//')') 'Sum of FLENGW (cell lengths):  ', totalFLENGW
+        call Msg(TMPStr)
+        write(TMPStr, '(a,'//FMT_R8//')') 'Total CLN domain length:       ', totalCLNLength
+        call Msg(TMPStr)
+        write(TMPStr, '(a,'//FMT_R8//')') 'Difference:                    ', abs(totalFLENGW - totalCLNLength)
+        call Msg(TMPStr)
+        if (abs(totalFLENGW - totalCLNLength) > 1.0d-3) then
+            call Msg('!?!? WARNING: Sum of FLENGW does not match total CLN domain length')
+        else
+            call Msg('OK: Sum of FLENGW matches total CLN domain length')
+        end if
+        
+        ! Write CLN-GWF face intersection points to tecplot scatter file
+        FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.CLN_GWF_connections.tecplot.dat'
+        call OpenAscii(FNumTec, FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        
+        ! Build temporary CLN structure from domain node data
+        cln_struct%nCells = Modflow%CLN%nCells
+        allocate(cln_struct%cell(cln_struct%nCells), stat=ialloc)
+        call AllocChk(ialloc, 'FindCLNtoGWFConnections: cln_struct%cell')
+        do i = 1, cln_struct%nCells
+            cln_struct%cell(i)%id = i
+            cln_struct%cell(i)%x1 = Modflow%CLN%node(Modflow%CLN%idNode(1,i))%x
+            cln_struct%cell(i)%y1 = Modflow%CLN%node(Modflow%CLN%idNode(1,i))%y
+            cln_struct%cell(i)%z1 = Modflow%CLN%node(Modflow%CLN%idNode(1,i))%z
+            cln_struct%cell(i)%x2 = Modflow%CLN%node(Modflow%CLN%idNode(2,i))%x
+            cln_struct%cell(i)%y2 = Modflow%CLN%node(Modflow%CLN%idNode(2,i))%y
+            cln_struct%cell(i)%z2 = Modflow%CLN%node(Modflow%CLN%idNode(2,i))%z
+            cln_struct%cell(i)%material_id = 1
+            cln_struct%cell(i)%radius_or_width = 1.0d0
+            cln_struct%cell(i)%height = 1.0d0
+            cln_struct%cell(i)%is_circular = .true.
+            if (i < cln_struct%nCells) then
+                cln_struct%cell(i)%next_cell_id = i + 1
+            else
+                cln_struct%cell(i)%next_cell_id = 0
+            end if
+        end do
+        
+        ! Clear stale 2D face topology inherited from the template mesh copy
+        ! so BuildFaceTopologyFrommesh rebuilds it correctly for the 3D mesh
+        if (allocated(Modflow%GWF%FaceHost)) then
+            deallocate(Modflow%GWF%FaceHost)
+            deallocate(Modflow%GWF%FaceNeighbour)
+            deallocate(Modflow%GWF%FaceCentroidX)
+            deallocate(Modflow%GWF%FaceCentroidY)
+            deallocate(Modflow%GWF%FaceCentroidZ)
+            if (allocated(Modflow%GWF%LocalFaceNodes)) deallocate(Modflow%GWF%LocalFaceNodes)
+        end if
+        
+        ! Set correct 3D element type for face topology rebuild
+        if (Modflow%GWF%nNodesPerElement == 6) then
+            Modflow%GWF%TecplotTyp = 'feprism'
+        else if (Modflow%GWF%nNodesPerElement == 8) then
+            Modflow%GWF%TecplotTyp = 'febrick'
+        end if
+        
+        ! Find face intersections between CLN line segments and GWF mesh
+        call FindCLN_MeshIntersections(cln_struct, Modflow%GWF, intersections)
+        
+        ! Collect entry/exit point pairs per CLN-GWF connection
+        nMaxConn = max(1, intersections%nIntersections)
+        allocate(tecX(2*nMaxConn), tecY(2*nMaxConn), tecZ(2*nMaxConn), &
+                 tecFLENGW(2*nMaxConn), tecCLN(2*nMaxConn), tecGWF(2*nMaxConn), &
+                 tecType(2*nMaxConn), stat=ialloc)
+        call AllocChk(ialloc, 'FindCLNtoGWFConnections: tecplot output arrays')
+        allocate(connCLN(nMaxConn), connGWF(nMaxConn), connFLENGW(nMaxConn), stat=ialloc)
+        call AllocChk(ialloc, 'FindCLNtoGWFConnections: connection arrays')
+        nTotalPoints = 0
+        nConnections = 0
+        
+        do i = 1, cln_struct%nCells
+            ! Count intersections for this cell
+            nCellInt = 0
+            do j = 1, intersections%nIntersections
+                if (intersections%point(j)%cln_cell_id == i) nCellInt = nCellInt + 1
+            end do
+            if (nCellInt < 2) cycle
+            
+            ! Collect intersection coordinates and distances
+            allocate(sortDist(nCellInt), sortX(nCellInt), sortY(nCellInt), sortZ(nCellInt), stat=ialloc)
+            call AllocChk(ialloc, 'FindCLNtoGWFConnections: sort arrays')
+            k = 0
+            do j = 1, intersections%nIntersections
+                if (intersections%point(j)%cln_cell_id == i) then
+                    k = k + 1
+                    sortDist(k) = intersections%point(j)%distance_from_start
+                    sortX(k) = intersections%point(j)%x
+                    sortY(k) = intersections%point(j)%y
+                    sortZ(k) = intersections%point(j)%z
+                end if
+            end do
+            
+            ! Sort by distance along the CLN cell (bubble sort)
+            do j = 1, nCellInt - 1
+                swapped = .false.
+                do k = 1, nCellInt - j
+                    if (sortDist(k) > sortDist(k+1)) then
+                        tempDist = sortDist(k); sortDist(k) = sortDist(k+1); sortDist(k+1) = tempDist
+                        tempDist = sortX(k); sortX(k) = sortX(k+1); sortX(k+1) = tempDist
+                        tempDist = sortY(k); sortY(k) = sortY(k+1); sortY(k+1) = tempDist
+                        tempDist = sortZ(k); sortZ(k) = sortZ(k+1); sortZ(k+1) = tempDist
+                        swapped = .true.
+                    end if
+                end do
+                if (.not. swapped) exit
+            end do
+            
+            ! Deduplicate consecutive points at the same location (internal faces hit twice)
+            nUnique = 1
+            do j = 2, nCellInt
+                if (abs(sortDist(j) - sortDist(nUnique)) > 1.0d-6) then
+                    nUnique = nUnique + 1
+                    sortDist(nUnique) = sortDist(j)
+                    sortX(nUnique) = sortX(j)
+                    sortY(nUnique) = sortY(j)
+                    sortZ(nUnique) = sortZ(j)
+                end if
+            end do
+            
+            ! Each pair of consecutive unique points = one CLN-GWF connection
+            do j = 1, nUnique - 1
+                ! Midpoint of sub-segment to identify the GWF cell
+                mx = (sortX(j) + sortX(j+1)) * 0.5d0
+                my = (sortY(j) + sortY(j+1)) * 0.5d0
+                mz = (sortZ(j) + sortZ(j+1)) * 0.5d0
+                
+                dist_min = 1.0d20
+                iGWF = 0
+                do k = 1, Modflow%GWF%nCells
+                    f1 = sqrt((mx - Modflow%GWF%cell(k)%x)**2 + &
+                              (my - Modflow%GWF%cell(k)%y)**2 + &
+                              (mz - Modflow%GWF%cell(k)%z)**2)
+                    if (f1 < dist_min) then
+                        iGWF = k
+                        dist_min = f1
+                    end if
+                end do
+                
+                flengw_val = sqrt((sortX(j+1) - sortX(j))**2 + &
+                                  (sortY(j+1) - sortY(j))**2 + &
+                                  (sortZ(j+1) - sortZ(j))**2)
+                
+                ! Record this CLN-GWF connection
+                nConnections = nConnections + 1
+                connCLN(nConnections) = i
+                connGWF(nConnections) = iGWF
+                connFLENGW(nConnections) = flengw_val
+                
+                ! Entry point
+                nTotalPoints = nTotalPoints + 1
+                tecX(nTotalPoints) = sortX(j)
+                tecY(nTotalPoints) = sortY(j)
+                tecZ(nTotalPoints) = sortZ(j)
+                tecCLN(nTotalPoints) = i
+                tecGWF(nTotalPoints) = iGWF
+                tecFLENGW(nTotalPoints) = flengw_val
+                tecType(nTotalPoints) = 1
+                
+                ! Exit point
+                nTotalPoints = nTotalPoints + 1
+                tecX(nTotalPoints) = sortX(j+1)
+                tecY(nTotalPoints) = sortY(j+1)
+                tecZ(nTotalPoints) = sortZ(j+1)
+                tecCLN(nTotalPoints) = i
+                tecGWF(nTotalPoints) = iGWF
+                tecFLENGW(nTotalPoints) = flengw_val
+                tecType(nTotalPoints) = 2
+            end do
+            
+            deallocate(sortDist, sortX, sortY, sortZ)
+        end do
+        
+        ! Write Tecplot file
+        write(FNumTec, '(a)') 'Title = "CLN to GWF Connection Points (Face Intersections)"'
+        write(FNumTec, '(a)') 'variables="X","Y","Z","CLN_Cell","GWF_Cell","FLENGW","Point_Type"'
+        write(FNumTec, '(a,i8,a)') 'ZONE t="CLN-GWF connections (entry/exit at faces)", I=', &
+            nTotalPoints, ', datapacking=point'
+        
+        do i = 1, nTotalPoints
+            write(FNumTec, *) &
+                tecX(i), tecY(i), tecZ(i), &
+                tecCLN(i), tecGWF(i), tecFLENGW(i), tecType(i)
+        end do
+        
+        deallocate(tecX, tecY, tecZ, tecFLENGW, tecCLN, tecGWF, tecType)
+        deallocate(cln_struct%cell)
+        if (allocated(intersections%point)) deallocate(intersections%point)
+        
+        call FreeUnit(FNumTec)
+        
+        ! Store connection data in domain arrays
+        Modflow%CLN%NCLNGWC = nConnections
+        if (allocated(Modflow%CLN%CLNGWFConnCLNCell)) deallocate(Modflow%CLN%CLNGWFConnCLNCell)
+        if (allocated(Modflow%CLN%CLNGWFConnGWFCell)) deallocate(Modflow%CLN%CLNGWFConnGWFCell)
+        if (allocated(Modflow%CLN%CLNGWFConnFLENGW))  deallocate(Modflow%CLN%CLNGWFConnFLENGW)
+        allocate(Modflow%CLN%CLNGWFConnCLNCell(nConnections), &
+                 Modflow%CLN%CLNGWFConnGWFCell(nConnections), &
+                 Modflow%CLN%CLNGWFConnFLENGW(nConnections), stat=ialloc)
+        call AllocChk(ialloc, 'FindCLNtoGWFConnections: domain connection arrays')
+        Modflow%CLN%CLNGWFConnCLNCell(1:nConnections) = connCLN(1:nConnections)
+        Modflow%CLN%CLNGWFConnGWFCell(1:nConnections) = connGWF(1:nConnections)
+        Modflow%CLN%CLNGWFConnFLENGW(1:nConnections)  = connFLENGW(1:nConnections)
+        deallocate(connCLN, connGWF, connFLENGW)
+        
+        write(TMPStr, '(a,i8)') 'Total CLN-GWF connections: ', nConnections
+        call Msg(TMPStr)
+        
+    end subroutine FindCLNtoGWFConnections
+
+    !-------------------------------------------------------------
     subroutine WriteCLNFiles(Modflow)
         implicit none
         type (ModflowProject) Modflow
@@ -5550,7 +5823,7 @@ module MUSG !
         integer(i4) :: i, j, k
         character(MAX_STR) :: OutputLine
         
-        Modflow%CLN%NCLNGWC=Modflow%CLN%nCells  ! assume for now that all cln cells are connected to underlying gwf cells
+        call FindCLNtoGWFConnections(Modflow)
 
         write(Modflow.iCLN,'(a)') '#1.    NCLN, ICLNNDS, ICLNCB,  ICLNHD,  ICLNDD,   ICLNIB,  NCLNGWC,  NCONDUITYP'
         write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
@@ -5589,12 +5862,13 @@ module MUSG !
         end do
 
         write(Modflow.iCLN,'(a)') '# IFNOD IGWNOD IFCON    FSKIN      FLENGW      FANISO  ICGWADI'
-        do i=1,Modflow%CLN%nCells
-            write(Modflow.iCLN,'(3i5,3('//FMT_R4//'),i5)') i, & !IFNO
-            i, & !IGWNOD
+        do i=1,Modflow%CLN%NCLNGWC
+            write(Modflow.iCLN,'(3i5,3('//FMT_R4//'),i5)') &
+            Modflow%CLN%CLNGWFConnCLNCell(i), & !IFNOD
+            Modflow%CLN%CLNGWFConnGWFCell(i), & !IGWNOD
             3, & !IFCON
             1.e-20, & !FSKIN
-            Modflow%CLN%cell(i)%Length, & !FLENGW
+            Modflow%CLN%CLNGWFConnFLENGW(i), & !FLENGW
             1.00, & !FANISO
             0   ! ICGWADI 
         end do

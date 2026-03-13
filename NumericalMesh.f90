@@ -342,9 +342,9 @@ module NumericalMesh
     subroutine BuildFaceTopologyFrommesh(M)
         implicit none
 
-        type (mesh)  M
+        class(mesh), intent(inout) :: M
 
-        integer(i4) :: i, j, k, l
+        integer(i4) :: i, j, k, l, nActualNodes
         
         if(ALLOCATED(M%FaceHost)) return ! already built
         
@@ -437,14 +437,17 @@ module NumericalMesh
                 M.FaceCentroidX(j,i)=0.0d0
                 M.FaceCentroidY(j,i)=0.0d0
                 M.FaceCentroidZ(j,i)=0.0d0
+                nActualNodes=0
                 do k=1,M.nNodesPerFace
+                    if (M.LocalFaceNodes(k,j) == 0) cycle
+                    nActualNodes=nActualNodes+1
                     M.FaceCentroidX(j,i)=M.FaceCentroidX(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%x
                     M.FaceCentroidY(j,i)=M.FaceCentroidY(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%y
                     M.FaceCentroidZ(j,i)=M.FaceCentroidZ(j,i)+M%node(M.idNode(M.LocalFaceNodes(k,j),i))%z
                 end do
-                M.FaceCentroidX(j,i)=M.FaceCentroidX(j,i)/M.nNodesPerFace
-                M.FaceCentroidY(j,i)=M.FaceCentroidY(j,i)/M.nNodesPerFace
-                M.FaceCentroidZ(j,i)=M.FaceCentroidZ(j,i)/M.nNodesPerFace
+                M.FaceCentroidX(j,i)=M.FaceCentroidX(j,i)/nActualNodes
+                M.FaceCentroidY(j,i)=M.FaceCentroidY(j,i)/nActualNodes
+                M.FaceCentroidZ(j,i)=M.FaceCentroidZ(j,i)/nActualNodes
             end do
         end do
         

@@ -80,6 +80,10 @@ module MUSG_Core
         integer(i4) :: ic      ! is 1 if the cell specifications associated with each node are supplied; 0 otherwise
 
         integer(i4) :: NCLNGWC      ! # of CLN to GWF connections
+        integer(i4), allocatable :: CLNGWFCellID(:)  ! GWF cell ID that each CLN cell connects to
+        integer(i4), allocatable :: CLNGWFConnCLNCell(:)  ! CLN cell for each CLN-GWF connection
+        integer(i4), allocatable :: CLNGWFConnGWFCell(:)  ! GWF cell for each CLN-GWF connection
+        real(dp), allocatable :: CLNGWFConnFLENGW(:)      ! Connection length for each CLN-GWF connection
         integer(i4) :: NCONDUITYP   ! number of circular CLN's
         integer(i4) :: NRECTYP      ! number of rectangular CLN's
         

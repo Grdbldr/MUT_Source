@@ -13,14 +13,14 @@ module CLNIntersection
     private
     
     ! Public types
-    public :: t_cln_cell, t_cln_structure, t_intersection_point
+    public :: t_cln_cell, t_cln_structure, t_intersection_point, t_intersection_list
     
     ! Public subroutines
     public :: ReadCLNStructure, ReadCLNFromXYZList
     public :: FindCLN_MeshIntersections
     public :: SplitCLNCells
     public :: WriteCLNStructure
-    public :: RunCLNMeshIntersection
+    public :: RunCLNMeshIntersectionWithDomains
     
     !----------------------------------------------------------------------
     ! Data Structures
@@ -211,7 +211,7 @@ module CLNIntersection
     subroutine FindCLN_MeshIntersections(cln_struct, M, intersections)
         implicit none
         type(t_cln_structure), intent(in) :: cln_struct
-        type(mesh), intent(in) :: M
+        class(mesh), intent(inout) :: M
         type(t_intersection_list), intent(out) :: intersections
         
         integer(i4) :: iCell, iElem, iFace, iNode, nNodes
@@ -223,13 +223,16 @@ module CLNIntersection
         integer(i4), allocatable :: nodeIds(:)
         real(dp), allocatable :: faceNodesX(:), faceNodesY(:), faceNodesZ(:)
         
+        call Msg('  ')
+        call Msg('FindCLN_MeshIntersections: mesh domain = '//trim(M%name))
+        
         ! Ensure mesh faces are calculated
         if (.not. M%FacesCalculated) then
             call BuildFaceTopologyFrommesh(M)
         end if
         
-        ! Allocate temporary arrays (over-allocate to be safe)
-        allocate(intersections%point(cln_struct%nCells * M%nFacesPerElement * 2), stat=ialloc)
+        ! Allocate intersection array: each CLN cell can cross up to 2 faces per element traversed
+        allocate(intersections%point(cln_struct%nCells * M%nElements * 2), stat=ialloc)
         call AllocChk(ialloc, 'FindCLN_MeshIntersections: intersections%point array')
         
         nIntersections = 0
@@ -247,16 +250,19 @@ module CLNIntersection
             do iElem = 1, M%nElements
                 ! Loop over all faces of this element
                 do iFace = 1, M%nFacesPerElement
-                    ! Get face node IDs
-                    nNodes = M%nNodesPerFace
-                    allocate(nodeIds(nNodes), faceNodesX(nNodes), faceNodesY(nNodes), faceNodesZ(nNodes), stat=ialloc)
+                    ! Get face node IDs (skip zero-padded entries for mixed-face elements like prisms)
+                    allocate(nodeIds(M%nNodesPerFace), faceNodesX(M%nNodesPerFace), &
+                             faceNodesY(M%nNodesPerFace), faceNodesZ(M%nNodesPerFace), stat=ialloc)
                     call AllocChk(ialloc, 'FindCLN_MeshIntersections: face node arrays')
                     
-                    do iNode = 1, nNodes
-                        nodeIds(iNode) = M%idNode(M%LocalFaceNodes(iNode, iFace), iElem)
-                        faceNodesX(iNode) = M%node(nodeIds(iNode))%x
-                        faceNodesY(iNode) = M%node(nodeIds(iNode))%y
-                        faceNodesZ(iNode) = M%node(nodeIds(iNode))%z
+                    nNodes = 0
+                    do iNode = 1, M%nNodesPerFace
+                        if (M%LocalFaceNodes(iNode, iFace) == 0) cycle
+                        nNodes = nNodes + 1
+                        nodeIds(nNodes) = M%idNode(M%LocalFaceNodes(iNode, iFace), iElem)
+                        faceNodesX(nNodes) = M%node(nodeIds(nNodes))%x
+                        faceNodesY(nNodes) = M%node(nodeIds(nNodes))%y
+                        faceNodesZ(nNodes) = M%node(nodeIds(nNodes))%z
                     end do
                     
                     ! Check for intersection between line segment and face
@@ -739,38 +745,66 @@ module CLNIntersection
     end subroutine WriteCLNStructure
     
     !----------------------------------------------------------------------
-    ! Run full CLN-mesh intersection pipeline (main interface)
-    ! Reads CLN structure, reads mesh, finds intersections, splits cells, writes output.
-    ! Mesh is read from <mesh_name>.MeshBIN (see NumericalMesh.ReadMeshBIN).
+    ! Merge two intersection lists into one (order preserved; SplitCLNCells sorts by distance per cell)
     !----------------------------------------------------------------------
-    subroutine RunCLNMeshIntersection(cln_filename, mesh_name, output_cln_filename, use_xyz_format)
+    subroutine MergeIntersectionLists(list1, list2, merged)
+        implicit none
+        type(t_intersection_list), intent(in) :: list1, list2
+        type(t_intersection_list), intent(out) :: merged
+        
+        integer(i4) :: n1, n2
+        
+        n1 = list1%nIntersections
+        n2 = list2%nIntersections
+        merged%nIntersections = n1 + n2
+        if (merged%nIntersections <= 0) return
+        allocate(merged%point(max(1, merged%nIntersections)), stat=ialloc)
+        call AllocChk(ialloc, 'MergeIntersectionLists: merged%point')
+        if (n1 > 0) merged%point(1:n1) = list1%point(1:n1)
+        if (n2 > 0) merged%point(n1+1:n1+n2) = list2%point(1:n2)
+    end subroutine MergeIntersectionLists
+
+    !----------------------------------------------------------------------
+    ! Run CLN-mesh intersection using in-memory GWF (and optionally SWF) domains.
+    ! CLN input is always read from a user-defined XYZ file.
+    ! Builds face topology, finds intersections for each domain, merges lists, splits cells, writes output.
+    !----------------------------------------------------------------------
+    subroutine RunCLNMeshIntersectionWithDomains(cln_filename, output_cln_filename, &
+            GWF_domain, SWF_domain)
         implicit none
         character(*), intent(in) :: cln_filename
-        character(*), intent(in) :: mesh_name   ! Base name for mesh file (mesh_name.MeshBIN)
         character(*), intent(in) :: output_cln_filename
-        logical, intent(in) :: use_xyz_format   ! .true. = XYZ list format; .false. = full CLN structure format
+        class(mesh), intent(inout) :: GWF_domain
+        class(mesh), intent(inout), optional :: SWF_domain
         
         type(t_cln_structure) :: cln_struct
         type(t_cln_structure) :: new_cln_struct
-        type(t_intersection_list) :: intersections
-        type(mesh) :: M
+        type(t_intersection_list) :: intersections_gwf
+        type(t_intersection_list) :: intersections_swf
+        type(t_intersection_list) :: intersections_merged
         
-        M%name = trim(mesh_name)
-        call ReadMeshBIN(M)
+        ! Read CLN input from XYZ file
+        call ReadCLNFromXYZList(trim(cln_filename), cln_struct)
         
-        if (use_xyz_format) then
-            call ReadCLNFromXYZList(trim(cln_filename), cln_struct)
+        ! Build face topology and find intersections for GWF
+        call BuildFaceTopologyFrommesh(GWF_domain)
+        call FindCLN_MeshIntersections(cln_struct, GWF_domain, intersections_gwf)
+        
+        if (present(SWF_domain)) then
+            ! Build face topology and find intersections for SWF
+            call BuildFaceTopologyFrommesh(SWF_domain)
+            call FindCLN_MeshIntersections(cln_struct, SWF_domain, intersections_swf)
+            ! Merge and split
+            call MergeIntersectionLists(intersections_gwf, intersections_swf, intersections_merged)
+            call SplitCLNCells(cln_struct, intersections_merged, new_cln_struct)
         else
-            call ReadCLNStructure(trim(cln_filename), cln_struct)
+            call SplitCLNCells(cln_struct, intersections_gwf, new_cln_struct)
         end if
         
-        call FindCLN_MeshIntersections(cln_struct, M, intersections)
-        call SplitCLNCells(cln_struct, intersections, new_cln_struct)
         call WriteCLNStructure(trim(output_cln_filename), new_cln_struct)
+        call Msg('CLN-mesh intersection utility (GWF/SWF domains) completed.')
         
-        call Msg('CLN-mesh intersection utility completed.')
-        
-    end subroutine RunCLNMeshIntersection
+    end subroutine RunCLNMeshIntersectionWithDomains
 
 end module CLNIntersection
 
