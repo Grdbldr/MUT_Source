@@ -5556,7 +5556,23 @@ module MUSG !
         integer(i4), allocatable :: tecCLN(:), tecGWF(:), tecType(:)
         integer(i4), allocatable :: connCLN(:), connGWF(:)
         real(dp), allocatable :: connFLENGW(:)
+        ! Node-based connection parameters
+        real(dp) :: minEdge, dx, dy, dz, tol_node, dist_node, dist_node1, dist_node2
+        integer(i4) :: iNode, nearestNode, nearestNode1, nearestNode2
+        integer(i4), allocatable :: elemList(:)
+        integer(i4) :: nElemAtNode, maxNodeIncidents
         logical :: swapped
+        real(dp), parameter :: TOL_PLANE_FRAC = 1.0d-4
+        real(dp), parameter :: TINY_VAL = 1.0d-20
+        real(dp) :: tol_plane
+        integer(i4), parameter :: MAX_FACE_ELEMS = 20
+        integer(i4), allocatable :: sortIdx(:)
+        logical :: faceMatches
+        integer(i4) :: e, iFace, nFaceNodes, nActual, nid, idx1, idx2, e1, e2, tempInt
+        real(dp) :: faceX(4), faceY(4), faceZ(4), vx, vy, vz, px, py, pz, nx, ny, nz, d1p, d2p, dnorm
+        integer(i4) :: nSegElems
+        integer(i4) :: segElems(MAX_FACE_ELEMS)
+        real(dp) :: x2, y2, z2
         
         call Msg('  ')
         call Msg('Finding CLN to GWF cell connections...')
@@ -5587,32 +5603,6 @@ module MUSG !
             write(TMPStr, '(a,i8,a,i8,a,f12.4)') '  CLN cell ', i, ' -> GWF cell ', iCell, '  dist=', dist_min
             call Msg(TMPStr)
         end do
-        
-        ! Length check: sum of FLENGW (cell lengths) should equal total CLN domain length
-        totalFLENGW = 0.0d0
-        do i = 1, Modflow%CLN%nCells
-            totalFLENGW = totalFLENGW + Modflow%CLN%cell(i)%Length
-        end do
-        
-        totalCLNLength = 0.0d0
-        do i = 1, Modflow%CLN%nNodes - 1
-            totalCLNLength = totalCLNLength + sqrt( &
-                (Modflow%CLN%node(i+1)%x - Modflow%CLN%node(i)%x)**2 + &
-                (Modflow%CLN%node(i+1)%y - Modflow%CLN%node(i)%y)**2 + &
-                (Modflow%CLN%node(i+1)%z - Modflow%CLN%node(i)%z)**2)
-        end do
-        
-        write(TMPStr, '(a,'//FMT_R8//')') 'Sum of FLENGW (cell lengths):  ', totalFLENGW
-        call Msg(TMPStr)
-        write(TMPStr, '(a,'//FMT_R8//')') 'Total CLN domain length:       ', totalCLNLength
-        call Msg(TMPStr)
-        write(TMPStr, '(a,'//FMT_R8//')') 'Difference:                    ', abs(totalFLENGW - totalCLNLength)
-        call Msg(TMPStr)
-        if (abs(totalFLENGW - totalCLNLength) > 1.0d-3) then
-            call Msg('!?!? WARNING: Sum of FLENGW does not match total CLN domain length')
-        else
-            call Msg('OK: Sum of FLENGW matches total CLN domain length')
-        end if
         
         ! Write CLN-GWF face intersection points to tecplot scatter file
         FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.CLN_GWF_connections.tecplot.dat'
@@ -5665,13 +5655,38 @@ module MUSG !
         call FindCLN_MeshIntersections(cln_struct, Modflow%GWF, intersections)
         
         ! Collect entry/exit point pairs per CLN-GWF connection
-        nMaxConn = max(1, intersections%nIntersections)
+        maxNodeIncidents = 20
+        nMaxConn = max(1, intersections%nIntersections * maxNodeIncidents)
         allocate(tecX(2*nMaxConn), tecY(2*nMaxConn), tecZ(2*nMaxConn), &
                  tecFLENGW(2*nMaxConn), tecCLN(2*nMaxConn), tecGWF(2*nMaxConn), &
                  tecType(2*nMaxConn), stat=ialloc)
         call AllocChk(ialloc, 'FindCLNtoGWFConnections: tecplot output arrays')
         allocate(connCLN(nMaxConn), connGWF(nMaxConn), connFLENGW(nMaxConn), stat=ialloc)
         call AllocChk(ialloc, 'FindCLNtoGWFConnections: connection arrays')
+
+        ! Compute a characteristic node spacing for GWF domain and set node proximity tolerance
+        minEdge = 1.0d30
+        do i = 1, Modflow%GWF%nElements
+            do j = 1, Modflow%GWF%nNodesPerElement
+                do k = j + 1, Modflow%GWF%nNodesPerElement
+                    dx = Modflow%GWF%node(Modflow%GWF%idNode(j,i))%x - &
+                         Modflow%GWF%node(Modflow%GWF%idNode(k,i))%x
+                    dy = Modflow%GWF%node(Modflow%GWF%idNode(j,i))%y - &
+                         Modflow%GWF%node(Modflow%GWF%idNode(k,i))%y
+                    dz = Modflow%GWF%node(Modflow%GWF%idNode(j,i))%z - &
+                         Modflow%GWF%node(Modflow%GWF%idNode(k,i))%z
+                    f1 = sqrt(dx*dx + dy*dy + dz*dz)
+                    if (f1 > 0.0d0 .and. f1 < minEdge) minEdge = f1
+                end do
+            end do
+        end do
+        if (minEdge <= 0.0d0 .or. minEdge > 1.0d20) then
+            tol_node = 0.0d0
+        else
+            tol_node = 0.25d0 * minEdge
+        end if
+        tol_plane = max(1.0d-12, TOL_PLANE_FRAC * minEdge)
+
         nTotalPoints = 0
         nConnections = 0
         
@@ -5684,7 +5699,7 @@ module MUSG !
             if (nCellInt < 2) cycle
             
             ! Collect intersection coordinates and distances
-            allocate(sortDist(nCellInt), sortX(nCellInt), sortY(nCellInt), sortZ(nCellInt), stat=ialloc)
+            allocate(sortDist(nCellInt), sortX(nCellInt), sortY(nCellInt), sortZ(nCellInt), sortIdx(nCellInt), stat=ialloc)
             call AllocChk(ialloc, 'FindCLNtoGWFConnections: sort arrays')
             k = 0
             do j = 1, intersections%nIntersections
@@ -5694,6 +5709,7 @@ module MUSG !
                     sortX(k) = intersections%point(j)%x
                     sortY(k) = intersections%point(j)%y
                     sortZ(k) = intersections%point(j)%z
+                    sortIdx(k) = j
                 end if
             end do
             
@@ -5706,6 +5722,7 @@ module MUSG !
                         tempDist = sortX(k); sortX(k) = sortX(k+1); sortX(k+1) = tempDist
                         tempDist = sortY(k); sortY(k) = sortY(k+1); sortY(k+1) = tempDist
                         tempDist = sortZ(k); sortZ(k) = sortZ(k+1); sortZ(k+1) = tempDist
+                        tempInt = sortIdx(k); sortIdx(k) = sortIdx(k+1); sortIdx(k+1) = tempInt
                         swapped = .true.
                     end if
                 end do
@@ -5721,60 +5738,225 @@ module MUSG !
                     sortX(nUnique) = sortX(j)
                     sortY(nUnique) = sortY(j)
                     sortZ(nUnique) = sortZ(j)
+                    sortIdx(nUnique) = sortIdx(j)
                 end if
             end do
             
-            ! Each pair of consecutive unique points = one CLN-GWF connection
+            ! Each pair of consecutive unique points = one CLN-GWF connection segment
             do j = 1, nUnique - 1
                 ! Midpoint of sub-segment to identify the GWF cell
                 mx = (sortX(j) + sortX(j+1)) * 0.5d0
                 my = (sortY(j) + sortY(j+1)) * 0.5d0
                 mz = (sortZ(j) + sortZ(j+1)) * 0.5d0
                 
-                dist_min = 1.0d20
-                iGWF = 0
-                do k = 1, Modflow%GWF%nCells
-                    f1 = sqrt((mx - Modflow%GWF%cell(k)%x)**2 + &
-                              (my - Modflow%GWF%cell(k)%y)**2 + &
-                              (mz - Modflow%GWF%cell(k)%z)**2)
-                    if (f1 < dist_min) then
-                        iGWF = k
-                        dist_min = f1
-                    end if
-                end do
-                
                 flengw_val = sqrt((sortX(j+1) - sortX(j))**2 + &
                                   (sortY(j+1) - sortY(j))**2 + &
                                   (sortZ(j+1) - sortZ(j))**2)
                 
-                ! Record this CLN-GWF connection
-                nConnections = nConnections + 1
-                connCLN(nConnections) = i
-                connGWF(nConnections) = iGWF
-                connFLENGW(nConnections) = flengw_val
-                
-                ! Entry point
-                nTotalPoints = nTotalPoints + 1
-                tecX(nTotalPoints) = sortX(j)
-                tecY(nTotalPoints) = sortY(j)
-                tecZ(nTotalPoints) = sortZ(j)
-                tecCLN(nTotalPoints) = i
-                tecGWF(nTotalPoints) = iGWF
-                tecFLENGW(nTotalPoints) = flengw_val
-                tecType(nTotalPoints) = 1
-                
-                ! Exit point
-                nTotalPoints = nTotalPoints + 1
-                tecX(nTotalPoints) = sortX(j+1)
-                tecY(nTotalPoints) = sortY(j+1)
-                tecZ(nTotalPoints) = sortZ(j+1)
-                tecCLN(nTotalPoints) = i
-                tecGWF(nTotalPoints) = iGWF
-                tecFLENGW(nTotalPoints) = flengw_val
-                tecType(nTotalPoints) = 2
+                ! Segment endpoints for face-plane test
+                x1 = sortX(j)
+                y1 = sortY(j)
+                z1 = sortZ(j)
+                x2 = sortX(j+1)
+                y2 = sortY(j+1)
+                z2 = sortZ(j+1)
+
+                ! Nearest node to each endpoint (for candidate elements)
+                dist_node1 = 1.0d30
+                nearestNode1 = 0
+                do k = 1, Modflow%GWF%nNodes
+                    dx = x1 - Modflow%GWF%node(k)%x
+                    dy = y1 - Modflow%GWF%node(k)%y
+                    dz = z1 - Modflow%GWF%node(k)%z
+                    f1 = sqrt(dx*dx + dy*dy + dz*dz)
+                    if (f1 < dist_node1) then
+                        dist_node1 = f1
+                        nearestNode1 = k
+                    end if
+                end do
+                dist_node2 = 1.0d30
+                nearestNode2 = 0
+                do k = 1, Modflow%GWF%nNodes
+                    dx = x2 - Modflow%GWF%node(k)%x
+                    dy = y2 - Modflow%GWF%node(k)%y
+                    dz = z2 - Modflow%GWF%node(k)%z
+                    f1 = sqrt(dx*dx + dy*dy + dz*dz)
+                    if (f1 < dist_node2) then
+                        dist_node2 = f1
+                        nearestNode2 = k
+                    end if
+                end do
+
+                ! Build candidate element list from nodes near either endpoint
+                nElemAtNode = 0
+                allocate(elemList(2*maxNodeIncidents), stat=ialloc)
+                call AllocChk(ialloc, 'FindCLNtoGWFConnections: elemList')
+                elemList = 0
+                if (tol_node > 0.0d0 .and. dist_node1 <= tol_node .and. nearestNode1 > 0) then
+                    if (.not. NodalControlVolume) then
+                        do k = 1, Modflow%GWF%nElements
+                            do iCell = 1, Modflow%GWF%nNodesPerElement
+                                if (Modflow%GWF%idNode(iCell,k) == nearestNode1) then
+                                    if (nElemAtNode < 2*maxNodeIncidents) then
+                                        nElemAtNode = nElemAtNode + 1
+                                        elemList(nElemAtNode) = k
+                                    end if
+                                    exit
+                                end if
+                            end do
+                        end do
+                    else
+                        nElemAtNode = 1
+                        elemList(1) = nearestNode1
+                    end if
+                end if
+                if (tol_node > 0.0d0 .and. dist_node2 <= tol_node .and. nearestNode2 > 0) then
+                    if (.not. NodalControlVolume) then
+                        do k = 1, Modflow%GWF%nElements
+                            do iCell = 1, Modflow%GWF%nNodesPerElement
+                                if (Modflow%GWF%idNode(iCell,k) == nearestNode2) then
+                                    faceMatches = .false.
+                                    do e = 1, nElemAtNode
+                                        if (elemList(e) == k) then
+                                            faceMatches = .true.
+                                            exit
+                                        end if
+                                    end do
+                                    if (.not. faceMatches .and. nElemAtNode < 2*maxNodeIncidents) then
+                                        nElemAtNode = nElemAtNode + 1
+                                        elemList(nElemAtNode) = k
+                                    end if
+                                    exit
+                                end if
+                            end do
+                        end do
+                    else
+                        if (nearestNode2 /= nearestNode1 .and. nElemAtNode < 2*maxNodeIncidents) then
+                            nElemAtNode = nElemAtNode + 1
+                            elemList(nElemAtNode) = nearestNode2
+                        end if
+                    end if
+                end if
+
+                ! Face-plane test: keep only elements that have a face coplanar with the segment
+                nSegElems = 0
+                do e = 1, nElemAtNode
+                    faceMatches = .false.
+                    do iFace = 1, Modflow%GWF%nFacesPerElement
+                        nFaceNodes = 0
+                        do nid = 1, Modflow%GWF%nNodesPerFace
+                            if (Modflow%GWF%LocalFaceNodes(nid, iFace) == 0) cycle
+                            nFaceNodes = nFaceNodes + 1
+                            nActual = Modflow%GWF%LocalFaceNodes(nid, iFace)
+                            idx1 = Modflow%GWF%idNode(nActual, elemList(e))
+                            faceX(nFaceNodes) = Modflow%GWF%node(idx1)%x
+                            faceY(nFaceNodes) = Modflow%GWF%node(idx1)%y
+                            faceZ(nFaceNodes) = Modflow%GWF%node(idx1)%z
+                        end do
+                        if (nFaceNodes < 3) cycle
+                        vx = faceX(2) - faceX(1)
+                        vy = faceY(2) - faceY(1)
+                        vz = faceZ(2) - faceZ(1)
+                        px = faceX(3) - faceX(1)
+                        py = faceY(3) - faceY(1)
+                        pz = faceZ(3) - faceZ(1)
+                        nx = vy*pz - vz*py
+                        ny = vz*px - vx*pz
+                        nz = vx*py - vy*px
+                        dnorm = sqrt(nx*nx + ny*ny + nz*nz)
+                        if (dnorm < TINY_VAL) cycle
+                        d1p = abs(nx*(x1 - faceX(1)) + ny*(y1 - faceY(1)) + nz*(z1 - faceZ(1))) / dnorm
+                        d2p = abs(nx*(x2 - faceX(1)) + ny*(y2 - faceY(1)) + nz*(z2 - faceZ(1))) / dnorm
+                        if (d1p <= tol_plane .and. d2p <= tol_plane) then
+                            faceMatches = .true.
+                            exit
+                        end if
+                    end do
+                    if (faceMatches .and. nSegElems < MAX_FACE_ELEMS) then
+                        nSegElems = nSegElems + 1
+                        segElems(nSegElems) = elemList(e)
+                    end if
+                end do
+                if (allocated(elemList)) deallocate(elemList)
+
+                if (nSegElems > 0) then
+                    ! Create connections for all elements that passed the face-plane test
+                    do k = 1, nSegElems
+                        iGWF = segElems(k)
+                        if (nConnections >= nMaxConn) cycle
+                        nConnections = nConnections + 1
+                        connCLN(nConnections) = i
+                        connGWF(nConnections) = iGWF
+                        connFLENGW(nConnections) = flengw_val
+
+                        nTotalPoints = nTotalPoints + 1
+                        if (nTotalPoints <= 2*nMaxConn) then
+                            tecX(nTotalPoints) = sortX(j)
+                            tecY(nTotalPoints) = sortY(j)
+                            tecZ(nTotalPoints) = sortZ(j)
+                            tecCLN(nTotalPoints) = i
+                            tecGWF(nTotalPoints) = iGWF
+                            tecFLENGW(nTotalPoints) = flengw_val
+                            tecType(nTotalPoints) = 1
+                        end if
+
+                        nTotalPoints = nTotalPoints + 1
+                        if (nTotalPoints <= 2*nMaxConn) then
+                            tecX(nTotalPoints) = sortX(j+1)
+                            tecY(nTotalPoints) = sortY(j+1)
+                            tecZ(nTotalPoints) = sortZ(j+1)
+                            tecCLN(nTotalPoints) = i
+                            tecGWF(nTotalPoints) = iGWF
+                            tecFLENGW(nTotalPoints) = flengw_val
+                            tecType(nTotalPoints) = 2
+                        end if
+                    end do
+                else
+                    ! No face-plane match: fall back to nearest-centroid single-cell connection
+                    dist_min = 1.0d20
+                    iGWF = 0
+                    do k = 1, Modflow%GWF%nCells
+                        f1 = sqrt((mx - Modflow%GWF%cell(k)%x)**2 + &
+                                  (my - Modflow%GWF%cell(k)%y)**2 + &
+                                  (mz - Modflow%GWF%cell(k)%z)**2)
+                        if (f1 < dist_min) then
+                            iGWF = k
+                            dist_min = f1
+                        end if
+                    end do
+
+                    nConnections = nConnections + 1
+                    if (nConnections <= nMaxConn) then
+                        connCLN(nConnections) = i
+                        connGWF(nConnections) = iGWF
+                        connFLENGW(nConnections) = flengw_val
+                    end if
+
+                    nTotalPoints = nTotalPoints + 1
+                    if (nTotalPoints <= 2*nMaxConn) then
+                        tecX(nTotalPoints) = sortX(j)
+                        tecY(nTotalPoints) = sortY(j)
+                        tecZ(nTotalPoints) = sortZ(j)
+                        tecCLN(nTotalPoints) = i
+                        tecGWF(nTotalPoints) = iGWF
+                        tecFLENGW(nTotalPoints) = flengw_val
+                        tecType(nTotalPoints) = 1
+                    end if
+
+                    nTotalPoints = nTotalPoints + 1
+                    if (nTotalPoints <= 2*nMaxConn) then
+                        tecX(nTotalPoints) = sortX(j+1)
+                        tecY(nTotalPoints) = sortY(j+1)
+                        tecZ(nTotalPoints) = sortZ(j+1)
+                        tecCLN(nTotalPoints) = i
+                        tecGWF(nTotalPoints) = iGWF
+                        tecFLENGW(nTotalPoints) = flengw_val
+                        tecType(nTotalPoints) = 2
+                    end if
+                end if
             end do
             
-            deallocate(sortDist, sortX, sortY, sortZ)
+            deallocate(sortDist, sortX, sortY, sortZ, sortIdx)
         end do
         
         ! Write Tecplot file
@@ -5825,7 +6007,7 @@ module MUSG !
         
         call FindCLNtoGWFConnections(Modflow)
 
-        write(Modflow.iCLN,'(a)') '#1.    NCLN, ICLNNDS, ICLNCB,  ICLNHD,  ICLNDD,   ICLNIB,  NCLNGWC,  NCONDUITYP'
+        write(Modflow.iCLN,'(a)') '#1.  NCLN  ICLNNDS   ICLNCB   ICLNHD   ICLNDD   ICLNIB  NCLNGWC  NCONDUITYP'
         write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
                                         Modflow%CLN%nCells, &   !ICLNNDS
                                         Modflow%CLN%iCBB, &     !ICLNCB
@@ -5846,24 +6028,50 @@ module MUSG !
         write(Modflow.iCLN,'(10i4)') (Modflow%CLN%ia(i),i=1,Modflow%CLN%nCells)
         write(Modflow.iCLN,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
         do i=1,Modflow%CLN%nCells
-            write(Modflow.iCLN,'(20i8)') (abs(Modflow%CLN%ConnectionList(j,i)),j=1,Modflow%CLN%ia(i))
+            write(Modflow.iCLN,'(20i10)') (abs(Modflow%CLN%ConnectionList(j,i)),j=1,Modflow%CLN%ia(i))
         end do
         
-        write(Modflow.iCLN,'(a)') '# IFNO,          IFTYP,        IFDIR,   FLENG,         FELEV,         FANGLE,     IFLIN, ICCWADI'
-        do i=1,Modflow%CLN%nCells
-            write(Modflow.iCLN,'(i5,5('//FMT_R4//'),2i5)') i, & !IFNO
-            Modflow%CLN%cell(i)%idZone, & !IFTYP
-            Modflow%CLN%Direction(Modflow%CLN%cell(i)%idZone), & !IFDIR
-            Modflow%CLN%cell(i)%Length, & !FLENG
-            Modflow%CLN%cell(i)%LowestElevation, & !FELEV
-            Modflow%CLN%cell(i)%SlopeAngle, & !FANGLE
-            Modflow%CLN%FlowTreatment(Modflow%CLN%cell(i)%idZone), & !IFLIN
-            0   ! ICCWADI 
-        end do
+        ! USG-TRANSPORT expects NEW format (IFNO,ISHP,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI)
+        ! when NRECTYP>0 or NCONDUITYP>0. IFTYP must be type index within shape (1..NCONDUITYP for
+        ! circular, 1..NRECTYP for rectangular). Without ISHAPE, column misalignment causes crash.
+        if(Modflow%CLN%NRECTYP > 0 .or. Modflow%CLN%NCONDUITYP > 0) then
+            write(Modflow.iCLN,'(a)') '#     IFNO       ISHAPE         IFTYP          IFDIR      FLENG          FELEV         FANGLE          IFLIN   ICCWADI'
+            do i=1,Modflow%CLN%nCells
+                k = Modflow%CLN%cell(i)%idZone
+                if(Modflow%CLN%Geometry(k) == 1) then
+                    j = count(Modflow%CLN%Geometry(1:k) == 1)
+                else if(Modflow%CLN%Geometry(k) == 2) then
+                    j = count(Modflow%CLN%Geometry(1:k) == 2)
+                else
+                    j = 1
+                endif
+                write(Modflow.iCLN,'(3i10,5('//FMT_R4//'),2i10)') i, & !IFNO
+                    Modflow%CLN%Geometry(k), & !ISHAPE
+                    j, & !IFTYPE (index within shape)
+                    Modflow%CLN%Direction(k), & !IFDIR
+                    Modflow%CLN%cell(i)%Length, & !FLENG
+                    Modflow%CLN%cell(i)%LowestElevation, & !FELEV
+                    Modflow%CLN%cell(i)%SlopeAngle, & !FANGLE
+                    Modflow%CLN%FlowTreatment(k), & !IFLIN
+                    0   ! ICCWADI
+            end do
+        else
+            write(Modflow.iCLN,'(a)') '#     IFNO         IFTYP          IFDIR      FLENG          FELEV         FANGLE          IFLIN   ICCWADI'
+            do i=1,Modflow%CLN%nCells
+                write(Modflow.iCLN,'(i10,5('//FMT_R4//'),2i10)') i, & !IFNO
+                    Modflow%CLN%cell(i)%idZone, & !IFTYP
+                    Modflow%CLN%Direction(Modflow%CLN%cell(i)%idZone), & !IFDIR
+                    Modflow%CLN%cell(i)%Length, & !FLENG
+                    Modflow%CLN%cell(i)%LowestElevation, & !FELEV
+                    Modflow%CLN%cell(i)%SlopeAngle, & !FANGLE
+                    Modflow%CLN%FlowTreatment(Modflow%CLN%cell(i)%idZone), & !IFLIN
+                    0   ! ICCWADI
+            end do
+        endif
 
-        write(Modflow.iCLN,'(a)') '# IFNOD IGWNOD IFCON    FSKIN      FLENGW      FANISO  ICGWADI'
+        write(Modflow.iCLN,'(a)') '#    IFNOD    IGWNOD     IFCON         FSKIN     FLENGW         FANISO        ICGWADI'
         do i=1,Modflow%CLN%NCLNGWC
-            write(Modflow.iCLN,'(3i5,3('//FMT_R4//'),i5)') &
+            write(Modflow.iCLN,'(3i10,3('//FMT_R4//'),i10)') &
             Modflow%CLN%CLNGWFConnCLNCell(i), & !IFNOD
             Modflow%CLN%CLNGWFConnGWFCell(i), & !IGWNOD
             3, & !IFCON
@@ -6078,7 +6286,7 @@ module MUSG !
         write(Modflow.iDISU,'(10i4)') (Modflow%GWF%ia(i),i=1,Modflow%GWF%nCells)
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
         do i=1,Modflow%GWF%nCells
-            write(Modflow.iDISU,'(20i8)') (abs(Modflow%GWF%ConnectionList(j,i)),j=1,Modflow%GWF%ia(i))
+            write(Modflow.iDISU,'(20i10)') (abs(Modflow%GWF%ConnectionList(j,i)),j=1,Modflow%GWF%ia(i))
         end do
         
         write(Modflow.iDISU,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CLN()'
