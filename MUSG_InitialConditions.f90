@@ -8,7 +8,8 @@ module MUSG_InitialConditions
     ! - Depth-saturation tables
     
     use KindParameters
-    use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R8, UnitsOfLength, status, OpenAscii, FreeUnit, LwrCse
+    use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R8, UnitsOfLength, status, LwrCse
+    use GeneralRoutines, only: OpenAscii, FreeUnit
     use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
     use MUSG_Core, only: ModflowDomain
     use Materials, only: UnsaturatedFunctionType

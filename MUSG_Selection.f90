@@ -5,7 +5,8 @@ module MUSG_Selection
     
     use KindParameters
     use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R8, UnitsOfLength
-    use GeneralRoutines, only: bcheck, chosen, set, clear, getunit, freeunit, status, small, TAB
+    use GeneralRoutines, only: bcheck, chosen, set, clear, status, small, TAB
+    use GeneralRoutines, only: GetUnit, FreeUnit, FnumEco
     use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, ERR_LOGIC, HandleError
     use MUSG_Core, only: ModflowDomain
     use NumericalMesh, only: mesh
@@ -454,7 +455,15 @@ module MUSG_Selection
         z2=z2+small
 
         ncount=0
+            write(FnumEco,*) 'Range: '
+            write(FnumEco,*) 'x ',x1, x2
+            write(FnumEco,*) 'y ',y1, y2
+            write(FnumEco,*) 'z ',z1, z2
+            write(FnumEco,*) 'ielmin ielmax ',ielmin, ielmax
         do i=1,domain%nCells
+                write(FnumEco,*) 'Cell, x, y, z ',i, domain%cell(i)%x, domain%cell(i)%y, domain%cell(i)%z
+
+            
             if(domain%cell(i)%x.ge.x1 .and. domain%cell(i)%x.le.x2 .and. domain%cell(i)%y.ge.y1 .and. domain%cell(i)%y.le.y2 .and. domain%cell(i)%z.ge.z1 .and. domain%cell(i)%z.le.z2) then
                 if(i .gt. ielmin .and. i .lt. ielmax) then
                     call set(domain%cell(i)%is,chosen)

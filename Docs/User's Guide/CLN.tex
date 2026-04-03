@@ -153,6 +153,18 @@ The assigned \cln\ material properties are written to the screen and \texttt{.ec
     	Longitudinal K:         5.48000E-02     METERS   SECONDS^(-1)
 \end{verbatim}
 
+\subsubsection{General Cross-Section Geometry (Tabular)} \index{\cln\ Domain ! material properties ! general cross-section}
+In addition to \texttt{Circular} and \texttt{Rectangular} cross-sections, \mut\ supports a \texttt{General} cross-section type for \cln\ domains.
+This geometry is defined by a table of depth versus cross-sectional properties, and is written to the \texttt{.CLN} file using the MODFLOW-USG \texttt{GENERAL\_SEC} option.
+
+When \texttt{Geometry=General} is used in \texttt{CLN.csv}, an additional column can be provided at the end of the line specifying a table file name.
+The table file should contain one data row per depth, with four columns:
+\begin{verbatim}
+    depth   area   wetted_perimeter   top_width
+\end{verbatim}
+Blank lines and lines beginning with \texttt{\#} are ignored.
+All general cross-section tables used in a model must contain the same number of rows.
+
 You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{Appendix:ExcelUseage}.
 
 \subsubsection{Initial Conditions}  \index{\cln\ Domain ! initial condition ! initial (starting) depth}

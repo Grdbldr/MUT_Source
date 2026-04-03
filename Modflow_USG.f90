@@ -687,6 +687,10 @@ module MUSG !
                 Modflow%CLN%FlowTreatment(Modflow%CLN%nZones), &  
             stat=ialloc)
         call AllocChk(ialloc,'CLN zoned material property arrays') 
+        Modflow%CLN%NCONDUITYP = 0
+        Modflow%CLN%NRECTYP = 0
+        Modflow%CLN%NGENSHPTYP = 0
+        Modflow%CLN%NGENTABROWS = 0
         Modflow%CLN%Geometry(:)=-999
         Modflow%CLN%Direction(:)=-999
         Modflow%CLN%CircularRadius(:)=-999.d0
@@ -1095,6 +1099,8 @@ module MUSG !
         real(sp) :: FELEV
         integer(i4) :: IFDIR
         integer(i4) :: IFNO
+        integer(i4) :: ISHAPE
+        logical :: CLN_HAS_ISHAPE
         real(sp) :: FANGLE
         integer(i4) :: IFLIN
         integer(i4) :: LLOC
@@ -1408,23 +1414,57 @@ module MUSG !
                'ICCWADI'/5X,11('-'),2X,6('-'),1X,11('-'),1X,11('-'),4X,13('-'),&
                 4X,11('-'),8X,6('-'),4X,7('-'))
             !C
+            !C9A------MUT writes an optional ISHAPE column when NRECTYP>0 or NGENSHPTYP>0 (see WriteCLN).
+            !C        Peek at header comment lines so CLN_Read matches WriteCLN.
+            CLN_HAS_ISHAPE = .false.
+            do
+                read(Modflow.iCLN,'(a)',iostat=status) line
+                if(status /= 0) then
+                    call HandleError(ERR_FILE_IO, 'Error reading CLN file', 'BuildModflowUSG')
+                endif
+                if(line(1:1)=='#') then
+                    if(index(line,'ISHAPE')>0 .and. index(line,'IFNO')>0) CLN_HAS_ISHAPE = .true.
+                    if(IOUT>0) write(IOUT,'(1X,A)') trim(line)
+                    cycle
+                else
+                    backspace(Modflow.iCLN)
+                    exit
+                endif
+            end do
+            !C
             !C10-------READ BASIC PROPERTIES FOR ALL CLN NODES AND FILL ARRAYS
             DO I = 1,NCLNNDS
                 CALL URDCOM(INCLN,IOUT,LINE)
-                IF(IFREFM.EQ.0) THEN
+                IF(CLN_HAS_ISHAPE) THEN
+                    IF(IFREFM.EQ.0) THEN
+                        READ(LINE,*) IFNO,ISHAPE,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
+                        LLOC=71
+                    ELSE
+                        LLOC=1
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ISHAPE,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFTYP,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFDIR,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANGLE,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLIN,R,IOUT,INCLN)
+                        CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICCWADI,R,IOUT,INCLN)
+                    END IF
+                ELSE IF(IFREFM.EQ.0) THEN
                     READ(LINE,'(3I10,3F10.3,2I10)') IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
                     !READ(LINE,*) IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI
                     LLOC=71
                 ELSE
                     LLOC=1
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFTYP,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFDIR,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANGLE,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLIN,R,IOUT,IOUT)
-                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICCWADI,R,IOUT,IOUT)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFTYP,R,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFDIR,R,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FLENG,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FELEV,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,FANGLE,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFLIN,R,IOUT,INCLN)
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,ICCWADI,R,IOUT,INCLN)
                 END IF
                 IF(IFLIN.EQ.0) IFLIN = -1
                 !C11A-------FOR ANGLED PIPE, IF DEPTH OF FLOW IS LESS THAN DIAMETER MAKE HORIZONTAL
@@ -2545,25 +2585,25 @@ module MUSG !
                 end do
             end do
         else 
-            #ifdef _DEBUG 
-                write(iDBG,*) 'GenerateLayeredGWFDomain, ConnectionList'
-            #endif
+            !#ifdef _DEBUG 
+            !    write(iDBG,*) 'GenerateLayeredGWFDomain, ConnectionList'
+            !#endif
 
             do j=1,GWFDomain%nLayers
 
                 do i=1,TMPLT%nElements
                     iGWF_Cell=(j-1)*TMPLT%nElements+i
                     GWFDomain%ia(iGWF_Cell)=TMPLT%ia(i)
-                    #ifdef _DEBUG 
-                        write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
-                    #endif
+                    !#ifdef _DEBUG 
+                    !    write(iDBG,*) 'Layer ',j, ' Element ',iGWF_Cell
+                    !#endif
                     do k=1,GWFDomain%ia(i)
                         kCell=(j-1)*TMPLT%nElements+abs(GWFDomain%ConnectionList(k,i))
                         if(k==1) kCell=-kCell  ! so first entry is always sorted to beginning of list
                         GWFDomain%ConnectionList(k,iGWF_Cell)=kCell
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element ',kCell
-                        #endif
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element ',kCell
+                        !#endif
                     
                         GWFDomain%ConnectionLength(k,iGWF_Cell)=GWFDomain%ConnectionLength(k,i)
                         GWFDomain%PerpendicularArea(k,iGWF_Cell)=GWFDomain%PerpendicularArea(k,i)
@@ -2576,18 +2616,18 @@ module MUSG !
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iDown=iGWF_Cell+TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iDown
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element below ',iDown
-                        #endif
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element below ',iDown
+                        !#endif
                         !
                     end if
                     if(j > 1) then ! upward connection
                         GWFDomain%ia(iGWF_Cell)=GWFDomain%ia(iGWF_Cell)+1
                         iUp=iGWF_Cell-TMPLT%nElements
                         GWFDomain%ConnectionList(GWFDomain%ia(iGWF_Cell),iGWF_Cell)=iUp
-                        #ifdef _DEBUG 
-                            write(iDBG,*) 'Connection to element above ',iUp
-                        #endif
+                        !#ifdef _DEBUG 
+                        !    write(iDBG,*) 'Connection to element above ',iUp
+                        !#endif
                     end if
                 end do
             end do
@@ -3612,7 +3652,12 @@ module MUSG !
             ENDIF
 
 
-            call ReadCLN_pt2(Modflow)  ! based on modflow routine SDIS2CLN1AR
+!           Legacy reader path duplicates conduit allocation/read and can
+!           crash with "allocatable array is already allocated".
+!           Keep as fallback only if conduit arrays were not allocated above.
+            IF(NCONDUITYP.GT.0) THEN
+              IF(.NOT.ALLOCATED(ACLNCOND)) CALL ReadCLN_pt2(Modflow)
+            ENDIF
         end if
         
         IF(Modflow.iSWF/=0) THEN
@@ -5393,8 +5438,8 @@ module MUSG !
                  domain%ConnectionLength(MAX_CNCTS,domain%nNodes), &
                  domain%PerpendicularArea(MAX_CNCTS,domain%nNodes), stat=ialloc)
         call AllocChk(ialloc,trim(domain%name)//' node-centred ia arrays')
-        domain%ia(:)=0.
-        domain%ConnectionList(:,:)=0.
+        domain%ia(:) = 0
+        domain%ConnectionList(:,:) = 0
         domain%ConnectionLength(:,:)=0.0
         domain%PerpendicularArea(:,:)=0.0
 
@@ -6002,25 +6047,114 @@ module MUSG !
         type (ModflowProject) Modflow
         
         
-        integer(i4) :: i, j, k
+        integer(i4) :: i, j, k, m
+        integer(i4) :: nCLNGWCUnique
         character(MAX_STR) :: OutputLine
+        integer(i4), allocatable :: CLNConnNodeUnique(:), CLNConnGWFUnique(:)
+        real(sp), allocatable :: CLNConnFLENGWUnique(:)
         
         call FindCLNtoGWFConnections(Modflow)
 
-        write(Modflow.iCLN,'(a)') '#1.  NCLN  ICLNNDS   ICLNCB   ICLNHD   ICLNDD   ICLNIB  NCLNGWC  NCONDUITYP'
-        write(OutputLine,'(8i9,a,i9)')  0, & !NCLN
+        ! Ensure CLN header type counts match the per-zone Geometry() used below.
+        ! (These counts control whether the properties blocks are written/read.)
+        if (Modflow%CLN%NZones > 0) then
+            Modflow%CLN%NCONDUITYP = count(Modflow%CLN%Geometry(1:Modflow%CLN%NZones) == 1)
+            Modflow%CLN%NRECTYP    = count(Modflow%CLN%Geometry(1:Modflow%CLN%NZones) == 2)
+            Modflow%CLN%NGENSHPTYP = count(Modflow%CLN%Geometry(1:Modflow%CLN%NZones) == 3)
+        else
+            Modflow%CLN%NCONDUITYP = 0
+            Modflow%CLN%NRECTYP    = 0
+            Modflow%CLN%NGENSHPTYP = 0
+        end if
+
+        ! Validate zoned CLN properties so we don't write a CLN file that MODFLOW later crashes on.
+        if (Modflow%CLN%nCells > 0) then
+            do i = 1, Modflow%CLN%nCells
+                k = Modflow%CLN%cell(i)%idZone
+                if (k < 1 .or. k > Modflow%CLN%NZones) then
+                    write(tmpSTR,'(a,i0,a,i0,a,i0)') 'CLN cell ', i, ' has idZone=', k, ' but NZones=', Modflow%CLN%NZones
+                    call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                end if
+                if (Modflow%CLN%Geometry(k) < 1 .or. Modflow%CLN%Geometry(k) > 3) then
+                    write(tmpSTR,'(a,i0,a,i0,a,i0)') 'CLN zone ', k, ' has invalid Geometry=', Modflow%CLN%Geometry(k), ' (expected 1..3). Cell=', i
+                    call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                end if
+                if (Modflow%CLN%Direction(k) == -999) then
+                    write(tmpSTR,'(a,i0,a)') 'CLN zone ', k, ' Direction not set (still -999). Assign CLN direction via materials before build.'
+                    call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                end if
+                if (Modflow%CLN%FlowTreatment(k) == -999) then
+                    write(tmpSTR,'(a,i0,a)') 'CLN zone ', k, ' FlowTreatment not set (still -999). Assign CLN flow treatment via materials before build.'
+                    call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                end if
+                if (Modflow%CLN%Geometry(k) == 1) then
+                    if (Modflow%CLN%CircularRadius(k) <= 0.0 .or. Modflow%CLN%CircularRadius(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is circular but CircularRadius is invalid: ', Modflow%CLN%CircularRadius(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR)//' Provide CLN materials (radius) before build.', 'WriteCLNFiles')
+                    end if
+                    if (Modflow%CLN%LongitudinalK(k) <= 0.0 .or. Modflow%CLN%LongitudinalK(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is circular but LongitudinalK is invalid: ', Modflow%CLN%LongitudinalK(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR)//' Provide CLN materials (conduit K) before build.', 'WriteCLNFiles')
+                    end if
+                else if (Modflow%CLN%Geometry(k) == 2) then
+                    if (Modflow%CLN%RectangularWidth(k) <= 0.0 .or. Modflow%CLN%RectangularWidth(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is rectangular but RectangularWidth is invalid: ', Modflow%CLN%RectangularWidth(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                    end if
+                    if (Modflow%CLN%RectangularHeight(k) <= 0.0 .or. Modflow%CLN%RectangularHeight(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is rectangular but RectangularHeight is invalid: ', Modflow%CLN%RectangularHeight(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                    end if
+                    if (Modflow%CLN%LongitudinalK(k) <= 0.0 .or. Modflow%CLN%LongitudinalK(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is rectangular but LongitudinalK is invalid: ', Modflow%CLN%LongitudinalK(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                    end if
+                else if (Modflow%CLN%Geometry(k) == 3) then
+                    if (Modflow%CLN%LongitudinalK(k) <= 0.0 .or. Modflow%CLN%LongitudinalK(k) == -999.0) then
+                        write(tmpSTR,'(a,i0,a,1pe12.4,a)') 'CLN zone ', k, ' is general-section but LongitudinalK is invalid: ', Modflow%CLN%LongitudinalK(k), '.'
+                        call HandleError(ERR_INVALID_INPUT, trim(tmpSTR), 'WriteCLNFiles')
+                    end if
+                end if
+            end do
+        end if
+
+        ! De-duplicate CLN<->GWF links by (IFNOD,IGWNOD). The USG reader expects
+        ! these links to be unique; duplicates can corrupt sparse indexing.
+        allocate(CLNConnNodeUnique(max(1, Modflow%CLN%NCLNGWC)))
+        allocate(CLNConnGWFUnique(max(1, Modflow%CLN%NCLNGWC)))
+        allocate(CLNConnFLENGWUnique(max(1, Modflow%CLN%NCLNGWC)))
+        nCLNGWCUnique = 0
+        do i = 1, Modflow%CLN%NCLNGWC
+            m = 0
+            do m = 1, nCLNGWCUnique
+                if (CLNConnNodeUnique(m) == Modflow%CLN%CLNGWFConnCLNCell(i) .and. &
+                    CLNConnGWFUnique(m) == Modflow%CLN%CLNGWFConnGWFCell(i)) exit
+            end do
+            if (m > 0 .and. m <= nCLNGWCUnique) cycle
+            nCLNGWCUnique = nCLNGWCUnique + 1
+            CLNConnNodeUnique(nCLNGWCUnique) = Modflow%CLN%CLNGWFConnCLNCell(i)
+            CLNConnGWFUnique(nCLNGWCUnique) = Modflow%CLN%CLNGWFConnGWFCell(i)
+            CLNConnFLENGWUnique(nCLNGWCUnique) = Modflow%CLN%CLNGWFConnFLENGW(i)
+        end do
+
+        write(Modflow.iCLN,'(a)') '#1.  NCLN  ICLNNDS   ICLNCB   ICLNHD   ICLNDD   ICLNIB  NCLNGWC  NCONDUITYP  [OPTIONS2]'
+        write(OutputLine,'(8i9,a,i9)')  0, &                  !NCLN (0 => IA/JA list input style)
                                         Modflow%CLN%nCells, &   !ICLNNDS
                                         Modflow%CLN%iCBB, &     !ICLNCB
                                         Modflow%CLN%iHDS,&      !ICLNHD
                                         Modflow%CLN%iDDN,&      !ICLNDD
                                         0,&                     !ICLNIB, if 0 CLN IBOUND array not written 
-                                        Modflow%CLN%NCLNGWC,&   !NCLNGWC 
+                                        nCLNGWCUnique,&         !NCLNGWC 
                                         Modflow%CLN%NCONDUITYP  !NCONDUITYP
         if(Modflow%CLN%NRECTYP > 0) then
-            write(tmpSTR,'(a,i9)') ',        rectangular', &   !IFNO
+            write(tmpSTR,'(a,i9)') ' RECTANGULAR', &   ! keyword
                                         Modflow%CLN%NRECTYP  !NRECTYP 
-            OutputLine=trim(OutputLine)//trim(tmpSTR)
+            OutputLine=trim(OutputLine)//' '//trim(tmpSTR)
         endif
+        if(Modflow%CLN%NGENSHPTYP > 0) then
+            write(tmpSTR,'(a,2i9)') ' GENERAL_SEC', Modflow%CLN%NGENSHPTYP, Modflow%CLN%NGENTABROWS
+            OutputLine=trim(OutputLine)//' '//trim(tmpSTR)
+        end if
         write(Modflow.iCLN,'(a)') trim(OutputLine)
         
         write(Modflow.iCLN,'(i9)') Modflow%CLN%njag
@@ -6031,10 +6165,10 @@ module MUSG !
             write(Modflow.iCLN,'(20i10)') (abs(Modflow%CLN%ConnectionList(j,i)),j=1,Modflow%CLN%ia(i))
         end do
         
-        ! USG-TRANSPORT expects NEW format (IFNO,ISHP,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI)
-        ! when NRECTYP>0 or NCONDUITYP>0. IFTYP must be type index within shape (1..NCONDUITYP for
-        ! circular, 1..NRECTYP for rectangular). Without ISHAPE, column misalignment causes crash.
-        if(Modflow%CLN%NRECTYP > 0 .or. Modflow%CLN%NCONDUITYP > 0) then
+        ! Use shape-aware node format only when non-circular shapes are present.
+        ! Legacy USG-TRANSPORT readers for circular-only CLN expect the 8-field format
+        ! (IFNO,IFTYP,IFDIR,FLENG,FELEV,FANGLE,IFLIN,ICCWADI) with no ISHAPE field.
+        if(Modflow%CLN%NRECTYP > 0 .or. Modflow%CLN%NGENSHPTYP > 0) then
             write(Modflow.iCLN,'(a)') '#     IFNO       ISHAPE         IFTYP          IFDIR      FLENG          FELEV         FANGLE          IFLIN   ICCWADI'
             do i=1,Modflow%CLN%nCells
                 k = Modflow%CLN%cell(i)%idZone
@@ -6042,6 +6176,8 @@ module MUSG !
                     j = count(Modflow%CLN%Geometry(1:k) == 1)
                 else if(Modflow%CLN%Geometry(k) == 2) then
                     j = count(Modflow%CLN%Geometry(1:k) == 2)
+                else if(Modflow%CLN%Geometry(k) == 3) then
+                    j = count(Modflow%CLN%Geometry(1:k) == 3)
                 else
                     j = 1
                 endif
@@ -6070,35 +6206,55 @@ module MUSG !
         endif
 
         write(Modflow.iCLN,'(a)') '#    IFNOD    IGWNOD     IFCON         FSKIN     FLENGW         FANISO        ICGWADI'
-        do i=1,Modflow%CLN%NCLNGWC
+        do i=1,nCLNGWCUnique
             write(Modflow.iCLN,'(3i10,3('//FMT_R4//'),i10)') &
-            Modflow%CLN%CLNGWFConnCLNCell(i), & !IFNOD
-            Modflow%CLN%CLNGWFConnGWFCell(i), & !IGWNOD
+            CLNConnNodeUnique(i), & !IFNOD
+            CLNConnGWFUnique(i), & !IGWNOD
             3, & !IFCON
             1.e-20, & !FSKIN
-            Modflow%CLN%CLNGWFConnFLENGW(i), & !FLENGW
+            CLNConnFLENGWUnique(i), & !FLENGW
             1.00, & !FANISO
             0   ! ICGWADI 
         end do
+        deallocate(CLNConnNodeUnique, CLNConnGWFUnique, CLNConnFLENGWUnique)
 
 
         if(Modflow%CLN%NCONDUITYP>0) then
             write(Modflow.iCLN,'(a)') '# ICONDUITYP   FRAD         CONDUITK'
+            k = 0
             do i=1,Modflow%CLN%NZones
-                if(Modflow%CLN%Geometry(i) == 1) then 
-                    write(Modflow.iCLN,'(i5,3x,2('//FMT_R4//'))') i, Modflow%CLN%CircularRadius(i), Modflow%CLN%LongitudinalK(i)
+                if(Modflow%CLN%Geometry(i) == 1) then
+                    k = k + 1
+                    write(Modflow.iCLN,'(i10,1x,2('//FMT_R4//'))') k, Modflow%CLN%CircularRadius(i), Modflow%CLN%LongitudinalK(i)
                 endif
             end do
         endif
         
         if(Modflow%CLN%NRECTYP>0) then
             write(Modflow.iCLN,'(a)') '# IRECTYP    FLENGTH        FHEIGHT       CONDUITK'
+            k = 0
             do i=1,Modflow%CLN%NZones
-                if(Modflow%CLN%Geometry(i) == 2) then 
-                    write(Modflow.iCLN,'(i5,3x,3('//FMT_R4//'))') i, Modflow%CLN%RectangularWidth(i),Modflow%CLN%RectangularHeight(i), Modflow%CLN%LongitudinalK(i)
+                if(Modflow%CLN%Geometry(i) == 2) then
+                    k = k + 1
+                    write(Modflow.iCLN,'(i10,1x,3('//FMT_R4//'))') k, Modflow%CLN%RectangularWidth(i),Modflow%CLN%RectangularHeight(i), Modflow%CLN%LongitudinalK(i)
                 endif
             end do
         endif
+        
+        if(Modflow%CLN%NGENSHPTYP>0) then
+            write(Modflow.iCLN,'(a)') '# IGENSHPTYP   CONDUITK'
+            k = 0
+            do i=1,Modflow%CLN%NZones
+                if(Modflow%CLN%Geometry(i) == 3) then
+                    k = k + 1
+                    write(Modflow.iCLN,'(i10,1x,'//FMT_R4//')') k, Modflow%CLN%LongitudinalK(i)
+                    do j=1,Modflow%CLN%NGENTABROWS
+                        write(Modflow.iCLN,'(4('//FMT_R4//'))') Modflow%CLN%GenDepth(j,i), Modflow%CLN%GenArea(j,i), &
+                            Modflow%CLN%GenWetPeri(j,i), Modflow%CLN%GenTopWidth(j,i)
+                    end do
+                end if
+            end do
+        end if
         
         ! fix here YJP
         if(.not. allocated(Modflow%CLN%ibound)) then ! Assume ibound is 1 for now (i.e. all nodes have variable head)'
@@ -6530,6 +6686,24 @@ module MUSG !
         type (ModflowProject) Modflow
 
         integer(i4) :: i, j, k
+        integer(i4) :: nconn, nOther, p, q, selfPos
+        integer(i4) :: connID(MAX_CNCTS), connIDOther(MAX_CNCTS)
+        real(sp) :: connLen(MAX_CNCTS), connLenOther(MAX_CNCTS)
+        real(sp) :: connFA(MAX_CNCTS), connFAOther(MAX_CNCTS)
+        integer(i4) :: sum_ia
+        
+        sum_ia = 0
+        do i=1,Modflow%SWF%nCells
+            if(Modflow%SWF%ia(i) < 1) then
+                write(TmpSTR,'(a,i0,a)') 'SWF cell ',i,' has ia < 1 (no self/connections). USG sparse init requires at least one entry per row.'
+                call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'WriteSWFFiles')
+            end if
+            sum_ia = sum_ia + Modflow%SWF%ia(i)
+        end do
+        if(sum_ia /= Modflow%SWF%njag) then
+            write(TmpSTR,'(a,i0,a,i0)') 'SWF njag (',Modflow%SWF%njag,') does not equal sum of ia (',sum_ia,').'
+            call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'WriteSWFFiles')
+        end if
         
         write(Modflow.iSWF,'(a)') '#1. NSWFNDS  NJA_SWF  NSWFGWC   NSWFTYP  ISWFCB  ISWFHD   ISWFDD    ISWFIB'
         write(Modflow.iSWF,'(10i9)') Modflow%SWF%nCells, & ! NSWFNDS 
@@ -6544,7 +6718,42 @@ module MUSG !
         write(Modflow.iSWF,'(10i4)') (Modflow%SWF%ia(i),i=1,Modflow%SWF%nCells)
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  ConnectionList JA()'
         do i=1,Modflow%SWF%nCells
-            write(Modflow.iSWF,*) (abs(Modflow%SWF%ConnectionList(j,i)),j=1,Modflow%SWF%ia(i))
+            nconn = Modflow%SWF%ia(i)
+            selfPos = 0
+            nOther = 0
+            do j=1,nconn
+                if(abs(Modflow%SWF%ConnectionList(j,i)) == i) then
+                    selfPos = j
+                else
+                    nOther = nOther + 1
+                    connIDOther(nOther) = abs(Modflow%SWF%ConnectionList(j,i))
+                    connLenOther(nOther) = Modflow%SWF%ConnectionLength(j,i)
+                    connFAOther(nOther) = Modflow%SWF%PerpendicularArea(j,i)
+                end if
+            end do
+            do p=1,nOther-1
+                do q=p+1,nOther
+                    if(connIDOther(q) < connIDOther(p)) then
+                        k = connIDOther(p); connIDOther(p) = connIDOther(q); connIDOther(q) = k
+                        connLen(1) = connLenOther(p); connLenOther(p) = connLenOther(q); connLenOther(q) = connLen(1)
+                        connFA(1) = connFAOther(p); connFAOther(p) = connFAOther(q); connFAOther(q) = connFA(1)
+                    end if
+                end do
+            end do
+            connID(1) = i
+            if(selfPos > 0) then
+                connLen(1) = Modflow%SWF%ConnectionLength(selfPos,i)
+                connFA(1) = Modflow%SWF%PerpendicularArea(selfPos,i)
+            else
+                connLen(1) = 0.0
+                connFA(1) = 0.0
+            end if
+            do p=1,nOther
+                connID(p+1) = connIDOther(p)
+                connLen(p+1) = connLenOther(p)
+                connFA(p+1) = connFAOther(p)
+            end do
+            write(Modflow.iSWF,'(20i10)') (connID(j),j=1,nconn)
         end do
         
         write(Modflow.iSWF,'(a)') '#    IFNO    IFTYP            FAREA               FELEV        ISSWADI'
@@ -6562,14 +6771,68 @@ module MUSG !
             write(Modflow.iSWF,'(i5,3x,3('//FMT_R8//'))') i,  Modflow%SWF%manning(i),  Modflow%SWF%H1DepthForSmoothing(i),  Modflow%SWF%H2DepthForSmoothing(i)
         end do
         
-        write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CLN()'
+        write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CL12_SWF()'
         do i=1,Modflow%SWF%nCells
-            write(Modflow.iSWF,'(10('//FMT_R8//'))') (Modflow%SWF%ConnectionLength(j,i),j=1,Modflow%SWF%ia(i))
+            nconn = Modflow%SWF%ia(i)
+            selfPos = 0
+            nOther = 0
+            do j=1,nconn
+                if(abs(Modflow%SWF%ConnectionList(j,i)) == i) then
+                    selfPos = j
+                else
+                    nOther = nOther + 1
+                    connIDOther(nOther) = abs(Modflow%SWF%ConnectionList(j,i))
+                    connLenOther(nOther) = Modflow%SWF%ConnectionLength(j,i)
+                    connFAOther(nOther) = Modflow%SWF%PerpendicularArea(j,i)
+                end if
+            end do
+            do p=1,nOther-1
+                do q=p+1,nOther
+                    if(connIDOther(q) < connIDOther(p)) then
+                        k = connIDOther(p); connIDOther(p) = connIDOther(q); connIDOther(q) = k
+                        connLen(1) = connLenOther(p); connLenOther(p) = connLenOther(q); connLenOther(q) = connLen(1)
+                        connFA(1) = connFAOther(p); connFAOther(p) = connFAOther(q); connFAOther(q) = connFA(1)
+                    end if
+                end do
+            end do
+            connLen(1) = 0.0
+            if(selfPos > 0) connLen(1) = Modflow%SWF%ConnectionLength(selfPos,i)
+            do p=1,nOther
+                connLen(p+1) = connLenOther(p)
+            end do
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (connLen(j),j=1,nconn)
         end do
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  PerpendicularArea FAHL()'
         do i=1,Modflow%SWF%nCells
-            write(Modflow.iSWF,'(10('//FMT_R8//'))') (Modflow%SWF%PerpendicularArea(j,i),j=1,Modflow%SWF%ia(i))
+            nconn = Modflow%SWF%ia(i)
+            selfPos = 0
+            nOther = 0
+            do j=1,nconn
+                if(abs(Modflow%SWF%ConnectionList(j,i)) == i) then
+                    selfPos = j
+                else
+                    nOther = nOther + 1
+                    connIDOther(nOther) = abs(Modflow%SWF%ConnectionList(j,i))
+                    connLenOther(nOther) = Modflow%SWF%ConnectionLength(j,i)
+                    connFAOther(nOther) = Modflow%SWF%PerpendicularArea(j,i)
+                end if
+            end do
+            do p=1,nOther-1
+                do q=p+1,nOther
+                    if(connIDOther(q) < connIDOther(p)) then
+                        k = connIDOther(p); connIDOther(p) = connIDOther(q); connIDOther(q) = k
+                        connLen(1) = connLenOther(p); connLenOther(p) = connLenOther(q); connLenOther(q) = connLen(1)
+                        connFA(1) = connFAOther(p); connFAOther(p) = connFAOther(q); connFAOther(q) = connFA(1)
+                    end if
+                end do
+            end do
+            connFA(1) = 0.0
+            if(selfPos > 0) connFA(1) = Modflow%SWF%PerpendicularArea(selfPos,i)
+            do p=1,nOther
+                connFA(p+1) = connFAOther(p)
+            end do
+            write(Modflow.iSWF,'(10('//FMT_R8//'))') (connFA(j),j=1,nconn)
         end do
 
         ! fix here YJP
@@ -6878,7 +7141,7 @@ module MUSG !
       integer(i4) :: iout, inunit, maxunit, inbas, i, lenver, indent, niunit
       integer(i4) :: lloc, ityp1, ityp2
       real(sp) :: r
-      integer(i4) :: n, istop, iu, istart, inam2, inam1, iflen, iflush, iopt2, iopt1, ii
+      integer(i4) :: n, istop, iu, istart, inam2, inam1, iflen, iflush, iopt2, iopt1, ii, iu_alt
       
       type (ModflowProject) Modflow
 
@@ -6916,14 +7179,32 @@ module MUSG !
       FNAME(1:IFLEN)=LINE(INAM1:INAM2)
       INQUIRE(UNIT=IU,OPENED=LOP)
       IF(LOP) THEN
-         IF(IOUT.EQ.0) THEN
-            WRITE(*,11) FNAME(1:IFLEN),IU
-   11       FORMAT(1X,/1X,'CANNOT OPEN ',A,' ON UNIT',I4,&
-                   ' BECAUSE UNIT IS ALREADY BEING USED')
+         IF(NFILE.EQ.0 .AND. FILTYP.EQ.'LIST') THEN
+!          During MUT post-processing, .eco can already occupy NAM LIST unit.
+!          Remap LIST to a free unit and continue.
+            IU_ALT = MAX(MAXUNIT+1,500)
+            DO
+              INQUIRE(UNIT=IU_ALT,OPENED=LOP)
+              IF(.NOT.LOP) EXIT
+              IU_ALT = IU_ALT + 1
+            END DO
+            IF(IOUT.EQ.0) THEN
+              WRITE(*,'(1X,''NOTICE: LIST unit '',I4,'' already open; remap to '',I4,'' for file '',A)') IU, IU_ALT, FNAME(1:IFLEN)
+            ELSE
+              WRITE(IOUT,'(1X,''NOTICE: LIST unit '',I4,'' already open; remap to '',I4,'' for file '',A)') IU, IU_ALT, FNAME(1:IFLEN)
+            END IF
+            IU = IU_ALT
+            IF(IU.GT.MAXUNIT) MAXUNIT = IU
          ELSE
-            WRITE(IOUT,11) FNAME(1:IFLEN),IU
+            IF(IOUT.EQ.0) THEN
+               WRITE(*,11) FNAME(1:IFLEN),IU
+   11          FORMAT(1X,/1X,'CANNOT OPEN ',A,' ON UNIT',I4,&
+                      ' BECAUSE UNIT IS ALREADY BEING USED')
+            ELSE
+               WRITE(IOUT,11) FNAME(1:IFLEN),IU
+            END IF
+            CALL USTOP(' ')
          END IF
-         CALL USTOP(' ')
       END IF
 !
 !4------KEEP TRACK OF LARGEST UNIT NUMBER
@@ -12195,7 +12476,7 @@ module MUSG !
         integer(i4) :: i
         character*16   :: text
         
-        integer(i4) :: idum, KSTPREAD,KPERREAD
+        integer(i4) :: idum, KSTPREAD,KPERREAD, iread
         real(dp) :: TOTIMREAD,PERTIMREAD
         
         integer(i4) :: k, nndlay, nstrt, ndslay, ilay
@@ -12232,7 +12513,12 @@ module MUSG !
             do i=1,Modflow.ntime
                 IDUM = 1
                 CALL ULASAVRD(domain%head(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iHDS)
+                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iHDS,iread)
+                IF(iread.NE.0) THEN
+                  WRITE(TmpSTR,'(A,A,A,A)') 'Reached EOF while reading ', trim(domain%name), ' heads from ', trim(domain%FNameHDS)
+                  CALL Msg(TmpSTR)
+                  EXIT
+                ENDIF
           
 !                CALL ULASAV(BUFF(1),TEXT,KSTP,KPER,PERTIM,TOTIM,NCLNNDS,
 !1         1,1,ICLNHD)
@@ -12250,7 +12536,7 @@ module MUSG !
         integer(i4) :: i
         character*16   :: text
         
-        integer(i4) :: idum, KSTPREAD,KPERREAD
+        integer(i4) :: idum, KSTPREAD,KPERREAD, iread
         real(dp) :: TOTIMREAD,PERTIMREAD
         
         integer(i4) :: k, nndlay, nstrt, ndslay, ilay
@@ -12281,7 +12567,12 @@ module MUSG !
             do i=1,Modflow.ntime
                 IDUM = 1
                 CALL ULASAVRD(domain%Drawdown(:,i),TEXT,KSTPREAD,KPERREAD,PERTIMREAD,&
-                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iDDN)
+                    TOTIMREAD,domain%ncells,IDUM,IDUM,domain%iDDN,iread)
+                IF(iread.NE.0) THEN
+                  WRITE(TmpSTR,'(A,A,A)') 'Reached EOF while reading ', trim(domain%name), ' saturation/drawdown data'
+                  CALL Msg(TmpSTR)
+                  EXIT
+                ENDIF
                 WRITE(TmpSTR,'(2(i10), 2(1pg10.2), a)') KPERREAD,KSTPREAD,TOTIMREAD,domain%Drawdown(1,i),TEXT
                 call msg(TmpSTR)
             end do
@@ -12458,7 +12749,7 @@ module MUSG !
     end subroutine ReadBinary_CBB_File
 
     SUBROUTINE ULASAVRD(BUF,TEXT,KSTP,KPER,PERTIM,TOTIM,NCOL,&
-                        NROW,ILAY,ICHN)
+                        NROW,ILAY,ICHN,IREAD)
 !     ******************************************************************
 !     SAVE 1 LAYER ARRAY ON DISK
 !     ******************************************************************
@@ -12470,15 +12761,18 @@ module MUSG !
       real(sp) :: BUF(NCOL,NROW)
       real(sp) PERTIMS,TOTIMS
       
-      integer(i4) :: ncol, kper, kstp, nrow, ilay, ichn, ncols, nrows, ic, ir
+      integer(i4) :: ncol, kper, kstp, nrow, ilay, ichn, ncols, nrows, ic, ir, iread
 !     ------------------------------------------------------------------
 !1------WRITE AN UNFORMATTED RECORD CONTAINING IDENTIFYING
 !1------INFORMATION.
-      READ(ICHN) KSTP,KPER,PERTIMS,TOTIMS,TEXT,NCOLs,NROWs,ILAY
+      iread = 0
+      READ(ICHN,IOSTAT=iread) KSTP,KPER,PERTIMS,TOTIMS,TEXT,NCOLs,NROWs,ILAY
+      IF(iread.NE.0) RETURN
 !
 !2------WRITE AN UNFORMATTED RECORD CONTAINING ARRAY VALUES
 !2------THE ARRAY IS DIMENSIONED (NCOL,NROW)
-      READ(ICHN) ((BUF(IC,IR),IC=1,NCOL),IR=1,NROW)
+      READ(ICHN,IOSTAT=iread) ((BUF(IC,IR),IC=1,NCOL),IR=1,NROW)
+      IF(iread.NE.0) RETURN
 !
       PERTIM = PERTIMS
       TOTIM = TOTIMS

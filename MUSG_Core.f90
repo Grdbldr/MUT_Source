@@ -86,6 +86,8 @@ module MUSG_Core
         real(dp), allocatable :: CLNGWFConnFLENGW(:)      ! Connection length for each CLN-GWF connection
         integer(i4) :: NCONDUITYP   ! number of circular CLN's
         integer(i4) :: NRECTYP      ! number of rectangular CLN's
+        integer(i4) :: NGENSHPTYP   ! number of general-section CLN types (tabular)
+        integer(i4) :: NGENTABROWS  ! number of rows per general-section table
         
         integer(i4) :: nCHDCells=0        
         real(dp), allocatable :: ConstantHead(:)  ! CHD assigned head value
@@ -150,6 +152,13 @@ module MUSG_Core
         real(sp), allocatable       :: RectangularWidth(:)    ! dimension of CLN
         real(sp), allocatable       :: RectangularHeight(:)    ! dimension of CLN
         real(sp), allocatable       :: LongitudinalK(:)    ! dimension of CLN
+        
+        ! CLN general-section properties (tabular, zoned; only used when Geometry(zone)=3)
+        ! For each zone: a table of depth vs (area, wetted perimeter, top width)
+        real(sp), allocatable       :: GenDepth(:,:)     ! (NGENTABROWS, nZones)
+        real(sp), allocatable       :: GenArea(:,:)      ! (NGENTABROWS, nZones)
+        real(sp), allocatable       :: GenWetPeri(:,:)   ! (NGENTABROWS, nZones)
+        real(sp), allocatable       :: GenTopWidth(:,:)  ! (NGENTABROWS, nZones)
 
         ! GWF cell properties (zoned)
         integer(i4), allocatable :: idMaterial(:)   ! material ID for each cell

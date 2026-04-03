@@ -29,6 +29,7 @@ Module Materials
         real(sp), allocatable           :: CircularRadius(:)
         real(sp), allocatable           :: RectangularWidth(:)
         real(sp), allocatable           :: RectangularHeight(:)
+        character*256, allocatable  :: GeneralSectionTableFile(:)
         real(sp), allocatable           :: LongitudinalK(:)
         character*256, allocatable  :: FlowTreatment(:)
         character*256, allocatable  :: CLN_LengthUnit(:)
@@ -175,9 +176,18 @@ Module Materials
         character(*) :: line
         integer(i4) :: j
     
+        if(len_trim(line)==0) then
+            ParseLineINum = 0
+            return
+        end if
         j=INDEX(line,',')
-        read(line(:j-1),*) ParseLineINum
-        line=line(j+1:)
+        if(j==0) then
+            read(line,*) ParseLineINum
+            line=''
+        else
+            read(line(:j-1),*) ParseLineINum
+            line=line(j+1:)
+        end if
         
     end function ParseLineINum
 
@@ -186,9 +196,18 @@ Module Materials
         character(*) :: line
         integer(i4) :: j
     
+        if(len_trim(line)==0) then
+            ParseLineRNum = 0.0
+            return
+        end if
         j=INDEX(line,',')
-        read(line(:j-1),*) ParseLineRNum
-        line=line(j+1:)
+        if(j==0) then
+            read(line,*) ParseLineRNum
+            line=''
+        else
+            read(line(:j-1),*) ParseLineRNum
+            line=line(j+1:)
+        end if
         
     end function ParseLineRNum
     
@@ -197,9 +216,18 @@ Module Materials
         character(*) :: line
         integer(i4) :: j
     
+        if(len_trim(line)==0) then
+            ParseLineSTR = ''
+            return
+        end if
         j=INDEX(line,',')
-        read(line(:j-1),'(a)') ParseLineSTR
-        line=line(j+1:)
+        if(j==0) then
+            read(line,'(a)') ParseLineSTR
+            line=''
+        else
+            read(line(:j-1),'(a)') ParseLineSTR
+            line=line(j+1:)
+        end if
         
     end function ParseLineSTR
 
@@ -239,6 +267,7 @@ Module Materials
                  CircularRadius(nCLNMaterials), & 
                  RectangularWidth(nCLNMaterials), & 
                  RectangularHeight(nCLNMaterials), & 
+                 GeneralSectionTableFile(nCLNMaterials), &
                  LongitudinalK(nCLNMaterials), & 
                  FlowTreatment(nCLNMaterials), & 
                  CLN_LengthUnit(nCLNMaterials), &
@@ -259,11 +288,13 @@ Module Materials
             Direction(i)        =ParseLineSTR(line)
             CircularRadius(i)   =ParseLineRNUM(line)
             RectangularWidth(i) =ParseLineRNUM(line) 
-            RectangularHeight(i)=ParseLineRNUM(line) 
+            RectangularHeight(i)=ParseLineRNUM(line)
             LongitudinalK(i)    =ParseLineRNUM(line)
             FlowTreatment(i)    =ParseLineSTR(line)
             CLN_LengthUnit(i)   =ParseLineSTR(line)
             CLN_TimeUnit(i)     =ParseLineSTR(line)
+            ! Optional trailing field (backward compatible): general-section table file
+            GeneralSectionTableFile(i)=ParseLineSTR(line)
         end do
         
         call freeunit(itmp)

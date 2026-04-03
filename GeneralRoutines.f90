@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG  
-        character(37) :: MUTVersion='2025.010  DEBUG' 
+        character(37) :: MUTVersion='2025.011  DEBUG' 
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion='2025.010 RELEASE' 
+        character(37) :: MUTVersion='2025.011 RELEASE' 
     #endif
 
 
@@ -4475,35 +4475,35 @@ module GeneralRoutines    !### bit setting routines
 	    end do
     end subroutine GetUnit
 
-
-    subroutine FreeUnit(iunit) !--- number. Make available.
+    !----------------------------------------------------------------------
+    subroutine FreeUnit(iunit)
+        ! Make unit number available and close it (local implementation).
         implicit none
         integer(i4) :: iunit
+
         if(file_open_flag(iunit)) then
-		    file_open_flag(iunit)=.false.
-	        close(iunit)
+            file_open_flag(iunit)=.false.
+            close(iunit)
         else
-            write(TmpSTR,'(a,i8,a)')  'ERROR: unit ',iunit,' already free'
-		    Call ErrMsg(trim(TmpSTR))
-		    stop
-	    end if
+            ! Ignore double-free attempts here; this routine is used for cleanup paths.
+            close(iunit, iostat=status)
+        end if
     end subroutine FreeUnit
 
-    subroutine OpenAscii(iunit,fname) !--- Return unit # of file or stop
+    !----------------------------------------------------------------------
+    subroutine OpenAscii(iunit,fname) !--- Return unit # of file or stop.
         implicit none
         integer(i4) :: iunit
         character(*) :: fname
-        
-	    call GetUnit(iunit)
+
+        call GetUnit(iunit)
         open(iunit,file=fname,form='formatted',iostat=status)
-	    if(status /= 0) then
-	        call FreeUnit(iunit)
-		    call ErrMsg('Error opening file: '//trim(fname))
-        else
-            !write(TmpSTR,'(i5)') iunit
-            !call Msg(' unit, ASCII file: '//trim(TmpSTR)//', '//trim(fname))
+        if(status /= 0) then
+            call FreeUnit(iunit)
+            call ErrMsg('Error opening file: '//trim(fname))
         end if
     end subroutine OpenAscii
+
 
     subroutine OpenBinary(iunit,fname) !--- Return unit # of file or report error and stop.
         implicit none
@@ -4586,7 +4586,12 @@ module GeneralRoutines    !### bit setting routines
             UserFName=prefix(:lp)//'.'//dext(:l_ext)
             inquire(file=UserFName,exist=UserFileExists)
             if(UserFileExists) then
-                call OpenAscii(UserFNum,UserFName)
+                call GetUnit(UserFNum)
+                open(UserFNum,file=UserFName,form='formatted',iostat=status)
+                if(status /= 0) then
+                    call FreeUnit(UserFNum)
+                    call ErrMsg('Error opening file: '//trim(UserFName))
+                end if
                 return
             end if
         else
@@ -4603,7 +4608,12 @@ module GeneralRoutines    !### bit setting routines
         if(.not. PfxFileExists) then
             write(*,*) 'No file: '//trim(PfxFName)
         else
-            call OpenAscii(PfxFNum,PfxFName)
+            call GetUnit(PfxFNum)
+            open(PfxFNum,file=PfxFName,form='formatted',iostat=status)
+            if(status /= 0) then
+                call FreeUnit(PfxFNum)
+                call ErrMsg('Error opening file: '//trim(PfxFName))
+            end if
             write(*,*) 'Reading prefix from file: '//trim(PfxFName)
             read(PfxFNum,'(a)',iostat=status) prefix
             if(status/=0) then
@@ -4620,7 +4630,12 @@ module GeneralRoutines    !### bit setting routines
                     UserFName=prefix(:lp)//'.'//dext(:l_ext)
                     inquire(file=UserFName,exist=UserFileExists)
                     if(UserFileExists) then
-                        call OpenAscii(UserFNum,UserFName)
+                        call GetUnit(UserFNum)
+                        open(UserFNum,file=UserFName,form='formatted',iostat=status)
+                        if(status /= 0) then
+                            call FreeUnit(UserFNum)
+                            call ErrMsg('Error opening file: '//trim(UserFName))
+                        end if
                         return
                     end if
                 end if
@@ -4634,7 +4649,12 @@ module GeneralRoutines    !### bit setting routines
         write(*,*) 'Checking for default file: '//trim(DfltFName)
         inquire(file=DfltFName,exist=DfltFileExists)
         if(DfltFileExists) then
-            call OpenAscii(UserFNum,DfltFName)
+            call GetUnit(UserFNum)
+            open(UserFNum,file=DfltFName,form='formatted',iostat=status)
+            if(status /= 0) then
+                call FreeUnit(UserFNum)
+                call ErrMsg('Error opening file: '//trim(DfltFName))
+            end if
             return
         end if
 
@@ -4659,7 +4679,12 @@ module GeneralRoutines    !### bit setting routines
             UserFName=prefix(:lp)//'.'//dext(:l_ext)
             inquire(file=UserFName,exist=UserFileExists)
             if(UserFileExists) then
-                call OpenAscii(UserFNum,UserFName)
+                call GetUnit(UserFNum)
+                open(UserFNum,file=UserFName,form='formatted',iostat=status)
+                if(status /= 0) then
+                    call FreeUnit(UserFNum)
+                    call ErrMsg('Error opening file: '//trim(UserFName))
+                end if
                 return
             else
                 write(*,*) 'No file: '//trim(UserFName)

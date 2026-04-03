@@ -1,6 +1,7 @@
 module BasicTypes
     use KindParameters, only: dp, i4
-    use GeneralRoutines
+    use GeneralRoutines, only: MAX_LBL, status, ialloc, AllocChk
+    use GeneralRoutines, only: FreeUnit
     implicit none(type, external)
 
     !! Everything in the module is private,

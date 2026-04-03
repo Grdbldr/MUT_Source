@@ -58,7 +58,7 @@
 			<File RelativePath=".\BasicTypes.f90"/>
 			<File RelativePath=".\CLNIntersection.f90"/>
 			<File RelativePath=".\ErrorHandling.f90"/>
-			<File RelativePath=".\FileIO.f90"/>
+			<!-- FileIO.f90 merged into GeneralRoutines.f90 -->
 			<File RelativePath=".\GeneralRoutines.f90">
 			</File>
 			<File RelativePath=".\GenericList.f90"/>

@@ -7,7 +7,9 @@ module MUSG_MaterialProperties
     use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R4, FMT_R8
     use GeneralRoutines, only: UnitsOfLength, UnitsOfTime, LengthConverter, TimeConverter
     use GeneralRoutines, only: bcheck, chosen
-    use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
+    use GeneralRoutines, only: USERBIN, DefineUserbin
+    use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, HandleError
+    use GeneralRoutines, only: OpenAscii, FreeUnit
     use MUSG_Core, only: ModflowDomain
     use materials
     
@@ -421,6 +423,13 @@ module MUSG_MaterialProperties
 
         real(sp) :: LengthConversionFactor
         real(sp) :: TimeConversionFactor
+        
+        integer(i4) :: FNumTab
+        character(MAX_STR) :: TabFile, TabFile2
+        character(512) :: line
+        integer(i4) :: nrows, ios
+        real(sp) :: fdepth, farea, fwetperi, ftopwid
+        logical :: exists
 
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
@@ -439,6 +448,13 @@ module MUSG_MaterialProperties
             call Msg(TmpSTR)
             write(TmpSTR,'(a,'//FMT_R4//',a)')'Rectangular Height: ',RectangularHeight(iMaterial)    ,'     '//TRIM(CLN_LengthUnit(iMaterial))
             call Msg(TmpSTR)
+        case ('General')
+            write(TmpSTR,'(a)')        'Geometry:           '//trim(Geometry(iMaterial))
+            call Msg(TmpSTR)
+            if(len_trim(GeneralSectionTableFile(iMaterial))==0) then
+                call HandleError(ERR_INVALID_INPUT, 'General CLN material requires a GeneralSectionTableFile column in CLN.csv', 'AssignMaterialtoCLN')
+            end if
+            call Msg('General section table: '//trim(GeneralSectionTableFile(iMaterial)))
         case default
             call HandleError(ERR_INVALID_INPUT, 'Geometry type '//trim(Geometry(iMaterial))//' not supported', 'CLN_AssignCircularRadius')
         end select
@@ -486,6 +502,9 @@ module MUSG_MaterialProperties
                 case ('Rectangular')
                     CLN%Geometry(i)=2
                     CLN%NRECTYP=CLN%NRECTYP+1
+                case ('General')
+                    CLN%Geometry(i)=3
+                    CLN%NGENSHPTYP=CLN%NGENSHPTYP+1
                 case default
                     call HandleError(ERR_INVALID_INPUT, 'Geometry type '//trim(Geometry(iMaterial))//' not supported', 'CLN_AssignCircularRadius')
                 end select
@@ -526,6 +545,72 @@ module MUSG_MaterialProperties
                 CLN%RectangularWidth(i)=RectangularWidth(iMaterial)*LengthConversionFactor         ! L
                 CLN%RectangularHeight(i)=RectangularHeight(iMaterial)*LengthConversionFactor         ! L
                 CLN%LongitudinalK(i)=LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor         ! L/T
+                
+                if(CLN%Geometry(i)==3) then
+                    call DefineUserbin(USERBIN)
+                    TabFile = trim(GeneralSectionTableFile(iMaterial))
+                    inquire(file=TabFile,exist=exists)
+                    if(.not. exists) then
+                        TabFile2 = trim(USERBIN)//'\'//trim(TabFile)
+                        inquire(file=TabFile2,exist=exists)
+                        if(exists) TabFile = TabFile2
+                    end if
+                    if(.not. exists) then
+                        call HandleError(ERR_FILE_IO, 'General section table file not found: '//trim(GeneralSectionTableFile(iMaterial)), 'AssignMaterialtoCLN')
+                    end if
+                    
+                    call OpenAscii(FNumTab,TabFile)
+                    
+                    ! Count rows (skip blank/comment lines)
+                    nrows = 0
+                    do
+                        read(FNumTab,'(a)',iostat=ios) line
+                        if(ios/=0) exit
+                        if(len_trim(line)==0) cycle
+                        if(line(1:1)=='#') cycle
+                        nrows = nrows + 1
+                    end do
+                    
+                    if(nrows<=0) then
+                        call FreeUnit(FNumTab)
+                        call HandleError(ERR_INVALID_INPUT, 'General section table has no data rows: '//trim(TabFile), 'AssignMaterialtoCLN')
+                    end if
+                    
+                    if(CLN%NGENTABROWS==0) then
+                        CLN%NGENTABROWS = nrows
+                        allocate(CLN%GenDepth(CLN%NGENTABROWS,CLN%nZones), &
+                                 CLN%GenArea(CLN%NGENTABROWS,CLN%nZones), &
+                                 CLN%GenWetPeri(CLN%NGENTABROWS,CLN%nZones), &
+                                 CLN%GenTopWidth(CLN%NGENTABROWS,CLN%nZones), stat=ialloc)
+                        call AllocChk(ialloc,'CLN general-section table arrays')
+                        CLN%GenDepth = 0.0
+                        CLN%GenArea = 0.0
+                        CLN%GenWetPeri = 0.0
+                        CLN%GenTopWidth = 0.0
+                    else
+                        if(nrows /= CLN%NGENTABROWS) then
+                            call FreeUnit(FNumTab)
+                            call HandleError(ERR_INVALID_INPUT, 'All general CLN section tables must have same number of rows (NGENTABROWS)', 'AssignMaterialtoCLN')
+                        end if
+                    end if
+                    
+                    rewind(FNumTab)
+                    nrows = 0
+                    do
+                        read(FNumTab,'(a)',iostat=ios) line
+                        if(ios/=0) exit
+                        if(len_trim(line)==0) cycle
+                        if(line(1:1)=='#') cycle
+                        nrows = nrows + 1
+                        read(line,*) fdepth, farea, fwetperi, ftopwid
+                        CLN%GenDepth(nrows,i) = fdepth*LengthConversionFactor
+                        CLN%GenArea(nrows,i) = farea*LengthConversionFactor*LengthConversionFactor
+                        CLN%GenWetPeri(nrows,i) = fwetperi*LengthConversionFactor
+                        CLN%GenTopWidth(nrows,i) = ftopwid*LengthConversionFactor
+                    end do
+                    
+                    call FreeUnit(FNumTab)
+                end if
             end if
         end do
         
@@ -557,7 +642,7 @@ module MUSG_MaterialProperties
             write(TmpSTR,'(a)')            'Flow Treatment:     '//FlowTreatment(iMaterial) 
             call Msg(TmpSTR)
 
-            write(TmpSTR,'(a,'//FMT_R4//')')    'Longitudinal K:     ',LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
+            write(TmpSTR,'(a,'//FMT_R4//',a)')    'Longitudinal K:     ',LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
             call Msg(TmpSTR)
 
         end if     

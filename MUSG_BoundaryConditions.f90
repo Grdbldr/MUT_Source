@@ -8,7 +8,7 @@ module MUSG_BoundaryConditions
     use GeneralRoutines, only: bcheck, chosen, set, ConstantHead, Recharge, Drain, Well, CriticalDepth, ialloc, UnitsOfTime
     use ErrorHandling, only: ERR_LOGIC, HandleError
     use ArrayUtilities, only: AllocChk
-    use FileIO, only: OpenAscii
+    use GeneralRoutines, only: OpenAscii
     use MUSG_Core, only: ModflowProject, ModflowDomain, NodalControlVolume
     use NumericalMesh, only: mesh
     
