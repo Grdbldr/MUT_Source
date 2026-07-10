@@ -18,7 +18,7 @@ module MUSG_MaterialProperties
     
     public :: AssignAlphatoDomain, AssignBetatoDomain, AssignBrookstoDomain
     public :: AssignKhtoDomain, AssignKvtoDomain, AssignSytoDomain, AssignSstoDomain, AssignSrtoDomain
-    public :: AssignSgcltoDomain, AssignStartingDepthtoDomain, AssignStartingHeadtoDomain
+    public :: AssignSgcltoDomain, AssignFSKINtoDomain, AssignStartingDepthtoDomain, AssignStartingHeadtoDomain
     public :: AssignMaterialtoGWF, AssignMaterialtoCLN, AssignMaterialtoSWF
     public :: CLN_AssignCircularRadius, CLN_AssignRectangularWidthHeight
     public :: AssignManningtoSWF, AssignDepressiontoSWF, AssignObstructiontoSWF
@@ -224,6 +224,28 @@ module MUSG_MaterialProperties
         end do
     
     end subroutine AssignSgcltoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignFSKINtoDomain(FNumMUT,domain)
+        implicit none
+
+        integer(i4), intent(in) :: FNumMUT
+        type(ModflowDomain), intent(inout) :: Domain
+        
+        integer(i4) :: i
+        real(sp) :: value
+        
+        read(FNumMUT,*) value
+        write(TmpSTR,'('//FMT_R4//',a)') value,'     '//TRIM(UnitsOfTime)//'^(-1)'
+        call Msg('Assigning all chosen '//trim(domain%name)//' cells an FSKIN of '//trim(TmpSTR))
+
+        do i=1,domain%nCells
+            if(bcheck(domain%cell(i)%is,chosen)) then
+                domain%cell(i)%FSKIN=value
+            end if
+        end do
+    
+    end subroutine AssignFSKINtoDomain
 
     !----------------------------------------------------------------------
     subroutine AssignStartingDepthtoDomain(FNumMUT,domain) 

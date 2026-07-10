@@ -53,6 +53,7 @@ module MUSG_Core
         ! SWF cell properties 
         real(sp) :: Sgcl                    ! SWF-GWF connection length
         real(dp) :: CriticalDepthLength     ! SWBC assigned critical depth boundary cell length value
+        real(sp) :: FSKIN                   ! CLN-GWF skin/leakance term
 
         
         ! GWF cell properties 

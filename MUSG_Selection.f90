@@ -461,7 +461,7 @@ module MUSG_Selection
             write(FnumEco,*) 'z ',z1, z2
             write(FnumEco,*) 'ielmin ielmax ',ielmin, ielmax
         do i=1,domain%nCells
-                write(FnumEco,*) 'Cell, x, y, z ',i, domain%cell(i)%x, domain%cell(i)%y, domain%cell(i)%z
+                !write(FnumEco,*) 'Cell, x, y, z ',i, domain%cell(i)%x, domain%cell(i)%y, domain%cell(i)%z
 
             
             if(domain%cell(i)%x.ge.x1 .and. domain%cell(i)%x.le.x2 .and. domain%cell(i)%y.ge.y1 .and. domain%cell(i)%y.le.y2 .and. domain%cell(i)%z.ge.z1 .and. domain%cell(i)%z.le.z2) then

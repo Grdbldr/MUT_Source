@@ -109,6 +109,7 @@ module MUSG !
     character(MAX_INST) :: InitialHeadFromDepthSatToGWF_CMD             =   'gwf initial head from depth-saturation table' 
     character(MAX_INST) :: GWFInitialHeadFromTecplotFile_CMD	        =   'gwf initial head from tecplot file'
     character(MAX_INST) :: GWFInitialHeadEqualsSurfaceElevation_CMD	    =   'gwf initial head equals surface elevation'
+    character(MAX_INST) :: CLNInitialHeadEqualsSurfaceElevation_CMD	    =   'cln initial head equals surface elevation'
 
     character(MAX_INST) :: AssignStartingDepthtoSWF_CMD	                =   'swf initial depth'
     character(MAX_INST) :: SWFInitialHeadFromTecplotFile_CMD	        =   'swf initial head from tecplot file'
@@ -119,6 +120,7 @@ module MUSG !
 
     
     character(MAX_INST) :: AssignStartingDepthtoCLN_CMD	                =   'cln initial depth'
+    character(MAX_INST) :: AssignFSKINtoCLN_CMD	                =   'cln skin conductivity'
     
     !---------------------------------------------------Boundary conditions
     character(MAX_INST) :: AssignCHDtoGWF_CMD		            =   'gwf constant head'
@@ -559,6 +561,7 @@ module MUSG !
                     index(instruction, AssignStartingheadtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignMaterialtoCLN_CMD) /= 0 .or. &
                     index(instruction, AssignStartingDepthtoCLN_CMD) /= 0 .or. &
+                    index(instruction, AssignFSKINtoCLN_CMD) /= 0 .or. &
                     index(instruction, AssignMaterialtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignSgcltoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignStartingDepthtoSWF_CMD) /= 0 .or. &
@@ -571,6 +574,7 @@ module MUSG !
             ! GWF initial conditions - handled by MUSG_InstructionParser
             else if(index(instruction, GWFInitialHeadFromTecplotFile_CMD)  /= 0 .or. &
                     index(instruction, GWFInitialHeadEqualsSurfaceElevation_CMD) /= 0 .or. &
+                    index(instruction, CLNInitialHeadEqualsSurfaceElevation_CMD) /= 0 .or. &
                     index(instruction, InitialHeadFunctionOfZtoGWF_CMD) /= 0 .or. &
                     index(instruction, InitialHeadFromDepthSatToGWF_CMD) /= 0) then
                 call HandleInitialConditionInstruction(instruction, FNumMUT, ActiveDomain, Modflow)
@@ -676,6 +680,7 @@ module MUSG !
         Modflow%CLN%cell%Sgcl=0.001
         Modflow%CLN%cell%CriticalDepthLength=0.d0
         Modflow%CLN%cell%StartingHeads=-999.d0
+        Modflow%CLN%cell%FSKIN=-999.0
         
         ! Modflow CLN material properties (zone-based)
        allocate(Modflow%CLN%Geometry(Modflow%CLN%nZones), &                    
@@ -4045,9 +4050,9 @@ module MUSG !
         write(FNum,'(a)') '# layer'
         write(FNum,'(5i8)') (domain%cell(i)%iLayer,i=1,domain%nCells)
         write(FNum,'(a)') '# ibound'
-        write(FNum,'(5i8)') (domain%ibound(i),i=1,domain%nCells)
+        write(FNum,'(5i12)') (domain%ibound(i),i=1,domain%nCells)
         write(FNum,'(a)') '# hnew (Initial head)'
-        write(FNum,'(10('//FMT_R4//'))') (domain%hnew(i),i=1,domain%nCells)
+        write(FNum,'(5('//FMT_R8//'))') (domain%cell(i)%StartingHeads,i=1,domain%nCells)
         nVarShared=7
        
         if(allocated(domain%head)) then
@@ -5558,7 +5563,7 @@ module MUSG !
         if(allocated(Modflow%GWF%ConstantHead)) then
             do i=1,Modflow%GWF%nCells
                 if(bcheck(Modflow%GWF%Cell(i)%is,ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') i,Modflow%GWF%ConstantHead(i)
+                    write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') i,Modflow%GWF%ConstantHead(i),Modflow%GWF%ConstantHead(i)
                 end if
             end do
         end if
@@ -6047,11 +6052,13 @@ module MUSG !
         type (ModflowProject) Modflow
         
         
-        integer(i4) :: i, j, k, m
+        integer(i4) :: i, j, k, m, iCLNCell
         integer(i4) :: nCLNGWCUnique
         character(MAX_STR) :: OutputLine
+        integer(i4), allocatable :: nConnByCLNCell(:)
         integer(i4), allocatable :: CLNConnNodeUnique(:), CLNConnGWFUnique(:)
-        real(sp), allocatable :: CLNConnFLENGWUnique(:)
+        real(sp), allocatable :: CLNConnFLENGWUnique(:), CLNDefaultFSKIN(:)
+        real(sp) :: FSKINOut
         
         call FindCLNtoGWFConnections(Modflow)
 
@@ -6137,6 +6144,21 @@ module MUSG !
             CLNConnFLENGWUnique(nCLNGWCUnique) = Modflow%CLN%CLNGWFConnFLENGW(i)
         end do
 
+        allocate(CLNDefaultFSKIN(max(1,Modflow%CLN%nCells)), nConnByCLNCell(max(1,Modflow%CLN%nCells)))
+        CLNDefaultFSKIN = 1.0e-20
+        nConnByCLNCell = 0
+        do i = 1, nCLNGWCUnique
+            iCLNCell = CLNConnNodeUnique(i)
+            if(iCLNCell < 1 .or. iCLNCell > Modflow%CLN%nCells) cycle
+            if(CLNConnGWFUnique(i) < 1 .or. CLNConnGWFUnique(i) > Modflow%GWF%nCells) cycle
+            if(nConnByCLNCell(iCLNCell) == 0) then
+                CLNDefaultFSKIN(iCLNCell) = max(1.0e-20, Modflow%GWF%cell(CLNConnGWFUnique(i))%Kh)
+            else
+                CLNDefaultFSKIN(iCLNCell) = max(CLNDefaultFSKIN(iCLNCell), Modflow%GWF%cell(CLNConnGWFUnique(i))%Kh)
+            end if
+            nConnByCLNCell(iCLNCell) = nConnByCLNCell(iCLNCell) + 1
+        end do
+
         write(Modflow.iCLN,'(a)') '#1.  NCLN  ICLNNDS   ICLNCB   ICLNHD   ICLNDD   ICLNIB  NCLNGWC  NCONDUITYP  [OPTIONS2]'
         write(OutputLine,'(8i9,a,i9)')  0, &                  !NCLN (0 => IA/JA list input style)
                                         Modflow%CLN%nCells, &   !ICLNNDS
@@ -6207,15 +6229,21 @@ module MUSG !
 
         write(Modflow.iCLN,'(a)') '#    IFNOD    IGWNOD     IFCON         FSKIN     FLENGW         FANISO        ICGWADI'
         do i=1,nCLNGWCUnique
+            iCLNCell = CLNConnNodeUnique(i)
+            FSKINOut = CLNDefaultFSKIN(iCLNCell)
+            if(Modflow%CLN%cell(iCLNCell)%FSKIN > 0.0) then
+                FSKINOut = Modflow%CLN%cell(iCLNCell)%FSKIN
+            end if
             write(Modflow.iCLN,'(3i10,3('//FMT_R4//'),i10)') &
             CLNConnNodeUnique(i), & !IFNOD
             CLNConnGWFUnique(i), & !IGWNOD
             3, & !IFCON
-            1.e-20, & !FSKIN
+            FSKINOut, & !FSKIN
             CLNConnFLENGWUnique(i), & !FLENGW
             1.00, & !FANISO
             0   ! ICGWADI 
         end do
+        deallocate(CLNDefaultFSKIN, nConnByCLNCell)
         deallocate(CLNConnNodeUnique, CLNConnGWFUnique, CLNConnFLENGWUnique)
 
 
@@ -8710,6 +8738,7 @@ module MUSG !
       do n=1,NCLNNDS
         Modflow%CLN%ibound(n)=ibound(NODES+n)
         Modflow%CLN%hnew(n)=hnew(NODES+n)
+        Modflow%CLN%cell(n)%StartingHeads=STRT(NODES+n)
       end do
 !!
 !!4-----SET VOLUMETRIC FRACTIONS FOR CLN-NODES IN SATURATION ARRAY
@@ -8818,6 +8847,7 @@ module MUSG !
       do n=1,NSWFNDS
         Modflow%SWF%ibound(n)=ibound(NODES+NCLNNDS+n)
         Modflow%SWF%hnew(n)=hnew(NODES+NCLNNDS+n)
+        Modflow%SWF%cell(n)%StartingHeads=STRT(NODES+NCLNNDS+n)
       end do
 !!
 !!4-----SET VOLUMETRIC FRACTIONS FOR CLN-NODES IN SATURATION ARRAY
@@ -13037,6 +13067,7 @@ module MUSG !
         do n=1,NODES
             Modflow%GWF%ibound(n)=ibound(n)
             Modflow%GWF%hnew(n)=hnew(n)
+            Modflow%GWF%cell(n)%StartingHeads=STRT(n)
         end do
 
         
@@ -13581,7 +13612,8 @@ module MUSG !
 !
 !      IF(.NOT.ALLOCATED(NCLNNDS)) THEN
         !ALLOCATE(NCLNNDS)
-        NCLNNDS = 0
+        ! Keep CLN node count when CLN is active; SWF indexing depends on this offset.
+        if(Modflow.iCLN==0) NCLNNDS = 0
 !      end if
 !1------IDENTIFY PACKAGE.
         !INSWF = IUNIT(IUSWF)

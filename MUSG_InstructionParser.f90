@@ -247,6 +247,7 @@ module MUSG_InstructionParser
         character(MAX_INST) :: InitialHeadFromCSVFile_CMD = 'initial head from csv file'
         character(MAX_INST) :: GWFInitialHeadFromTecplotFile_CMD = 'gwf initial head from tecplot file'
         character(MAX_INST) :: GWFInitialHeadEqualsSurfaceElevation_CMD = 'gwf initial head equals surface elevation'
+        character(MAX_INST) :: CLNInitialHeadEqualsSurfaceElevation_CMD = 'cln initial head equals surface elevation'
         character(MAX_INST) :: InitialHeadFunctionOfZtoGWF_CMD = 'gwf initial head function of z'
         character(MAX_INST) :: InitialHeadFromDepthSatToGWF_CMD = 'gwf initial head from depth-saturation table'
         character(MAX_INST) :: SWFInitialHeadFromTecplotFile_CMD = 'swf initial head from tecplot file'
@@ -266,6 +267,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, GWFInitialHeadEqualsSurfaceElevation_CMD) /= 0) then
             call GWFInitialHeadEqualsSurfaceElevation(modflow.GWF)
+
+        else if(index(instruction, CLNInitialHeadEqualsSurfaceElevation_CMD) /= 0) then
+            call CLNInitialHeadEqualsSurfaceElevation(modflow)
             
         else if(index(instruction, InitialHeadFunctionOfZtoGWF_CMD) /= 0) then
             call InitialHeadFunctionOfZtoGWF(FnumMUT,modflow.GWF)
@@ -520,6 +524,7 @@ module MUSG_InstructionParser
         ! CLN material property commands
         character(MAX_INST) :: AssignMaterialtoCLN_CMD = 'chosen zones use cln material number'
         character(MAX_INST) :: AssignStartingDepthtoCLN_CMD = 'cln initial depth'
+        character(MAX_INST) :: AssignFSKINtoCLN_CMD = 'cln skin conductivity'
         
         ! SWF material property commands
         character(MAX_INST) :: AssignMaterialtoSWF_CMD = 'chosen zones use swf material number'
@@ -567,6 +572,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, AssignStartingDepthtoCLN_CMD) /= 0) then
             call AssignStartingDepthtoDomain(FnumMUT,modflow.CLN)
+
+        else if(index(instruction, AssignFSKINtoCLN_CMD) /= 0) then
+            call AssignFSKINtoDomain(FnumMUT,modflow.CLN)
             
         ! SWF material properties
         else if(index(instruction, AssignMaterialtoSWF_CMD) /= 0) then

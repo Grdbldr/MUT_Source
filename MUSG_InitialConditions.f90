@@ -11,14 +11,14 @@ module MUSG_InitialConditions
     use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R8, UnitsOfLength, status, LwrCse
     use GeneralRoutines, only: OpenAscii, FreeUnit
     use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
-    use MUSG_Core, only: ModflowDomain
+    use MUSG_Core, only: ModflowDomain, ModflowProject
     use Materials, only: UnsaturatedFunctionType
     
     implicit none
     private
     
     public :: InitialHeadFromCSVFile, GWFInitialHeadFromTecplotFile
-    public :: GWFInitialHeadEqualsSurfaceElevation, InitialHeadFunctionOfZtoGWF
+    public :: GWFInitialHeadEqualsSurfaceElevation, CLNInitialHeadEqualsSurfaceElevation, InitialHeadFunctionOfZtoGWF
     public :: InitialHeadFromDepthSatToGWF, SWFInitialHeadFromTecplotFile
     public :: myMOD  ! Also used in Modflow_USG.f90
     
@@ -47,7 +47,7 @@ module MUSG_InitialConditions
         
         read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
         call Msg('First 10 starting heads:')
-        do i=1,10
+        do i=1,min(10,domain%nCells)
             write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
             call Msg(trim(TmpSTR))
         end do
@@ -84,7 +84,7 @@ module MUSG_InitialConditions
             if(index(line,'DT=(SINGLE )').gt.0) then
                 read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
-                do i=1,10
+                do i=1,min(10,domain%nCells)
                     write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do
@@ -114,6 +114,79 @@ module MUSG_InitialConditions
 
                 
     end subroutine GWFInitialHeadEqualsSurfaceElevation
+    
+    !----------------------------------------------------------------------
+    subroutine CLNInitialHeadEqualsSurfaceElevation(Modflow)
+        implicit none
+
+        type(ModflowProject), intent(inout) :: Modflow
+        
+        integer(i4) :: i, k, nd, igwf, icol
+        real(dp) :: surfTopMax, surfTopCol
+        
+        call Msg('CLN initial head equals surface elevation (land surface from GWF column tops)')
+        
+        nd = Modflow%GWF%nodelay
+        if (nd < 1) nd = Modflow%GWF%nCells
+        if (nd < 1 .or. Modflow%GWF%nCells < 1) then
+            call Msg('CLN: GWF has no cells; cannot set surface elevation initial heads.')
+            return
+        end if
+        nd = min(nd, Modflow%GWF%nCells)
+        
+        if (allocated(Modflow%CLN%CLNGWFConnGWFCell) .and. &
+            allocated(Modflow%CLN%CLNGWFConnCLNCell) .and. &
+            Modflow%CLN%NCLNGWC > 0) then
+            do i = 1, Modflow%CLN%nCells
+                surfTopMax = -1.0d300
+                do k = 1, Modflow%CLN%NCLNGWC
+                    if (Modflow%CLN%CLNGWFConnCLNCell(k) /= i) cycle
+                    igwf = Modflow%CLN%CLNGWFConnGWFCell(k)
+                    if (igwf < 1 .or. igwf > Modflow%GWF%nCells) cycle
+                    icol = myMOD(igwf, nd)
+                    surfTopCol = Modflow%GWF%cell(icol)%Top
+                    if (surfTopCol > surfTopMax) surfTopMax = surfTopCol
+                end do
+                if (surfTopMax > -1.0d299) then
+                    Modflow%CLN%cell(i)%StartingHeads = surfTopMax
+                else
+                    call CLN_SurfaceTopFromNearestGWFColumn(Modflow, i, nd)
+                end if
+            end do
+        else
+            do i = 1, Modflow%CLN%nCells
+                call CLN_SurfaceTopFromNearestGWFColumn(Modflow, i, nd)
+            end do
+        end if
+        
+        do i = 1, min(10, Modflow%CLN%nCells)
+            write(TmpSTR,'(a,i5,a,'//FMT_R8//')') ' CLN starting head cell ', i, ': ', Modflow%CLN%cell(i)%StartingHeads
+            call Msg(trim(TmpSTR))
+        end do
+
+    end subroutine CLNInitialHeadEqualsSurfaceElevation
+    
+    !----------------------------------------------------------------------
+    subroutine CLN_SurfaceTopFromNearestGWFColumn(Modflow, iCLN, nd)
+        implicit none
+        type(ModflowProject), intent(inout) :: Modflow
+        integer(i4), intent(in) :: iCLN, nd
+        
+        integer(i4) :: j, jbest
+        real(dp) :: d2, d2min
+        
+        d2min = 1.0d300
+        jbest = 1
+        do j = 1, nd
+            d2 = (Modflow%CLN%cell(iCLN)%x - Modflow%GWF%cell(j)%x)**2 + &
+                 (Modflow%CLN%cell(iCLN)%y - Modflow%GWF%cell(j)%y)**2
+            if (d2 < d2min) then
+                d2min = d2
+                jbest = j
+            end if
+        end do
+        Modflow%CLN%cell(iCLN)%StartingHeads = Modflow%GWF%cell(jbest)%Top
+    end subroutine CLN_SurfaceTopFromNearestGWFColumn
     
     !----------------------------------------------------------------------
     subroutine InitialHeadFunctionOfZtoGWF(FNumMUT,domain)
@@ -278,7 +351,7 @@ module MUSG_InitialConditions
             if(index(line,'DT=(SINGLE )').gt.0) then
                 read(FNumRestart,*) (domain%cell(i)%StartingHeads,i=1,domain%nCells)
                 call Msg('First 10 starting heads:')
-                do i=1,10
+                do i=1,min(10,domain%nCells)
                     write(TmpSTR,'(a,i5,a,'//FMT_R8//')')' Starting head cell ',i,': ',domain%cell(i)%StartingHeads
                     call Msg(trim(TmpSTR))
                 end do

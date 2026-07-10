@@ -858,6 +858,10 @@ To assign an initial head equal to the local ground surface elevation use this i
 
 This is commonly used as an initial guess when starting a simulation with no previous head solution.
 
+For the \cln\ domain, an equivalent instruction is also available:
+\ins{cln initial head equals surface elevation}
+    {For each \cln\ cell, the initial head is set to the land-surface elevation of the corresponding \gwf\ column (top of the shallowest layer in that column), using the same column convention as \texttt{gwf initial head equals surface elevation}. If \cln--\gwf\ connection data is already available, the maximum of those column surface elevations is used for that cell; otherwise the \gwf\ top-layer cell nearest in XY is used.}
+
 To assign a linearly varying head that is a function of $z$ (i.e.\ depth or elevation), use this instruction:
 \ins{gwf initial head function of z}
     {

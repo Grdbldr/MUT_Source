@@ -153,6 +153,22 @@ The assigned \cln\ material properties are written to the screen and \texttt{.ec
     	Longitudinal K:         5.48000E-02     METERS   SECONDS^(-1)
 \end{verbatim}
 
+\ins{cln skin conductivity}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{FSKIN} [$T^{-1}$]  CLN-to-GWF skin/leakance term applied to the chosen \cln\ cells.
+        \end{enumerate}
+        The value \rnum{FSKIN} is assigned to all currently chosen \cln\ cells.
+    }
+
+For CLN-GWF connections, \mut\ now writes a default \texttt{FSKIN} value to the \texttt{.CLN} file based on connected \gwf\ hydraulic conductivity:
+\begin{itemize}
+\item If a \cln\ cell connects to one \gwf\ cell, default \texttt{FSKIN} is that \gwf\ cell's \texttt{Kh}.
+\item If a \cln\ cell connects to multiple \gwf\ cells, default \texttt{FSKIN} is the highest connected \texttt{Kh}.
+\item If \ins{cln skin conductivity} is used, the user-assigned value overrides this default for the selected \cln\ cells.
+\end{itemize}
+
 \subsubsection{General Cross-Section Geometry (Tabular)} \index{\cln\ Domain ! material properties ! general cross-section}
 In addition to \texttt{Circular} and \texttt{Rectangular} cross-sections, \mut\ supports a \texttt{General} cross-section type for \cln\ domains.
 This geometry is defined by a table of depth versus cross-sectional properties, and is written to the \texttt{.CLN} file using the MODFLOW-USG \texttt{GENERAL\_SEC} option.
@@ -190,6 +206,10 @@ By default, the instruction {\sf postprocess existing modflow model} writes hydr
             \item \str{FName}  The hydraulic head solution in the file \str{FName} will be assigned as the initial head in the currently active domain.
         \end{enumerate}
     }
+
+An alternative initial-head instruction is:
+\ins{cln initial head equals surface elevation}
+    {For each \cln\ cell, the initial head is set to the land-surface elevation of the corresponding \gwf\ column (top of the shallowest layer in that column), using the same column convention as \texttt{gwf initial head equals surface elevation}. If \cln--\gwf\ connection data is already available, the maximum of those column surface elevations is used for that cell; otherwise the \gwf\ top-layer cell nearest in XY is used.}
 
 The following example uses the instruction to start a simulation with \cln\ heads from a previous run:
 
