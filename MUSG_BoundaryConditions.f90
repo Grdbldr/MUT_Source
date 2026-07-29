@@ -8,7 +8,7 @@ module MUSG_BoundaryConditions
     use GeneralRoutines, only: bcheck, chosen, set, ConstantHead, Recharge, Drain, Well, CriticalDepth, ialloc, UnitsOfTime
     use ErrorHandling, only: ERR_LOGIC, HandleError
     use ArrayUtilities, only: AllocChk
-    use GeneralRoutines, only: OpenAscii
+    use GeneralRoutines, only: OpenAscii, FreeUnit
     use MUSG_Core, only: ModflowProject, ModflowDomain, NodalControlVolume
     use NumericalMesh, only: mesh
     
@@ -112,7 +112,7 @@ module MUSG_BoundaryConditions
     
     !----------------------------------------------------------------------
     subroutine AssignRCHtoDomain(FNumMUT,modflow,domain) 
-        ! Assign Recharge boundary condition to domain
+        ! Assign Recharge boundary condition to domain (stress-period strategy)
         implicit none
         integer(i4) :: FNumMUT
         type(ModflowProject) :: modflow
@@ -121,6 +121,8 @@ module MUSG_BoundaryConditions
         integer(i4) :: i
         real(dp) :: rech
         integer(i4) :: nRCHoption
+        
+        call Msg('Recharge strategy: stress-period (rates written to RCH per stress period)')
         
         read(FNumMUT,*) rech
         write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' recharge: ',rech,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_TimeUnit)//'^(-1)'
@@ -186,8 +188,42 @@ module MUSG_BoundaryConditions
     end subroutine AssignRCHtoDomain
     
     !----------------------------------------------------------------------
+    integer(i4) function CountRTSZones(FNameRTS)
+        ! Count recharge zones from first RTS data line: Tstart Tend Factor Rate1..RateN
+        implicit none
+        character(*), intent(in) :: FNameRTS
+        integer(i4) :: iunit, ios, nvals, i
+        character(len=512) :: line
+        real(dp) :: vals(100)
+        
+        CountRTSZones = 1
+        call OpenAscii(iunit, FNameRTS)
+        do
+            read(iunit,'(a)',iostat=ios) line
+            if(ios /= 0) exit
+            if(len_trim(line) == 0) cycle
+            if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+            nvals = 0
+            do i=1,100
+                read(line,*,iostat=ios) vals(1:i)
+                if(ios /= 0) exit
+                nvals = i
+            end do
+            if(nvals >= 4) then
+                CountRTSZones = nvals - 3
+            else
+                CountRTSZones = 1
+            end if
+            exit
+        end do
+        close(iunit)
+        call FreeUnit(iunit)
+        if(CountRTSZones < 1) CountRTSZones = 1
+    end function CountRTSZones
+    
+    !----------------------------------------------------------------------
     subroutine AssignTransientRCHtoDomain(FNumMUT,modflow,domain) 
-        ! Assign Transient Recharge boundary condition to domain
+        ! Assign Transient Recharge boundary condition to domain (RTS strategy)
         implicit none
         integer(i4) :: FNumMUT
         type(ModflowProject) :: modflow
@@ -196,9 +232,15 @@ module MUSG_BoundaryConditions
         integer(i4) :: i
         real(dp) :: rech
         integer(i4) :: nRCHoption
+        integer(i4) :: nzones
+        
+        call Msg('Recharge strategy: RTS (time-varying rates from transient recharge file)')
         
         read(FNumMUT,'(a)') modflow.FNameRTS
-        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
+        write(TmpSTR,'(a)') 'Assigning '//domain%name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
+        call Msg(trim(TmpSTR))
+        nzones = CountRTSZones(modflow.FNameRTS)
+        write(TmpSTR,'(a,i8)') 'RTS zone count (from first RTS record): ',nzones
         call Msg(trim(TmpSTR))
         read(FNumMUT,*) nRCHoption
         write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain%name//' recharge option: ',nRCHoption
@@ -220,7 +262,7 @@ module MUSG_BoundaryConditions
             domain%Recharge(:)=-999.d0
         end if
         
-        ! For transient recharge, initial value is typically 0 or read from file
+        ! Base RCH array is zero; time-varying rates come from the RTS file
         rech = 0.0d0
         do i=1,domain%nCells
             call set(domain%cell(i)%is,Recharge)
@@ -233,34 +275,21 @@ module MUSG_BoundaryConditions
             call OpenAscii(Modflow.iRTS,Modflow.FNameRTS)
             call Msg('  ')
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
+            write(TmpSTR,'(a,i8)') 'Writing RTS-capable RCH with INRCHZONES = ',nzones
+            call Msg(trim(TmpSTR))
             write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
             write(Modflow.iNAM,'(a,i4,a)') 'RTS  ',Modflow.iRTS,' '//trim(Modflow.FNameRTS)
             write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB, 'RTS 1'
-            write(modflow.iRCH,*) 1, 'INRCHZONES ',1165    ! inrech (defaults to read one layer of recharge values), 'INRCHZONES ',1165 (defaults to read current size of rainfall.rts)
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
+            write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB, 'RTS', nzones
+            write(modflow.iRCH,*) 1, 'INRCHZONES', nzones
+            write(Modflow.iRCH,'(a)') 'CONSTANT         0.00000  Recharge()'
+            ! Uniform single-zone map by default; multi-zone spatial maps are not yet assigned here
+            write(Modflow.iRCH,'(a)') 'CONSTANT               1  IZNRCH()'
 
         else
-            write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
-            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
-                do i=1,domain%nCells
-                    if(Modflow%GWF%cell(i)%iLayer==1) then
-                        write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
-                    endif
-                end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
+            write(modflow.iRCH,*) 1, 'INRCHZONES', nzones
+            write(Modflow.iRCH,'(a)') 'CONSTANT         0.00000  Recharge()'
+            write(Modflow.iRCH,'(a)') 'CONSTANT               1  IZNRCH()'
         end if
     end subroutine AssignTransientRCHtoDomain
     

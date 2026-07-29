@@ -3820,6 +3820,7 @@ module MUSG !
             call Msg('-------Read data from RCH:')
             CALL ReadRCH(Modflow)  ! based on modflow routine GWF2RCH8U1AR
             call ReadRCH_StressPeriods(Modflow) ! based on modflow routine GWF2RCH8U1RP
+            call WritePostRechargeRates(Modflow)
         end if
         
         IF(Modflow.iDRN/=0) THEN
@@ -9804,13 +9805,12 @@ module MUSG !
       END IF
 !3B2------FOR RTS
       IF(LINE(ISTART:ISTOP).EQ.'RTS') THEN
-!3B2A-----CHECK TO SEE IF ATS IS ON. OR ELSE WRITE WARNING AND STOP
+!3B2A-----CHECK TO SEE IF ATS IS ON. For post-processing, continue with a warning.
         IF(IATS.EQ.0)THEN
           WRITE(IOUT,15)
-          STOP
+15        FORMAT(1X,'WARNING: TRANSIENT RECHARGE NORMALLY NEEDS ADAPTIVE ',&
+            'TIME-STEPPING. CONTINUING FOR POST-PROCESSING RATE EXTRACTION.')
         end if
-15      FORMAT(1X,'TRANSIENT RECHARGE NEEDS ADAPTIVE TIME-STEPPING.',&
-          'STOPPING')
 !3B2B------SET OPTION, AND READ MAXIMUM NUMBER OF ZONES OF TRANSIENT RCH.
         ALLOCATE(MXZNRCH)
         CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,MXZNRCH,R,IOUT,INOC)
@@ -10234,6 +10234,7 @@ module MUSG !
        tstartrch,tendrch,factrrch,RTSRCH,INRTS,IRTSRD,TIMRCH,&
        RCHCONC,IRCHCONC
       USE GWTBCTMODULE, ONLY: MCOMPT
+      USE SWF1MODULE, ONLY: NSWFNDS
       
       implicit none
       
@@ -10254,11 +10255,13 @@ module MUSG !
       integer(i4) :: in, lloc, iniznrch, inselev, inconc
       real(sp) :: r
       integer(i4) :: istop, n, istart, inoc, inrech, i, j, ir, ic
-      integer(i4) :: iflag, kper, iurts, izr, iconcrch, ii
+      integer(i4) :: iflag, kper, izr, iconcrch, ii
       integer(i4) :: nn
       
       in=modflow.iRCH
       iout=FNumEco
+      ! Post-processing reads the first stress-period RCH definition
+      kper = 1
 !     ------------------------------------------------------------------
       ALLOCATE (TEMP(NCOL,NROW))
       ALLOCATE (ITEMP(NCOL,NROW))
@@ -10302,7 +10305,11 @@ module MUSG !
           READ(LINE,'(2I10)') INRECH,INIRCH
         ELSE
           READ(LINE,'(I10)') INRECH
-          INIRCH = NODLAY(1)
+          IF(NRCHOP.EQ.4) THEN
+            INIRCH = NSWFNDS
+          ELSE
+            INIRCH = NODLAY(1)
+          END IF
         end if
       ELSE
         IF(NRCHOP.EQ.2) THEN
@@ -10310,7 +10317,11 @@ module MUSG !
           CALL URWORD(line, lloc, istart, istop, 2, inirch, r, Iout, In)
         ELSE
           CALL URWORD(line, lloc, istart, istop, 2, inrech, r, Iout, In)
-          INIRCH = NODLAY(1)
+          IF(NRCHOP.EQ.4) THEN
+            INIRCH = NSWFNDS
+          ELSE
+            INIRCH = NODLAY(1)
+          END IF
         end if
       END IF
       IF(INIRCH.GE.0) NIRCH = INIRCH
@@ -10457,7 +10468,11 @@ module MUSG !
         end if
 !3C-------READ FIRST LINE OF RTS FILE AT KPER=1
         IF(KPER.EQ.1)THEN
-          inrts = IURTS
+          if(Modflow.iRTS <= 0) then
+            write(iout,*) 'ERROR: RTS package unit not found in NAM file'
+            call USTOP(' ')
+          end if
+          inrts = Modflow.iRTS
           allocate(tstartrch,tendrch,factrrch,rtsrch(mxznrch))
          read(inrts,*)tstartrch,tendrch,factrrch,(rtsrch(i),i=1,mxznrch)
          write(iout,7)tstartrch,tendrch,factrrch,(rtsrch(i),i=1,mxznrch)
@@ -10480,7 +10495,7 @@ module MUSG !
 !---------Add RTS recharge to RECH already on nodes
           DO 52 NN=1,NIRCH
           N = IRCH(NN)
-          izr = iznrch(n)
+          izr = iznrch(NN)
           if(izr.ge.1.and.izr.le.mxznrch)&
          RECH(NN)=RECHSV(NN) + rtsrch(izr)*AREA(N)*factrrch
    52     CONTINUE
@@ -10535,6 +10550,114 @@ module MUSG !
 !6------RETURN
       RETURN
       END SUBROUTINE ReadRCH_StressPeriods
+
+    subroutine WritePostRechargeRates(Modflow)
+        ! Write applied recharge rates for post-processing from RCH and/or RTS
+        use GLOBAL, only: AREA
+        use GWFRCHMODULE, only: NRCHOP, RECH, IRCH, NIRCH, IRTSOPT, &
+            mxznrch, tstartrch, tendrch
+        implicit none
+        type(ModflowProject) :: Modflow
+
+        integer(i4) :: FNum, FNumTS, i, nn, ios, nrec
+        character(MAX_STR) :: FName, FNameTS
+        real(dp) :: rate, tstart, tend, factor
+        real(dp), allocatable :: zone_rates(:)
+        character(len=512) :: line
+
+        call Msg(' ')
+        if(IRTSOPT > 0) then
+            call Msg('Recharge strategy: RTS (rates from RTS file + zone map in RCH)')
+            write(TmpSTR,'(a,i8)') 'RTS zones: ', mxznrch
+            call Msg(trim(TmpSTR))
+            write(TmpSTR,'(a,'//FMT_R8//',a,'//FMT_R8//')') &
+                'First RTS interval: ', tstartrch, ' to ', tendrch
+            call Msg(trim(TmpSTR))
+        else
+            call Msg('Recharge strategy: stress-period (rates from RCH file)')
+        end if
+        write(TmpSTR,'(a,i8)') 'NRCHOP = ', NRCHOP
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,i8)') 'Recharge nodes (NIRCH) = ', NIRCH
+        call Msg(trim(TmpSTR))
+
+        ! Spatial map of applied rate for current (first) interval / stress period
+        if(NRCHOP == 4 .and. Modflow%SWF%IsDefined) then
+            FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.SWF_RCH.tecplot.dat'
+            call OpenAscii(FNum, FName)
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+            write(FNum,'(a)') 'Title = " Modflow SWF RCH rates (post)"'
+            write(FNum,'(a)') 'variables="X","Y","Z","RCH"'
+            write(FNum,'(a,i8,a)') 'ZONE i=', NIRCH, &
+                ', t="SWF RCH", datapacking=point'
+            do nn=1,NIRCH
+                i = IRCH(nn)
+                if(i < 1 .or. i > Modflow%SWF%nCells) cycle
+                if(AREA(i) > 0.0) then
+                    rate = RECH(nn) / AREA(i)
+                else
+                    rate = 0.0d0
+                end if
+                write(FNum,'(4('//FMT_R8//'))') &
+                    Modflow%SWF%cell(i)%x, Modflow%SWF%cell(i)%y, &
+                    Modflow%SWF%cell(i)%z, rate
+            end do
+            close(FNum)
+            call FreeUnit(FNum)
+        else if(Modflow%GWF%IsDefined) then
+            FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF_RCH.tecplot.dat'
+            call OpenAscii(FNum, FName)
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+            write(FNum,'(a)') 'Title = " Modflow GWF RCH rates (post)"'
+            write(FNum,'(a)') 'variables="X","Y","Z","RCH"'
+            write(FNum,'(a,i8,a)') 'ZONE i=', NIRCH, &
+                ', t="GWF RCH", datapacking=point'
+            do nn=1,NIRCH
+                i = IRCH(nn)
+                if(i < 1 .or. i > Modflow%GWF%nCells) cycle
+                if(AREA(i) > 0.0) then
+                    rate = RECH(nn) / AREA(i)
+                else
+                    rate = 0.0d0
+                end if
+                write(FNum,'(4('//FMT_R8//'))') &
+                    Modflow%GWF%cell(i)%x, Modflow%GWF%cell(i)%y, &
+                    Modflow%GWF%cell(i)%z, rate
+            end do
+            close(FNum)
+            call FreeUnit(FNum)
+        end if
+
+        ! Full RTS time series of zone rates
+        if(IRTSOPT > 0 .and. Modflow.iRTS > 0) then
+            FNameTS = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.SWF_RCH_RTS.tecplot.dat'
+            call OpenAscii(FNumTS, FNameTS)
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FNameTS))
+            write(FNumTS,'(a)') 'Title = " Modflow RTS recharge rates (post)"'
+            write(FNumTS,'(a)') 'variables="Tstart","Tend","Factor","RCH_zone1"'
+            write(FNumTS,'(a)') 'ZONE t="RTS rates", datapacking=point'
+
+            rewind(Modflow.iRTS)
+            allocate(zone_rates(mxznrch))
+            nrec = 0
+            do
+                read(Modflow.iRTS,'(a)',iostat=ios) line
+                if(ios /= 0) exit
+                if(len_trim(line) == 0) cycle
+                if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                read(line,*,iostat=ios) tstart, tend, factor, &
+                    (zone_rates(i), i=1,mxznrch)
+                if(ios /= 0) exit
+                nrec = nrec + 1
+                write(FNumTS,'(4('//FMT_R8//'))') tstart, tend, factor, zone_rates(1)
+            end do
+            write(TmpSTR,'(a,i8)') 'RTS records written to Tecplot: ', nrec
+            call Msg(trim(TmpSTR))
+            deallocate(zone_rates)
+            close(FNumTS)
+            call FreeUnit(FNumTS)
+        end if
+    end subroutine WritePostRechargeRates
 
     SUBROUTINE ReadDRN_StressPeriods(Modflow)
 !     ******************************************************************
