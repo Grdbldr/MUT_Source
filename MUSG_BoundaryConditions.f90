@@ -18,11 +18,49 @@ module MUSG_BoundaryConditions
     public :: AssignCHDtoDomain, AssignDRNtoDomain, AssignRCHtoDomain
     public :: AssignTransientRCHtoDomain, AssignWELtoDomain
     public :: AssignCriticalDepthtoDomain, AssignCriticalDepthtoCellsSide1
+    public :: SetPendingCHDZoneName
     
     ! Boundary condition command strings (these would be moved from Modflow_USG.f90)
     ! For now, keeping them in the main module but documenting here
     
     contains
+
+    !----------------------------------------------------------------------
+    subroutine SetPendingCHDZoneName(FNumMUT, modflow)
+        ! Read CHD zone budget name and set as pending for the next gwf constant head assign
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        character(MAX_STR) :: line
+        character(16) :: zname
+        integer(i4) :: i, n
+
+        read(FNumMUT,'(a)') line
+        line = adjustl(line)
+        n = min(16, len_trim(line))
+        if(n <= 0) then
+            call ErrMsg('chd zone name: blank zone name')
+        end if
+        zname = ' '
+        zname(1:n) = line(1:n)
+
+        ! Reuse existing zone id if name already defined
+        do i=1,modflow%nCHDZones
+            if(modflow%CHDZoneName(i) == zname) then
+                modflow%PendingCHDZoneID = i
+                call Msg('CHD zone name (existing): '//trim(zname))
+                return
+            end if
+        end do
+
+        if(modflow%nCHDZones >= 100) then
+            call ErrMsg('chd zone name: exceeded MAX_CHD_ZONES')
+        end if
+        modflow%nCHDZones = modflow%nCHDZones + 1
+        modflow%CHDZoneName(modflow%nCHDZones) = zname
+        modflow%PendingCHDZoneID = modflow%nCHDZones
+        call Msg('CHD zone name: '//trim(zname))
+    end subroutine SetPendingCHDZoneName
     
     !----------------------------------------------------------------------
     subroutine AssignCHDtoDomain(FNumMUT,modflow,domain) 
@@ -38,11 +76,19 @@ module MUSG_BoundaryConditions
         read(FNumMUT,*) head
         write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' constant head: ',head,'     '//TRIM(UnitsOfLength) 
         call Msg(trim(TmpSTR))
+        if(modflow%PendingCHDZoneID > 0) then
+            call Msg('    using CHD zone: '//trim(modflow%CHDZoneName(modflow%PendingCHDZoneID)))
+        end if
 
         if(.not. allocated(domain%ConstantHead)) then 
             allocate(domain%ConstantHead(domain%nCells),stat=ialloc)
             call AllocChk(ialloc,'Cell constant head array')            
             domain%ConstantHead(:)=-999.d0
+        end if
+        if(.not. allocated(domain%ConstantHeadZoneID)) then
+            allocate(domain%ConstantHeadZoneID(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell constant head zone id array')
+            domain%ConstantHeadZoneID(:)=0
         end if
         
         call Msg('    Cell    Constant head')
@@ -51,10 +97,14 @@ module MUSG_BoundaryConditions
                 call set(domain%cell(i)%is,ConstantHead)
                 domain%nCHDCells=domain%nCHDCells+1
                 domain%ConstantHead(i)=head
+                domain%ConstantHeadZoneID(i)=modflow%PendingCHDZoneID
                 write(TmpSTR,'(i8,2x,'//FMT_R8//',a)') i,domain%ConstantHead(i),'     '//TRIM(UnitsOfLength)
                 call Msg(trim(TmpSTR))
             end if
         end do
+
+        ! Pending zone applies only to the following CHD assignment
+        modflow%PendingCHDZoneID = 0
         
         if(modflow.iCHD == 0) then ! Initialize CHD file and write data to NAM
             Modflow.FNameCHD=trim(Modflow.Prefix)//'.chd'

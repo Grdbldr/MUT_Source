@@ -921,7 +921,20 @@ This was used to generate an initial head for the example simulation \texttt{9\_
 \subsubsection{Boundary Conditions}  \index{\gwf\ Domain ! boundary conditions}
 To assign boundary conditions  to the \gwf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
 
-A constant head boundary condition fixes the head at a \gwf\ cell at a given value, allowing water to flow into or out of the \gwf\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \gwf\ model domain use this instruction:
+A constant head boundary condition fixes the head at a \gwf\ cell at a given value, allowing water to flow into or out of the \gwf\ model domain depending on surrounding conditions.
+
+Named CHD groups can be reported as separate volumetric-budget terms in the Modflow \texttt{.lst} file (and therefore as separate Tecplot VolumeBudget columns). Immediately before assigning constant head, tag the currently chosen cells with:
+
+\ins{chd zone name}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{ZoneName}   Budget label for this CHD group (maximum 16 characters; underscores recommended).
+        \end{enumerate}
+          The label is applied to cells that receive the next \ins{gwf constant head} assignment. USGs\_1 prints separate IN/OUT lines for each named zone, and still prints the aggregate \texttt{CONSTANT HEAD} total.
+    }
+
+To assign a uniform constant head to the \gwf\ model domain use this instruction:
 
 \ins{gwf constant head}
     {

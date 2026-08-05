@@ -80,14 +80,13 @@ module CLNIntersection
         call Msg('  ')
         call Msg(FileReadSTR//'CLN structure file: '//trim(filename))
         
-        ! Read header line
-        read(FNum, '(a)') VarSTR
-        
-        ! Count number of cells (assuming format: ID X1 Y1 Z1 X2 Y2 Z2 NextID MaterialID Radius/Width Height IsCircular)
+        ! Count number of cells (skip blank/comment lines starting with #)
         nCells = 0
         CountLoop: do
-            read(FNum, *, iostat=status) i
+            read(FNum, '(a)', iostat=status) VarSTR
             if (status /= 0) exit CountLoop
+            if (len_trim(VarSTR) == 0) cycle CountLoop
+            if (VarSTR(1:1) == '#') cycle CountLoop
             nCells = nCells + 1
         end do CountLoop
         
@@ -95,11 +94,20 @@ module CLNIntersection
         allocate(cln_struct%cell(nCells), stat=ialloc)
         call AllocChk(ialloc, 'ReadCLNStructure: cln_struct%cell array')
         
-        ! Rewind and read data
+        ! Rewind and read data (skip blank/comment lines) using free-format file reads
         rewind(FNum)
-        read(FNum, '(a)') VarSTR
-        
-        do i = 1, nCells
+        i = 0
+        ReadLoop: do
+            if (i >= nCells) exit ReadLoop
+            read(FNum, '(a)', iostat=status) VarSTR
+            if (status /= 0) then
+                call HandleError(ERR_FILE_IO, 'Error reading CLN cell data', 'ReadCLNStructure')
+            end if
+            if (len_trim(VarSTR) == 0) cycle ReadLoop
+            if (adjustl(VarSTR(1:1)) == '#') cycle ReadLoop
+            ! Backspace and re-read the data line with list-directed I/O
+            backspace(FNum)
+            i = i + 1
             read(FNum, *, iostat=status) &
                 cln_struct%cell(i)%id, &
                 cln_struct%cell(i)%x1, cln_struct%cell(i)%y1, cln_struct%cell(i)%z1, &
@@ -112,7 +120,7 @@ module CLNIntersection
             if (status /= 0) then
                 call HandleError(ERR_FILE_IO, 'Error reading CLN cell data', 'ReadCLNStructure')
             end if
-        end do
+        end do ReadLoop
         
         call FreeUnit(FNum)
         
@@ -512,6 +520,8 @@ module CLNIntersection
     
     !----------------------------------------------------------------------
     ! Split CLN Cells at Intersection Points
+    ! Duplicate intersection distances (within TOL_GEOM) are collapsed so
+    ! each GWF/SWF face crossing becomes a single CLN node.
     !----------------------------------------------------------------------
     subroutine SplitCLNCells(cln_struct, intersections, new_cln_struct)
         implicit none
@@ -519,53 +529,28 @@ module CLNIntersection
         type(t_intersection_list), intent(in) :: intersections
         type(t_cln_structure), intent(out) :: new_cln_struct
         
-        integer(i4) :: iCell, iInt, nNewCells
-        integer(i4) :: j, k
+        integer(i4) :: iCell, iInt, nNewCells, nUnique, nRaw
+        integer(i4) :: j, k, currentNewId
         integer(i4), allocatable :: cellIntersections(:), sortedIndices(:)
-        real(dp), allocatable :: distances(:)
-        integer(i4) :: currentNewId
+        integer(i4), allocatable :: firstNewId(:), lastNewId(:)
+        real(dp), allocatable :: distances(:), ux(:), uy(:), uz(:), udist(:)
+        real(dp) :: dprev, segLen
         
-        ! Count new cells needed
+        allocate(firstNewId(cln_struct%nCells), lastNewId(cln_struct%nCells), stat=ialloc)
+        call AllocChk(ialloc, 'SplitCLNCells: first/last new id arrays')
+        
+        ! First pass: count unique split points per cell
         nNewCells = 0
         do iCell = 1, cln_struct%nCells
-            ! Count intersections for this cell
-            j = 0
+            nRaw = 0
             do iInt = 1, intersections%nIntersections
-                if (intersections%point(iInt)%cln_cell_id == iCell) then
-                    j = j + 1
-                end if
+                if (intersections%point(iInt)%cln_cell_id == iCell) nRaw = nRaw + 1
             end do
-            ! Original cell + number of intersections = number of new cells
-            nNewCells = nNewCells + 1 + j
-        end do
-        
-        allocate(new_cln_struct%cell(nNewCells), stat=ialloc)
-        call AllocChk(ialloc, 'SplitCLNCells: new_cln_struct%cell array')
-        
-        currentNewId = 1
-        
-        ! Process each original cell
-        do iCell = 1, cln_struct%nCells
-            ! Collect intersections for this cell
-            j = 0
-            do iInt = 1, intersections%nIntersections
-                if (intersections%point(iInt)%cln_cell_id == iCell) then
-                    j = j + 1
-                end if
-            end do
-            
-            if (j == 0) then
-                ! No intersections - copy cell as-is
-                new_cln_struct%cell(currentNewId) = cln_struct%cell(iCell)
-                new_cln_struct%cell(currentNewId)%id = currentNewId
-                ! Update next_cell_id (will be handled after all cells are created)
-                currentNewId = currentNewId + 1
+            if (nRaw == 0) then
+                nNewCells = nNewCells + 1
             else
-                ! Allocate arrays for this cell's intersections
-                allocate(cellIntersections(j), distances(j), sortedIndices(j), stat=ialloc)
-                call AllocChk(ialloc, 'SplitCLNCells: cell intersection arrays')
-                
-                ! Collect intersection indices and distances
+                allocate(distances(nRaw), sortedIndices(nRaw), cellIntersections(nRaw), stat=ialloc)
+                call AllocChk(ialloc, 'SplitCLNCells: count pass arrays')
                 k = 0
                 do iInt = 1, intersections%nIntersections
                     if (intersections%point(iInt)%cln_cell_id == iCell) then
@@ -575,108 +560,187 @@ module CLNIntersection
                         sortedIndices(k) = k
                     end if
                 end do
+                call SortByDistance(distances, sortedIndices, nRaw)
+                nUnique = 1
+                dprev = distances(sortedIndices(1))
+                do k = 2, nRaw
+                    if (abs(distances(sortedIndices(k)) - dprev) > TOL_GEOM) then
+                        nUnique = nUnique + 1
+                        dprev = distances(sortedIndices(k))
+                    end if
+                end do
+                nNewCells = nNewCells + nUnique + 1
+                deallocate(distances, sortedIndices, cellIntersections)
+            end if
+        end do
+        
+        allocate(new_cln_struct%cell(nNewCells), stat=ialloc)
+        call AllocChk(ialloc, 'SplitCLNCells: new_cln_struct%cell array')
+        
+        currentNewId = 1
+        do iCell = 1, cln_struct%nCells
+            firstNewId(iCell) = currentNewId
+            
+            nRaw = 0
+            do iInt = 1, intersections%nIntersections
+                if (intersections%point(iInt)%cln_cell_id == iCell) nRaw = nRaw + 1
+            end do
+            
+            if (nRaw == 0) then
+                new_cln_struct%cell(currentNewId) = cln_struct%cell(iCell)
+                new_cln_struct%cell(currentNewId)%id = currentNewId
+                lastNewId(iCell) = currentNewId
+                currentNewId = currentNewId + 1
+            else
+                allocate(distances(nRaw), sortedIndices(nRaw), cellIntersections(nRaw), stat=ialloc)
+                call AllocChk(ialloc, 'SplitCLNCells: split pass arrays')
+                k = 0
+                do iInt = 1, intersections%nIntersections
+                    if (intersections%point(iInt)%cln_cell_id == iCell) then
+                        k = k + 1
+                        cellIntersections(k) = iInt
+                        distances(k) = intersections%point(iInt)%distance_from_start
+                        sortedIndices(k) = k
+                    end if
+                end do
+                call SortByDistance(distances, sortedIndices, nRaw)
                 
-                ! Sort intersections by distance from start
-                call SortByDistance(distances, sortedIndices, j)
+                ! Build unique intersection coordinates ordered along the cell
+                allocate(ux(nRaw), uy(nRaw), uz(nRaw), udist(nRaw), stat=ialloc)
+                call AllocChk(ialloc, 'SplitCLNCells: unique intersection arrays')
+                nUnique = 0
+                dprev = -1.0d30
+                do k = 1, nRaw
+                    iInt = cellIntersections(sortedIndices(k))
+                    if (nUnique == 0 .or. abs(distances(sortedIndices(k)) - dprev) > TOL_GEOM) then
+                        nUnique = nUnique + 1
+                        ux(nUnique) = intersections%point(iInt)%x
+                        uy(nUnique) = intersections%point(iInt)%y
+                        uz(nUnique) = intersections%point(iInt)%z
+                        udist(nUnique) = distances(sortedIndices(k))
+                        dprev = distances(sortedIndices(k))
+                    end if
+                end do
                 
-                ! Create new cells
-                ! First segment: start to first intersection
+                ! Segment: start -> first unique intersection
                 new_cln_struct%cell(currentNewId)%id = currentNewId
                 new_cln_struct%cell(currentNewId)%x1 = cln_struct%cell(iCell)%x1
                 new_cln_struct%cell(currentNewId)%y1 = cln_struct%cell(iCell)%y1
                 new_cln_struct%cell(currentNewId)%z1 = cln_struct%cell(iCell)%z1
-                iInt = cellIntersections(sortedIndices(1))
-                new_cln_struct%cell(currentNewId)%x2 = intersections%point(iInt)%x
-                new_cln_struct%cell(currentNewId)%y2 = intersections%point(iInt)%y
-                new_cln_struct%cell(currentNewId)%z2 = intersections%point(iInt)%z
-                new_cln_struct%cell(currentNewId)%next_cell_id = currentNewId + 1
+                new_cln_struct%cell(currentNewId)%x2 = ux(1)
+                new_cln_struct%cell(currentNewId)%y2 = uy(1)
+                new_cln_struct%cell(currentNewId)%z2 = uz(1)
                 new_cln_struct%cell(currentNewId)%material_id = cln_struct%cell(iCell)%material_id
                 new_cln_struct%cell(currentNewId)%radius_or_width = cln_struct%cell(iCell)%radius_or_width
                 new_cln_struct%cell(currentNewId)%height = cln_struct%cell(iCell)%height
                 new_cln_struct%cell(currentNewId)%is_circular = cln_struct%cell(iCell)%is_circular
+                new_cln_struct%cell(currentNewId)%next_cell_id = currentNewId + 1
                 currentNewId = currentNewId + 1
                 
-                ! Middle segments: between intersections
-                do k = 1, j - 1
-                    iInt = cellIntersections(sortedIndices(k))
+                ! Middle segments between unique intersections
+                do k = 1, nUnique - 1
                     new_cln_struct%cell(currentNewId)%id = currentNewId
-                    new_cln_struct%cell(currentNewId)%x1 = intersections%point(iInt)%x
-                    new_cln_struct%cell(currentNewId)%y1 = intersections%point(iInt)%y
-                    new_cln_struct%cell(currentNewId)%z1 = intersections%point(iInt)%z
-                    iInt = cellIntersections(sortedIndices(k + 1))
-                    new_cln_struct%cell(currentNewId)%x2 = intersections%point(iInt)%x
-                    new_cln_struct%cell(currentNewId)%y2 = intersections%point(iInt)%y
-                    new_cln_struct%cell(currentNewId)%z2 = intersections%point(iInt)%z
-                    new_cln_struct%cell(currentNewId)%next_cell_id = currentNewId + 1
+                    new_cln_struct%cell(currentNewId)%x1 = ux(k)
+                    new_cln_struct%cell(currentNewId)%y1 = uy(k)
+                    new_cln_struct%cell(currentNewId)%z1 = uz(k)
+                    new_cln_struct%cell(currentNewId)%x2 = ux(k + 1)
+                    new_cln_struct%cell(currentNewId)%y2 = uy(k + 1)
+                    new_cln_struct%cell(currentNewId)%z2 = uz(k + 1)
                     new_cln_struct%cell(currentNewId)%material_id = cln_struct%cell(iCell)%material_id
                     new_cln_struct%cell(currentNewId)%radius_or_width = cln_struct%cell(iCell)%radius_or_width
                     new_cln_struct%cell(currentNewId)%height = cln_struct%cell(iCell)%height
                     new_cln_struct%cell(currentNewId)%is_circular = cln_struct%cell(iCell)%is_circular
+                    new_cln_struct%cell(currentNewId)%next_cell_id = currentNewId + 1
                     currentNewId = currentNewId + 1
                 end do
                 
-                ! Last segment: last intersection to end
-                iInt = cellIntersections(sortedIndices(j))
+                ! Last segment: last unique intersection -> end
                 new_cln_struct%cell(currentNewId)%id = currentNewId
-                new_cln_struct%cell(currentNewId)%x1 = intersections%point(iInt)%x
-                new_cln_struct%cell(currentNewId)%y1 = intersections%point(iInt)%y
-                new_cln_struct%cell(currentNewId)%z1 = intersections%point(iInt)%z
+                new_cln_struct%cell(currentNewId)%x1 = ux(nUnique)
+                new_cln_struct%cell(currentNewId)%y1 = uy(nUnique)
+                new_cln_struct%cell(currentNewId)%z1 = uz(nUnique)
                 new_cln_struct%cell(currentNewId)%x2 = cln_struct%cell(iCell)%x2
                 new_cln_struct%cell(currentNewId)%y2 = cln_struct%cell(iCell)%y2
                 new_cln_struct%cell(currentNewId)%z2 = cln_struct%cell(iCell)%z2
-                ! next_cell_id will be set based on original cell's next_cell_id
                 new_cln_struct%cell(currentNewId)%material_id = cln_struct%cell(iCell)%material_id
                 new_cln_struct%cell(currentNewId)%radius_or_width = cln_struct%cell(iCell)%radius_or_width
                 new_cln_struct%cell(currentNewId)%height = cln_struct%cell(iCell)%height
                 new_cln_struct%cell(currentNewId)%is_circular = cln_struct%cell(iCell)%is_circular
+                new_cln_struct%cell(currentNewId)%next_cell_id = 0
+                lastNewId(iCell) = currentNewId
                 currentNewId = currentNewId + 1
                 
-                deallocate(cellIntersections, distances, sortedIndices)
+                deallocate(distances, sortedIndices, cellIntersections, ux, uy, uz, udist)
             end if
         end do
         
         new_cln_struct%nCells = nNewCells
         
-        ! Update next_cell_id to maintain network connectivity
-        ! For cells that were split, the segments are already linked sequentially
-        ! For the last segment of each original cell, link to the first segment of the next original cell
-        ! (if the original cell had a next_cell_id)
-        ! This is a simplified approach - in a full implementation, would need to track
-        ! which new cells correspond to which original cells more carefully
-        
-        ! Find last new cell ID for each original cell and update links
-        currentNewId = 1
+        ! Link last segment of each original cell to the first segment of its next cell
         do iCell = 1, cln_struct%nCells
-            ! Count intersections for this cell
-            j = 0
-            do iInt = 1, intersections%nIntersections
-                if (intersections%point(iInt)%cln_cell_id == iCell) then
-                    j = j + 1
-                end if
-            end do
-            
-            ! Number of new cells from this original cell
-            k = 1 + j
-            
-            ! If original cell had a next_cell_id, find the first new cell from that next cell
             if (cln_struct%cell(iCell)%next_cell_id > 0 .and. &
                 cln_struct%cell(iCell)%next_cell_id <= cln_struct%nCells) then
-                ! Find first new cell ID for the next original cell
-                ! (This requires tracking - simplified: assume cells are processed in order)
-                ! For now, set to 0 (end of network) - proper implementation would track this
-                new_cln_struct%cell(currentNewId + k - 1)%next_cell_id = 0
+                new_cln_struct%cell(lastNewId(iCell))%next_cell_id = firstNewId(cln_struct%cell(iCell)%next_cell_id)
             else
-                ! End of original network
-                new_cln_struct%cell(currentNewId + k - 1)%next_cell_id = 0
+                new_cln_struct%cell(lastNewId(iCell))%next_cell_id = 0
             end if
-            
-            currentNewId = currentNewId + k
         end do
+        
+        ! Drop any accidental zero-length segments by reconnecting neighbors
+        j = 0
+        do iCell = 1, new_cln_struct%nCells
+            segLen = sqrt( &
+                (new_cln_struct%cell(iCell)%x2 - new_cln_struct%cell(iCell)%x1)**2 + &
+                (new_cln_struct%cell(iCell)%y2 - new_cln_struct%cell(iCell)%y1)**2 + &
+                (new_cln_struct%cell(iCell)%z2 - new_cln_struct%cell(iCell)%z1)**2)
+            if (segLen > TOL_GEOM) j = j + 1
+        end do
+        if (j < new_cln_struct%nCells) then
+            call CompactCLNStructure(new_cln_struct, TOL_GEOM)
+        end if
+        
+        deallocate(firstNewId, lastNewId)
         
         write(TMPStr, '(a,i8)') 'Number of new CLN cells after splitting:', new_cln_struct%nCells
         call Msg(TMPStr)
         
     end subroutine SplitCLNCells
+    
+    !----------------------------------------------------------------------
+    ! Remove zero-length CLN segments and renumber sequential connectivity
+    !----------------------------------------------------------------------
+    subroutine CompactCLNStructure(cln_struct, tol)
+        implicit none
+        type(t_cln_structure), intent(inout) :: cln_struct
+        real(dp), intent(in) :: tol
+        
+        type(t_cln_cell), allocatable :: kept(:)
+        integer(i4) :: i, nKeep
+        real(dp) :: segLen
+        
+        allocate(kept(cln_struct%nCells), stat=ialloc)
+        call AllocChk(ialloc, 'CompactCLNStructure: kept cells')
+        nKeep = 0
+        do i = 1, cln_struct%nCells
+            segLen = sqrt( &
+                (cln_struct%cell(i)%x2 - cln_struct%cell(i)%x1)**2 + &
+                (cln_struct%cell(i)%y2 - cln_struct%cell(i)%y1)**2 + &
+                (cln_struct%cell(i)%z2 - cln_struct%cell(i)%z1)**2)
+            if (segLen > tol) then
+                nKeep = nKeep + 1
+                kept(nKeep) = cln_struct%cell(i)
+                kept(nKeep)%id = nKeep
+                if (nKeep > 1) kept(nKeep - 1)%next_cell_id = nKeep
+            end if
+        end do
+        if (nKeep > 0) kept(nKeep)%next_cell_id = 0
+        deallocate(cln_struct%cell)
+        allocate(cln_struct%cell(nKeep), stat=ialloc)
+        call AllocChk(ialloc, 'CompactCLNStructure: compacted cells')
+        cln_struct%cell(1:nKeep) = kept(1:nKeep)
+        cln_struct%nCells = nKeep
+        deallocate(kept)
+    end subroutine CompactCLNStructure
     
     !----------------------------------------------------------------------
     ! Sort array by distance (simple bubble sort)
@@ -782,15 +846,31 @@ module CLNIntersection
         type(t_intersection_list) :: intersections_gwf
         type(t_intersection_list) :: intersections_swf
         type(t_intersection_list) :: intersections_merged
+        character(MAX_STR) :: xyz_out
         
         ! Read CLN input from XYZ file
         call ReadCLNFromXYZList(trim(cln_filename), cln_struct)
         
+        ! Clear stale 2D face topology inherited from the template mesh copy
+        ! so BuildFaceTopologyFrommesh rebuilds it correctly for the 3D mesh
+        call ClearMeshFaceTopology(GWF_domain)
+        if (GWF_domain%nNodesPerElement == 6) then
+            GWF_domain%TecplotTyp = 'feprism'
+        else if (GWF_domain%nNodesPerElement == 8) then
+            GWF_domain%TecplotTyp = 'febrick'
+        end if
+        
         ! Build face topology and find intersections for GWF
         call BuildFaceTopologyFrommesh(GWF_domain)
         call FindCLN_MeshIntersections(cln_struct, GWF_domain, intersections_gwf)
+
+        ! Restore Tecplot-compatible zonetype (connectivity is written as febrick)
+        if (GWF_domain%nNodesPerElement == 6) then
+            GWF_domain%TecplotTyp = 'febrick'
+        end if
         
         if (present(SWF_domain)) then
+            call ClearMeshFaceTopology(SWF_domain)
             ! Build face topology and find intersections for SWF
             call BuildFaceTopologyFrommesh(SWF_domain)
             call FindCLN_MeshIntersections(cln_struct, SWF_domain, intersections_swf)
@@ -802,9 +882,69 @@ module CLNIntersection
         end if
         
         call WriteCLNStructure(trim(output_cln_filename), new_cln_struct)
+        
+        ! Also write an XYZ polyline list that can be used by "cln from xyz list"
+        xyz_out = trim(output_cln_filename)
+        if (len_trim(xyz_out) > 4) then
+            if (xyz_out(len_trim(xyz_out)-3:len_trim(xyz_out)) == '.dat') then
+                xyz_out = xyz_out(1:len_trim(xyz_out)-4)//'.xyzList'
+            else
+                xyz_out = trim(xyz_out)//'.xyzList'
+            end if
+        else
+            xyz_out = trim(xyz_out)//'.xyzList'
+        end if
+        call WriteCLNXYZList(trim(xyz_out), new_cln_struct)
+        
         call Msg('CLN-mesh intersection utility (GWF/SWF domains) completed.')
         
     end subroutine RunCLNMeshIntersectionWithDomains
+    
+    !----------------------------------------------------------------------
+    subroutine ClearMeshFaceTopology(M)
+        implicit none
+        class(mesh), intent(inout) :: M
+        
+        if (allocated(M%FaceHost)) deallocate(M%FaceHost)
+        if (allocated(M%FaceNeighbour)) deallocate(M%FaceNeighbour)
+        if (allocated(M%FaceCentroidX)) deallocate(M%FaceCentroidX)
+        if (allocated(M%FaceCentroidY)) deallocate(M%FaceCentroidY)
+        if (allocated(M%FaceCentroidZ)) deallocate(M%FaceCentroidZ)
+        if (allocated(M%LocalFaceNodes)) deallocate(M%LocalFaceNodes)
+        M%FacesCalculated = .false.
+        M%nFaces = 0
+    end subroutine ClearMeshFaceTopology
+    
+    !----------------------------------------------------------------------
+    ! Write sequential XYZ polyline list from a CLN structure
+    !----------------------------------------------------------------------
+    subroutine WriteCLNXYZList(filename, cln_struct)
+        implicit none
+        character(*), intent(in) :: filename
+        type(t_cln_structure), intent(in) :: cln_struct
+        
+        integer(i4) :: i, FNum, nPoints
+        
+        if (cln_struct%nCells <= 0) return
+        
+        call OpenAscii(FNum, filename)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'CLN XYZ list file: '//trim(filename))
+        
+        write(FNum, '(a)') 'ID X Y Z'
+        write(FNum, '(i8,3(1x,'//FMT_R8//'))') 1, &
+            cln_struct%cell(1)%x1, cln_struct%cell(1)%y1, cln_struct%cell(1)%z1
+        nPoints = 1
+        do i = 1, cln_struct%nCells
+            nPoints = nPoints + 1
+            write(FNum, '(i8,3(1x,'//FMT_R8//'))') nPoints, &
+                cln_struct%cell(i)%x2, cln_struct%cell(i)%y2, cln_struct%cell(i)%z2
+        end do
+        
+        call FreeUnit(FNum)
+        write(TMPStr, '(a,i8)') 'Number of XYZ points written:', nPoints
+        call Msg(TMPStr)
+    end subroutine WriteCLNXYZList
 
 end module CLNIntersection
 

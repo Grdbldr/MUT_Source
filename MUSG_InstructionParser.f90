@@ -611,6 +611,7 @@ module MUSG_InstructionParser
         
         ! GWF boundary condition commands
         character(MAX_INST) :: AssignCHDtoGWF_CMD = 'gwf constant head'
+        character(MAX_INST) :: AssignCHDZoneName_CMD = 'chd zone name'
         character(MAX_INST) :: AssignDRNtoGWF_CMD = 'gwf drain'
         character(MAX_INST) :: AssignRCHtoGWF_CMD = 'gwf recharge'
         character(MAX_INST) :: AssignWELtoGWF_CMD = 'gwf well'
@@ -628,7 +629,10 @@ module MUSG_InstructionParser
         character(MAX_INST) :: AssignWELtoCLN_CMD = 'cln well'
         
         ! GWF boundary conditions
-        if(index(instruction, AssignCHDtoGWF_CMD) /= 0) then
+        if(index(instruction, AssignCHDZoneName_CMD) /= 0) then
+            call SetPendingCHDZoneName(FNumMUT, Modflow)
+
+        else if(index(instruction, AssignCHDtoGWF_CMD) /= 0) then
             call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)
             
         else if(index(instruction, AssignDRNtoGWF_CMD) /= 0) then

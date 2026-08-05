@@ -124,6 +124,7 @@ module MUSG !
     
     !---------------------------------------------------Boundary conditions
     character(MAX_INST) :: AssignCHDtoGWF_CMD		            =   'gwf constant head'
+    character(MAX_INST) :: AssignCHDZoneName_CMD	            =   'chd zone name'
     character(MAX_INST) :: AssignDRNtoGWF_CMD		            =   'gwf drain'
     character(MAX_INST) :: AssignRCHtoGWF_CMD		            =   'gwf recharge'
     character(MAX_INST) :: AssignWELtoGWF_CMD		            =   'gwf well'
@@ -585,6 +586,7 @@ module MUSG !
 
             ! Boundary condition instructions - handled by MUSG_InstructionParser
             else if(index(instruction, AssignCHDtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignCHDZoneName_CMD) /= 0 .or. &
                     index(instruction, AssignDRNtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignRCHtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoGWF_CMD) /= 0 .or. &
@@ -2010,6 +2012,7 @@ module MUSG !
         character(MAX_INST) :: Instruction
         character(MAX_INST) :: CLNFromXYZPair_cmd		=   'cln from xyz pair'
         character(MAX_INST) :: CLNFromXYZList_cmd		=   'cln from xyz list'
+        character(MAX_INST) :: CLNFromStructureFile_cmd	=   'cln from structure file'
         
         real(sp), allocatable :: xi(:), yi(:), zi(:)  ! xyz coordinate list defining CLN to be read
         integer(i4) :: nPoints  ! number of points in list
@@ -2041,6 +2044,9 @@ module MUSG !
               
             else if(index(Instruction, CLNFromXYZPair_cmd)  /= 0) then
                 call CLNFromXYZPair(FNum,CLNDomain)
+
+            else if(index(Instruction, CLNFromStructureFile_cmd)  /= 0) then
+                call CLNFromStructureFile(FNum, CLNDomain)
                 
             else
 			    call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: generate cln domain', 'BuildModflowUSG')
@@ -2230,26 +2236,68 @@ module MUSG !
         implicit none
         integer(i4) :: FNum
         type(ModflowDomain) CLNDomain
+        character(MAX_STR) :: filename
+        
+        read(FNum,'(a)') filename
+        call BuildCLNDomainFromXYZFile(trim(filename), CLNDomain)
+    end subroutine CLNFromXYZList
+
+    !----------------------------------------------------------------------
+    ! Build CLN domain from a CLN structure file (e.g. output of cln mesh intersection)
+    !----------------------------------------------------------------------
+    subroutine CLNFromStructureFile(FNum,CLNDomain)
+        implicit none
+        integer(i4) :: FNum
+        type(ModflowDomain) CLNDomain
         
         type(t_cln_structure) :: cln_struct
-        character(MAX_STR) :: filename
+        character(MAX_STR) :: filename, tmpXYZ
+        integer(i4) :: FNumXYZ, i, nPoints
+        
+        read(FNum,'(a)') filename
+        call Msg('Reading CLN from structure file: '//trim(filename))
+        call ReadCLNStructure(trim(filename), cln_struct)
+        
+        ! Convert structure segments to a temporary XYZ polyline and reuse XYZ builder
+        tmpXYZ = '_tmp_cln_from_structure.xyzList'
+        call OpenAscii(FNumXYZ, tmpXYZ)
+        write(FNumXYZ, '(a)') 'ID X Y Z'
+        write(FNumXYZ, '(i8,3(1x,es24.16))') 1, &
+            cln_struct%cell(1)%x1, cln_struct%cell(1)%y1, cln_struct%cell(1)%z1
+        nPoints = 1
+        do i = 1, cln_struct%nCells
+            nPoints = nPoints + 1
+            write(FNumXYZ, '(i8,3(1x,es24.16))') nPoints, &
+                cln_struct%cell(i)%x2, cln_struct%cell(i)%y2, cln_struct%cell(i)%z2
+        end do
+        call FreeUnit(FNumXYZ)
+        
+        call BuildCLNDomainFromXYZFile(trim(tmpXYZ), CLNDomain)
+        
+        open(newunit=FNumXYZ, file=trim(tmpXYZ), status='old')
+        close(FNumXYZ, status='delete')
+        
+    end subroutine CLNFromStructureFile
+
+    !----------------------------------------------------------------------
+    subroutine BuildCLNDomainFromXYZFile(filename, CLNDomain)
+        implicit none
+        character(*), intent(in) :: filename
+        type(ModflowDomain) CLNDomain
+        
+        type(t_cln_structure) :: cln_struct
         integer(i4) :: i
         integer(i4) :: nNodesInit, nElementsInit
         integer(i4) :: nSizeInit
         type(node), allocatable :: nodeTMP(:)
         
-        ! Read filename from instruction
-        read(FNum,'(a)') filename
         call Msg('Reading CLN from XYZ list file: '//trim(filename))
-        
-        ! Use CLNIntersection module to read the XYZ list
         call ReadCLNFromXYZList(trim(filename), cln_struct)
         
         nNodesInit = CLNDomain%nNodes
         nElementsInit = CLNDomain%nElements
         CLNDomain%nZones = CLNDomain%nZones + 1
         
-        ! Allocate nodes if needed
         nSizeInit = max(cln_struct%nCells + 1, CLNDomain%nNodes)
         if(.not. allocated(CLNDomain%node)) then
             allocate(CLNDomain%node(nSizeInit), stat=ialloc)
@@ -2265,8 +2313,6 @@ module MUSG !
         nodeTMP%y = -999.0d0
         nodeTMP%z = -999.0d0
         
-        ! Add nodes from CLN structure (each cell has start and end points)
-        ! First node is the start of the first cell
         CLNDomain%nNodes = CLNDomain%nNodes + 1
         if(CLNDomain%nNodes > size(CLNDomain%node)) then
             nodeTMP(1:size(CLNDomain%node)) = CLNDomain%node
@@ -2282,7 +2328,6 @@ module MUSG !
         CLNDomain%node(CLNDomain%nNodes)%y = cln_struct%cell(1)%y1
         CLNDomain%node(CLNDomain%nNodes)%z = cln_struct%cell(1)%z1
         
-        ! Add end point of each cell as a node
         do i = 1, cln_struct%nCells
             CLNDomain%nNodes = CLNDomain%nNodes + 1
             if(CLNDomain%nNodes > size(CLNDomain%node)) then
@@ -2300,18 +2345,13 @@ module MUSG !
             CLNDomain%node(CLNDomain%nNodes)%z = cln_struct%cell(i)%z2
         end do
         
-        ! Trim node array to final size
         nSizeInit = CLNDomain%nNodes
         deallocate(nodeTMP)
         allocate(nodeTMP(nSizeInit), stat=ialloc)
         call AllocChk(ialloc, 'nodeTMP arrays')
-        nodeTMP%x = -999.0d0
-        nodeTMP%y = -999.0d0
-        nodeTMP%z = -999.0d0
         nodeTMP(1:nSizeInit) = CLNDomain%node
         call move_alloc(nodeTMP, CLNDomain%node)
         
-        ! Allocate elements if needed
         if(.not. allocated(CLNDomain%element)) then
             CLNDomain%nElements = CLNDomain%nNodes - 1
             allocate(CLNDomain%Element(CLNDomain%nElements), &
@@ -2336,7 +2376,6 @@ module MUSG !
             call growElementArray(CLNDomain%Element, nSizeInit, CLNDomain%nElements)
         end if
         
-        ! Generate line element incidences
         do i = nElementsInit + 1, CLNDomain%nElements
             CLNDomain%element(i)%idZone = CLNDomain%nZones
             CLNDomain%idNode(1, i) = nNodesInit + (i - nElementsInit)
@@ -2365,8 +2404,7 @@ module MUSG !
         call Msg(TmpSTR)
         write(TmpSTR, '(a,i8)') 'Number of elements      ', CLNDomain%nElements
         call Msg(TmpSTR)
-        
-    end subroutine CLNFromXYZList
+    end subroutine BuildCLNDomainFromXYZFile
     
    
     subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,GWFDomain)
@@ -2861,6 +2899,11 @@ module MUSG !
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%GWF%name)//'"  ,N=',Modflow%GWF%nNodes,', E=',Modflow%GWF%nElements,&
         ', datapacking=block, zonetype='//trim(Modflow%GWF%TecplotTyp)
+        ! 6-node prisms are written as 8-node degenerate bricks; Tecplot rejects zonetype=feprism
+        if (Modflow%GWF%nNodesPerElement == 6) then
+            write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%GWF%name)//'"  ,N=',Modflow%GWF%nNodes,', E=',Modflow%GWF%nElements,&
+            ', datapacking=block, zonetype=febrick'
+        end if
         
         if(NodalControlVolume) then
             call AppendAuxdata(Modflow,ZoneSTR)
@@ -3453,7 +3496,7 @@ module MUSG !
                 'CLN ', 'DPT ', 'ZONE', 'MULT', 'DROB', 'RVOB', 'GBOB',&  ! 35
                 'GNC ', 'DDF ', 'CHOB', 'ETS ', 'DRT ', 'QRT ', 'GMG ',&  ! 42
                 'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
-                'MNW1', '    ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
+                'MNW1', 'CHDZ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
                 'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
                 'TVM ', 'SWF ', 'SWBC', 'OBPT', 33*'    '/
         integer(i4) :: maxunit, nc 
@@ -5555,16 +5598,31 @@ module MUSG !
         
         type (ModflowProject) Modflow
         
-        integer(i4) :: i
+        integer(i4) :: i, nTotal, iz
+        logical :: writeZones
+
+        nTotal = Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells
+        writeZones = (Modflow%nCHDZones > 0)
  	
         !------------------- CHD file
-        write(modflow.iCHD,*) Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells ! maximum number of CHD cells in any stress period 
-        write(modflow.iCHD,*) Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells ! number of CHD cells to read
+        if(writeZones) then
+            write(modflow.iCHD,*) nTotal, ' AUXILIARY CHDZONE' ! MXACTC + AUX
+        else
+            write(modflow.iCHD,*) nTotal ! maximum number of CHD cells in any stress period
+        end if
+        write(modflow.iCHD,*) nTotal ! number of CHD cells to read
             
         if(allocated(Modflow%GWF%ConstantHead)) then
             do i=1,Modflow%GWF%nCells
                 if(bcheck(Modflow%GWF%Cell(i)%is,ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') i,Modflow%GWF%ConstantHead(i),Modflow%GWF%ConstantHead(i)
+                    if(writeZones) then
+                        iz = 0
+                        if(allocated(Modflow%GWF%ConstantHeadZoneID)) iz = Modflow%GWF%ConstantHeadZoneID(i)
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
+                            i,Modflow%GWF%ConstantHead(i),Modflow%GWF%ConstantHead(i),iz
+                    else
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') i,Modflow%GWF%ConstantHead(i),Modflow%GWF%ConstantHead(i)
+                    end if
                 end if
             end do
         end if
@@ -5572,7 +5630,18 @@ module MUSG !
         if(allocated(Modflow%CLN%ConstantHead)) then
             do i=1,Modflow%CLN%nCells
                 if(bcheck(Modflow%CLN%Cell(i)%is,ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+i,Modflow%CLN%ConstantHead(i)
+                    ! Write START and END heads (USG CHD requires both). Prefer ramp from
+                    ! cell starting head to the assigned CHD so large drawdowns are not
+                    ! applied as an instantaneous shock at the first time step.
+                    if(writeZones) then
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
+                            Modflow%GWF%nCells+i,Modflow%CLN%Cell(i)%StartingHeads, &
+                            Modflow%CLN%ConstantHead(i),0
+                    else
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') &
+                            Modflow%GWF%nCells+i,Modflow%CLN%Cell(i)%StartingHeads, &
+                            Modflow%CLN%ConstantHead(i)
+                    end if
                 end if
             end do
         end if
@@ -5580,9 +5649,31 @@ module MUSG !
         if(allocated(Modflow%SWF%ConstantHead)) then
             do i=1,Modflow%SWF%nCells
                 if(bcheck(Modflow%SWF%Cell(i)%is,ConstantHead)) then
-                    write(modflow.iCHD,'(i8,2x,'//FMT_R8//')') Modflow%GWF%nCells+Modflow%CLN%nCells+i,Modflow%SWF%ConstantHead(i)
+                    if(writeZones) then
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
+                            Modflow%GWF%nCells+Modflow%CLN%nCells+i, &
+                            Modflow%SWF%Cell(i)%StartingHeads,Modflow%SWF%ConstantHead(i),0
+                    else
+                        write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') &
+                            Modflow%GWF%nCells+Modflow%CLN%nCells+i, &
+                            Modflow%SWF%Cell(i)%StartingHeads,Modflow%SWF%ConstantHead(i)
+                    end if
                 end if
             end do
+        end if
+
+        ! Named CHD zone map for USGs_1 split volumetric budget
+        if(writeZones) then
+            Modflow%FNameCHDZONE = trim(Modflow%Prefix)//'.chdzone'
+            call OpenAscii(Modflow%iCHDZONE, Modflow%FNameCHDZONE)
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameCHDZONE))
+            write(Modflow%iNAM,'(a,i4,a)') 'CHDZ ',Modflow%iCHDZONE,' '//trim(Modflow%FNameCHDZONE)
+            write(Modflow%iCHDZONE,'(a,a)') '# MODFLOW-USG CHDZONE file written by Modflow-User-Tools version ',trim(MUTVersion)
+            write(Modflow%iCHDZONE,*) Modflow%nCHDZones
+            do i=1,Modflow%nCHDZones
+                write(Modflow%iCHDZONE,'(i8,2x,a)') i, trim(Modflow%CHDZoneName(i))
+            end do
+            call FreeUnit(Modflow%iCHDZONE)
         end if
         
     end subroutine WriteCHDFile
@@ -5695,7 +5786,9 @@ module MUSG !
             if (allocated(Modflow%GWF%LocalFaceNodes)) deallocate(Modflow%GWF%LocalFaceNodes)
         end if
         
-        ! Set correct 3D element type for face topology rebuild
+        ! Set correct 3D element type for face topology rebuild.
+        ! feprism is MUT-internal only; GWFToTecplot writes 8-node degenerate
+        ! bricks, so restore febrick afterward for Tecplot-compatible output.
         if (Modflow%GWF%nNodesPerElement == 6) then
             Modflow%GWF%TecplotTyp = 'feprism'
         else if (Modflow%GWF%nNodesPerElement == 8) then
@@ -5704,6 +5797,10 @@ module MUSG !
         
         ! Find face intersections between CLN line segments and GWF mesh
         call FindCLN_MeshIntersections(cln_struct, Modflow%GWF, intersections)
+
+        if (Modflow%GWF%nNodesPerElement == 6) then
+            Modflow%GWF%TecplotTyp = 'febrick'
+        end if
         
         ! Collect entry/exit point pairs per CLN-GWF connection
         maxNodeIncidents = 20

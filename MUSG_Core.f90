@@ -92,6 +92,7 @@ module MUSG_Core
         
         integer(i4) :: nCHDCells=0        
         real(dp), allocatable :: ConstantHead(:)  ! CHD assigned head value
+        integer(i4), allocatable :: ConstantHeadZoneID(:)  ! named CHD budget zone id (0=unnamed)
 
         real(dp), allocatable :: Recharge(:)  ! RCH assigned recharge value
         integer(i4) :: nRCHoption  ! RCH option (nrchop in Modflow)
@@ -314,6 +315,13 @@ module MUSG_Core
         ! CHD file
         character(128) :: FNameCHD
         integer(i4) :: iCHD
+
+        ! Named CHD budget zones (LST VBNM labels, max 16 chars)
+        integer(i4) :: nCHDZones=0
+        integer(i4) :: PendingCHDZoneID=0
+        character(16) :: CHDZoneName(100)
+        character(128) :: FNameCHDZONE
+        integer(i4) :: iCHDZONE=0
 
         ! EVT file
         character(128) :: FNameEVT
