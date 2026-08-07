@@ -103,9 +103,6 @@ Module Materials
     subroutine DB_ReadGWFMaterials(FName)
         implicit none
 
-        
-        integer(i4) :: i
-
 	    character(*) :: FName
 	    character(256) :: line
         integer(i4) :: id
@@ -144,27 +141,35 @@ Module Materials
             stat=ialloc)
         call AllocChk(ialloc,'GWF material database arrays')
 
+        GWF_MaterialID = 0
         rewind(itmp)
         read(itmp,'(a)') line
-        do i=1,nGWFMaterials
-            read(itmp,'(a)') line
-            
-            ! parse line by commas
-            GWF_MaterialID(i)           =ParseLineINum(line)
-            GWF_MaterialName(i)         =ParseLineSTR(line)
-	        Porosity(i)                 =ParseLineRNUM(line)
-	        Kh_Kx(i)                    =ParseLineRNUM(line)
-            Kv_Kz(i)                    =ParseLineRNUM(line) 
-            Ky(i)                       =ParseLineRNUM(line)
-            Specificstorage(i)          =ParseLineRNUM(line) 
-            SpecificYield(i)            =ParseLineRNUM(line)
-            UnsaturatedFunctionType(i)  =ParseLineSTR(line)
-            Alpha(i)                    =ParseLineRNUM(line)
-            Beta(i)                     =ParseLineRNUM(line)
-            Sr(i)                       =ParseLineRNUM(line)
-            BrooksCoreyExponent(i)      =ParseLineRNUM(line) 
-            GWF_LengthUnit(i)           =ParseLineSTR(line)
-            GWF_TimeUnit(i)             =ParseLineSTR(line)
+        ! Store by material ID so sparse IDs (gaps) are allowed; do not assume one row per ID
+        do
+            read(itmp,'(a)',iostat=status) line
+            if(status/=0) exit
+            if(len_trim(line)==0) cycle
+
+            id = ParseLineINum(line)
+            if(id < 1 .or. id > nGWFMaterials) then
+                call HandleError(ERR_FILE_IO, 'Invalid GWF material ID in: '//trim(FName), 'DB_ReadGWFMaterials')
+            end if
+
+            GWF_MaterialID(id)           = id
+            GWF_MaterialName(id)         =ParseLineSTR(line)
+	        Porosity(id)                 =ParseLineRNUM(line)
+	        Kh_Kx(id)                    =ParseLineRNUM(line)
+            Kv_Kz(id)                    =ParseLineRNUM(line) 
+            Ky(id)                       =ParseLineRNUM(line)
+            Specificstorage(id)          =ParseLineRNUM(line) 
+            SpecificYield(id)            =ParseLineRNUM(line)
+            UnsaturatedFunctionType(id)  =ParseLineSTR(line)
+            Alpha(id)                    =ParseLineRNUM(line)
+            Beta(id)                     =ParseLineRNUM(line)
+            Sr(id)                       =ParseLineRNUM(line)
+            BrooksCoreyExponent(id)      =ParseLineRNUM(line) 
+            GWF_LengthUnit(id)           =ParseLineSTR(line)
+            GWF_TimeUnit(id)             =ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
@@ -236,9 +241,6 @@ Module Materials
     subroutine DB_ReadCLNMaterials(FName)
         implicit none
 
-        
-        integer(i4) :: i
-
 	    character(*) :: FName
 	    character(256) :: line
         integer(i4) :: id
@@ -275,26 +277,34 @@ Module Materials
         stat=ialloc)
         call AllocChk(ialloc,'CLN material database arrays')
 
+        CLN_ID = 0
         rewind(itmp)
         read(itmp,'(a)') line
-        do i=1,nCLNMaterials
-            read(itmp,'(a)') line
-            
-            ! parse line by commas
-            CLN_ID(i)           =ParseLineINum(line) 
-            CLN_Name(i)         =ParseLineSTR(line) 
-            CLN_Type(i)         =ParseLineSTR(line) 
-            Geometry(i)         =ParseLineSTR(line)
-            Direction(i)        =ParseLineSTR(line)
-            CircularRadius(i)   =ParseLineRNUM(line)
-            RectangularWidth(i) =ParseLineRNUM(line) 
-            RectangularHeight(i)=ParseLineRNUM(line)
-            LongitudinalK(i)    =ParseLineRNUM(line)
-            FlowTreatment(i)    =ParseLineSTR(line)
-            CLN_LengthUnit(i)   =ParseLineSTR(line)
-            CLN_TimeUnit(i)     =ParseLineSTR(line)
+        ! Store by material ID so sparse IDs (gaps) are allowed; do not assume one row per ID
+        do
+            read(itmp,'(a)',iostat=status) line
+            if(status/=0) exit
+            if(len_trim(line)==0) cycle
+
+            id = ParseLineINum(line)
+            if(id < 1 .or. id > nCLNMaterials) then
+                call HandleError(ERR_FILE_IO, 'Invalid CLN material ID in: '//trim(FName), 'DB_ReadCLNMaterials')
+            end if
+
+            CLN_ID(id)           = id
+            CLN_Name(id)         =ParseLineSTR(line) 
+            CLN_Type(id)         =ParseLineSTR(line) 
+            Geometry(id)         =ParseLineSTR(line)
+            Direction(id)        =ParseLineSTR(line)
+            CircularRadius(id)   =ParseLineRNUM(line)
+            RectangularWidth(id) =ParseLineRNUM(line) 
+            RectangularHeight(id)=ParseLineRNUM(line)
+            LongitudinalK(id)    =ParseLineRNUM(line)
+            FlowTreatment(id)    =ParseLineSTR(line)
+            CLN_LengthUnit(id)   =ParseLineSTR(line)
+            CLN_TimeUnit(id)     =ParseLineSTR(line)
             ! Optional trailing field (backward compatible): general-section table file
-            GeneralSectionTableFile(i)=ParseLineSTR(line)
+            GeneralSectionTableFile(id)=ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
@@ -304,9 +314,6 @@ Module Materials
     !----------------------------------------------------------------------
     subroutine DB_ReadSWFMaterials(FName)
         implicit none
-
-        
-        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
@@ -340,21 +347,29 @@ Module Materials
             stat=ialloc)
         call AllocChk(ialloc,'SWF material database arrays')
 
+        SWF_MaterialID = 0
         rewind(itmp)
         read(itmp,'(a)') line
-        do i=1,nSWFMaterials
-            read(itmp,'(a)') line
-            
-            ! parse line by commas
-	        SWF_MaterialID(i)               =ParseLineINum(line) 
-            SWF_MaterialName(i)             =ParseLineSTR(line) 
-            ManningCoefficient(i)           =ParseLineRNum(line) 
-            DepressionStorageHeight(i)      =ParseLineRNum(line)
-            ObstructionStorageHeight(i)     =ParseLineRNum(line) 
-            SWFSmoothingDepth1(i)           =ParseLineRNum(line)  
-            SWFSmoothingDepth2(i)           =ParseLineRNum(line)   
-            SWF_LengthUnit(i)               =ParseLineSTR(line)
-            SWF_TimeUnit(i)                 =ParseLineSTR(line)
+        ! Store by material ID so sparse IDs (gaps) are allowed; do not assume one row per ID
+        do
+            read(itmp,'(a)',iostat=status) line
+            if(status/=0) exit
+            if(len_trim(line)==0) cycle
+
+            id = ParseLineINum(line)
+            if(id < 1 .or. id > nSWFMaterials) then
+                call HandleError(ERR_FILE_IO, 'Invalid SWF material ID in: '//trim(FName), 'DB_ReadSWFMaterials')
+            end if
+
+	        SWF_MaterialID(id)               = id
+            SWF_MaterialName(id)             =ParseLineSTR(line) 
+            ManningCoefficient(id)           =ParseLineRNum(line) 
+            DepressionStorageHeight(id)      =ParseLineRNum(line)
+            ObstructionStorageHeight(id)     =ParseLineRNum(line) 
+            SWFSmoothingDepth1(id)           =ParseLineRNum(line)  
+            SWFSmoothingDepth2(id)           =ParseLineRNum(line)   
+            SWF_LengthUnit(id)               =ParseLineSTR(line)
+            SWF_TimeUnit(id)                 =ParseLineSTR(line)
         end do
         
         call freeunit(itmp)
@@ -364,9 +379,6 @@ Module Materials
     !----------------------------------------------------------------------
     subroutine DB_ReadET(FName)
         implicit none
-
-        
-        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
@@ -409,30 +421,38 @@ Module Materials
          stat=ialloc)            
         call AllocChk(ialloc,'ET database arrays')
 
+        ET_ID = 0
         rewind(itmp)
         read(itmp,'(a)') line
-        do i=1,nET
-            read(itmp,'(a)') line
-            
-            ! parse line by commas
-	        ET_ID(i)                        =ParseLineINum(line) 
-            ET_Name(i)                      =ParseLineSTR(line) 
-            EvaporationDepth(i)             =ParseLineRNum(line) 
-            RootDepth(i)                    =ParseLineRNum(line)  
-            LAI_Table(i)                    =ParseLineSTR(line)  
-            C1(i)                           =ParseLineRNum(line) 
-            C2(i)                           =ParseLineRNum(line) 
-            C3(i)                           =ParseLineRNum(line) 
-            WiltingPoint(i)                 =ParseLineRNum(line) 
-            FieldCapacity(i)                =ParseLineRNum(line) 
-            OxicLimit(i)                    =ParseLineRNum(line) 
-            AnoxicLimit(i)                  =ParseLineRNum(line) 
-            EvaporationMinimum(i)           =ParseLineRNum(line) 
-            EvaporationMaximum(i)           =ParseLineRNum(line) 
-            CanopyStorageParameter(i)       =ParseLineRNum(line) 
-            InitialInterceptionStorage(i)   =ParseLineRNum(line)
-            ET_LengthUnit(i)                =ParseLineSTR(line)
-            ET_TimeUnit(i)                  =ParseLineSTR(line)
+        ! Store by ET ID so sparse IDs (gaps) are allowed; do not assume one row per ID
+        do
+            read(itmp,'(a)',iostat=status) line
+            if(status/=0) exit
+            if(len_trim(line)==0) cycle
+
+            id = ParseLineINum(line)
+            if(id < 1 .or. id > nET) then
+                call HandleError(ERR_FILE_IO, 'Invalid ET ID in: '//trim(FName), 'DB_ReadET')
+            end if
+
+	        ET_ID(id)                        = id
+            ET_Name(id)                      =ParseLineSTR(line) 
+            EvaporationDepth(id)             =ParseLineRNum(line) 
+            RootDepth(id)                    =ParseLineRNum(line)  
+            LAI_Table(id)                    =ParseLineSTR(line)  
+            C1(id)                           =ParseLineRNum(line) 
+            C2(id)                           =ParseLineRNum(line) 
+            C3(id)                           =ParseLineRNum(line) 
+            WiltingPoint(id)                 =ParseLineRNum(line) 
+            FieldCapacity(id)                =ParseLineRNum(line) 
+            OxicLimit(id)                    =ParseLineRNum(line) 
+            AnoxicLimit(id)                  =ParseLineRNum(line) 
+            EvaporationMinimum(id)           =ParseLineRNum(line) 
+            EvaporationMaximum(id)           =ParseLineRNum(line) 
+            CanopyStorageParameter(id)       =ParseLineRNum(line) 
+            InitialInterceptionStorage(id)   =ParseLineRNum(line)
+            ET_LengthUnit(id)                =ParseLineSTR(line)
+            ET_TimeUnit(id)                  =ParseLineSTR(line)
         end do
         
         
@@ -442,9 +462,6 @@ Module Materials
     !----------------------------------------------------------------------
     subroutine DB_ReadSMS(FName)
         implicit none
-
-        
-        integer(i4) :: i
 
 	    character(*) :: FName
 	    character(256) :: line
@@ -497,40 +514,48 @@ Module Materials
         stat=ialloc) 
         call AllocChk(ialloc,'SMS database arrays')
 
+        SMS_ID = 0
         rewind(itmp)
         read(itmp,'(a)') line
-        do i=1,nSMS
-            read(itmp,'(a)') line
-            
-            ! parse line by commas
-            SMS_ID(i)           =ParseLineINum(line) 
-            SMS_Name(i)         =ParseLineSTR(line) 
-            SMS_HCLOSE(i)       =ParseLineRNum(line) 
-            SMS_HICLOSE(i)      =ParseLineRNum(line) 
-            SMS_MXITER(i)       =ParseLineINum(line) 
-            SMS_ITER1(i)        =ParseLineINum(line) 
-            SMS_IPRSMS(i)       =ParseLineINum(line) 
-            SMS_NONLINMETH(i)   =ParseLineINum(line) 
-            SMS_LINMETH(i)      =ParseLineINum(line) 
-            SMS_THETA(i)        =ParseLineRNum(line) 
-            SMS_KAPPA(i)        =ParseLineRNum(line) 
-            SMS_GAMMA(i)        =ParseLineRNum(line) 
-            SMS_AMOMENTUM(i)    =ParseLineRNum(line) 
-            SMS_NUMTRACK(i)     =ParseLineINum(line) 
-            SMS_BTOL(i)         =ParseLineRNum(line) 
-            SMS_BREDUC(i)       =ParseLineRNum(line) 
-            SMS_RES_LIM(i)      =ParseLineRNum(line) 
-            SMS_ITRUNCNEWTON(i) =ParseLineINum(line) 
-            SMS_Options(i)      =ParseLineSTR(line)
-            SMS_IACL(i)         =ParseLineINum(line)
-            SMS_NORDER(i)       =ParseLineINum(line)
-            SMS_LEVEL(i)        =ParseLineINum(line)
-            SMS_NORTH(i)        =ParseLineINum(line)
-            SMS_IREDSYS(i)      =ParseLineINum(line)
-            SMS_RRCTOL(i)       =ParseLineRNum(line)
-            SMS_IDROPTOL(i)     =ParseLineINum(line)
-            SMS_EPSRN(i)        =ParseLineRNum(line) 
-            SMS_LengthUnit(i)   =ParseLineSTR(line)
+        ! Store by SMS ID so sparse IDs (gaps) are allowed; do not assume one row per ID
+        do
+            read(itmp,'(a)',iostat=status) line
+            if(status/=0) exit
+            if(len_trim(line)==0) cycle
+
+            id = ParseLineINum(line)
+            if(id < 1 .or. id > nSMS) then
+                call HandleError(ERR_FILE_IO, 'Invalid SMS ID in: '//trim(FName), 'DB_ReadSMS')
+            end if
+
+            SMS_ID(id)           = id
+            SMS_Name(id)         =ParseLineSTR(line) 
+            SMS_HCLOSE(id)       =ParseLineRNum(line) 
+            SMS_HICLOSE(id)      =ParseLineRNum(line) 
+            SMS_MXITER(id)       =ParseLineINum(line) 
+            SMS_ITER1(id)        =ParseLineINum(line) 
+            SMS_IPRSMS(id)       =ParseLineINum(line) 
+            SMS_NONLINMETH(id)   =ParseLineINum(line) 
+            SMS_LINMETH(id)      =ParseLineINum(line) 
+            SMS_THETA(id)        =ParseLineRNum(line) 
+            SMS_KAPPA(id)        =ParseLineRNum(line) 
+            SMS_GAMMA(id)        =ParseLineRNum(line) 
+            SMS_AMOMENTUM(id)    =ParseLineRNum(line) 
+            SMS_NUMTRACK(id)     =ParseLineINum(line) 
+            SMS_BTOL(id)         =ParseLineRNum(line) 
+            SMS_BREDUC(id)       =ParseLineRNum(line) 
+            SMS_RES_LIM(id)      =ParseLineRNum(line) 
+            SMS_ITRUNCNEWTON(id) =ParseLineINum(line) 
+            SMS_Options(id)      =ParseLineSTR(line)
+            SMS_IACL(id)         =ParseLineINum(line)
+            SMS_NORDER(id)       =ParseLineINum(line)
+            SMS_LEVEL(id)        =ParseLineINum(line)
+            SMS_NORTH(id)        =ParseLineINum(line)
+            SMS_IREDSYS(id)      =ParseLineINum(line)
+            SMS_RRCTOL(id)       =ParseLineRNum(line)
+            SMS_IDROPTOL(id)     =ParseLineINum(line)
+            SMS_EPSRN(id)        =ParseLineRNum(line) 
+            SMS_LengthUnit(id)   =ParseLineSTR(line)
        end do
         
         

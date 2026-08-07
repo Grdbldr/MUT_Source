@@ -6,12 +6,13 @@ module MUSG_Database
     use GeneralRoutines, only: MAX_INST, MAX_STR, LocalUserbin, LocalUserbinPath, DefineUserbin, USERBIN, Msg
     use GeneralRoutines, only: FMT_R4, FMT_R8, TmpSTR, UnitsOfLength, LengthConverter
     use Materials, only: DB_ReadSMS, DB_ReadGWFMaterials, DB_ReadCLNMaterials, DB_ReadSWFMaterials, DB_ReadET
-    use Materials, only: iSMSParameterSet, SMS_Name, SMS_HCLOSE, SMS_HICLOSE, SMS_MXITER, SMS_ITER1
+    use Materials, only: nSMS, SMS_ID, iSMSParameterSet, SMS_Name, SMS_HCLOSE, SMS_HICLOSE, SMS_MXITER, SMS_ITER1
     use Materials, only: SMS_IPRSMS, SMS_NONLINMETH, SMS_LINMETH, SMS_THETA, SMS_KAPPA, SMS_GAMMA
     use Materials, only: SMS_AMOMENTUM, SMS_NUMTRACK, SMS_BTOL, SMS_BREDUC, SMS_RES_LIM, SMS_ITRUNCNEWTON
     use Materials, only: SMS_Options, SMS_IACL, SMS_NORDER, SMS_LEVEL, SMS_NORTH, SMS_IREDSYS
     use Materials, only: SMS_RRCTOL, SMS_IDROPTOL, SMS_EPSRN, SMS_LengthUnit
     use GeneralRoutines, only: MUTVersion
+    use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
     
     implicit none
     private
@@ -94,6 +95,10 @@ module MUSG_Database
         real(sp) :: LengthConversionFactor
         
         iSMSParameterSet = ParameterSetNumber
+        if(iSMSParameterSet < 1 .or. iSMSParameterSet > nSMS .or. SMS_ID(iSMSParameterSet) /= iSMSParameterSet) then
+            write(TmpSTR,'(i4)') iSMSParameterSet
+            call HandleError(ERR_INVALID_INPUT, 'SMS parameter set '//trim(TmpSTR)//' not found in SMS database', 'SetSMSParameterSet')
+        end if
         write(TmpSTR,'(i4)') iSMSParameterSet
         call Msg('Using SMS parameter set '//trim(TmpSTR)//', '//trim(SMS_Name(iSMSParameterSet)))
         

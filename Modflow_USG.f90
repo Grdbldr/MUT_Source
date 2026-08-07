@@ -14868,9 +14868,14 @@ module MUSG !
         
         ! read initial comment lines beginning with #
         do 
-            read(Modflow.iGSF,'(a)') line
+            read(Modflow.iGSF,'(a)',iostat=status) line
+            if(status/=0) then
+                call HandleError(ERR_FILE_IO, &
+                    'Incomplete GWF GSF file (header only?). Rebuild the Modflow project so the GSF body is written.', &
+                    'Read_GWF_GSF')
+            end if
             if(line(1:1).eq.'#') then
-                write(*,'(a)') line
+                write(*,'(a)') trim(line)
                 cycle
             end if
             backspace(Modflow.iGSF)
@@ -14961,9 +14966,14 @@ module MUSG !
         
         ! read initial comment lines beginning with #
         do 
-            read(Modflow.iCLN_GSF,'(a)') line
+            read(Modflow.iCLN_GSF,'(a)',iostat=status) line
+            if(status/=0) then
+                call HandleError(ERR_FILE_IO, &
+                    'Incomplete CLN GSF file (header only?). Rebuild the Modflow project so the GSF body is written.', &
+                    'Read_CLN_GSF')
+            end if
             if(line(1:1).eq.'#') then
-                write(*,'(a)') line
+                write(*,'(a)') trim(line)
                 cycle
             end if
             backspace(Modflow.iCLN_GSF)
@@ -15025,9 +15035,14 @@ module MUSG !
         
         ! read initial comment lines beginning with #
         do 
-            read(Modflow.iSWF_GSF,'(a)') line
+            read(Modflow.iSWF_GSF,'(a)',iostat=status) line
+            if(status/=0) then
+                call HandleError(ERR_FILE_IO, &
+                    'Incomplete SWF GSF file (header only?). Rebuild the Modflow project so the GSF body is written.', &
+                    'Read_SWF_GSF')
+            end if
             if(line(1:1).eq.'#') then
-                write(*,'(a)') line
+                write(*,'(a)') trim(line)
                 cycle
             end if
             backspace(Modflow.iSWF_GSF)
