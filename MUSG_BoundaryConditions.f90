@@ -270,28 +270,167 @@ module MUSG_BoundaryConditions
         call FreeUnit(iunit)
         if(CountRTSZones < 1) CountRTSZones = 1
     end function CountRTSZones
+
+    !----------------------------------------------------------------------
+    subroutine WriteMergedRTSFile(modflow)
+        ! Merge single-column RTS zone files into FNameRTS (multi-column).
+        implicit none
+        type(ModflowProject) :: modflow
+
+        integer(i4), parameter :: maxrec = 5000
+        integer(i4) :: iz, iunit, ios, irec, nrec, j, nvals
+        integer(i4) :: nrec_ref
+        character(len=512) :: line
+        real(dp) :: vals(100)
+        real(dp) :: tstart(maxrec), tend(maxrec), factor(maxrec)
+        real(dp) :: rates(maxrec, 20)
+        real(dp) :: tstart_z, tend_z, factor_z, rate_z
+        integer(i4) :: iout
+
+        if(modflow%nRTSZones < 1) return
+
+        nrec_ref = 0
+        rates = 0.0d0
+
+        do iz = 1, modflow%nRTSZones
+            call OpenAscii(iunit, modflow%FNameRTSZones(iz))
+            irec = 0
+            do
+                read(iunit,'(a)',iostat=ios) line
+                if(ios /= 0) exit
+                if(len_trim(line) == 0) cycle
+                if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                nvals = 0
+                do j = 1, 100
+                    read(line,*,iostat=ios) vals(1:j)
+                    if(ios /= 0) exit
+                    nvals = j
+                end do
+                if(nvals < 4) then
+                    call ErrMsg('RTS file has fewer than 4 values on a data line: '// &
+                                trim(modflow%FNameRTSZones(iz)))
+                end if
+                if(nvals > 4) then
+                    call ErrMsg('Multi-zone source RTS files must have one rate column: '// &
+                                trim(modflow%FNameRTSZones(iz)))
+                end if
+                tstart_z = vals(1)
+                tend_z = vals(2)
+                factor_z = vals(3)
+                rate_z = vals(4)
+                irec = irec + 1
+                if(irec > maxrec) then
+                    call ErrMsg('RTS file exceeds maximum records in WriteMergedRTSFile')
+                end if
+                if(iz == 1) then
+                    tstart(irec) = tstart_z
+                    tend(irec) = tend_z
+                    factor(irec) = factor_z
+                else
+                    if(irec > nrec_ref) then
+                        call ErrMsg('RTS zone files have different numbers of records')
+                    end if
+                    if(abs(tstart_z - tstart(irec)) > 1.0d-9 .or. &
+                       abs(tend_z - tend(irec)) > 1.0d-9 .or. &
+                       abs(factor_z - factor(irec)) > 1.0d-9) then
+                        call ErrMsg('RTS zone files have mismatched time intervals/factors')
+                    end if
+                end if
+                rates(irec, iz) = rate_z
+            end do
+            close(iunit)
+            call FreeUnit(iunit)
+            if(iz == 1) then
+                nrec_ref = irec
+            else if(irec /= nrec_ref) then
+                call ErrMsg('RTS zone files have different numbers of records')
+            end if
+        end do
+
+        nrec = nrec_ref
+        open(newunit=iout, file=trim(modflow%FNameRTS), status='replace', &
+             form='formatted', iostat=ios)
+        if(ios /= 0) then
+            call ErrMsg('Error creating merged RTS file: '//trim(modflow%FNameRTS))
+        end if
+        do irec = 1, nrec
+            write(iout,'(3(es16.8,1x))', advance='no') tstart(irec), tend(irec), factor(irec)
+            do iz = 1, modflow%nRTSZones
+                write(iout,'(es16.8,1x)', advance='no') rates(irec, iz)
+            end do
+            write(iout,*)
+        end do
+        close(iout)
+
+        write(TmpSTR,'(a,i0,a,i0,a)') 'Wrote merged RTS with ', modflow%nRTSZones, &
+            ' zones and ', nrec, ' records: '//trim(modflow%FNameRTS)
+        call Msg(trim(TmpSTR))
+    end subroutine WriteMergedRTSFile
+
+    !----------------------------------------------------------------------
+    subroutine WriteRTSRechargePackage(modflow, domain)
+        ! Rewrite RCH package contents for current RTS zone map.
+        implicit none
+        type(ModflowProject) :: modflow
+        type(ModflowDomain) :: domain
+
+        integer(i4) :: i, nassigned
+
+        write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ', &
+            trim(MUTVersion)
+        write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB, 'RTS', modflow%nRTSZones
+        write(modflow.iRCH,*) 1, 'INRCHZONES', modflow%nRTSZones
+        write(Modflow.iRCH,'(a)') 'CONSTANT         0.00000  Recharge()'
+
+        nassigned = 0
+        do i = 1, domain%nCells
+            if(domain%IRTSZone(i) > 0) nassigned = nassigned + 1
+        end do
+
+        if(modflow%nRTSZones == 1 .and. nassigned == domain%nCells) then
+            ! Backward-compatible uniform map when a single RTS covers all cells
+            write(Modflow.iRCH,'(a)') 'CONSTANT               1  IZNRCH()'
+        else
+            write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  IZNRCH()'
+            write(Modflow.iRCH,'(10(i8))') (domain%IRTSZone(i), i=1, domain%nCells)
+        end if
+
+        write(TmpSTR,'(a,i8)') 'Writing RTS-capable RCH with INRCHZONES = ', modflow%nRTSZones
+        call Msg(trim(TmpSTR))
+        write(TmpSTR,'(a,i8,a,i8)') 'RTS zone map: cells assigned = ', nassigned, &
+            ' of ', domain%nCells
+        call Msg(trim(TmpSTR))
+    end subroutine WriteRTSRechargePackage
     
     !----------------------------------------------------------------------
     subroutine AssignTransientRCHtoDomain(FNumMUT,modflow,domain) 
-        ! Assign Transient Recharge boundary condition to domain (RTS strategy)
+        ! Assign Transient Recharge boundary condition to domain (RTS strategy).
+        ! Repeated calls attach successive single-column RTS files to currently
+        ! chosen cells; MUT merges them into one multi-column RTS for USGS.
         implicit none
         integer(i4) :: FNumMUT
         type(ModflowProject) :: modflow
         type(ModflowDomain) :: domain
         
-        integer(i4) :: i
+        integer(i4) :: i, nchosen, nzones_in_file
         real(dp) :: rech
         integer(i4) :: nRCHoption
-        integer(i4) :: nzones
+        character(128) :: FNameZoneRTS
         
         call Msg('Recharge strategy: RTS (time-varying rates from transient recharge file)')
         
-        read(FNumMUT,'(a)') modflow.FNameRTS
-        write(TmpSTR,'(a)') 'Assigning '//domain%name//' transient recharge from RTS file: '//TRIM(modflow.FNameRTS)
+        read(FNumMUT,'(a)') FNameZoneRTS
+        FNameZoneRTS = adjustl(FNameZoneRTS)
+        write(TmpSTR,'(a)') 'Assigning '//domain%name//' transient recharge from RTS file: '// &
+            TRIM(FNameZoneRTS)
         call Msg(trim(TmpSTR))
-        nzones = CountRTSZones(modflow.FNameRTS)
-        write(TmpSTR,'(a,i8)') 'RTS zone count (from first RTS record): ',nzones
-        call Msg(trim(TmpSTR))
+
+        nzones_in_file = CountRTSZones(FNameZoneRTS)
+        if(nzones_in_file /= 1) then
+            call ErrMsg('Each swf transient recharge RTS source must have exactly one rate column. File: '// &
+                        trim(FNameZoneRTS))
+        end if
+
         read(FNumMUT,*) nRCHoption
         write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain%name//' recharge option: ',nRCHoption
         call Msg(trim(TmpSTR))
@@ -311,6 +450,11 @@ module MUSG_BoundaryConditions
             call AllocChk(ialloc,'Cell recharge array')            
             domain%Recharge(:)=-999.d0
         end if
+        if(.not. allocated(domain%IRTSZone)) then
+            allocate(domain%IRTSZone(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell RTS zone array')
+            domain%IRTSZone(:) = 0
+        end if
         
         ! Base RCH array is zero; time-varying rates come from the RTS file
         rech = 0.0d0
@@ -318,29 +462,63 @@ module MUSG_BoundaryConditions
             call set(domain%cell(i)%is,Recharge)
             domain%Recharge(i)=rech
         end do
-        
-        if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
-            Modflow.FNameRCH=trim(Modflow.Prefix)//'.rch'
-            call OpenAscii(Modflow.iRCH,Modflow.FNameRCH)
-            call OpenAscii(Modflow.iRTS,Modflow.FNameRTS)
-            call Msg('  ')
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
-            write(TmpSTR,'(a,i8)') 'Writing RTS-capable RCH with INRCHZONES = ',nzones
-            call Msg(trim(TmpSTR))
-            write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
-            write(Modflow.iNAM,'(a,i4,a)') 'RTS  ',Modflow.iRTS,' '//trim(Modflow.FNameRTS)
-            write(Modflow.iRCH,'(a,a)') '# MODFLOW-USG RCH file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB, 'RTS', nzones
-            write(modflow.iRCH,*) 1, 'INRCHZONES', nzones
-            write(Modflow.iRCH,'(a)') 'CONSTANT         0.00000  Recharge()'
-            ! Uniform single-zone map by default; multi-zone spatial maps are not yet assigned here
-            write(Modflow.iRCH,'(a)') 'CONSTANT               1  IZNRCH()'
 
-        else
-            write(modflow.iRCH,*) 1, 'INRCHZONES', nzones
-            write(Modflow.iRCH,'(a)') 'CONSTANT         0.00000  Recharge()'
-            write(Modflow.iRCH,'(a)') 'CONSTANT               1  IZNRCH()'
+        if(modflow%nRTSZones >= modflow%maxRTSZones) then
+            call ErrMsg('Too many swf transient recharge RTS zone files')
         end if
+        modflow%nRTSZones = modflow%nRTSZones + 1
+        modflow%FNameRTSZones(modflow%nRTSZones) = FNameZoneRTS
+
+        nchosen = 0
+        do i = 1, domain%nCells
+            if(bcheck(domain%cell(i)%is, chosen)) then
+                domain%IRTSZone(i) = modflow%nRTSZones
+                nchosen = nchosen + 1
+            end if
+        end do
+        if(nchosen == 0) then
+            call ErrMsg('No chosen cells for swf transient recharge zone '// &
+                        trim(FNameZoneRTS))
+        end if
+        write(TmpSTR,'(a,i8,a,i8)') 'RTS zone ', modflow%nRTSZones, &
+            ' assigned to chosen cells: ', nchosen
+        call Msg(trim(TmpSTR))
+
+        ! Always write a merged RTS that the nam file points to
+        modflow%FNameRTS = '_buildo.merged_RTS.rts'
+        if(modflow%RTSNamWritten) then
+            close(Modflow%iRTS)
+        end if
+        call WriteMergedRTSFile(modflow)
+
+        if(modflow%iRCH == 0) then
+            Modflow%FNameRCH = trim(Modflow%Prefix)//'.rch'
+            call OpenAscii(Modflow%iRCH, Modflow%FNameRCH)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameRCH))
+            write(Modflow%iNAM,'(a,i4,a)') 'RCH  ', Modflow%iRCH, ' '//trim(Modflow%FNameRCH)
+        else
+            close(Modflow%iRCH)
+            open(Modflow%iRCH, file=trim(Modflow%FNameRCH), status='replace', &
+                 form='formatted', iostat=ialloc)
+            if(ialloc /= 0) then
+                call ErrMsg('Error reopening RCH file: '//trim(Modflow%FNameRCH))
+            end if
+        end if
+
+        if(.not. modflow%RTSNamWritten) then
+            call OpenAscii(Modflow%iRTS, Modflow%FNameRTS)
+            write(Modflow%iNAM,'(a,i4,a)') 'RTS  ', Modflow%iRTS, ' '//trim(Modflow%FNameRTS)
+            modflow%RTSNamWritten = .true.
+        else
+            open(Modflow%iRTS, file=trim(Modflow%FNameRTS), status='old', &
+                 form='formatted', iostat=ialloc)
+            if(ialloc /= 0) then
+                call ErrMsg('Error reopening merged RTS file: '//trim(Modflow%FNameRTS))
+            end if
+        end if
+
+        call WriteRTSRechargePackage(modflow, domain)
     end subroutine AssignTransientRCHtoDomain
     
     !----------------------------------------------------------------------

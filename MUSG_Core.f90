@@ -96,6 +96,7 @@ module MUSG_Core
 
         real(dp), allocatable :: Recharge(:)  ! RCH assigned recharge value
         integer(i4) :: nRCHoption  ! RCH option (nrchop in Modflow)
+        integer(i4), allocatable :: IRTSZone(:)  ! RTS zone id per cell (0=none)
         
         integer(i4) :: nDRNCells=0        
         real(dp), allocatable :: DrainElevation(:)  ! DRN assigned Drain Elevation value
@@ -299,9 +300,13 @@ module MUSG_Core
         character(128) :: FNameRCH
         integer(i4) :: iRCH
         
-        !RST file for transient recharge
+        !RTS file for transient recharge (merged multi-zone file written to nam)
         character(128) :: FNameRTS
         integer(i4) :: iRTS
+        integer(i4) :: nRTSZones=0
+        integer(i4) :: maxRTSZones=20
+        character(128) :: FNameRTSZones(20)
+        logical :: RTSNamWritten=.false.
         
         
         ! RIV file
