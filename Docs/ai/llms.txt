@@ -1,0 +1,26 @@
+# MUT Source — AI index
+
+> Modflow User Tools (MUT): Fortran preprocessor for MODFLOW-USG
+
+## Agent entrypoints
+
+- AGENTS.md
+- CODE_STANDARDS.md
+- Docs/ai/PROGRESS.md
+- Docs/ai/DOMAIN_MAP.md
+- Docs/ai/BUILD.md
+- .cursor/rules/mut-fortran.mdc
+
+CODE_ANALYSIS.md is historical; prefer DOMAIN_MAP.md.
+
+## User documentation (TeX — edit, do not mirror)
+
+- Docs/User's Guide/MUT User's Guide.tex
+- Package chapters: GWF.tex, CLN.tex, SWF.tex, GSTR.tex, OutputControl.tex, ModelExecution.tex
+- Changelog: Modifications.tex
+- QGIS appendix: QGIS_Useage.tex
+
+## Build
+
+- Docs/build_mut_guide.bat
+- post_build.bat / post_buildR.bat

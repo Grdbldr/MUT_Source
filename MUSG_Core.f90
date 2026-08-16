@@ -11,6 +11,8 @@ module MUSG_Core
     
     public :: cell, ModflowDomain, ModflowProject
     public :: NodalControlVolume
+    public :: GSTRInstance
+    public :: MAX_GSTR_INSTANCES, MAX_GSTR_SNAPS
     
     ! Domain type constants (private to avoid conflict with ModflowProject file unit fields iCLN, iSWF)
     ! These are used internally but not exported to avoid naming conflicts
@@ -18,8 +20,26 @@ module MUSG_Core
     integer(i4), parameter, private :: DOMAIN_SWF=2
     integer(i4), parameter, private :: DOMAIN_CLN=3
 
+    integer(i4), parameter :: MAX_GSTR_INSTANCES = 20
+    integer(i4), parameter :: MAX_GSTR_SNAPS = 200
+
     ! By default, 2D finite-elements in template mesh are used to define control volumes
     logical :: NodalControlVolume=.false.
+
+    !----------------------------------------------------------------------
+    ! Named GSTR (general spatio-temporal recharge) instance built by MUT
+    type GSTRInstance
+        character(16) :: name = ' '
+        integer(i4) :: idomain = 1   ! 1=GWF, 2=CLN, 3=SWF (GSTR package codes)
+        integer(i4) :: ncells = 0
+        integer(i4) :: nsnaps = 0
+        real(dp) :: fac = 1.0d0
+        integer(i4), allocatable :: inode(:)
+        real(dp), allocatable :: x(:)
+        real(dp), allocatable :: y(:)
+        real(dp), allocatable :: tsnap(:)
+        character(256), allocatable :: rfile(:)
+    end type GSTRInstance
 
     !----------------------------------------------------------------------
     type cell 
@@ -126,6 +146,18 @@ module MUSG_Core
         integer(i4) :: iHDS
         real(sp), allocatable :: Head(:,:)
 
+        ! .VEL binary files (Darcy and average linear; sequential Vx,Vy,Vz)
+        character(128) :: FNameVEL
+        integer(i4) :: iVEL = 0
+        character(128) :: FNameVELLin
+        integer(i4) :: iVELLin = 0
+        real(sp), allocatable :: Vx_darcy(:,:)
+        real(sp), allocatable :: Vy_darcy(:,:)
+        real(sp), allocatable :: Vz_darcy(:,:)
+        real(sp), allocatable :: Vx_lin(:,:)
+        real(sp), allocatable :: Vy_lin(:,:)
+        real(sp), allocatable :: Vz_lin(:,:)
+
         ! .DDN file
         character(128) :: FNameDDN
         integer(i4) :: iDDN
@@ -155,6 +187,7 @@ module MUSG_Core
         real(sp), allocatable       :: RectangularWidth(:)    ! dimension of CLN
         real(sp), allocatable       :: RectangularHeight(:)    ! dimension of CLN
         real(sp), allocatable       :: LongitudinalK(:)    ! dimension of CLN
+        real(sp), allocatable       :: InfillPorosity(:)   ! for average linear velocity (default 1.0)
         
         ! CLN general-section properties (tabular, zoned; only used when Geometry(zone)=3)
         ! For each zone: a table of depth vs (area, wetted perimeter, top width)
@@ -202,6 +235,8 @@ module MUSG_Core
         
         ! By default, RICHARDS equation for variably-saturated flow is used
         logical :: SaturatedFlow=.false.
+        ! Opt-in: HGS Manning SWF velocity (VEL OPTIONS ORIGINAL_SWF_VELOCITY)
+        logical :: OriginalSWFVelocity=.false.
         
         logical :: TagFiles
         logical :: GenOCFile
@@ -307,6 +342,17 @@ module MUSG_Core
         integer(i4) :: maxRTSZones=20
         character(128) :: FNameRTSZones(20)
         logical :: RTSNamWritten=.false.
+
+        ! GSTR file (general spatio-temporal recharge)
+        character(128) :: FNameGSTR
+        integer(i4) :: iGSTR = 0
+        character(128) :: FNameVELPkg
+        integer(i4) :: iVELPkg = 0
+        integer(i4) :: IGSTRCB = 0
+        integer(i4) :: nGSTRInstances = 0
+        character(16) :: PendingGSTRName = ' '
+        logical :: GSTRNamWritten = .false.
+        type(GSTRInstance) :: GSTRInst(MAX_GSTR_INSTANCES)
         
         
         ! RIV file

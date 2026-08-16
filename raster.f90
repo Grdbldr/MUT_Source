@@ -106,110 +106,107 @@ module Raster
     !----------------------------------------------------------------------
     subroutine Raster_Read(FnumTG, Raster_l)
 	    implicit none
-        
-        type (RasterData) Raster_l  
-
-        integer(i4) :: i, j, k, lpos
-
+        type (RasterData) Raster_l
         integer(i4) :: FnumTG
-
-        character(80) :: line
-        integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        real(sp) :: min_elev, max_elev 
-
-        ! Fracman mafic file 
         read(FnumTG,'(a)') FName
-        call OpenAscii(FNum,FName)
-        call Msg( 'Raster file: '//FName)
- 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'ncols')+5 
-	    read(line(lpos:),*) Raster_l.nxrast 
-	    write(TmpSTR,*) '# columns: ',Raster_l.nxrast 
+        call Raster_LoadFile(trim(adjustl(FName)), Raster_l)
+    end subroutine Raster_Read
+
+    !----------------------------------------------------------------------
+    subroutine Raster_LoadFile(FName, Raster_l)
+        ! Load an ArcASCII grid from an explicit path (GSTR post, etc.)
+	    implicit none
+        type (RasterData) Raster_l
+        character(*), intent(in) :: FName
+        integer(i4) :: i, j, k, lpos
+        integer(i4) :: Fnum
+        character(80) :: line
+        real(sp) :: min_elev, max_elev
+
+        call OpenAscii(FNum, FName)
+        call Msg('Raster file: '//trim(FName))
+
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'ncols')+5
+	    read(line(lpos:),*) Raster_l.nxrast
+	    write(TmpSTR,*) '# columns: ',Raster_l.nxrast
         call Msg(TmpSTR)
- 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'nrows')+5 
-	    read(line(lpos:),*) Raster_l.nyrast 
+
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'nrows')+5
+	    read(line(lpos:),*) Raster_l.nyrast
 	    write(TmpSTR,*) '# rows:',Raster_l.nyrast
         call Msg(TmpSTR)
- 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'xllcorner')+9 
-	    read(line(lpos:),*) Raster_l.dxmin 
+
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'xllcorner')+9
+	    read(line(lpos:),*) Raster_l.dxmin
 	    write(TmpSTR,*) 'xllcorner:',Raster_l.dxmin
         call Msg(TmpSTR)
 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'yllcorner')+9 
-	    read(line(lpos:),*) Raster_l.dymin 
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'yllcorner')+9
+	    read(line(lpos:),*) Raster_l.dymin
 	    write(TmpSTR,*) 'yllcorner:',Raster_l.dymin
         call Msg(TmpSTR)
- 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'cellsize')+8 
-	    read(line(lpos:),*) Raster_l.xspc 
-	    Raster_l.yspc=Raster_l.xspc 
+
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'cellsize')+8
+	    read(line(lpos:),*) Raster_l.xspc
+	    Raster_l.yspc=Raster_l.xspc
 	    write(TmpSTR,*) 'cell size:',Raster_l.xspc
         call Msg(TmpSTR)
- 
-	    read(FNum,'(a)') line 
-	    call LwrCse(line) 
-	    lpos=index(line,'nodata_value')+12 
-	    read(line(lpos:),*) Raster_l.vmiss 
+
+	    read(FNum,'(a)') line
+	    call LwrCse(line)
+	    lpos=index(line,'nodata_value')+12
+	    read(line(lpos:),*) Raster_l.vmiss
 	    write(TmpSTR,*) 'Missing value:',Raster_l.vmiss
         call Msg(TmpSTR)
- 
-	    if(allocated(Raster_l.rastx)) deallocate(Raster_l.rastx,Raster_l.rasty,Raster_l.rastval) 
-	    allocate(Raster_l.rastx(Raster_l.nxrast),Raster_l.rasty(Raster_l.nyrast),Raster_l.rastval(Raster_l.nxrast,Raster_l.nyrast),stat=ialloc) 
-	    call AllocChk(ialloc,'Raster arrays') 
- 
+
+	    if(allocated(Raster_l.rastx)) deallocate(Raster_l.rastx,Raster_l.rasty,Raster_l.rastval)
+	    allocate(Raster_l.rastx(Raster_l.nxrast),Raster_l.rasty(Raster_l.nyrast),Raster_l.rastval(Raster_l.nxrast,Raster_l.nyrast),stat=ialloc)
+	    call AllocChk(ialloc,'Raster arrays')
+
 	    Raster_l.rastx(1)=Raster_l.dxmin
 	    do i=2,Raster_l.nxrast
-		    Raster_l.rastx(i)=Raster_l.rastx(i-1)+Raster_l.xspc 
-	    end do 
+		    Raster_l.rastx(i)=Raster_l.rastx(i-1)+Raster_l.xspc
+	    end do
 
 	    Raster_l.rasty(1)=Raster_l.dymin
 	    do i=2,Raster_l.nyrast
-		    Raster_l.rasty(i)=Raster_l.rasty(i-1)+Raster_l.yspc 
-	    end do 
- 
-	    read(FNum,*) ((Raster_l.rastval(j,k),j=1,Raster_l.nxrast),k=Raster_l.nyrast,1,-1) 
- 
- 
-	    min_elev=1.e20 
-	    max_elev=-1.e20 
-	    do j=1,Raster_l.nxrast 
-		    do k=1,Raster_l.nyrast 
-			    if(Raster_l.rastval(j,k) /= Raster_l.vmiss) then 
-				    if(Raster_l.rastval(j,k) > max_elev) then
-                        max_elev=Raster_l.rastval(j,k) 
-                        write(*,*) j,k,max_elev
-                    end if
-				    if(Raster_l.rastval(j,k) < min_elev) min_elev=Raster_l.rastval(j,k) 
-			    end if 
-		    end do 
-	    end do 
-	    write(TmpSTR,*) 'Range...' 
+		    Raster_l.rasty(i)=Raster_l.rasty(i-1)+Raster_l.yspc
+	    end do
+
+	    read(FNum,*) ((Raster_l.rastval(j,k),j=1,Raster_l.nxrast),k=Raster_l.nyrast,1,-1)
+
+	    min_elev=1.e20
+	    max_elev=-1.e20
+	    do j=1,Raster_l.nxrast
+		    do k=1,Raster_l.nyrast
+			    if(Raster_l.rastval(j,k) /= Raster_l.vmiss) then
+				    if(Raster_l.rastval(j,k) > max_elev) max_elev=Raster_l.rastval(j,k)
+				    if(Raster_l.rastval(j,k) < min_elev) min_elev=Raster_l.rastval(j,k)
+			    end if
+		    end do
+	    end do
+	    write(TmpSTR,*) 'Range...'
         call Msg(TmpSTR)
- 
 	    write(TmpSTR,*) 'Minimum value:',min_elev
         call Msg(TmpSTR)
 	    write(TmpSTR,*) 'Maximum value:',max_elev
         call Msg(TmpSTR)
- 
- 
 
-	    call freeunit(FNum) 
+	    call freeunit(FNum)
+        Raster_l.have_raster = .true.
+    end subroutine Raster_LoadFile
 
-
-    end subroutine Raster_Read 
     
     !----------------------------------------------------------------------
     subroutine Raster_Write(FnumTG, Raster_l)

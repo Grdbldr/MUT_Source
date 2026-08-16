@@ -325,6 +325,8 @@ module MUSG_MaterialProperties
         call Msg(TmpSTR)
         write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)    ,'     DIMENSIONLESS'
         call Msg(TmpSTR)
+        write(TmpSTR,'(a,'//FMT_R4//',a)')'Porosity:          ',Porosity(iMaterial)         ,'     DIMENSIONLESS (for average linear velocity)'
+        call Msg(TmpSTR)
         write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)            ,'     '//TRIM(GWF_LengthUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
         write(TmpSTR,'(a,'//FMT_R4//',a)')'Beta:              ',Beta(iMaterial)             ,'     DIMENSIONLESS'
@@ -406,6 +408,8 @@ module MUSG_MaterialProperties
             write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Storage:  ',SpecificStorage(iMaterial)/LengthConversionFactor             ,'     '//TRIM(UnitsOfLength)//'^(-1)'
             call Msg(TmpSTR)
             write(TmpSTR,'(a,'//FMT_R4//',a)')'Specific Yield:    ',SpecificYield(iMaterial)                                      ,'     DIMENSIONLESS'
+            call Msg(TmpSTR)
+            write(TmpSTR,'(a,'//FMT_R4//',a)')'Porosity:          ',Porosity(iMaterial)                                           ,'     DIMENSIONLESS (for average linear velocity)'
             call Msg(TmpSTR)
             write(TmpSTR,'(a,'//FMT_R4//',a)')'Alpha:             ',Alpha(iMaterial)/LengthConversionFactor                       ,'     '//TRIM(UnitsOfLength)//'^(-1)'
             call Msg(TmpSTR)
@@ -489,6 +493,11 @@ module MUSG_MaterialProperties
 
         write(TmpSTR,'(a,'//FMT_R4//',a)')    'Longitudinal K:     ',LongitudinalK(iMaterial)        ,'     '//TRIM(CLN_LengthUnit(iMaterial))//'   '//TRIM(CLN_TimeUnit(iMaterial))//'^(-1)'
         call Msg(TmpSTR)
+        write(TmpSTR,'(a,'//FMT_R4//',a)')    'Infill Porosity:    ',InfillPorosity(iMaterial)       ,'     DIMENSIONLESS (for average linear velocity)'
+        call Msg(TmpSTR)
+        if(InfillPorosity(iMaterial) < 1.0) then
+            call Msg('Note: CLN average linear velocity = Darcy / Infill Porosity')
+        end if
         
         LengthConversionFactor=LengthConverter(UnitsOfLength,CLN_LengthUnit(iMaterial))
         TimeConversionFactor=TimeConverter(UnitsOfTime,CLN_TimeUnit(iMaterial))
@@ -567,6 +576,7 @@ module MUSG_MaterialProperties
                 CLN%RectangularWidth(i)=RectangularWidth(iMaterial)*LengthConversionFactor         ! L
                 CLN%RectangularHeight(i)=RectangularHeight(iMaterial)*LengthConversionFactor         ! L
                 CLN%LongitudinalK(i)=LongitudinalK(iMaterial)*LengthConversionFactor/TimeConversionFactor         ! L/T
+                CLN%InfillPorosity(i)=InfillPorosity(iMaterial)
                 
                 if(CLN%Geometry(i)==3) then
                     call DefineUserbin(USERBIN)

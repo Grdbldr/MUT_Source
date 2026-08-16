@@ -151,7 +151,10 @@ The assigned \cln\ material properties are written to the screen and \texttt{.ec
     	Direction:          Horizontal
     	Flow Treatment:     Unconfined/Mannings
     	Longitudinal K:         5.48000E-02     METERS   SECONDS^(-1)
+    	Infill Porosity:             1.0000     DIMENSIONLESS (for average linear velocity)
 \end{verbatim}
+
+An optional trailing \texttt{InfillPorosity} column may be added to \texttt{CLN.csv}. When less than 1, average linear velocity in the conduit equals Darcy velocity divided by the infill porosity.
 
 \ins{cln skin conductivity}
     {

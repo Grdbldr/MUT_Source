@@ -1,0 +1,112 @@
+\label{section:GSTR}
+The \mfus\ \textsf{GSTR} package assigns recharge that varies in space and time using ArcASCII raster snapshots.
+It operates at the timestep level, independently of the existing \textsf{RCH} and \textsf{RTS} packages.
+Existing \textsf{RCH}/\textsf{RTS} input files remain fully supported; when both \textsf{GSTR} and \textsf{RCH} (or \textsf{RTS}) are active, recharge fluxes from each package are added to the flow equation.
+
+\subsection{MUT instructions}
+Select the cells that belong to the instance, optionally name the instance, then assign snapshots on the target domain.
+
+\ins{gstr instance name}
+{
+    \squish
+    \begin{enumerate}
+    \item \str{name} Budget label for the instance (at most 16 characters).
+    \end{enumerate}
+    The name is applied to the next \texttt{gwf gstr}, \texttt{swf gstr}, or \texttt{cln gstr} instruction.
+    If omitted, MUT assigns a default name \texttt{GSTR\_$n$}.
+    \squish
+}
+
+\ins{gwf gstr}
+{
+    \squish
+    \begin{enumerate}
+    \item \rnum{FAC} Multiplier on sampled rates (use $1$ for none).
+    \item One or more lines \rnum{time} \str{raster.asc} (ascending times, model time units).
+    \item \texttt{end gstr}
+    \end{enumerate}
+    Currently chosen \gwf\ cells are written with global node number and centroid $(x,y)$.
+    Identical forms exist for \swf\ (\texttt{swf gstr}, IDOMAIN$=3$) and \cln\ (\texttt{cln gstr}, IDOMAIN$=2$).
+    \squish
+}
+
+Example (SWF rainfall with start and end rasters):
+\begin{verbatim}
+active domain
+swf
+    choose all cells
+    gstr instance name
+    Rain_SWF
+    swf gstr
+    1.0
+    0.0    rain_t0.asc
+    20.0   rain_t20.asc
+    end gstr
+\end{verbatim}
+
+MUT writes \texttt{\textit{prefix}.gstr} and a name-file entry \texttt{GSTR}.
+A KAERI/KURT demonstration lives under
+\texttt{KURT\_Model/2\_models/2\_TestTransientRainfall/4\_GSTR}.
+
+\subsection{Name file}
+Add one name-file entry:
+\begin{verbatim}
+GSTR  <unit>  <prefix>.gstr
+\end{verbatim}
+
+\subsection{Input file format}
+Comment lines may begin with \texttt{\#} or \texttt{!}. Blank lines are skipped.
+
+\begin{verbatim}
+NGSTR  IGSTRCB
+INSTANCE  <name>
+  IDOMAIN  NCELLS  NSNAPS  [FAC]
+  <inode>  <x>  <y>
+  ...
+  <time>   <raster.asc>
+  ...
+INSTANCE  <name2>
+  ...
+\end{verbatim}
+
+\begin{description}
+\item[\texttt{NGSTR}] Number of named GSTR instances.
+\item[\texttt{IGSTRCB}] Unit number for cell-by-cell budget terms (\texttt{0} = none).
+\item[\texttt{INSTANCE} \textit{name}] Starts a named instance. The name (up to 16 characters) is used as the volumetric budget label for that instance.
+\item[\texttt{IDOMAIN}] Domain code: \texttt{1}=\gwf, \texttt{2}=\cln, \texttt{3}=\swf. Used for validation; recharge is applied at the listed global node numbers.
+\item[\texttt{NCELLS}] Number of cells in the instance (all domain cells or a subset).
+\item[\texttt{NSNAPS}] Number of time snapshots (must be $\ge 1$).
+\item[\texttt{FAC}] Optional multiplier applied to sampled recharge rates (default $1$).
+\item[\texttt{inode x y}] Global node number and cell coordinates used to sample rasters. Coordinates must be in the same length units and coordinate system as the ArcASCII grids.
+\item[\texttt{time raster.asc}] Snapshot time (model time units, ascending) and path to an ArcASCII recharge raster ($L/T$).
+\end{description}
+
+\subsection{ArcASCII rasters}
+Each snapshot file is a standard ArcASCII grid with header keywords
+\texttt{ncols}, \texttt{nrows}, \texttt{xllcorner} or \texttt{xllcenter},
+\texttt{yllcorner} or \texttt{yllcenter}, \texttt{cellsize}, and optional \texttt{nodata\_value},
+followed by row-major cell values (north to south).
+Bilinear interpolation is used at each cell $(x,y)$.
+Samples outside the raster extent, or involving a nodata corner, are treated as zero recharge.
+
+\subsection{Time interpolation}
+At each timestep, \mfus\ uses elapsed simulation time (\texttt{TOTIM}) to select the raster snapshots immediately before and after the current time and linearly interpolates the sampled rate for each cell.
+Outside the snapshot range, the nearest endpoint snapshot is held (no extrapolation beyond the first or last raster).
+The volumetric flux applied to a node is
+\[
+Q = \mathrm{FAC}\times r(x,y,t)\times A_n
+\]
+where $r$ is the interpolated rate ($L/T$) and $A_n$ is the node area stored by \mfus\ (GWF area, SWF face area, or CLN conduit area as appropriate).
+
+\subsection{Budget}
+Each named instance contributes its own budget term using the instance name as the label.
+\textsf{GSTR} does not replace or modify \textsf{RCH}/\textsf{RTS} budget terms.
+
+\subsection{Post-processing to Tecplot}
+After \texttt{postprocess existing modflow model}, MUT reads the \textsf{GSTR} package and reconstructs applied rates by sampling the snapshot rasters (and a mid-interval interpolated zone when two or more snaps exist). Outputs include:
+\begin{verbatim}
+_posto.o.<prefix>.SWF_GSTR.tecplot.dat
+_posto.o.<prefix>.SWF_GSTR_TS.tecplot.dat
+\end{verbatim}
+(and analogous \texttt{GWF\_GSTR} / \texttt{CLN\_GSTR} files by domain).
+Named instance totals also appear in the listing-file volume-budget Tecplot export.

@@ -149,6 +149,15 @@ The assigned \swf\ material properties are written to the screen and \texttt{.ec
     	SWF Smoothing Depth 2:          1.00000E-06     METERS
 \end{verbatim}
 
+Depression and obstruction storage heights are written to the \texttt{.swf} package.
+
+By default, \mfus\ reconstructs SWF velocity from solved face fluxes using the same smoothed flow depth as the SWF conductance (\texttt{SWF\_THIK}). The following instruction selects the original HydroGeoSphere Manning reconstruction from the water-surface gradient, also using that flow-equation depth (obstruction remains a relative conductivity). \mut\ writes \texttt{OPTIONS} / \texttt{ORIGINAL\_SWF\_VELOCITY} / \texttt{END} in the VEL package; a \texttt{usgs\_1} build that recognizes that option is required.
+
+\ins{original swf velocity calculation}
+    {
+        No arguments.  When present, SWF velocity in the \texttt{.SWF.VEL} binary uses the original Manning reconstruction rather than face-flux velocity. \gwf\ and \cln\ velocity are unchanged.
+    }
+
 You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUseage}.
 
 \subsubsection{Initial Conditions}  \index{\swf\ Domain ! initial condition ! initial (starting) depth}

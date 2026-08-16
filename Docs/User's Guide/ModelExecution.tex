@@ -50,9 +50,10 @@ The instruction to post-process the \mfus\ model after execution is:
         \begin{enumerate}
         \item \str{Prefix}  The \mfus\ model prefix.
         \end{enumerate}
-        Given \str{Prefix}, this instruction:
+         Given \str{Prefix}, this instruction:
          \begin{itemize}
             \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.dat}.
+            \item  Reads Darcy and average-linear velocity binaries written by the USG \texttt{VEL} package and writes {\tt \_posto.modflow.GWF.Velocity.tecplot.dat} with sequential 1-D arrays \texttt{Darcy Vx/Vy/Vz} and \texttt{Average Linear Vx/Vy/Vz} for Tecplot vector mapping; analogous files are written for \cln\ and \swf\ when those domains exist. Velocity Tecplot requires a USG-Transport build that supports NAM file type \texttt{VEL}.
             \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat}.
          \end{itemize}
         \squish
@@ -238,5 +239,27 @@ The contour levels were set up as shown here:
 The levels were entered manually using the {\sf Add Level} and {\sf Remove selected} buttons.  The value zero is defined at the boundary between blue and red colours by using an equal number of positive and negative values with the same absolute ranges.
 
 The color map is set to {\sf Diverging - Blue/Red} using the drop-down menu.
+
+\section{Automatic model-folder documentation}
+\index{model documentation}
+After \texttt{mut \_build} has been run in a model folder, the Python tool \texttt{mut\_document.py} writes a dossier PDF under a \texttt{Docs} subfolder named after the parent directory (the simulation name).  The PDF summarises the problem comments in \texttt{\_build.mut}, referenced data and include files, mesh construction, materials, initial and boundary conditions, and---when \texttt{usgs\_1} and \texttt{mut \_post} products are present---run status, volumetric-budget mass-balance checks, and result imagery.
+
+From a command prompt rooted at the model folder (after deploying MUT, including the \texttt{mut\_document} folder next to \texttt{mut.exe}):
+\begin{verbatim}
+    python %USERBIN%\mut_document\mut_document.py
+\end{verbatim}
+Optional flags:
+\begin{verbatim}
+    python %USERBIN%\mut_document\mut_document.py --skip-export
+    python %USERBIN%\mut_document\mut_document.py --skip-pdf
+\end{verbatim}
+
+The tool does not overwrite hand-made \texttt{\_build.lay} or \texttt{\_post.lay} files.  It writes:
+\begin{itemize}
+  \item \texttt{Docs/\textit{folder-name}.pdf} and the generating \texttt{.tex} files
+  \item \texttt{Docs/layouts/\textit{domain}\_Mesh.lay}, \texttt{\textit{domain}\_Variables.lay}, \texttt{\textit{domain}\_scatter.lay}, \texttt{\textit{domain}\_Results.lay}, and \texttt{\textit{domain}\_Observations.lay} for each of GWF, SWF, and CLN when present (Tecplot~360 EX 2018 does not accept multi-page \texttt{\$\!PAGECONTROL} commands).  The mesh layout uses zone colours, named legends, mesh lines, and lighting.  The variables layout has one frame per non-$xyz$ build field.  The scatter layout has one frame per build-time point file (\texttt{\_CELLS}, \texttt{\_CHD}, \texttt{\_RCH}, \texttt{\_SWBC}, \texttt{\_DRN}, \texttt{\_WEL}, \texttt{\_OBS\_scatter}); spheres of size 1.0, coloured by the optional fourth column when present.  The results layout has one frame per post-processed field, plus velocity and on GWF the volume budget.  The observations layout has square frames in two rows (head on top, saturation or depth on the bottom), sites left-to-right alphabetically; extra columns may sit off the initial view.  \texttt{GWF.lay} / \texttt{SWF.lay} / \texttt{CLN.lay} are copies of the mesh layout.
+  \item \texttt{Docs/imagery/*.png} when \texttt{tec360} is on the PATH (otherwise the PDF still builds and points to the layouts)
+\end{itemize}
+Optional user prose may be placed in \texttt{Docs/overview.tex} and extra figures in \texttt{Docs/imagery\_user/}; both are included when present.  Python~3 from the standard library is sufficient; MiKTeX (\texttt{pdflatex}) is required to produce the PDF.
 
 

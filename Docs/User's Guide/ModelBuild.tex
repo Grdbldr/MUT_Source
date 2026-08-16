@@ -98,6 +98,8 @@ The first instruction in the cleaned input file begins the model build:
     {\Large \sf end build modflow usg}
     }
 
+During the build, \mut\ always writes the USG \texttt{VEL} package (\texttt{Modflow.vel}), binary velocity units for each active domain (\texttt{.GWF.VEL}/{\tt .GWF.VELLin}, and {\tt .CLN.VEL}/{\tt .CLN.VELLin} and/or {\tt .SWF.VEL} when those domains exist), and the corresponding \texttt{SAVE DARCY/LINEAR VELOCITY} lines in the OC file. No special \mut\ instruction is required. A USG-Transport executable that recognizes NAM file type \texttt{VEL} is required for the solver to fill those binaries; {\tt mut \_post} then converts them to Tecplot velocity files.
+
 After \mut\ finishes, the working folder should look something like this:
 
         \includegraphics[width=0.8\textwidth]{3_6_buildFiles}

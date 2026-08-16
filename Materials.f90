@@ -34,6 +34,7 @@ Module Materials
         character*256, allocatable  :: FlowTreatment(:)
         character*256, allocatable  :: CLN_LengthUnit(:)
         character*256, allocatable  :: CLN_TimeUnit(:)
+        real(sp), allocatable           :: InfillPorosity(:)
         
         integer(i4) :: nSWFMaterials
         integer(i4),allocatable :: SWF_MaterialID(:)
@@ -274,10 +275,12 @@ Module Materials
                  FlowTreatment(nCLNMaterials), & 
                  CLN_LengthUnit(nCLNMaterials), &
                  CLN_TimeUnit(nCLNMaterials), &
+                 InfillPorosity(nCLNMaterials), &
         stat=ialloc)
         call AllocChk(ialloc,'CLN material database arrays')
 
         CLN_ID = 0
+        InfillPorosity = 1.0
         rewind(itmp)
         read(itmp,'(a)') line
         ! Store by material ID so sparse IDs (gaps) are allowed; do not assume one row per ID
@@ -303,8 +306,23 @@ Module Materials
             FlowTreatment(id)    =ParseLineSTR(line)
             CLN_LengthUnit(id)   =ParseLineSTR(line)
             CLN_TimeUnit(id)     =ParseLineSTR(line)
-            ! Optional trailing field (backward compatible): general-section table file
-            GeneralSectionTableFile(id)=ParseLineSTR(line)
+            ! Optional trailing fields (backward compatible):
+            ! General: GeneralSectionTableFile [, InfillPorosity]
+            ! Other geometries: [InfillPorosity] (numeric only)
+            GeneralSectionTableFile(id)=''
+            InfillPorosity(id)=1.0
+            if(len_trim(line) > 0) then
+                if(trim(Geometry(id)) == 'General') then
+                    GeneralSectionTableFile(id)=ParseLineSTR(line)
+                    if(len_trim(line) > 0) then
+                        InfillPorosity(id)=ParseLineRNUM(line)
+                        if(InfillPorosity(id) <= 0.0) InfillPorosity(id)=1.0
+                    end if
+                else
+                    InfillPorosity(id)=ParseLineRNUM(line)
+                    if(InfillPorosity(id) <= 0.0) InfillPorosity(id)=1.0
+                end if
+            end if
         end do
         
         call freeunit(itmp)

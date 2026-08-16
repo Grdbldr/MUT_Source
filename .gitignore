@@ -377,3 +377,5 @@ FodyWeavers.xsd
 /My Inspector Results - Modflow-User-Tools
 /UserBinCheck
 /Modflow-User-Tools.exe
+# Accidental literal %USERBIN% path (deploy target is env-expanded elsewhere)
+/%USERBIN%/

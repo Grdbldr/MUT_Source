@@ -89,7 +89,6 @@ module MUT  !### Modflow-USG Tools
         type (ModflowProject) MyProject
         
         type(MeshGroup) MyMeshGroup
-        !type (HGSProject) MyHGS
         
         ! Ways to define the 2D template mesh
         character(MAX_INST) :: MeshFromGb_CMD          =   '2d mesh from gb'

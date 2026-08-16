@@ -41,12 +41,14 @@ module MUSG !
     ! By default, QGIS output is enabled
     ! This option disables QGIS output
     character(MAX_INST) :: DisableQGISOutput_CMD='disable qgis output'
-    
-    
+
 
     ! By default, RICHARDS equation for variably-saturated flow is used
     ! This option changes it to saturated flow
     character(MAX_INST) :: SaturatedFlow_CMD='saturated flow'
+
+    ! Opt-in Manning reconstruction for SWF velocity (default remains FLOWJA)
+    character(MAX_INST) :: OriginalSWFVelocity_CMD='original swf velocity calculation'
 
     ! Units
     character(MAX_INST) :: UnitsTime_CMD	        =   'units of time'
@@ -127,15 +129,19 @@ module MUSG !
     character(MAX_INST) :: AssignCHDZoneName_CMD	            =   'chd zone name'
     character(MAX_INST) :: AssignDRNtoGWF_CMD		            =   'gwf drain'
     character(MAX_INST) :: AssignRCHtoGWF_CMD		            =   'gwf recharge'
+    character(MAX_INST) :: AssignGSTRtoGWF_CMD                  =   'gwf gstr'
+    character(MAX_INST) :: AssignGSTRInstanceName_CMD           =   'gstr instance name'
     character(MAX_INST) :: AssignWELtoGWF_CMD		            =   'gwf well'
     character(MAX_INST) :: AssignCHDtoSWF_CMD		            =   'swf constant head'
     character(MAX_INST) :: AssignRCHtoSWF_CMD		            =   'swf recharge'
     character(MAX_INST) :: AssignTransientRCHtoSWF_CMD          =   'swf transient recharge'
+    character(MAX_INST) :: AssignGSTRtoSWF_CMD                  =   'swf gstr'
     character(MAX_INST) :: AssignWELtoSWF_CMD		            =   'swf well'
     character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD         =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
     character(MAX_INST) :: AssignCHDtoCLN_CMD                   =   'cln constant head'
     character(MAX_INST) :: AssignWELtoCLN_CMD		            =   'cln well'
+    character(MAX_INST) :: AssignGSTRtoCLN_CMD                  =   'cln gstr'
     
     !---------------------------------------------------GWF Properties
     character(MAX_INST) :: AssignMaterialtoGWF_CMD		=   'chosen cells use gwf material number'
@@ -221,6 +227,14 @@ module MUSG !
         call getunit(Modflow%CLN%iDDN)
         write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iDDN,' '//trim(Modflow%CLN%FNameDDN)
 
+        Modflow%CLN%FNameVEL=trim(Modflow.Prefix)//'.CLN.VEL'
+        call getunit(Modflow%CLN%iVEL)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iVEL,' '//trim(Modflow%CLN%FNameVEL)
+
+        Modflow%CLN%FNameVELLin=trim(Modflow.Prefix)//'.CLN.VELLin'
+        call getunit(Modflow%CLN%iVELLin)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%CLN%iVELLin,' '//trim(Modflow%CLN%FNameVELLin)
+
     end subroutine AddCLNFiles
     
     !-------------------------------------------------------------
@@ -250,8 +264,106 @@ module MUSG !
         Modflow%SWF%FNameDDN=trim(Modflow.Prefix)//'.SWF.DDN'
         call getunit(Modflow%SWF%iDDN)
         write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%SWF%iDDN,' '//trim(Modflow%SWF%FNameDDN)
-        
+
+        Modflow%SWF%FNameVEL=trim(Modflow.Prefix)//'.SWF.VEL'
+        call getunit(Modflow%SWF%iVEL)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%SWF%iVEL,' '//trim(Modflow%SWF%FNameVEL)
+
     end subroutine AddSWFFiles
+
+    !-------------------------------------------------------------
+    subroutine WriteVELFile(Modflow)
+        ! VEL package: unit numbers + porosity + node XYZ (+ CLN infill, SWF XYZ).
+        ! Required for USG to write binary .GWF.VEL / .CLN.VEL / .SWF.VEL files used by post.
+        implicit none
+        type (ModflowProject) Modflow
+        integer(i4) :: i, k, nStrt, nEnd, iz
+        real(sp) :: por
+
+        if(Modflow%GWF%nCells <= 0 .and. Modflow%CLN%nCells <= 0 .and. Modflow%SWF%nCells <= 0) return
+        if(Modflow%GWF%nCells <= 0) then
+            call HandleError(ERR_INVALID_INPUT, &
+                'VEL package requires a GWF domain (porosity + GWF centroids).', 'WriteVELFile')
+        end if
+
+        ! Binary units already registered in Initialize/AddCLN/AddSWF (needed before OC is written)
+        Modflow%FNameVELPkg = trim(Modflow%Prefix)//'.vel'
+        call OpenAscii(Modflow%iVELPkg, Modflow%FNameVELPkg)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameVELPkg))
+        write(Modflow%iNAM,'(a,i4,a)') 'VEL  ',Modflow%iVELPkg,' '//trim(Modflow%FNameVELPkg)
+        call Msg('VEL package listed in NAM (requires USG-Transport with VEL support).')
+        write(Modflow%iVELPkg,'(a,a)') '# MODFLOW-USG VEL file written by Modflow-User-Tools version ',trim(MUTVersion)
+
+        if(Modflow%OriginalSWFVelocity) then
+            write(Modflow%iVELPkg,'(a)') 'OPTIONS'
+            write(Modflow%iVELPkg,'(a)') 'ORIGINAL_SWF_VELOCITY'
+            write(Modflow%iVELPkg,'(a)') 'END'
+            call Msg('VEL OPTIONS: ORIGINAL_SWF_VELOCITY (Manning SWF velocity)')
+        end if
+
+        ! IUGWFD IUGWFL IUCLND IUCLNL IUSWFD
+        write(Modflow%iVELPkg,'(5i10,a)') &
+            Modflow%GWF%iVEL, Modflow%GWF%iVELLin, &
+            Modflow%CLN%iVEL, Modflow%CLN%iVELLin, &
+            Modflow%SWF%iVEL, &
+            '     IUGWFD IUGWFL IUCLND IUCLNL IUSWFD'
+
+        ! GWF porosity by layer (U1DREL format)
+        nStrt = 1
+        do i = 1, Modflow%GWF%nLayers
+            nEnd = nStrt + Modflow%GWF%nodelay - 1
+            write(TmpSTR,'(i5)') i
+            write(Modflow%iVELPkg,'(a)') 'INTERNAL  1.000000e+00  (FREE)  -1  POROSITY '//trim(TmpSTR)
+            write(Modflow%iVELPkg,'(10('//FMT_R4//'))') (Modflow%GWF%cell(k)%Porosity, k=nStrt,nEnd)
+            nStrt = nEnd + 1
+        end do
+
+        ! GWF cell centroids
+        write(Modflow%iVELPkg,'(a)') '# GWF X Y Z'
+        do i = 1, Modflow%GWF%nCells
+            write(Modflow%iVELPkg,'(3('//FMT_R8//'))') Modflow%GWF%cell(i)%x, Modflow%GWF%cell(i)%y, Modflow%GWF%cell(i)%z
+        end do
+
+        if(Modflow%CLN%nCells > 0) then
+            write(Modflow%iVELPkg,'(a)') '# CLN X Y Z InfillPorosity'
+            do i = 1, Modflow%CLN%nCells
+                iz = Modflow%CLN%cell(i)%idZone
+                por = 1.0
+                if(allocated(Modflow%CLN%InfillPorosity)) then
+                    if(iz >= 1 .and. iz <= size(Modflow%CLN%InfillPorosity)) then
+                        por = Modflow%CLN%InfillPorosity(iz)
+                    end if
+                end if
+                write(Modflow%iVELPkg,'(3('//FMT_R8//'),1x,'//FMT_R4//')') &
+                    Modflow%CLN%cell(i)%x, Modflow%CLN%cell(i)%y, Modflow%CLN%cell(i)%z, por
+            end do
+        end if
+
+        if(Modflow%SWF%nCells > 0) then
+            write(Modflow%iVELPkg,'(a)') '# SWF X Y Z'
+            do i = 1, Modflow%SWF%nCells
+                write(Modflow%iVELPkg,'(3('//FMT_R8//'))') Modflow%SWF%cell(i)%x, Modflow%SWF%cell(i)%y, Modflow%SWF%cell(i)%z
+            end do
+        end if
+
+        ! Flush so a subsequent USG run sees a complete package file
+        close(Modflow%iVELPkg)
+        file_open_flag(Modflow%iVELPkg) = .false.
+
+    end subroutine WriteVELFile
+
+    logical function VelocityBinaryExists(fname)
+        ! True when a VEL binary exists and has content (USG actually wrote velocities).
+        implicit none
+        character(*), intent(in) :: fname
+        integer(kind=8) :: nbytes
+        logical :: exists
+
+        VelocityBinaryExists = .false.
+        inquire(file=trim(fname), exist=exists, size=nbytes)
+        if(exists .and. nbytes > 0_8) VelocityBinaryExists = .true.
+    end function VelocityBinaryExists
     
     !-------------------------------------------------------------
     subroutine AddToScan(PKey, Modflow)
@@ -384,6 +496,11 @@ module MUSG !
                     
                     if(modflow.iCHD>0) call WriteCHDFile(Modflow)
                     if(modflow.iDRN>0) call WriteDRNFile(Modflow)
+                    if(modflow%iGSTR>0) call WriteGSTRFile(Modflow)
+                    ! USG VEL package: binary domain velocities for post Tecplot (requires VEL-capable USG)
+                    if(Modflow%GWF%nCells > 0 .or. Modflow%CLN%nCells > 0 .or. Modflow%SWF%nCells > 0) then
+                        call WriteVELFile(Modflow)
+                    end if
                     
                     ! Default boundary conditions for extra stress periods
                     if(Modflow.nPeriods>1) then
@@ -420,6 +537,7 @@ module MUSG !
             ! Simple flag-setting instructions - handled by MUSG_InstructionParser
             if(index(instruction, NodalControlVolumes_CMD) /= 0 .or. &
                index(instruction, SaturatedFlow_CMD) /= 0 .or. &
+               index(instruction, OriginalSWFVelocity_CMD) /= 0 .or. &
                index(instruction, DisableTecplotOutput_CMD) /= 0 .or. &
                index(instruction, DisableQGISOutput_CMD) /= 0) then
                 call HandleSimpleFlagInstruction(instruction, Modflow)
@@ -589,15 +707,19 @@ module MUSG !
                     index(instruction, AssignCHDZoneName_CMD) /= 0 .or. &
                     index(instruction, AssignDRNtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignRCHtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignGSTRtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignGSTRInstanceName_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignCHDtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignRCHtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignTransientRCHtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignGSTRtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignCriticalDepthtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignCriticalDepthtoCellsSide1_CMD) /= 0 .or. &
                     index(instruction, AssignCHDtoCLN_CMD) /= 0 .or. &
-                    index(instruction, AssignWELtoCLN_CMD) /= 0) then
+                    index(instruction, AssignWELtoCLN_CMD) /= 0 .or. &
+                    index(instruction, AssignGSTRtoCLN_CMD) /= 0) then
                 call HandleBoundaryConditionInstruction(instruction, FNumMUT, Modflow)
             
             ! Observation points - handled by MUSG_InstructionParser
@@ -691,6 +813,7 @@ module MUSG !
                 Modflow%CLN%RectangularWidth(Modflow%CLN%nZones), &  
                 Modflow%CLN%RectangularHeight(Modflow%CLN%nZones), &  
                 Modflow%CLN%LongitudinalK(Modflow%CLN%nZones), &  
+                Modflow%CLN%InfillPorosity(Modflow%CLN%nZones), &  
                 Modflow%CLN%FlowTreatment(Modflow%CLN%nZones), &  
             stat=ialloc)
         call AllocChk(ialloc,'CLN zoned material property arrays') 
@@ -704,6 +827,7 @@ module MUSG !
         Modflow%CLN%RectangularWidth(:)=-999.d0
         Modflow%CLN%RectangularHeight(:)=-999.d0
         Modflow%CLN%LongitudinalK(:)=-999.d0
+        Modflow%CLN%InfillPorosity(:)=1.0
         Modflow%CLN%FlowTreatment(:)=-999
 
         
@@ -3081,6 +3205,14 @@ module MUSG !
         call getunit(Modflow%GWF%iDDN)
         write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iDDN,' '//trim(Modflow%GWF%FNameDDN)
 
+        Modflow%GWF%FNameVEL=trim(Modflow.Prefix)//'.GWF.VEL'
+        call getunit(Modflow%GWF%iVEL)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iVEL,' '//trim(Modflow%GWF%FNameVEL)
+
+        Modflow%GWF%FNameVELLin=trim(Modflow.Prefix)//'.GWF.VELLin'
+        call getunit(Modflow%GWF%iVELLin)
+        write(Modflow.iNAM,'(a,i4,a)') 'DATA(BINARY) ',Modflow%GWF%iVELLin,' '//trim(Modflow%GWF%FNameVELLin)
+
         return
     end subroutine InitializeModflowFiles
 
@@ -3498,7 +3630,7 @@ module MUSG !
                 'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
                 'MNW1', 'CHDZ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
                 'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
-                'TVM ', 'SWF ', 'SWBC', 'OBPT', 33*'    '/
+                'TVM ', 'SWF ', 'SWBC', 'OBPT', 'GSTR', 'VEL ', 31*'    '/
         integer(i4) :: maxunit, nc 
 
         INCLUDE 'openspec.inc'
@@ -3609,8 +3741,11 @@ module MUSG !
         Modflow.iPTH =iunit(59)       
         Modflow.iTVM =iunit(64)  
         Modflow.iSWF =iunit(65)   
-        Modflow.iSWBC =iunit(66)   
-        do i=1,66
+        Modflow.iSWBC =iunit(66)
+        Modflow.iOBPT =iunit(67)
+        Modflow.iGSTR =iunit(68)
+        Modflow.iVELPkg =iunit(69)
+        do i=1,69
             if(iunit(i) > 0) then
                 file_open_flag(iunit(i)) = .true.
             end if
@@ -3713,6 +3848,7 @@ module MUSG !
             call Msg('-------Read data from SWF pt1:')
             call ReadSWF(Modflow)  ! based on modflow routine SDIS2SWF1AR
             NEQS = NEQS + NSWFNDS
+            call RestoreSWFConnectivityFromIAJA(Modflow)
 
             ! Young-jin handles this in SDIS2SWF1AR above so I think not required
             !call ReadSWF_pt2(Modflow)  ! based on modflow routine SDIS2CLN1AR
@@ -3865,6 +4001,13 @@ module MUSG !
             call ReadRCH_StressPeriods(Modflow) ! based on modflow routine GWF2RCH8U1RP
             call WritePostRechargeRates(Modflow)
         end if
+
+        IF(Modflow.iGSTR/=0) THEN
+            call Msg(' ')
+            call Msg('-------Read data from GSTR:')
+            call ReadGSTR(Modflow)
+            call WritePostGSTRRates(Modflow)
+        end if
         
         IF(Modflow.iDRN/=0) THEN
             !C------------------------------------------------------------------------
@@ -3906,7 +4049,17 @@ module MUSG !
             
             
             call ModflowResultsToTecplot(Modflow,Modflow.GWF)
-            call GWFVelocityToTecplot(Modflow)
+            if(Modflow%GWF%iVEL > 0 .and. VelocityBinaryExists(Modflow%GWF%FNameVEL)) then
+                call Msg('Using USG binary GWF velocities from '//trim(Modflow%GWF%FNameVEL))
+                call ReadBinary_VEL_File(Modflow, Modflow%GWF, .true.)
+                if(Modflow%GWF%iVELLin > 0 .and. VelocityBinaryExists(Modflow%GWF%FNameVELLin)) then
+                    call ReadBinary_VEL_File(Modflow, Modflow%GWF, .false.)
+                end if
+                call DomainVelocityBinaryToTecplot(Modflow, Modflow%GWF)
+            else
+                call Msg('GWF velocity Tecplot skipped: USG VEL binary missing/empty ('// &
+                    trim(Modflow%GWF%FNameVEL)//'). Requires USG-Transport with VEL support.')
+            end if
             if(EnableQGISOutput) then
                 call Msg(' ')
 		        call Msg('Generating final heads csv file for GWF:')
@@ -3927,6 +4080,16 @@ module MUSG !
     		    call Msg('Generating mesh-based Tecplot output files for CLN:')
     
                 call ModflowResultsToTecplot(Modflow,Modflow.CLN)
+                if(Modflow%CLN%iVEL > 0 .and. VelocityBinaryExists(Modflow%CLN%FNameVEL)) then
+                    call Msg('Using USG binary CLN velocities from '//trim(Modflow%CLN%FNameVEL))
+                    call ReadBinary_VEL_File(Modflow, Modflow%CLN, .true.)
+                    if(Modflow%CLN%iVELLin > 0 .and. VelocityBinaryExists(Modflow%CLN%FNameVELLin)) then
+                        call ReadBinary_VEL_File(Modflow, Modflow%CLN, .false.)
+                    end if
+                    call DomainVelocityBinaryToTecplot(Modflow, Modflow%CLN)
+                else
+                    call Msg('CLN velocity Tecplot skipped: USG VEL binary missing/empty. Requires USG-Transport with VEL support.')
+                end if
             if(EnableQGISOutput) then
                 call Msg(' ')
 		        call Msg('Generating final heads csv file for CLN:')
@@ -3948,6 +4111,14 @@ module MUSG !
     		    call Msg('Generating mesh-based Tecplot output files for SWF:')
 
                 call ModflowResultsToTecplot(Modflow,Modflow.SWF)
+                if(Modflow%SWF%iVEL > 0 .and. VelocityBinaryExists(Modflow%SWF%FNameVEL)) then
+                    call Msg('Using USG binary SWF velocities from '//trim(Modflow%SWF%FNameVEL))
+                    call ReadBinary_VEL_File(Modflow, Modflow%SWF, .true.)
+                    call DomainVelocityBinaryToTecplot(Modflow, Modflow%SWF)
+                else
+                    call Msg('SWF velocity Tecplot skipped: USG VEL binary missing/empty ('// &
+                        trim(Modflow%SWF%FNameVEL)//'). Requires USG-Transport with VEL support.')
+                end if
                 if(EnableQGISOutput) then
                     call Msg(' ')
 		            call Msg('Generating final heads csv file for SWF:')
@@ -4255,229 +4426,6 @@ module MUSG !
         call FreeUnit(FNum)
 
     end subroutine ModflowResultsToTecplot
-
-    !-------------------------------------------------------------
-    ! Compute Darcy and seepage velocity from head for GWF; write to Tecplot.
-    subroutine GWFVelocityToTecplot(Modflow)
-        implicit none
-        type (ModflowProject) Modflow
-
-        integer(i4) :: Fnum
-        character(MAX_STR) :: FName
-        integer(i4) :: i, j, jconn, itime, inode
-        integer(i4) :: nCells, nNodes, nElements, ntime
-        logical :: have_connectivity
-        real(dp) :: A(3,3), rhs(3), g(3), drx, dry, drz, dh
-        real(dp) :: det, vx_d, vy_d, vz_d, n_eff
-        real(dp) :: sum_drz2, sum_dh_drz, sum_dry2, sum_dh_dry
-        real(dp), parameter :: min_dr_vert = 1.0e-9_dp
-        real(dp), parameter :: weak_z_ratio = 0.01_dp
-        real(dp), parameter :: weak_y_ratio = 0.01_dp
-        real(dp), allocatable :: Vx_darcy(:), Vy_darcy(:), Vz_darcy(:)
-        real(dp), allocatable :: Vx_seep(:), Vy_seep(:), Vz_seep(:)
-        real(dp), allocatable :: mag_darcy(:), mag_seep(:)
-        real(dp), allocatable :: xc(:), yc(:), zc(:)
-        real(sp), parameter :: small_porosity = 1.0e-6_sp
-        real(dp), parameter :: det_tol = 1.0e-20_dp
-        real(dp), parameter :: min_dr = 1.0e-12_dp
-        real(dp), parameter :: reg_eps = 1.0e-10_dp
-
-        nCells = Modflow%GWF%nCells
-        nNodes = Modflow%GWF%nNodes
-        nElements = Modflow%GWF%nElements
-        ntime = Modflow%ntime
-
-        if (.not. allocated(Modflow%GWF%head)) return
-
-        have_connectivity = allocated(Modflow%GWF%ia) .and. allocated(Modflow%GWF%ConnectionList)
-
-        allocate(Vx_darcy(nCells), Vy_darcy(nCells), Vz_darcy(nCells), &
-                 Vx_seep(nCells), Vy_seep(nCells), Vz_seep(nCells), &
-                 mag_darcy(nCells), mag_seep(nCells))
-
-        ! Cell centroids for velocity gradient. Prefer node-based; fallback to cell x,y,z and DISU Top/Bottom for z.
-        allocate(xc(nCells), yc(nCells), zc(nCells))
-        if (allocated(Modflow%GWF%idNode) .and. allocated(Modflow%GWF%node) .and. Modflow%GWF%nNodesPerCell >= 1) then
-            do i = 1, nCells
-                xc(i) = 0.0_dp
-                yc(i) = 0.0_dp
-                zc(i) = 0.0_dp
-                do j = 1, Modflow%GWF%nNodesPerCell
-                    inode = Modflow%GWF%idNode(j,i)
-                    if (inode >= 1 .and. inode <= nNodes) then
-                        xc(i) = xc(i) + real(Modflow%GWF%node(inode)%x, dp)
-                        yc(i) = yc(i) + real(Modflow%GWF%node(inode)%y, dp)
-                        zc(i) = zc(i) + real(Modflow%GWF%node(inode)%z, dp)
-                    end if
-                end do
-                xc(i) = xc(i) / real(Modflow%GWF%nNodesPerCell, dp)
-                yc(i) = yc(i) / real(Modflow%GWF%nNodesPerCell, dp)
-                zc(i) = zc(i) / real(Modflow%GWF%nNodesPerCell, dp)
-            end do
-        else
-            do i = 1, nCells
-                xc(i) = real(Modflow%GWF%cell(i)%x, dp)
-                yc(i) = real(Modflow%GWF%cell(i)%y, dp)
-                zc(i) = real(Modflow%GWF%cell(i)%z, dp)
-            end do
-        end if
-        ! If z has no range (GSF/node z missing or constant), use DISU cell elevations so Vz is non-zero
-        if (maxval(zc) - minval(zc) < 1.0e-10_dp) then
-            do i = 1, nCells
-                zc(i) = 0.5_dp * (real(Modflow%GWF%cell(i)%Top, dp) + real(Modflow%GWF%cell(i)%Bottom, dp))
-            end do
-        end if
-
-        FName = trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.GWF.Velocity.tecplot.dat'
-        call OpenAscii(FNum, FName)
-        call Msg('To File: '//trim(FName))
-
-        write(FNum,*) 'Title = "Modflow GWF Darcy and Seepage Velocity: '//trim(Modflow.Prefix)//'"'
-        VarSTR = 'variables="X","Y","Z","GWF Head","Darcy Vx","Darcy Vy","Darcy Vz","Darcy magnitude","Seepage Vx","Seepage Vy","Seepage Vz","Seepage magnitude"'
-        write(FNum,'(a)') trim(VarSTR)
-
-        do itime = 1, ntime
-            ! Initialize to zero for inactive / no-gradient cells
-            Vx_darcy(:) = 0.0_dp
-            Vy_darcy(:) = 0.0_dp
-            Vz_darcy(:) = 0.0_dp
-            Vx_seep(:) = 0.0_dp
-            Vy_seep(:) = 0.0_dp
-            Vz_seep(:) = 0.0_dp
-            mag_darcy(:) = 0.0_dp
-            mag_seep(:) = 0.0_dp
-            ! Compute velocity for this time step (only if connectivity is available)
-            do i = 1, nCells
-                A(:,:) = 0.0_dp
-                rhs(:) = 0.0_dp
-                sum_drz2 = 0.0_dp
-                sum_dh_drz = 0.0_dp
-                sum_dry2 = 0.0_dp
-                sum_dh_dry = 0.0_dp
-                if (.not. have_connectivity) cycle
-                if (allocated(Modflow%GWF%ibound) .and. Modflow%GWF%ibound(i) == 0) cycle
-                do j = 2, Modflow%GWF%ia(i)
-                    jconn = Modflow%GWF%ConnectionList(j,i)
-                    if (jconn < 1 .or. jconn > nCells) cycle
-                    if (allocated(Modflow%GWF%ibound) .and. Modflow%GWF%ibound(jconn) == 0) cycle
-                    drx = xc(jconn) - xc(i)
-                    dry = yc(jconn) - yc(i)
-                    drz = zc(jconn) - zc(i)
-                    if (abs(drx) <= min_dr .and. abs(dry) <= min_dr .and. abs(drz) <= min_dr) cycle
-                    dh = real(Modflow%GWF%head(jconn,itime) - Modflow%GWF%head(i,itime), dp)
-                    A(1,1) = A(1,1) + drx*drx
-                    A(1,2) = A(1,2) + drx*dry
-                    A(1,3) = A(1,3) + drx*drz
-                    A(2,2) = A(2,2) + dry*dry
-                    A(2,3) = A(2,3) + dry*drz
-                    A(3,3) = A(3,3) + drz*drz
-                    rhs(1) = rhs(1) + dh*drx
-                    rhs(2) = rhs(2) + dh*dry
-                    rhs(3) = rhs(3) + dh*drz
-                    if (abs(drz) > min_dr_vert) then
-                        sum_drz2 = sum_drz2 + drz*drz
-                        sum_dh_drz = sum_dh_drz + dh*drz
-                    end if
-                    if (abs(dry) > min_dr_vert) then
-                        sum_dry2 = sum_dry2 + dry*dry
-                        sum_dh_dry = sum_dh_dry + dh*dry
-                    end if
-                end do
-                A(2,1) = A(1,2)
-                A(3,1) = A(1,3)
-                A(3,2) = A(2,3)
-                det = A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
-                if (abs(det) < det_tol) then
-                    ! Near-singular (e.g. coplanar 8-node neighbors): regularize diagonal
-                    A(1,1) = A(1,1) + reg_eps
-                    A(2,2) = A(2,2) + reg_eps
-                    A(3,3) = A(3,3) + reg_eps
-                    det = A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
-                    if (abs(det) < det_tol) cycle
-                end if
-                g(1) = (rhs(1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2)) - A(1,2)*(rhs(2)*A(3,3)-rhs(3)*A(2,3)) + A(1,3)*(rhs(2)*A(3,2)-rhs(3)*A(2,2)))/det
-                g(2) = (A(1,1)*(rhs(2)*A(3,3)-rhs(3)*A(2,3)) - rhs(1)*(A(2,1)*A(3,3)-A(2,3)*A(3,1)) + A(1,3)*(A(2,1)*rhs(3)-rhs(2)*A(3,1)))/det
-                g(3) = (A(1,1)*(A(2,2)*rhs(3)-rhs(2)*A(2,3)) - A(1,2)*(A(2,1)*rhs(3)-rhs(2)*A(3,1)) + rhs(1)*(A(2,1)*A(3,2)-A(2,2)*A(3,1)))/det
-                ! When y or z component is weak in the 3x3 system, use direction-only least-squares gradient.
-                if (sum_dry2 > min_dr_vert*min_dr_vert) then
-                    if (A(2,2) < weak_y_ratio * max(A(1,1), A(3,3), 1.0_dp) .or. abs(g(2)) < 1.0e-30_dp) then
-                        g(2) = sum_dh_dry / sum_dry2
-                    end if
-                end if
-                if (sum_drz2 > min_dr_vert*min_dr_vert) then
-                    if (A(3,3) < weak_z_ratio * max(A(1,1), A(2,2), 1.0_dp) .or. abs(g(3)) < 1.0e-30_dp) then
-                        g(3) = sum_dh_drz / sum_drz2
-                    end if
-                end if
-                vx_d = -real(Modflow%GWF%cell(i)%Kh, dp)*g(1)
-                vy_d = -real(Modflow%GWF%cell(i)%Kh, dp)*g(2)
-                vz_d = -real(Modflow%GWF%cell(i)%Kv, dp)*g(3)
-                Vx_darcy(i) = vx_d
-                Vy_darcy(i) = vy_d
-                Vz_darcy(i) = vz_d
-                n_eff = max(real(Modflow%GWF%cell(i)%Porosity, dp), small_porosity)
-                Vx_seep(i) = vx_d / n_eff
-                Vy_seep(i) = vy_d / n_eff
-                Vz_seep(i) = vz_d / n_eff
-                mag_darcy(i) = sqrt(vx_d*vx_d + vy_d*vy_d + vz_d*vz_d)
-                mag_seep(i) = mag_darcy(i) / n_eff
-            end do
-
-            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)') 'ZONE t="GWF Velocity" SOLUTIONTIME=', Modflow%TIMOT(itime), &
-                ',N=', nNodes, ', E=', nElements, ', datapacking=block, zonetype='//trim(Modflow%GWF%TecplotTyp)
-            CellCenteredSTR = ', VARLOCATION=([4,5,6,7,8,9,10,11,12]=CELLCENTERED)'
-            if (itime == 1) then
-                call AppendAuxdata(Modflow, ZoneSTR)
-                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
-                write(FNum,'(a)') '# x'
-                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%x, i=1, nNodes)
-                write(FNum,'(a)') '# y'
-                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%y, i=1, nNodes)
-                write(FNum,'(a)') '# z'
-                write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%node(i)%z, i=1, nNodes)
-            else
-                call AppendAuxdata(Modflow, ZoneSTR)
-                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//', VARSHARELIST=([1,2,3]=1), CONNECTIVITYSHAREZONE=1'
-            end if
-            write(FNum,'(a)') '# Head'
-            write(FNum,'(5('//FMT_R8//'))') (Modflow%GWF%head(i,itime), i=1, nCells)
-            write(FNum,'(a)') '# Darcy Vx'
-            write(FNum,'(5('//FMT_R8//'))') (Vx_darcy(i), i=1, nCells)
-            write(FNum,'(a)') '# Darcy Vy'
-            write(FNum,'(5('//FMT_R8//'))') (Vy_darcy(i), i=1, nCells)
-            write(FNum,'(a)') '# Darcy Vz'
-            write(FNum,'(5('//FMT_R8//'))') (Vz_darcy(i), i=1, nCells)
-            write(FNum,'(a)') '# Darcy magnitude'
-            write(FNum,'(5('//FMT_R8//'))') (mag_darcy(i), i=1, nCells)
-            write(FNum,'(a)') '# Seepage Vx'
-            write(FNum,'(5('//FMT_R8//'))') (Vx_seep(i), i=1, nCells)
-            write(FNum,'(a)') '# Seepage Vy'
-            write(FNum,'(5('//FMT_R8//'))') (Vy_seep(i), i=1, nCells)
-            write(FNum,'(a)') '# Seepage Vz'
-            write(FNum,'(5('//FMT_R8//'))') (Vz_seep(i), i=1, nCells)
-            write(FNum,'(a)') '# Seepage magnitude'
-            write(FNum,'(5('//FMT_R8//'))') (mag_seep(i), i=1, nCells)
-            if (itime == 1) then
-                do i = 1, nElements
-                    if (Modflow%GWF%nNodesPerCell == 8) then
-                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1, Modflow%GWF%nNodesPerCell)
-                    else if (Modflow%GWF%nNodesPerCell == 6) then
-                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,3), Modflow%GWF%idNode(3,i), (Modflow%GWF%idNode(j,i), j=4,6), Modflow%GWF%idNode(6,i)
-                    else if (Modflow%GWF%nNodesPerCell == 3) then
-                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,3)
-                    else if (Modflow%GWF%nNodesPerCell == 4) then
-                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,4)
-                    else if (Modflow%GWF%nNodesPerCell == 2) then
-                        write(FNum,'(8i8)') (Modflow%GWF%idNode(j,i), j=1,2)
-                    end if
-                end do
-            end if
-        end do
-
-        deallocate(Vx_darcy, Vy_darcy, Vz_darcy, Vx_seep, Vy_seep, Vz_seep, mag_darcy, mag_seep)
-        deallocate(xc, yc, zc)
-        call FreeUnit(FNum)
-    end subroutine GWFVelocityToTecplot
 
     !-------------------------------------------------------------
     subroutine ModflowFinalHeadsToCSVFile(Modflow,domain)
@@ -6763,6 +6711,12 @@ module MUSG !
         write(Modflow.iOC,'(a,i5)') 'HEAD PRINT FORMAT 0'
         write(Modflow.iOC,'(a,i5)') 'DRAWDOWN SAVE UNIT ',Modflow%GWF%iDDN
         write(Modflow.iOC,'(a,i5)') 'DRAWDOWN PRINT FORMAT 0'
+        if(Modflow%GWF%iVEL > 0) then
+            write(Modflow.iOC,'(a,i5)') 'DARCY VELOCITY SAVE UNIT ',Modflow%GWF%iVEL
+        end if
+        if(Modflow%GWF%iVELLin > 0) then
+            write(Modflow.iOC,'(a,i5)') 'LINEAR VELOCITY SAVE UNIT ',Modflow%GWF%iVELLin
+        end if
         do i=1,modflow.nPeriods
             write(Modflow.iOC,'(a,i5)') 'PERIOD ',i
             write(Modflow.iOC,'(a,'//FMT_R4//')') '    DELTAT ', modflow.StressPeriodDeltat
@@ -6775,6 +6729,8 @@ module MUSG !
             write(Modflow.iOC,'(a)') '        SAVE DRAWDOWN'
             write(Modflow.iOC,'(a)') '        SAVE BUDGET'
             write(Modflow.iOC,'(a)') '        PRINT BUDGET'
+            if(Modflow%GWF%iVEL > 0) write(Modflow.iOC,'(a)') '        SAVE DARCY VELOCITY'
+            if(Modflow%GWF%iVELLin > 0) write(Modflow.iOC,'(a)') '        SAVE LINEAR VELOCITY'
         end do
 
         
@@ -6892,9 +6848,10 @@ module MUSG !
             write(Modflow.iSWF,'(2i9,3x,i9,'//FMT_R4//','//FMT_R8//',i9)') i, i, 1, Modflow%SWF%cell(i)%Sgcl, Modflow%SWF%Cell(i)%xyArea, 0
         end do
 
-        write(Modflow.iSWF,'(a)') '# ISWFTYP               SMANN                SWFH1                SWFH2'
+        write(Modflow.iSWF,'(a)') '# ISWFTYP               SMANN                SWFH1                SWFH2               SOBST               SDEPR'
         do i=1,Modflow%SWF%nZones
-            write(Modflow.iSWF,'(i5,3x,3('//FMT_R8//'))') i,  Modflow%SWF%manning(i),  Modflow%SWF%H1DepthForSmoothing(i),  Modflow%SWF%H2DepthForSmoothing(i)
+            write(Modflow.iSWF,'(i5,3x,5('//FMT_R8//'))') i,  Modflow%SWF%manning(i),  Modflow%SWF%H1DepthForSmoothing(i),  Modflow%SWF%H2DepthForSmoothing(i), &
+                max(0.0_sp, Modflow%SWF%ObstructionStorageHeight(i)), max(0.0_sp, Modflow%SWF%DepressionStorageHeight(i))
         end do
         
         write(Modflow.iSWF,'(a)') 'INTERNAL  1  (FREE)  -1  Connection Length CL12_SWF()'
@@ -7524,6 +7481,26 @@ module MUSG !
              Modflow%GWF%iCBB=IU
              file_open_flag(IU)=.true.
              Modflow%GWF%FNameCBB=FNAME(1:IFLEN)
+         else if(index(FNAME(1:IFLEN),'gwf.vellin') /= 0) then
+             Modflow%GWF%iVELLin=IU
+             file_open_flag(IU)=.true.
+             Modflow%GWF%FNameVELLin=FNAME(1:IFLEN)
+         else if(index(FNAME(1:IFLEN),'cln.vellin') /= 0) then
+             Modflow%CLN%iVELLin=IU
+             file_open_flag(IU)=.true.
+             Modflow%CLN%FNameVELLin=FNAME(1:IFLEN)
+         else if(index(FNAME(1:IFLEN),'gwf.vel') /= 0) then
+             Modflow%GWF%iVEL=IU
+             file_open_flag(IU)=.true.
+             Modflow%GWF%FNameVEL=FNAME(1:IFLEN)
+         else if(index(FNAME(1:IFLEN),'cln.vel') /= 0) then
+             Modflow%CLN%iVEL=IU
+             file_open_flag(IU)=.true.
+             Modflow%CLN%FNameVEL=FNAME(1:IFLEN)
+         else if(index(FNAME(1:IFLEN),'swf.vel') /= 0) then
+             Modflow%SWF%iVEL=IU
+             file_open_flag(IU)=.true.
+             Modflow%SWF%FNameVEL=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'.sms') /= 0) then
              modflow.FNameSMS=FNAME(1:IFLEN)
          else if(index(FNAME(1:IFLEN),'.oc') /= 0) then
@@ -7914,6 +7891,7 @@ module MUSG !
         integer(i4) :: inoc, iout, lloc, istart, istop
         real(sp) :: r
         integer(i4) :: n
+        integer(i4) :: IVELDUN, IVELLUN
         !     ------------------------------------------------------------------
         !
         !1------ALPHABETIC OUTPUT CONTROL.  WRITE MESSAGE AND SET INITIAL VALUES
@@ -7923,6 +7901,8 @@ module MUSG !
         ' FOR WHICH OUTPUT IS DESIRED')
         IPEROC=9999
         ITSOC=9999
+        IVELDUN=0
+        IVELLUN=0
         !
         !2------LOOK FOR ALPHABETIC WORDS:
         
@@ -8056,6 +8036,46 @@ module MUSG !
                     END IF
                 ELSE
                         GO TO 2000
+                END IF
+            ELSE
+                GO TO 2000
+            END IF
+        !
+        !2C2----LOOK FOR "DARCY VELOCITY SAVE UNIT" / "LINEAR VELOCITY SAVE UNIT"
+        ELSE IF(LINE(ISTART:ISTOP).EQ.'DARCY') THEN
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'VELOCITY') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'SAVE') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'UNIT') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IVELDUN,R,IOUT,INOC)
+            WRITE(IOUT,117) IVELDUN
+        117 FORMAT(1X,'DARCY VELOCITY WILL BE SAVED ON UNIT ',I4)
+
+        ELSE IF(LINE(ISTART:ISTOP).EQ.'LINEAR') THEN
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'VELOCITY') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'SAVE') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).NE.'UNIT') GO TO 2000
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IVELLUN,R,IOUT,INOC)
+            WRITE(IOUT,118) IVELLUN
+        118 FORMAT(1X,'LINEAR VELOCITY WILL BE SAVED ON UNIT ',I4)
+
+        ELSE IF(LINE(ISTART:ISTOP).EQ.'VELOCITY') THEN
+            ! Legacy: VELOCITY SAVE UNIT sets both Darcy and linear to same unit
+            CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+            IF(LINE(ISTART:ISTOP).EQ.'SAVE') THEN
+                CALL URWORD(LINE,LLOC,ISTART,ISTOP,1,N,R,IOUT,INOC)
+                IF(LINE(ISTART:ISTOP).EQ.'UNIT') THEN
+                    CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IVELDUN,R,IOUT,INOC)
+                    IVELLUN=IVELDUN
+                    WRITE(IOUT,119) IVELDUN
+        119         FORMAT(1X,'VELOCITY WILL BE SAVED ON UNIT ',I4)
+                ELSE
+                    GO TO 2000
                 END IF
             ELSE
                 GO TO 2000
@@ -10756,6 +10776,259 @@ module MUSG !
         end if
     end subroutine WritePostRechargeRates
 
+    !----------------------------------------------------------------------
+    subroutine ReadGSTR(Modflow)
+        ! Read GSTR package into Modflow%GSTRInst for post-processing
+        use MUSG_Core, only: MAX_GSTR_INSTANCES, MAX_GSTR_SNAPS
+        implicit none
+        type(ModflowProject) :: Modflow
+        character(len=512) :: line, token, rfile
+        integer(i4) :: ios, ig, j, ncells, nsnaps, idomain
+        real(dp) :: fac, tsnap, x, y
+        integer(i4) :: inode
+
+        if(Modflow%iGSTR == 0) return
+        rewind(Modflow%iGSTR)
+        Modflow%nGSTRInstances = 0
+
+        ! Header: NGSTR IGSTRCB
+        do
+            read(Modflow%iGSTR,'(a)',iostat=ios) line
+            if(ios /= 0) call ErrMsg('GSTR: unexpected EOF reading header')
+            line = adjustl(line)
+            if(len_trim(line) == 0) cycle
+            if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+            read(line,*,iostat=ios) Modflow%nGSTRInstances, Modflow%IGSTRCB
+            if(ios /= 0) call ErrMsg('GSTR: error reading NGSTR IGSTRCB')
+            exit
+        end do
+        if(Modflow%nGSTRInstances < 1) return
+        if(Modflow%nGSTRInstances > MAX_GSTR_INSTANCES) then
+            call ErrMsg('GSTR: NGSTR exceeds MAX_GSTR_INSTANCES')
+        end if
+        write(TmpSTR,'(a,i8)') 'GSTR instances: ', Modflow%nGSTRInstances
+        call Msg(trim(TmpSTR))
+
+        do ig = 1, Modflow%nGSTRInstances
+            do
+                read(Modflow%iGSTR,'(a)',iostat=ios) line
+                if(ios /= 0) call ErrMsg('GSTR: unexpected EOF before INSTANCE')
+                line = adjustl(line)
+                if(len_trim(line) == 0) cycle
+                if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                exit
+            end do
+            read(line,*,iostat=ios) token, Modflow%GSTRInst(ig)%name
+            if(ios /= 0) then
+                ! Fallback: whole remainder after first blank is the name
+                j = index(line, ' ')
+                if(j <= 0) call ErrMsg('GSTR: error reading INSTANCE name')
+                Modflow%GSTRInst(ig)%name = adjustl(line(j+1:))
+            end if
+            Modflow%GSTRInst(ig)%name = adjustl(Modflow%GSTRInst(ig)%name)
+            if(len_trim(Modflow%GSTRInst(ig)%name) == 0) then
+                call ErrMsg('GSTR: blank INSTANCE name')
+            end if
+
+            do
+                read(Modflow%iGSTR,'(a)',iostat=ios) line
+                if(ios /= 0) call ErrMsg('GSTR: unexpected EOF reading IDOMAIN line')
+                line = adjustl(line)
+                if(len_trim(line) == 0) cycle
+                if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                exit
+            end do
+            read(line,*,iostat=ios) idomain, ncells, nsnaps, fac
+            if(ios /= 0) then
+                read(line,*,iostat=ios) idomain, ncells, nsnaps
+                fac = 1.0d0
+            end if
+            if(ios /= 0) call ErrMsg('GSTR: error reading IDOMAIN NCELLS NSNAPS')
+            if(nsnaps > MAX_GSTR_SNAPS) call ErrMsg('GSTR: NSNAPS too large')
+            Modflow%GSTRInst(ig)%idomain = idomain
+            Modflow%GSTRInst(ig)%ncells = ncells
+            Modflow%GSTRInst(ig)%nsnaps = nsnaps
+            Modflow%GSTRInst(ig)%fac = fac
+
+            if(allocated(Modflow%GSTRInst(ig)%inode)) deallocate(Modflow%GSTRInst(ig)%inode)
+            if(allocated(Modflow%GSTRInst(ig)%x)) deallocate(Modflow%GSTRInst(ig)%x)
+            if(allocated(Modflow%GSTRInst(ig)%y)) deallocate(Modflow%GSTRInst(ig)%y)
+            if(allocated(Modflow%GSTRInst(ig)%tsnap)) deallocate(Modflow%GSTRInst(ig)%tsnap)
+            if(allocated(Modflow%GSTRInst(ig)%rfile)) deallocate(Modflow%GSTRInst(ig)%rfile)
+            allocate(Modflow%GSTRInst(ig)%inode(ncells), &
+                     Modflow%GSTRInst(ig)%x(ncells), &
+                     Modflow%GSTRInst(ig)%y(ncells), &
+                     Modflow%GSTRInst(ig)%tsnap(nsnaps), &
+                     Modflow%GSTRInst(ig)%rfile(nsnaps), stat=ialloc)
+            call AllocChk(ialloc, 'GSTR post arrays')
+
+            do j = 1, ncells
+                do
+                    read(Modflow%iGSTR,'(a)',iostat=ios) line
+                    if(ios /= 0) call ErrMsg('GSTR: unexpected EOF reading cells')
+                    line = adjustl(line)
+                    if(len_trim(line) == 0) cycle
+                    if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                    exit
+                end do
+                read(line,*,iostat=ios) inode, x, y
+                if(ios /= 0) call ErrMsg('GSTR: error reading inode x y')
+                Modflow%GSTRInst(ig)%inode(j) = inode
+                Modflow%GSTRInst(ig)%x(j) = x
+                Modflow%GSTRInst(ig)%y(j) = y
+            end do
+
+            do j = 1, nsnaps
+                do
+                    read(Modflow%iGSTR,'(a)',iostat=ios) line
+                    if(ios /= 0) call ErrMsg('GSTR: unexpected EOF reading snapshots')
+                    line = adjustl(line)
+                    if(len_trim(line) == 0) cycle
+                    if(line(1:1) == '#' .or. line(1:1) == '!') cycle
+                    exit
+                end do
+                read(line,*,iostat=ios) tsnap, rfile
+                if(ios /= 0) call ErrMsg('GSTR: error reading time raster')
+                Modflow%GSTRInst(ig)%tsnap(j) = tsnap
+                Modflow%GSTRInst(ig)%rfile(j) = adjustl(rfile)
+            end do
+
+            write(TmpSTR,'(a,i0,a,a,a,i0,a,i0)') '  instance ', ig, ' ', &
+                trim(Modflow%GSTRInst(ig)%name), ' cells=', ncells, ' snaps=', nsnaps
+            call Msg(trim(TmpSTR))
+        end do
+    end subroutine ReadGSTR
+
+    !----------------------------------------------------------------------
+    subroutine WritePostGSTRRates(Modflow)
+        ! Reconstruct GSTR applied rates from rasters and write Tecplot files
+        use Raster, only: RasterData, Raster_LoadFile, get_raster_value
+        implicit none
+        type(ModflowProject), target :: Modflow
+
+        integer(i4) :: FNum, FNumTS, ig, j, k, ib1, ib2, inode0, iloc
+        character(MAX_STR) :: FName, FNameTS, domname
+        type(RasterData) :: rast1, rast2
+        real(dp) :: rate, r1, r2, w, tt, meanr, sumr
+        logical :: missing
+        type(ModflowDomain), pointer :: domain
+
+        if(Modflow%nGSTRInstances < 1) return
+        call Msg(' ')
+        call Msg('GSTR post: reconstructing rates from snapshot rasters')
+
+        do ig = 1, Modflow%nGSTRInstances
+            if(Modflow%GSTRInst(ig)%idomain == 1) then
+                domain => Modflow%GWF
+                domname = 'GWF'
+                inode0 = 0
+            else if(Modflow%GSTRInst(ig)%idomain == 2) then
+                domain => Modflow%CLN
+                domname = 'CLN'
+                inode0 = Modflow%GWF%nCells
+            else
+                domain => Modflow%SWF
+                domname = 'SWF'
+                inode0 = Modflow%GWF%nCells + Modflow%CLN%nCells
+            end if
+            if(.not. domain%IsDefined) then
+                call Msg('GSTR post: domain not defined for instance '// &
+                         trim(Modflow%GSTRInst(ig)%name))
+                cycle
+            end if
+
+            FName = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                    trim(domname)//'_GSTR.tecplot.dat'
+            call OpenAscii(FNum, FName)
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+            write(FNum,'(a)') 'Title = " Modflow '//trim(domname)//' GSTR rates (post)"'
+            write(FNum,'(a)') 'variables="X","Y","Z","GSTR","Time"'
+
+            FNameTS = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                      trim(domname)//'_GSTR_TS.tecplot.dat'
+            call OpenAscii(FNumTS, FNameTS)
+            call Msg(FileCreateSTR//'Tecplot file: '//trim(FNameTS))
+            write(FNumTS,'(a)') 'Title = " Modflow '//trim(domname)// &
+                ' GSTR time series (post)"'
+            write(FNumTS,'(a)') 'variables="Time","MeanGSTR"'
+            write(FNumTS,'(a,a,a)') 'ZONE t="', trim(Modflow%GSTRInst(ig)%name), &
+                '", datapacking=point'
+
+            do k = 1, Modflow%GSTRInst(ig)%nsnaps
+                tt = Modflow%GSTRInst(ig)%tsnap(k)
+                call Raster_LoadFile(trim(Modflow%GSTRInst(ig)%rfile(k)), rast1)
+                write(FNum,'(a,i8,a,a,a,'//FMT_R8//',a)') 'ZONE i=', &
+                    Modflow%GSTRInst(ig)%ncells, ', t="', &
+                    trim(Modflow%GSTRInst(ig)%name), ' t=', tt, &
+                    '", datapacking=point'
+                sumr = 0.0d0
+                do j = 1, Modflow%GSTRInst(ig)%ncells
+                    call get_raster_value(Modflow%GSTRInst(ig)%x(j), &
+                        Modflow%GSTRInst(ig)%y(j), r1, rast1, missing)
+                    if(missing) r1 = 0.0d0
+                    rate = r1 * Modflow%GSTRInst(ig)%fac
+                    sumr = sumr + rate
+                    iloc = Modflow%GSTRInst(ig)%inode(j) - inode0
+                    if(iloc < 1 .or. iloc > domain%nCells) then
+                        write(FNum,'(5('//FMT_R8//'))') &
+                            Modflow%GSTRInst(ig)%x(j), Modflow%GSTRInst(ig)%y(j), &
+                            0.0d0, rate, tt
+                    else
+                        write(FNum,'(5('//FMT_R8//'))') &
+                            domain%cell(iloc)%x, domain%cell(iloc)%y, &
+                            domain%cell(iloc)%z, rate, tt
+                    end if
+                end do
+                meanr = sumr / max(1, Modflow%GSTRInst(ig)%ncells)
+                write(FNumTS,'(2('//FMT_R8//'))') tt, meanr
+            end do
+
+            ! Midpoint interpolated zone if at least 2 snaps (shows linear interp)
+            if(Modflow%GSTRInst(ig)%nsnaps >= 2) then
+                ib1 = 1
+                ib2 = Modflow%GSTRInst(ig)%nsnaps
+                tt = 0.5d0 * (Modflow%GSTRInst(ig)%tsnap(ib1) + &
+                              Modflow%GSTRInst(ig)%tsnap(ib2))
+                w = (tt - Modflow%GSTRInst(ig)%tsnap(ib1)) / &
+                    (Modflow%GSTRInst(ig)%tsnap(ib2) - Modflow%GSTRInst(ig)%tsnap(ib1))
+                call Raster_LoadFile(trim(Modflow%GSTRInst(ig)%rfile(ib1)), rast1)
+                call Raster_LoadFile(trim(Modflow%GSTRInst(ig)%rfile(ib2)), rast2)
+                write(FNum,'(a,i8,a,a,a,'//FMT_R8//',a)') 'ZONE i=', &
+                    Modflow%GSTRInst(ig)%ncells, ', t="', &
+                    trim(Modflow%GSTRInst(ig)%name), ' t=', tt, &
+                    ' interp", datapacking=point'
+                sumr = 0.0d0
+                do j = 1, Modflow%GSTRInst(ig)%ncells
+                    call get_raster_value(Modflow%GSTRInst(ig)%x(j), &
+                        Modflow%GSTRInst(ig)%y(j), r1, rast1, missing)
+                    if(missing) r1 = 0.0d0
+                    call get_raster_value(Modflow%GSTRInst(ig)%x(j), &
+                        Modflow%GSTRInst(ig)%y(j), r2, rast2, missing)
+                    if(missing) r2 = 0.0d0
+                    rate = ((1.0d0 - w) * r1 + w * r2) * Modflow%GSTRInst(ig)%fac
+                    sumr = sumr + rate
+                    iloc = Modflow%GSTRInst(ig)%inode(j) - inode0
+                    if(iloc < 1 .or. iloc > domain%nCells) then
+                        write(FNum,'(5('//FMT_R8//'))') &
+                            Modflow%GSTRInst(ig)%x(j), Modflow%GSTRInst(ig)%y(j), &
+                            0.0d0, rate, tt
+                    else
+                        write(FNum,'(5('//FMT_R8//'))') &
+                            domain%cell(iloc)%x, domain%cell(iloc)%y, &
+                            domain%cell(iloc)%z, rate, tt
+                    end if
+                end do
+                meanr = sumr / max(1, Modflow%GSTRInst(ig)%ncells)
+                write(FNumTS,'(2('//FMT_R8//'))') tt, meanr
+            end if
+
+            close(FNum)
+            call FreeUnit(FNum)
+            close(FNumTS)
+            call FreeUnit(FNumTS)
+        end do
+    end subroutine WritePostGSTRRates
+
     SUBROUTINE ReadDRN_StressPeriods(Modflow)
 !     ******************************************************************
 !     READ DRAIN HEAD, CONDUCTANCE AND BOTTOM ELEVATION
@@ -12779,7 +13052,214 @@ module MUSG !
         end if
 
     end subroutine ReadBinary_HDS_File
-    
+
+    !----------------------------------------------------------------------
+    subroutine ReadBinary_VEL_File(Modflow, domain, isDarcy)
+        ! Read sequential Vx, Vy, Vz binary records (ULASAVU / ULASAV style)
+        implicit none
+        type (ModflowProject) Modflow
+        type(ModflowDomain) domain
+        logical, intent(in) :: isDarcy
+
+        integer(i4) :: i, k, nndlay, nstrt, ilay, idum, kstpread, kperread, iread, iu
+        real(dp) :: totimread, pertimread
+        character*16 :: text
+        real(sp), allocatable :: buf(:)
+        character(128) :: fname
+
+        if(isDarcy) then
+            iu = domain%iVEL
+            fname = domain%FNameVEL
+        else
+            iu = domain%iVELLin
+            fname = domain%FNameVELLin
+        end if
+        if(iu <= 0) return
+
+        allocate(buf(domain%nCells))
+        if(isDarcy) then
+            if(.not. allocated(domain%Vx_darcy)) then
+                allocate(domain%Vx_darcy(domain%nCells,Modflow%ntime), &
+                         domain%Vy_darcy(domain%nCells,Modflow%ntime), &
+                         domain%Vz_darcy(domain%nCells,Modflow%ntime))
+                domain%Vx_darcy = 0.0
+                domain%Vy_darcy = 0.0
+                domain%Vz_darcy = 0.0
+            end if
+        else
+            if(.not. allocated(domain%Vx_lin)) then
+                allocate(domain%Vx_lin(domain%nCells,Modflow%ntime), &
+                         domain%Vy_lin(domain%nCells,Modflow%ntime), &
+                         domain%Vz_lin(domain%nCells,Modflow%ntime))
+                domain%Vx_lin = 0.0
+                domain%Vy_lin = 0.0
+                domain%Vz_lin = 0.0
+            end if
+        end if
+
+        call msg(' ')
+        write(TmpSTR,'(a,i5,a)') 'Reading '//trim(domain%name)//' velocity from unit ',iu,' file '//trim(fname)
+        call msg(TmpSTR)
+
+        do i=1,Modflow%ntime
+            if(domain%name=='GWF') then
+                ! Vx all layers, then Vy, then Vz
+                do k=1,NLAY
+                    NNDLAY = NODLAY(K)
+                    NSTRT = NODLAY(K-1)+1
+                    CALL ULASAVURD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,NSTRT,NNDLAY,ILAY,iu,NODES)
+                    if(isDarcy) then
+                        domain%Vx_darcy(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    else
+                        domain%Vx_lin(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    end if
+                end do
+                do k=1,NLAY
+                    NNDLAY = NODLAY(K)
+                    NSTRT = NODLAY(K-1)+1
+                    CALL ULASAVURD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,NSTRT,NNDLAY,ILAY,iu,NODES)
+                    if(isDarcy) then
+                        domain%Vy_darcy(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    else
+                        domain%Vy_lin(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    end if
+                end do
+                do k=1,NLAY
+                    NNDLAY = NODLAY(K)
+                    NSTRT = NODLAY(K-1)+1
+                    CALL ULASAVURD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,NSTRT,NNDLAY,ILAY,iu,NODES)
+                    if(isDarcy) then
+                        domain%Vz_darcy(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    else
+                        domain%Vz_lin(NSTRT:NNDLAY,i) = buf(NSTRT:NNDLAY)
+                    end if
+                end do
+            else
+                IDUM = 1
+                CALL ULASAVRD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,domain%ncells,IDUM,IDUM,iu,iread)
+                if(iread /= 0) exit
+                if(isDarcy) then
+                    domain%Vx_darcy(:,i) = buf
+                else
+                    domain%Vx_lin(:,i) = buf
+                end if
+                CALL ULASAVRD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,domain%ncells,IDUM,IDUM,iu,iread)
+                if(iread /= 0) exit
+                if(isDarcy) then
+                    domain%Vy_darcy(:,i) = buf
+                else
+                    domain%Vy_lin(:,i) = buf
+                end if
+                CALL ULASAVRD(buf,TEXT,KSTPREAD,KPERREAD,PERTIMREAD,TOTIMREAD,domain%ncells,IDUM,IDUM,iu,iread)
+                if(iread /= 0) exit
+                if(isDarcy) then
+                    domain%Vz_darcy(:,i) = buf
+                else
+                    domain%Vz_lin(:,i) = buf
+                end if
+            end if
+        end do
+        deallocate(buf)
+    end subroutine ReadBinary_VEL_File
+
+    !----------------------------------------------------------------------
+    subroutine DomainVelocityBinaryToTecplot(Modflow, domain)
+        implicit none
+        type (ModflowProject) Modflow
+        type(ModflowDomain) domain
+        integer(i4) :: FNum, i, itime, j
+        character(MAX_STR) :: FName, ZoneSTR
+        integer(i4) :: nCells, nNodes, nElements, ntime, nVar
+        logical :: haveLin, haveDarcy
+
+        nCells = domain%nCells
+        nNodes = domain%nNodes
+        nElements = domain%nElements
+        ntime = Modflow%ntime
+        haveDarcy = allocated(domain%Vx_darcy)
+        haveLin = allocated(domain%Vx_lin)
+        if(.not. haveDarcy .and. .not. haveLin) return
+
+        FName = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'//trim(domain%name)//'.Velocity.tecplot.dat'
+        call OpenAscii(FNum, FName)
+        call Msg('To File: '//trim(FName))
+
+        write(FNum,*) 'Title = "Modflow '//trim(domain%name)//' Velocity: '//trim(Modflow%Prefix)//'"'
+        if(haveDarcy .and. haveLin) then
+            VarSTR = 'variables="X","Y","Z","'//trim(domain%name)//' Head","Darcy Vx","Darcy Vy","Darcy Vz","Average Linear Vx","Average Linear Vy","Average Linear Vz"'
+            nVar = 10
+            CellCenteredSTR = ', VARLOCATION=([4,5,6,7,8,9,10]=CELLCENTERED)'
+        else if(haveDarcy) then
+            VarSTR = 'variables="X","Y","Z","'//trim(domain%name)//' Head","Darcy Vx","Darcy Vy","Darcy Vz"'
+            nVar = 7
+            CellCenteredSTR = ', VARLOCATION=([4,5,6,7]=CELLCENTERED)'
+        else
+            VarSTR = 'variables="X","Y","Z","'//trim(domain%name)//' Head","Average Linear Vx","Average Linear Vy","Average Linear Vz"'
+            nVar = 7
+            CellCenteredSTR = ', VARLOCATION=([4,5,6,7]=CELLCENTERED)'
+        end if
+        ! NCV: head/velocity are nodal (nCells==nNodes) while E is the FE element count.
+        ! Marking them CELLCENTERED makes Tecplot expect E values and misread connectivity.
+        if(NodalControlVolume) CellCenteredSTR = ''
+        write(FNum,'(a)') trim(VarSTR)
+
+        do itime = 1, ntime
+            write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)') 'ZONE t="'//trim(domain%name)//' Velocity" SOLUTIONTIME=', Modflow%TIMOT(itime), &
+                ', N=', nNodes, ', E=', nElements, ', datapacking=block, zonetype='//trim(domain%TecplotTyp)
+            if(itime == 1) then
+                call AppendAuxdata(Modflow, ZoneSTR)
+                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
+                write(FNum,'(a)') '# x'
+                write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%x, i=1, nNodes)
+                write(FNum,'(a)') '# y'
+                write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%y, i=1, nNodes)
+                write(FNum,'(a)') '# z'
+                write(FNum,'(5('//FMT_R8//'))') (domain%node(i)%z, i=1, nNodes)
+            else
+                call AppendAuxdata(Modflow, ZoneSTR)
+                write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)//', VARSHARELIST=([1,2,3]=1), CONNECTIVITYSHAREZONE=1'
+            end if
+            write(FNum,'(a)') '# Head'
+            if(allocated(domain%head)) then
+                write(FNum,'(5('//FMT_R8//'))') (domain%head(i,itime), i=1, nCells)
+            else
+                write(FNum,'(5('//FMT_R8//'))') (0.0_sp, i=1, nCells)
+            end if
+            if(haveDarcy) then
+                write(FNum,'(a)') '# Darcy Vx'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vx_darcy(i,itime), i=1, nCells)
+                write(FNum,'(a)') '# Darcy Vy'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vy_darcy(i,itime), i=1, nCells)
+                write(FNum,'(a)') '# Darcy Vz'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vz_darcy(i,itime), i=1, nCells)
+            end if
+            if(haveLin) then
+                write(FNum,'(a)') '# Average Linear Vx'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vx_lin(i,itime), i=1, nCells)
+                write(FNum,'(a)') '# Average Linear Vy'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vy_lin(i,itime), i=1, nCells)
+                write(FNum,'(a)') '# Average Linear Vz'
+                write(FNum,'(5('//FMT_R8//'))') (domain%Vz_lin(i,itime), i=1, nCells)
+            end if
+            if(itime == 1) then
+                do i = 1, nElements
+                    if(domain%nNodesPerCell == 8) then
+                        write(FNum,'(8i8)') (domain%idNode(j,i), j=1, domain%nNodesPerCell)
+                    else if(domain%nNodesPerCell == 6) then
+                        write(FNum,'(8i8)') (domain%idNode(j,i), j=1,3), domain%idNode(3,i), (domain%idNode(j,i), j=4,6), domain%idNode(6,i)
+                    else if(domain%nNodesPerCell == 3) then
+                        write(FNum,'(8i8)') (domain%idNode(j,i), j=1,3)
+                    else if(domain%nNodesPerCell == 4) then
+                        write(FNum,'(8i8)') (domain%idNode(j,i), j=1,4)
+                    else if(domain%nNodesPerCell == 2) then
+                        write(FNum,'(8i8)') (domain%idNode(j,i), j=1,2)
+                    end if
+                end do
+            end if
+        end do
+        call FreeUnit(FNum)
+    end subroutine DomainVelocityBinaryToTecplot
+
     subroutine ReadBinary_DDN_File(Modflow, domain)
         implicit none
         
@@ -13682,6 +14162,58 @@ module MUSG !
         
     end subroutine RestoreGWFConnectivityFromDISU
 
+    subroutine RestoreSWFConnectivityFromIAJA(Modflow)
+        implicit none
+        type (ModflowProject) Modflow
+        
+        integer(i4) :: i, j, nconn, jstart, jend, jidx
+        integer(i4) :: ialloc
+        
+        if (.not. Modflow%SWF%IsDefined) return
+        if (Modflow%SWF%nCells <= 0) return
+        if (.not. associated(IA_SWF)) return
+        if (.not. associated(JA_SWF)) return
+        if (size(IA_SWF) < Modflow%SWF%nCells + 1) return
+        
+        if (.not. allocated(Modflow%SWF%ia)) then
+            allocate(Modflow%SWF%ia(Modflow%SWF%nCells), stat=ialloc)
+            call AllocChk(ialloc, 'SWF%ia array in RestoreSWFConnectivityFromIAJA')
+        end if
+        if (.not. allocated(Modflow%SWF%ConnectionList)) then
+            allocate(Modflow%SWF%ConnectionList(MAX_CNCTS, Modflow%SWF%nCells), stat=ialloc)
+            call AllocChk(ialloc, 'SWF%ConnectionList array in RestoreSWFConnectivityFromIAJA')
+        end if
+        
+        do i = 1, Modflow%SWF%nCells
+            jstart = IA_SWF(i)
+            jend = IA_SWF(i+1) - 1
+            nconn = jend - jstart + 1
+            
+            if (nconn > MAX_CNCTS) then
+                write(TmpSTR,'(a,i8,a,i8)') 'SWF cell ', i, ' has ', nconn, ' connections, exceeds MAX_CNCTS'
+                call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'RestoreSWFConnectivityFromIAJA')
+                return
+            end if
+            
+            Modflow%SWF%ia(i) = nconn
+            Modflow%SWF%ConnectionList(1, i) = -i
+            jidx = 2
+            do j = jstart + 1, jend
+                if (jidx > MAX_CNCTS) then
+                    write(TmpSTR,'(a,i8,a)') 'SWF cell ', i, ' exceeds MAX_CNCTS when copying neighbors'
+                    call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'RestoreSWFConnectivityFromIAJA')
+                    return
+                end if
+                Modflow%SWF%ConnectionList(jidx, i) = abs(JA_SWF(j))
+                jidx = jidx + 1
+            end do
+            do j = jidx, MAX_CNCTS
+                Modflow%SWF%ConnectionList(j, i) = 0
+            end do
+        end do
+        
+    end subroutine RestoreSWFConnectivityFromIAJA
+
     subroutine ReadDISU_StressPeriodData(Modflow)
     
         implicit none
@@ -13818,7 +14350,7 @@ module MUSG !
       DATA ANAME(3) /'                      JA'/
       
       integer(i4) :: inswf, ioptfound, lloc, istart, i, in, istop
-      real(sp) :: r, farea, felev, sgcl, sgcarea, smann, swfh2, swfh1
+      real(sp) :: r, farea, felev, sgcl, sgcarea, smann, swfh2, swfh1, sobst, sdepr
       integer(i4) :: iswfnds, k, ija, ii, iftyp, ifno, isswadi, ifgwno, ifcon, isgwadi
       
       
@@ -14163,6 +14695,7 @@ module MUSG !
         modflow%SWF%cell(i)%xyArea=FAREA ! Save FAREA for SWF_to_GWF (areal flux) calculation
         ASWFNDS(I,4) = FELEV
         Modflow%SWF%cell(i)%z=FELEV
+        Modflow%SWF%cell(i)%idZone=IFTYP
         ISSWADISWF(I) = ISSWADI
       end do
 !----------------------------------------------------------------------------------------
@@ -14199,22 +14732,51 @@ module MUSG !
       end if
 !
       ALLOCATE(ASWFCOND(NSWFTYP,4))
+      if (allocated(Modflow%SWF%Manning)) deallocate(Modflow%SWF%Manning)
+      if (allocated(Modflow%SWF%H1DepthForSmoothing)) deallocate(Modflow%SWF%H1DepthForSmoothing)
+      if (allocated(Modflow%SWF%H2DepthForSmoothing)) deallocate(Modflow%SWF%H2DepthForSmoothing)
+      if (allocated(Modflow%SWF%ObstructionStorageHeight)) deallocate(Modflow%SWF%ObstructionStorageHeight)
+      if (allocated(Modflow%SWF%DepressionStorageHeight)) deallocate(Modflow%SWF%DepressionStorageHeight)
+      allocate(Modflow%SWF%Manning(NSWFTYP))
+      allocate(Modflow%SWF%H1DepthForSmoothing(NSWFTYP))
+      allocate(Modflow%SWF%H2DepthForSmoothing(NSWFTYP))
+      allocate(Modflow%SWF%ObstructionStorageHeight(NSWFTYP))
+      allocate(Modflow%SWF%DepressionStorageHeight(NSWFTYP))
+      Modflow%SWF%nZones = NSWFTYP
+      Modflow%SWF%Manning(:) = 0.0_sp
+      Modflow%SWF%H1DepthForSmoothing(:) = 0.0_sp
+      Modflow%SWF%H2DepthForSmoothing(:) = 0.0_sp
+      Modflow%SWF%ObstructionStorageHeight(:) = 0.0_sp
+      Modflow%SWF%DepressionStorageHeight(:) = 0.0_sp
       DO I=1,NSWFTYP
         CALL URDCOM(INSWF,IOUT,LINE)
+        SOBST = 0.0_sp
+        SDEPR = 0.0_sp
         IF(IFREFM.EQ.0) THEN
-          READ(LINE,'(I10,3F10.3)') IFNO,SMANN,SWFH1,SWFH2
-          LLOC=41
+          READ(LINE,'(I10,5F10.3)') IFNO,SMANN,SWFH1,SWFH2,SOBST,SDEPR
+          LLOC=61
         ELSE
           LLOC=1
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,IFNO,R,IOUT,INSWF)
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,SMANN,IOUT,INSWF)
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,SWFH1,IOUT,INSWF)
           CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,SWFH2,IOUT,INSWF)
+          if (LLOC < len_trim(LINE)) then
+              CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,SOBST,IOUT,INSWF)
+              if (LLOC < len_trim(LINE)) then
+                  CALL URWORD(LINE,LLOC,ISTART,ISTOP,3,I,SDEPR,IOUT,INSWF)
+              end if
+          end if
         end if
         ASWFCOND(I,1)=IFNO
         ASWFCOND(I,2)=SMANN
         ASWFCOND(I,3)=SWFH1
         ASWFCOND(I,4)=SWFH2
+        Modflow%SWF%Manning(I)=SMANN
+        Modflow%SWF%H1DepthForSmoothing(I)=SWFH1
+        Modflow%SWF%H2DepthForSmoothing(I)=SWFH2
+        Modflow%SWF%ObstructionStorageHeight(I)=max(0.0_sp, SOBST)
+        Modflow%SWF%DepressionStorageHeight(I)=max(0.0_sp, SDEPR)
       end do
 
 !----------------------------------------------------------------------------------------

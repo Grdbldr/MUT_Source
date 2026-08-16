@@ -1,0 +1,10 @@
+---
+description: MUT Fortran conventions
+globs: "**/*.f90"
+alwaysApply: false
+---
+
+- Use `KindParameters` (`i4`, `dp`); `implicit none` everywhere
+- Types: `t_` prefix; errors via `ErrMsg` / `WarnMsg` / `HandleError` (`GeneralRoutines`, `ErrorHandling`) — not bare `STOP`
+- New MUSG features: parser entry in `MUSG_InstructionParser.f90`, implementation in the matching `MUSG_*.f90` module, writer in `Modflow_USG.f90` or that module
+- See `CODE_STANDARDS.md` and `AGENTS.md`

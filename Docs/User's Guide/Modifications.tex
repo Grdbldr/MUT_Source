@@ -1,4 +1,108 @@
 \label{chapter:modifications}
+\label{changes:2025.022}
+Changes in version 2025.022:
+\begin{itemize}
+\item Optional instruction {\sf original swf velocity calculation}: writes VEL \texttt{OPTIONS} / \texttt{ORIGINAL\_SWF\_VELOCITY} so \texttt{usgs\_1} uses the original HGS Manning SWF velocity; default remains face-flux reconstruction. Both methods use the smoothed SWF flow depth (\texttt{SWF\_THIK}), not depth minus depression/obstruction.
+\end{itemize}
+
+\label{changes:2025.021}
+Changes in version 2025.021:
+\begin{itemize}
+\item Model-folder documentation: \texttt{mut\_document.py} (deployed with \texttt{mut.exe}) writes \texttt{Docs/\textit{folder}.pdf} plus sectioned Tecplot layouts after \texttt{mut \_build}; optional \texttt{tec360} PNG export and inclusion of \texttt{usgs\_1}/\texttt{mut \_post} mass-balance results
+\end{itemize}
+
+\label{changes:2025.020}
+Changes in version 2025.020:
+\begin{itemize}
+\item General Spatio-Temporal Recharge (GSTR): named instances on \gwf, \swf\ and \cln, ArcASCII raster snapshots, timestep interpolation; existing \textsf{RCH}/\textsf{RTS} unchanged; Tecplot post-processing of applied GSTR rates
+\item \gwf\ porosity echoed at build for average-linear velocity
+\item Optional CLN \texttt{InfillPorosity} column; average-linear conduit velocity equals Darcy velocity divided by infill porosity when less than 1
+\item MUT OC reader accepts \texttt{DARCY VELOCITY SAVE UNIT} and \texttt{LINEAR VELOCITY SAVE UNIT}
+\end{itemize}
+
+\label{changes:2025.019}
+Changes in version 2025.019:
+\begin{itemize}
+\item Default USG \texttt{VEL} package on every build: Darcy and average-linear velocity binaries for active \gwf, \cln\ and \swf\ domains; OC \texttt{SAVE DARCY/LINEAR VELOCITY}
+\item \texttt{mut \_post} reads USG velocity binaries only and writes sequential Tecplot arrays \texttt{Vx/Vy/Vz}; requires a USG-Transport build that recognizes NAM file type \texttt{VEL}
+\end{itemize}
+
+\label{changes:2025.016}
+Changes in version 2025.016:
+\begin{itemize}
+\item Sparse material and SMS database IDs: GWF/CLN/SWF/ET/SMS CSV rows may use non-sequential ID numbers
+\item SMS parameter sets validated against loaded \texttt{SMS\_ID} entries before use
+\item Clear failure on incomplete GWF/CLN/SWF GSF files (header-only EOF)
+\end{itemize}
+
+\label{changes:2025.015}
+Changes in version 2025.015:
+\begin{itemize}
+\item Multi-zone SWF transient recharge: repeated \texttt{swf transient recharge} assignments, each attaching a single-column RTS file to currently chosen cells
+\item Zone files merged into multi-column \texttt{\_buildo.merged\_RTS.rts}; RCH package rewritten with matching \texttt{INRCHZONES} / \texttt{IZNRCH} maps
+\item Per-cell \texttt{IRTSZone} tracking and validation of record/time alignment across zone files
+\end{itemize}
+
+\label{changes:2025.014}
+Changes in version 2025.014:
+\begin{itemize}
+\item \texttt{chd zone name}: tag CHD groups with \texttt{AUXILIARY CHDZONE} and a \texttt{.chdzone} map for separate LST/Tecplot budget terms
+\item \texttt{cln from structure file}: build \cln\ domain from mesh-intersection output; companion \texttt{.xyzList} written
+\item CLN mesh intersection hardening: collapse duplicate face hits, remove zero-length segments, preserve network links; improved \texttt{feprism}/\texttt{febrick} prism-mesh support
+\item \cln\ and \swf\ CHD records written as start-to-end head ramps
+\end{itemize}
+
+\label{changes:2025.013}
+Changes in version 2025.013:
+\begin{itemize}
+\item Recharge strategy reporting: stress-period \textsf{RCH} versus \textsf{RTS} (transient recharge file) echoed in \texttt{.eco} files during build and post-processing
+\item Automatic RTS zone count detection; RTS-capable RCH written with \texttt{INRCHZONES}
+\item Post-processing Tecplot output of applied recharge rates (\texttt{*.SWF\_RCH\_RTS.tecplot.dat}) and spatial rate maps for the current interval
+\end{itemize}
+
+\label{changes:2025.012}
+Changes in version 2025.012:
+\begin{itemize}
+\item \texttt{cln skin conductivity}: assign per-cell \texttt{FSKIN}; defaults from connected \gwf\ \texttt{Kh} (maximum when multi-connected)
+\item \texttt{cln initial head equals surface elevation}: \cln\ starting heads from \gwf\ column tops via CLN--GWF connections or nearest XY column
+\item Restart/output improvements: CHD start/end head ramps, wider \texttt{IBOUND} format, preserve \texttt{NCLNNDS} when \cln\ is active
+\end{itemize}
+
+\label{changes:2025.011}
+Changes in version 2025.011:
+\begin{itemize}
+\item CLN General (tabular) cross-section geometry: \texttt{Geometry=General} in \texttt{CLN.csv}, optional depth/area/wetted-perimeter/top-width table file
+\item USG I/O and runtime hardening: consolidated file-unit utilities, EOF-safe binary reads, deterministic SWF connection ordering
+\end{itemize}
+
+\label{changes:2025.010}
+Changes in version 2025.010:
+\begin{itemize}
+\item CLN--GWF mesh connection for simple cases and shaft scenarios
+\item Improved CLN intersection with element faces (duplicate-hit collapse, zero-length segment removal)
+\end{itemize}
+
+\label{changes:2025.009}
+Changes in version 2025.009:
+\begin{itemize}
+\item CLN mesh intersection passed verification testing
+\item \gwf\ porosity and connectivity data written at build time
+\end{itemize}
+
+\label{changes:2025.005}
+Changes in version 2025.005:
+\begin{itemize}
+\item Beta CLN--mesh intersection: \cln\ conduit lines split at \gwf/\swf\ element faces
+\end{itemize}
+
+\label{changes:2025.003}
+Changes in version 2025.003:
+\begin{itemize}
+\item Adopted \texttt{yyyy.nnn} version numbering (4-digit year plus 3-digit release number)
+\item Debug output redirected to \texttt{debug.txt} in DEBUG builds
+\item Improved \texttt{JustBuilt} handling when re-running domain-generation instructions on an existing build
+\end{itemize}
+
 \label{changes:2025.1}
 Changes in version 2025.1:
 \begin{itemize}

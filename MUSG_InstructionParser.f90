@@ -615,6 +615,8 @@ module MUSG_InstructionParser
         character(MAX_INST) :: AssignDRNtoGWF_CMD = 'gwf drain'
         character(MAX_INST) :: AssignRCHtoGWF_CMD = 'gwf recharge'
         character(MAX_INST) :: AssignWELtoGWF_CMD = 'gwf well'
+        character(MAX_INST) :: AssignGSTRtoGWF_CMD = 'gwf gstr'
+        character(MAX_INST) :: AssignGSTRInstanceName_CMD = 'gstr instance name'
         
         ! SWF boundary condition commands
         character(MAX_INST) :: AssignCHDtoSWF_CMD = 'swf constant head'
@@ -623,14 +625,19 @@ module MUSG_InstructionParser
         character(MAX_INST) :: AssignWELtoSWF_CMD = 'swf well'
         character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD = 'swf critical depth'
         character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD = 'swf critical depth with sidelength1'
+        character(MAX_INST) :: AssignGSTRtoSWF_CMD = 'swf gstr'
         
         ! CLN boundary condition commands
         character(MAX_INST) :: AssignCHDtoCLN_CMD = 'cln constant head'
         character(MAX_INST) :: AssignWELtoCLN_CMD = 'cln well'
+        character(MAX_INST) :: AssignGSTRtoCLN_CMD = 'cln gstr'
         
         ! GWF boundary conditions
         if(index(instruction, AssignCHDZoneName_CMD) /= 0) then
             call SetPendingCHDZoneName(FNumMUT, Modflow)
+
+        else if(index(instruction, AssignGSTRInstanceName_CMD) /= 0) then
+            call SetPendingGSTRInstanceName(FNumMUT, Modflow)
 
         else if(index(instruction, AssignCHDtoGWF_CMD) /= 0) then
             call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)
@@ -640,6 +647,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, AssignRCHtoGWF_CMD) /= 0) then
             call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
+
+        else if(index(instruction, AssignGSTRtoGWF_CMD) /= 0) then
+            call AssignGSTRtoDomain(FNumMUT, Modflow, Modflow%GWF, 1)
             
         else if(index(instruction, AssignWELtoGWF_CMD) /= 0) then
             call AssignWELtoDomain(FnumMUT,Modflow,Modflow.GWF)
@@ -653,6 +663,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, AssignTransientRCHtoSWF_CMD) /= 0) then
             call AssignTransientRCHtoDomain(FnumMUT,Modflow,Modflow.SWF)
+
+        else if(index(instruction, AssignGSTRtoSWF_CMD) /= 0) then
+            call AssignGSTRtoDomain(FNumMUT, Modflow, Modflow%SWF, 3)
             
         else if(index(instruction, AssignWELtoSWF_CMD) /= 0) then
             call AssignWELtoDomain(FnumMUT,Modflow,Modflow.SWF)
@@ -669,6 +682,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, AssignWELtoCLN_CMD) /= 0) then
             call AssignWELtoDomain(FnumMUT,Modflow,Modflow.CLN)
+
+        else if(index(instruction, AssignGSTRtoCLN_CMD) /= 0) then
+            call AssignGSTRtoDomain(FNumMUT, Modflow, Modflow%CLN, 2)
         end if
     end subroutine HandleBoundaryConditionInstruction
     
@@ -796,13 +812,15 @@ module MUSG_InstructionParser
     
     !----------------------------------------------------------------------
     subroutine HandleSimpleFlagInstruction(instruction, Modflow)
-        ! Handle simple flag-setting instructions (NodalControlVolumes, SaturatedFlow, DisableTecplotOutput, DisableQGISOutput)
+        ! Handle simple flag-setting instructions (NodalControlVolumes, SaturatedFlow,
+        ! OriginalSWFVelocity, DisableTecplotOutput, DisableQGISOutput)
         implicit none
         character(*), intent(in) :: instruction
         type(ModflowProject), intent(inout) :: Modflow
         
         character(MAX_INST) :: NodalControlVolumes_CMD = 'nodal control volumes'
         character(MAX_INST) :: SaturatedFlow_CMD = 'saturated flow'
+        character(MAX_INST) :: OriginalSWFVelocity_CMD = 'original swf velocity calculation'
         character(MAX_INST) :: DisableTecplotOutput_CMD = 'disable tecplot output'
         character(MAX_INST) :: DisableQGISOutput_CMD = 'disable qgis output'
         
@@ -813,6 +831,10 @@ module MUSG_InstructionParser
         else if(index(instruction, SaturatedFlow_CMD) /= 0) then
             Modflow.SaturatedFlow = .true.
             call Msg('*** Saturated flow approach is used ')
+            
+        else if(index(instruction, OriginalSWFVelocity_CMD) /= 0) then
+            Modflow%OriginalSWFVelocity = .true.
+            call Msg('*** Original SWF velocity calculation (Manning reconstruction)')
             
         else if(index(instruction, DisableTecplotOutput_CMD) /= 0) then
             EnableTecplotOutput = .false.

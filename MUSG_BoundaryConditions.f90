@@ -10,6 +10,7 @@ module MUSG_BoundaryConditions
     use ArrayUtilities, only: AllocChk
     use GeneralRoutines, only: OpenAscii, FreeUnit
     use MUSG_Core, only: ModflowProject, ModflowDomain, NodalControlVolume
+    use MUSG_Core, only: GSTRInstance, MAX_GSTR_INSTANCES, MAX_GSTR_SNAPS
     use NumericalMesh, only: mesh
     
     implicit none
@@ -19,6 +20,7 @@ module MUSG_BoundaryConditions
     public :: AssignTransientRCHtoDomain, AssignWELtoDomain
     public :: AssignCriticalDepthtoDomain, AssignCriticalDepthtoCellsSide1
     public :: SetPendingCHDZoneName
+    public :: SetPendingGSTRInstanceName, AssignGSTRtoDomain, WriteGSTRFile
     
     ! Boundary condition command strings (these would be moved from Modflow_USG.f90)
     ! For now, keeping them in the main module but documenting here
@@ -719,6 +721,202 @@ module MUSG_BoundaryConditions
             write(modflow%iSWBC,'(a,a)') '# MODFLOW-USG SWBC file written by Modflow-User-Tools version ',trim(MUTVersion)
         end if
     end subroutine AssignCriticalDepthtoCellsSide1
+
+    !----------------------------------------------------------------------
+    subroutine SetPendingGSTRInstanceName(FNumMUT, modflow)
+        ! Read GSTR instance budget name for the next gwf/swf/cln gstr assign
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        character(MAX_STR) :: line
+        integer(i4) :: n
+
+        read(FNumMUT,'(a)') line
+        line = adjustl(line)
+        n = min(16, len_trim(line))
+        if(n <= 0) then
+            call ErrMsg('gstr instance name: blank name')
+        end if
+        modflow%PendingGSTRName = ' '
+        modflow%PendingGSTRName(1:n) = line(1:n)
+        call Msg('GSTR instance name: '//trim(modflow%PendingGSTRName))
+    end subroutine SetPendingGSTRInstanceName
+
+    !----------------------------------------------------------------------
+    subroutine AssignGSTRtoDomain(FNumMUT, modflow, domain, idomain)
+        ! Assign a named GSTR instance to currently chosen cells on domain.
+        ! Reads FAC then (time, raster) lines until "end gstr".
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        type(ModflowDomain) :: domain
+        integer(i4), intent(in) :: idomain   ! 1=GWF, 2=CLN, 3=SWF
+
+        integer(i4) :: i, nchosen, nsnaps, inode0, ig
+        real(dp) :: fac, tsnap
+        character(MAX_STR) :: line, rfile
+        character(16) :: iname
+        real(dp) :: tbuf(MAX_GSTR_SNAPS)
+        character(256) :: fbuf(MAX_GSTR_SNAPS)
+        integer(i4), allocatable :: ichosen(:)
+
+        if(modflow%nGSTRInstances >= MAX_GSTR_INSTANCES) then
+            call ErrMsg('gstr: exceeded MAX_GSTR_INSTANCES')
+        end if
+
+        iname = adjustl(modflow%PendingGSTRName)
+        if(len_trim(iname) == 0) then
+            write(iname,'(a,i0)') 'GSTR_', modflow%nGSTRInstances + 1
+        end if
+
+        read(FNumMUT,*,iostat=ialloc) fac
+        if(ialloc /= 0) then
+            call ErrMsg('gstr: error reading FAC multiplier')
+        end if
+        write(TmpSTR,'(a,'//FMT_R8//')') 'GSTR FAC = ', fac
+        call Msg(trim(TmpSTR))
+
+        nsnaps = 0
+        do
+            read(FNumMUT,'(a)',iostat=ialloc) line
+            if(ialloc /= 0) then
+                call ErrMsg('gstr: unexpected EOF before end gstr')
+            end if
+            line = adjustl(line)
+            if(len_trim(line) == 0) cycle
+            if(line(1:1) == '!' .or. line(1:1) == '#') cycle
+            if(index(line, 'end gstr') /= 0) exit
+            nsnaps = nsnaps + 1
+            if(nsnaps > MAX_GSTR_SNAPS) then
+                call ErrMsg('gstr: exceeded MAX_GSTR_SNAPS')
+            end if
+            read(line,*,iostat=ialloc) tsnap, rfile
+            if(ialloc /= 0) then
+                call ErrMsg('gstr: expected "time rasterfile" or "end gstr"')
+            end if
+            tbuf(nsnaps) = tsnap
+            fbuf(nsnaps) = adjustl(rfile)
+            if(nsnaps > 1) then
+                if(tbuf(nsnaps) < tbuf(nsnaps-1)) then
+                    call ErrMsg('gstr: snapshot times must ascend')
+                end if
+            end if
+            write(TmpSTR,'(a,i0,a,'//FMT_R8//',a)') '  snapshot ', nsnaps, &
+                ' t=', tbuf(nsnaps), '  '//trim(fbuf(nsnaps))
+            call Msg(trim(TmpSTR))
+        end do
+        if(nsnaps < 1) then
+            call ErrMsg('gstr: need at least one time/raster snapshot')
+        end if
+
+        allocate(ichosen(domain%nCells), stat=ialloc)
+        call AllocChk(ialloc, 'GSTR chosen cell list')
+        nchosen = 0
+        do i = 1, domain%nCells
+            if(bcheck(domain%cell(i)%is, chosen)) then
+                nchosen = nchosen + 1
+                ichosen(nchosen) = i
+                call set(domain%cell(i)%is, Recharge)
+            end if
+        end do
+        if(nchosen == 0) then
+            call ErrMsg('gstr: no chosen cells for instance '//trim(iname))
+        end if
+        write(TmpSTR,'(a,i8,a)') 'GSTR cells assigned: ', nchosen, &
+            '  instance '//trim(iname)
+        call Msg(trim(TmpSTR))
+
+        ! Global node offset by domain (GWF | CLN | SWF)
+        if(idomain == 1) then
+            inode0 = 0
+        else if(idomain == 2) then
+            inode0 = modflow%GWF%nCells
+        else
+            inode0 = modflow%GWF%nCells + modflow%CLN%nCells
+        end if
+
+        modflow%nGSTRInstances = modflow%nGSTRInstances + 1
+        ig = modflow%nGSTRInstances
+        modflow%GSTRInst(ig)%name = iname
+        modflow%GSTRInst(ig)%idomain = idomain
+        modflow%GSTRInst(ig)%ncells = nchosen
+        modflow%GSTRInst(ig)%nsnaps = nsnaps
+        modflow%GSTRInst(ig)%fac = fac
+
+        allocate(modflow%GSTRInst(ig)%inode(nchosen), &
+                 modflow%GSTRInst(ig)%x(nchosen), &
+                 modflow%GSTRInst(ig)%y(nchosen), &
+                 modflow%GSTRInst(ig)%tsnap(nsnaps), &
+                 modflow%GSTRInst(ig)%rfile(nsnaps), stat=ialloc)
+        call AllocChk(ialloc, 'GSTR instance arrays')
+
+        do i = 1, nchosen
+            modflow%GSTRInst(ig)%inode(i) = inode0 + ichosen(i)
+            modflow%GSTRInst(ig)%x(i) = domain%cell(ichosen(i))%x
+            modflow%GSTRInst(ig)%y(i) = domain%cell(ichosen(i))%y
+        end do
+        do i = 1, nsnaps
+            modflow%GSTRInst(ig)%tsnap(i) = tbuf(i)
+            modflow%GSTRInst(ig)%rfile(i) = fbuf(i)
+        end do
+
+        modflow%PendingGSTRName = ' '
+
+        if(modflow%iGSTR == 0) then
+            modflow%FNameGSTR = trim(modflow%Prefix)//'.gstr'
+            call OpenAscii(modflow%iGSTR, modflow%FNameGSTR)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(modflow%FNameGSTR))
+            write(modflow%iNAM,'(a,i4,a)') 'GSTR ', modflow%iGSTR, ' '//trim(modflow%FNameGSTR)
+            modflow%GSTRNamWritten = .true.
+        end if
+
+        call WriteGSTRFile(modflow)
+        deallocate(ichosen)
+    end subroutine AssignGSTRtoDomain
+
+    !----------------------------------------------------------------------
+    subroutine WriteGSTRFile(modflow)
+        ! Rewrite the full multi-INSTANCE GSTR package file
+        implicit none
+        type(ModflowProject) :: modflow
+        integer(i4) :: ig, j
+
+        if(modflow%nGSTRInstances <= 0 .or. modflow%iGSTR == 0) return
+
+        close(modflow%iGSTR)
+        open(modflow%iGSTR, file=trim(modflow%FNameGSTR), status='replace', &
+             form='formatted', iostat=ialloc)
+        if(ialloc /= 0) then
+            call ErrMsg('Error writing GSTR file: '//trim(modflow%FNameGSTR))
+        end if
+
+        write(modflow%iGSTR,'(a,a)') '# MODFLOW-USG GSTR file written by Modflow-User-Tools version ', &
+            trim(MUTVersion)
+        write(modflow%iGSTR,'(2i10,a)') modflow%nGSTRInstances, modflow%IGSTRCB, &
+            '     NGSTR IGSTRCB'
+
+        do ig = 1, modflow%nGSTRInstances
+            write(modflow%iGSTR,'(a,1x,a)') 'INSTANCE', trim(modflow%GSTRInst(ig)%name)
+            write(modflow%iGSTR,'(2i10,i10,1x,es16.8,a)') &
+                modflow%GSTRInst(ig)%idomain, &
+                modflow%GSTRInst(ig)%ncells, &
+                modflow%GSTRInst(ig)%nsnaps, &
+                modflow%GSTRInst(ig)%fac, &
+                '     IDOMAIN NCELLS NSNAPS FAC'
+            do j = 1, modflow%GSTRInst(ig)%ncells
+                write(modflow%iGSTR,'(i10,1x,es20.12,1x,es20.12)') &
+                    modflow%GSTRInst(ig)%inode(j), &
+                    modflow%GSTRInst(ig)%x(j), &
+                    modflow%GSTRInst(ig)%y(j)
+            end do
+            do j = 1, modflow%GSTRInst(ig)%nsnaps
+                write(modflow%iGSTR,'(es16.8,1x,a)') &
+                    modflow%GSTRInst(ig)%tsnap(j), &
+                    trim(modflow%GSTRInst(ig)%rfile(j))
+            end do
+        end do
+    end subroutine WriteGSTRFile
 
 end module MUSG_BoundaryConditions
 
