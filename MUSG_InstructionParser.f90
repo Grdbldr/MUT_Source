@@ -7,7 +7,7 @@ module MUSG_InstructionParser
     
     use KindParameters
     use GeneralRoutines, only: MAX_INST, MAX_STR, MAX_LBL, Msg, ErrMsg, LwrCse, UnitsOfLength, UnitsOfTime, TmpSTR
-    use GeneralRoutines, only: EnableTecplotOutput, EnableQGISOutput
+    use GeneralRoutines, only: EnableTecplotOutput, WriteAsciiTecplot, WriteModelDocumentation, EnableQGISOutput
     use ErrorHandling, only: ERR_INVALID_INPUT, HandleError
     use MUSG_Core, only: ModflowProject, ModflowDomain, NodalControlVolume
     use MUSG_ObservationPoints
@@ -813,7 +813,8 @@ module MUSG_InstructionParser
     !----------------------------------------------------------------------
     subroutine HandleSimpleFlagInstruction(instruction, Modflow)
         ! Handle simple flag-setting instructions (NodalControlVolumes, SaturatedFlow,
-        ! OriginalSWFVelocity, DisableTecplotOutput, DisableQGISOutput)
+        ! OriginalSWFVelocity, DisableTecplotOutput, WriteAsciiTecplot,
+        ! NoModelDocumentation, DisableQGISOutput)
         implicit none
         character(*), intent(in) :: instruction
         type(ModflowProject), intent(inout) :: Modflow
@@ -822,6 +823,8 @@ module MUSG_InstructionParser
         character(MAX_INST) :: SaturatedFlow_CMD = 'saturated flow'
         character(MAX_INST) :: OriginalSWFVelocity_CMD = 'original swf velocity calculation'
         character(MAX_INST) :: DisableTecplotOutput_CMD = 'disable tecplot output'
+        character(MAX_INST) :: WriteAsciiTecplot_CMD = 'write ascii tecplot output'
+        character(MAX_INST) :: NoModelDocumentation_CMD = 'no model documentation'
         character(MAX_INST) :: DisableQGISOutput_CMD = 'disable qgis output'
         
         if(index(instruction, NodalControlVolumes_CMD) /= 0) then
@@ -839,6 +842,14 @@ module MUSG_InstructionParser
         else if(index(instruction, DisableTecplotOutput_CMD) /= 0) then
             EnableTecplotOutput = .false.
             call Msg('*** Tecplot Output Disabled')
+            
+        else if(index(instruction, WriteAsciiTecplot_CMD) /= 0) then
+            WriteAsciiTecplot = .true.
+            call Msg('*** Tecplot ASCII .dat output enabled for FE mesh/results')
+
+        else if(index(instruction, NoModelDocumentation_CMD) /= 0) then
+            WriteModelDocumentation = .false.
+            call Msg('*** Model documentation (Docs/) disabled')
             
         else if(index(instruction, DisableQGISOutput_CMD) /= 0) then
             EnableQGISOutput = .false.

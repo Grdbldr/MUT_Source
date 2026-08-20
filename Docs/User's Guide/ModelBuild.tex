@@ -107,13 +107,21 @@ After \mut\ finishes, the working folder should look something like this:
 Several new output files have been created, of which it may be noted:
 \begin{itemize}
     \item Build output files, which have the prefix \texttt{\_buildo}, appear near the start of the list if sorted by name. \mut\ deletes previously generated build output files and writes a fresh set each time it is run.  This can prevent confusion that might arise if out-of-date output files were present.\footnote{For example, if we define a recharge boundary condition, \mut\ will create the file \texttt{\textit{prefix}o.Modflow.SWF\_RCH.Tecplot.dat} which shows the locations and recharge values assigned to Modflow cells.  If we then removed the recharge condition from the input file, but did not delete this output file, we may assume the recharge condition still applies.}
-    \item \tecplot\ output files are indicated by the suffix \texttt{.tecplot.dat}.
+    \item \tecplot\ output files are indicated by the suffix \texttt{.tecplot.szplt} (TecIO SZL). ASCII \texttt{.tecplot.dat} can be requested instead.
 
     \newpage
     By default, \mut\ writes \tecplot\ file output but this can be prevented by the following instruction:
 
         \ins{disable tecplot output}
             {\tecplot-formatted output files will not be written.}
+
+    ASCII \tecplot\ files can be requested instead of the default SZL binary:
+
+        \ins{write ascii tecplot output}
+            {Finite-element mesh and results files are written as ASCII \texttt{.tecplot.dat} instead of TecIO SZL \texttt{.tecplot.szplt}. Scatter, custom-label and volume-budget files remain ASCII in either case. Place this instruction before \texttt{build modflow usg} or, for \texttt{mut \_post}, before \texttt{postprocess existing modflow model}.}
+
+        \ins{no model documentation}
+            {No arguments. By default, after a successful build \mut\ runs the deployed \texttt{mut\_document.py} tool with \texttt{--skip-export} (Tecplot PNG export is skipped) and writes \texttt{Docs/\textit{folder}.pdf} plus layouts. This instruction skips that step. Place it before \texttt{build modflow usg} or, for \texttt{mut \_post}, before \texttt{postprocess existing modflow model}. Missing Python, the script, or \texttt{pdflatex} produces a warning; the \mut\ run still ends with \texttt{Normal exit}. See Chapter~\ref{chapter:ModelExecution}.}
 
     \item Modflow model input files are written using the default prefix \texttt{Modflow}, (e.g.\ \texttt{Modflow.nam, Modflow.bas} etc.)  The prefix can be customized if desired using this instruction:
         

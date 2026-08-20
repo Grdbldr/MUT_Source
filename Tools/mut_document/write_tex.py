@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import datetime as _dt
+from itertools import groupby
 from pathlib import Path
 
 from inventory import ArtifactInventory
 from parse_mut import MutBuildInfo
 from parse_usg import UsgRunInfo
+from tecplot_io import read_tecplot_header
 from write_layouts import LayoutFile
 
 _SPECIAL = {
@@ -67,6 +69,57 @@ def _maybe_figure(inv: ArtifactInventory, stem: str, caption: str, label: str) -
     )
 
 
+def _velocity_files(inv: ArtifactInventory) -> list[tuple[str, Path]]:
+    found: list[tuple[str, Path]] = []
+    for domain in ("GWF", "SWF", "CLN"):
+        path = inv.post_file(f"{domain}.Velocity", f"{domain}_Velocity")
+        if path:
+            found.append((domain, path))
+    return found
+
+
+def _non_xyz_names(path: Path) -> list[str]:
+    names = read_tecplot_header(path).get("variables") or []
+    return [n for n in names if n and n.upper() not in ("X", "Y", "Z")]
+
+
+def _velocity_section(inv: ArtifactInventory, results_stem: str) -> str:
+    found = _velocity_files(inv)
+    if not found:
+        return ""
+    lines = [
+        "\\section{Velocity}\n",
+        "Darcy and average-linear velocity are written by \\texttt{mut \\_post} "
+        "to a separate Tecplot file per domain, not the head/saturation results file. "
+        "Average-linear velocity uses GWF porosity and, when present, CLN infill porosity. "
+        "Vectors are the domain Velocity frame in "
+        "\\texttt{Docs/layouts/\\textit{domain}\\_Results.lay} "
+        "(for example \\texttt{GWF\\_Results.lay}). "
+        "Assign Tecplot 3-D vectors to \\texttt{Darcy Vx/Vy/Vz} "
+        "(\\texttt{\\$!GlobalThreeDVector}); turn ShowVector on only after U/V/W are set.\n\n",
+    ]
+    items: list[str] = []
+    for domain, path in found:
+        extras = _non_xyz_names(path)
+        if extras:
+            items.append(f"{path.name}: {', '.join(extras)}")
+        else:
+            items.append(
+                f"{path.name}: {domain} Head, Darcy Vx/Vy/Vz, "
+                "Average Linear Vx/Vy/Vz (when the linear binary exists)"
+            )
+    lines.append(_item_list(items))
+    lines.append(
+        _maybe_figure(
+            inv,
+            results_stem,
+            "Results layout, including the velocity vector frame",
+            "fig:results-vel",
+        )
+    )
+    return "".join(lines)
+
+
 def _item_list(items: list[str]) -> str:
     if not items:
         return "None recorded.\n"
@@ -111,8 +164,8 @@ def write_tex(
             "\\chapter{Simulation results}\n"
             "No \\texttt{usgs\\_1} listing file or \\texttt{mut \\_post} Tecplot "
             "output was found in this folder. Run \\texttt{usgs\\_1} then "
-            "\\texttt{mut \\_post} and regenerate this document to include "
-            "physical-realism checks.\n"
+            "\\texttt{mut \\_post}; MUT will expand this chapter unless "
+            "\\texttt{no model documentation} is set at post.\n"
         )
 
     parts.append(_chapter_layouts(layouts))
@@ -340,7 +393,13 @@ def _chapter_bcs(inv: ArtifactInventory, build: MutBuildInfo, layouts: dict[str,
         lines.append(tex_escape(build.recharge) + "\n\n")
     if build.bcs:
         lines.append("\\section{Boundary conditions}\n")
-        lines.append(_item_list(build.bcs))
+        show_sp = any(item.stress_period is not None for item in build.bcs)
+        for sp, group in groupby(build.bcs, key=lambda item: item.stress_period):
+            texts = [item.text for item in group]
+            if show_sp:
+                heading = f"Stress period {sp}" if sp is not None else "General"
+                lines.append(f"\\subsection{{{heading}}}\n")
+            lines.append(_item_list(texts))
     if build.observations:
         lines.append("\\section{Observation points}\n")
         lines.append(
@@ -452,8 +511,9 @@ def _chapter_results(
     lines.append("\\section{Heads, saturation, and depth}\n")
     lines.append(_maybe_figure(inv, gwf, "Simulated heads / saturation / depth", "fig:results-heads"))
 
+    budget_stem = "GWF_VolumeBudget" if (inv.layouts_dir / "GWF_VolumeBudget.lay").is_file() else gwf
     lines.append("\\section{Volume budget plot}\n")
-    lines.append(_maybe_figure(inv, gwf, "Volumetric water budget", "fig:results-budget"))
+    lines.append(_maybe_figure(inv, budget_stem, "Volumetric water budget", "fig:results-budget"))
 
     if usg.obs_final:
         lines.append("\\section{Observation points (final tabulated values)}\n")
@@ -465,10 +525,75 @@ def _chapter_results(
         obs_stem = "GWF_Observations" if (inv.layouts_dir / "GWF_Observations.lay").is_file() else gwf
         lines.append(_maybe_figure(inv, obs_stem, "Observation time series", "fig:results-obs"))
 
-    if inv.post_file("GWF.Velocity", "SWF.Velocity", "CLN.Velocity"):
-        lines.append("\\section{Velocity}\n")
-        lines.append(_maybe_figure(inv, swf if inv.post_file("SWF.Velocity") and not inv.post_file("GWF.Velocity") else gwf, "Darcy velocity", "fig:results-vel"))
+    vel_stem = gwf
+    if not inv.post_file("GWF.Velocity") and inv.post_file("SWF.Velocity"):
+        vel_stem = swf
+    lines.append(_velocity_section(inv, vel_stem))
 
+    lines.append(_derived_views_section(inv))
+
+    return "".join(lines)
+
+
+def _derived_views_section(inv: ArtifactInventory) -> str:
+    """Unique 3-D result views from the User's Guide, only when the layout exists."""
+    has_wt = (inv.layouts_dir / "GWF_WaterTable.lay").is_file()
+    has_inf = (inv.layouts_dir / "SWF_Infiltration.lay").is_file()
+    has_slices = (inv.layouts_dir / "GWF_SaturationSlices.lay").is_file()
+    if not (has_wt or has_inf or has_slices):
+        return ""
+    lines = [
+        "\\section{Derived 3-D views}\n",
+        "These layouts follow the Tecplot recipes in the MUT User's Guide "
+        "(water-table isosurface, SWF--GWF infiltration map, saturation slices). "
+        "A subsection appears only when the required post-process variables exist.\n\n",
+    ]
+    if has_wt:
+        lines.append("\\subsection{Water table isosurface}\n")
+        lines.append(
+            "Pressure head is computed as \\texttt{GWF Head} minus \\texttt{GWF z Cell}. "
+            "The iso-surface is drawn at pressure head $=0$ and flood-coloured by hydraulic head.\n\n"
+        )
+        lines.append(
+            _maybe_figure(
+                inv,
+                "GWF_WaterTable",
+                "Water table isosurface (pressure head = 0), flooded by GWF Head",
+                "fig:results-watertable",
+            )
+        )
+    if has_inf:
+        lines.append("\\subsection{Infiltration}\n")
+        lines.append(
+            "Cell-by-cell SWF-to-GWF flux (areal flux when present) is converted to "
+            "millimetres per year, with a leading minus so infiltration is positive. "
+            "The legend uses a diverging blue/red colour map in Banded distribution, "
+            "centred on zero: red is infiltration, blue is groundwater discharge to "
+            "the surface domain.\n\n"
+        )
+        lines.append(
+            _maybe_figure(
+                inv,
+                "SWF_Infiltration",
+                "Infiltration [mm/year]; red = infiltration, blue = GWF discharge to SWF",
+                "fig:results-infiltration",
+            )
+        )
+    if has_slices:
+        lines.append("\\subsection{Saturation slices}\n")
+        lines.append(
+            "X-plane slices through the GWF domain, flood-coloured by saturation, "
+            "with the primary slice at mid-$X$ and five intermediate slices "
+            "between start and end locations inset from the data extents.\n\n"
+        )
+        lines.append(
+            _maybe_figure(
+                inv,
+                "GWF_SaturationSlices",
+                "GWF saturation slices",
+                "fig:results-satslices",
+            )
+        )
     return "".join(lines)
 
 
@@ -485,16 +610,39 @@ def _chapter_layouts(layouts: list[LayoutFile]) -> str:
         "\\texttt{GWF\\_Results.lay}, and "
         "\\texttt{GWF\\_Observations.lay}, "
         "and the same pattern for SWF and CLN. "
+        "The mesh, variables, and results layouts load finite-element "
+        "\\texttt{.tecplot.szplt} files when present (ASCII \\texttt{.tecplot.dat} "
+        "if requested). Scatter, observation, and volume-budget files remain ASCII. "
         "The mesh layout colours zones with named legends, mesh lines, and lighting. "
         "The variables layout has one frame per non-$xyz$ build field. "
-        "The scatter layout has one frame per build-time point file "
-        "(\\texttt{\\_CELLS}, boundary conditions, observation locations); "
-        "spheres of size 1.0, coloured by the optional variable column when present. "
-        "The results layout has one frame per post-processed field, plus velocity "
-        "and (on GWF) the volume budget. "
+        "The scatter layout overlays every build-time point file on one page "
+        "(domain \\texttt{\\_CELLS} at the back, boundary conditions and observation "
+        "locations in transparent frames on top, linked 3-D view). "
+        "CELLS uses 0.5-size spheres; other sets use size 1.0. "
+        "Each layer has a scatter-symbol legend stacked at the upper left, "
+        "with $X$ shifted so the spheres line up vertically. "
+        "Observation-point frames label each sphere with its assigned name "
+        "to the right of the symbol. "
+        "The results layout has one frame per post-processed field, plus velocity. "
         "The observations layout has one frame per series: square frames, head on the top row, "
         "saturation (or depth) on the bottom, sites left-to-right alphabetically "
         "(further columns may sit off the initial paper view). "
+        "When post-process fields allow it, additional layouts are written: "
+        "\\texttt{GWF\\_VolumeBudget.lay} (listing-file volumetric rates, own page), "
+        "\\texttt{GWF\\_WaterTable.lay} (pressure-head iso-surface at zero), "
+        "\\texttt{SWF\\_Infiltration.lay} (SWF-to-GWF flux in mm/year, Banded diverging legend), "
+        "and \\texttt{GWF\\_SaturationSlices.lay} (X-plane saturation slices). "
+        "Cartesian 3-D frames use $3\\times$ vertical exaggeration, the Tecplot "
+        "factory XYZ view ($\\psi=60$, $\\theta=240$), a contour legend in the "
+        "upper left, and 8~point Helvetica bold axis titles and tick labels "
+        "(Tecplot \\texttt{SizeUnits = Point}, not percent of frame). "
+        "Results and derived 3-D frames show the current solution time centred "
+        "below the title, with the zone auxiliary time units "
+        "(\\texttt{\\&(solutiontime) \\&(AUXZONE[1]:TimeUnits)}). "
+        "Contour legend numbers are integers when the values are readable "
+        "whole numbers (roughly 1 to $10^{6}$); otherwise two significant figures "
+        "(saturation uses two decimal places). "
+        "XY time-series frames use the same 8~point axis text. "
         "Frames on the variables, scatter, and results layouts share a linked 3-D view.\n\n",
         "From the model folder:\n",
         _listing(f"tec360 Docs/layouts/{example}"),

@@ -37,6 +37,8 @@ module MUSG !
     ! By default, Tecplot output is enabled
     ! This option disables Tecplot output
     character(MAX_INST) :: DisableTecplotOutput_CMD='disable tecplot output'
+    character(MAX_INST) :: WriteAsciiTecplot_CMD='write ascii tecplot output'
+    character(MAX_INST) :: NoModelDocumentation_CMD='no model documentation'
     
     ! By default, QGIS output is enabled
     ! This option disables QGIS output
@@ -539,6 +541,8 @@ module MUSG !
                index(instruction, SaturatedFlow_CMD) /= 0 .or. &
                index(instruction, OriginalSWFVelocity_CMD) /= 0 .or. &
                index(instruction, DisableTecplotOutput_CMD) /= 0 .or. &
+               index(instruction, WriteAsciiTecplot_CMD) /= 0 .or. &
+               index(instruction, NoModelDocumentation_CMD) /= 0 .or. &
                index(instruction, DisableQGISOutput_CMD) /= 0) then
                 call HandleSimpleFlagInstruction(instruction, Modflow)
                 
@@ -1903,13 +1907,6 @@ module MUSG !
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%CLN%name)//'.tecplot.dat'
-        
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(Modflow%CLN%name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(Modflow%CLN%name)//' Zone","'//trim(Modflow%CLN%name)//' cell top",'
@@ -1923,7 +1920,16 @@ module MUSG !
         
         VarSTR=trim(VarSTR)//'"'//trim(Modflow%CLN%name)//' Cell area",'
         nVar=nVar+1
-                
+
+        if(.not. WriteAsciiTecplot) then
+            call CLNToTecplotBinary(Modflow)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        write(FNum,*) 'Title = "'//trim(Modflow%CLN%name)//'"'
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%CLN%name)//'"  ,N=',Modflow%CLN%nNodes,', E=',Modflow%CLN%nElements,&
@@ -1980,6 +1986,58 @@ module MUSG !
         call FreeUnit(FNum)
         
     end subroutine CLNToTecplot
+
+    subroutine CLNToTecplotBinary(Modflow)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        character(MAX_STR) :: FName, tecVars
+        integer(i4) :: i, nPer, nNodal, nCells
+        integer(i4), allocatable :: ibuf(:)
+        real(dp), allocatable :: buf(:)
+        real(sp), allocatable :: sbuf(:)
+
+        nCells = Modflow%CLN%nCells
+        nPer = Modflow%CLN%nNodesPerElement
+        if (NodalControlVolume) then
+            nNodal = nVar
+        else
+            nNodal = 3
+        end if
+        FName = TecIO_FileName(trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                               trim(Modflow%CLN%name)//'.tecplot.dat')
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(trim(Modflow%CLN%name), tecVars, FName)
+        call TecIO_ZoneFE(trim(Modflow%CLN%name), Modflow%CLN%TecplotTyp, nPer, &
+                          Modflow%CLN%nNodes, Modflow%CLN%nElements, nVar, nNodal, 0, 0.0_dp, 0)
+        call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+        call TecIO_WriteXYZ(Modflow%CLN%node, Modflow%CLN%nNodes)
+        allocate(ibuf(nCells), buf(nCells), sbuf(nCells))
+        do i = 1, nCells
+            ibuf(i) = Modflow%CLN%cell(i)%idZone
+        end do
+        call TecIO_WriteI(nCells, ibuf)
+        do i = 1, nCells
+            buf(i) = Modflow%CLN%cell(i)%z
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%CLN%cell(i)%Sgcl
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            buf(i) = Modflow%CLN%cell(i)%StartingHeads - Modflow%CLN%cell(i)%z
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            buf(i) = Modflow%CLN%cell(i)%Area
+        end do
+        call TecIO_WriteD(nCells, buf)
+        deallocate(ibuf, buf, sbuf)
+        call TecIO_WriteNodes(Modflow%CLN%idNode, nPer, Modflow%CLN%nElements)
+        call TecIO_Close()
+    end subroutine CLNToTecplotBinary
 
     !-------------------------------------------------------------
     subroutine CreateStepPeriodTimeFile(Modflow)
@@ -2974,13 +3032,6 @@ module MUSG !
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%GWF%name)//'.tecplot.dat'
-        
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(Modflow%GWF%name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(Modflow%GWF%name)//' Layer","'//trim(Modflow%GWF%name)//' Zone",'
@@ -3019,6 +3070,15 @@ module MUSG !
             VarSTR=trim(VarSTR)//'"'//trim(Modflow%GWF%name)//' Initial head",'
             nVar=nVar+1
 
+        if(.not. WriteAsciiTecplot) then
+            call GWFToTecplotBinary(Modflow)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        write(FNum,*) 'Title = "'//trim(Modflow%GWF%name)//'"'
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%GWF%name)//'"  ,N=',Modflow%GWF%nNodes,', E=',Modflow%GWF%nElements,&
@@ -3111,6 +3171,90 @@ module MUSG !
         call FreeUnit(FNum)
         
     end subroutine GWFToTecplot
+
+    subroutine GWFToTecplotBinary(Modflow)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        character(MAX_STR) :: FName, tecVars
+        integer(i4) :: i, nPer, nNodal, nCells
+        integer(i4), allocatable :: ibuf(:)
+        real(dp), allocatable :: buf(:)
+        real(sp), allocatable :: sbuf(:)
+
+        nCells = Modflow%GWF%nCells
+        nPer = Modflow%GWF%nNodesPerElement
+        if (NodalControlVolume) then
+            nNodal = nVar
+        else
+            nNodal = 3
+        end if
+        FName = TecIO_FileName(trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                               trim(Modflow%GWF%name)//'.tecplot.dat')
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(trim(Modflow%GWF%name), tecVars, FName)
+        call TecIO_ZoneFE(trim(Modflow%GWF%name), Modflow%GWF%TecplotTyp, nPer, &
+                          Modflow%GWF%nNodes, Modflow%GWF%nElements, nVar, nNodal, 0, 0.0_dp, 0)
+        call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+        call TecIO_WriteXYZ(Modflow%GWF%node, Modflow%GWF%nNodes)
+        allocate(ibuf(nCells), buf(nCells), sbuf(nCells))
+        do i = 1, nCells
+            ibuf(i) = Modflow%GWF%cell(i)%iLayer
+        end do
+        call TecIO_WriteI(nCells, ibuf)
+        do i = 1, nCells
+            ibuf(i) = Modflow%GWF%cell(i)%idZone
+        end do
+        call TecIO_WriteI(nCells, ibuf)
+        do i = 1, nCells
+            buf(i) = Modflow%GWF%cell(i)%Top
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            buf(i) = Modflow%GWF%cell(i)%Bottom
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Kh
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Kv
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Ss
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Sy
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Alpha
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Beta
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Sr
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%GWF%cell(i)%Brooks
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            buf(i) = Modflow%GWF%cell(i)%StartingHeads
+        end do
+        call TecIO_WriteD(nCells, buf)
+        deallocate(ibuf, buf, sbuf)
+        call TecIO_WriteNodes(Modflow%GWF%idNode, nPer, Modflow%GWF%nElements)
+        call TecIO_Close()
+    end subroutine GWFToTecplotBinary
 
     !----------------------------------------------------------------------
     ! Helper functions for initial conditions are now in MUSG_InitialConditions module
@@ -4161,10 +4305,6 @@ module MUSG !
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'.tecplot.dat'
-        call OpenAscii(FNum,FName)
-        call Msg( 'To File: '//trim(FName))
-
-        write(FNum,*) 'Title = "Modflow Project: '//trim(Modflow.Prefix)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(domain%name)//' z Cell","'//trim(domain%name)//' Layer","'//trim(domain%name)//' Ibound","'//trim(domain%name)//' Initial head",'
@@ -4228,8 +4368,15 @@ module MUSG !
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to SWBC",'
             nVar=nVar+1
         end if
-        
-        
+
+        if(.not. WriteAsciiTecplot) then
+            call ModflowResultsToTecplotBinary(Modflow, domain, nVar)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg( 'To File: '//trim(FName))
+        write(FNum,*) 'Title = "Modflow Project: '//trim(Modflow.Prefix)//'"'
         write(FNum,'(a)') trim(VarSTR)
             
         write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain%name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
@@ -4426,6 +4573,99 @@ module MUSG !
         call FreeUnit(FNum)
 
     end subroutine ModflowResultsToTecplot
+
+    !-------------------------------------------------------------
+    subroutine ModflowResultsToTecplotBinary(Modflow, domain, nVarIn)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        type(ModflowDomain), intent(in) :: Domain
+        integer(i4), intent(in) :: nVarIn
+        character(MAX_STR) :: FName, title, zoneTitle, asciiBase
+        character(4000) :: tecVars
+        integer(i4) :: i, itime, nNodal, nPer, nShare
+        real(dp), allocatable :: flux(:), buf(:)
+        integer(i4), allocatable :: ibuf(:)
+        real(dp) :: solTime
+
+        if (Modflow%ntime < 1) return
+        nPer = domain%nNodesPerCell
+        if (nPer < 1) nPer = domain%nNodesPerElement
+        asciiBase = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                    trim(domain%name)//'.tecplot.dat'
+        FName = TecIO_FileName(asciiBase)
+        title = 'Modflow Project: '//trim(Modflow%Prefix)
+        zoneTitle = trim(domain%name)
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        nShare = 7
+        if (NodalControlVolume) then
+            nNodal = nVarIn
+        else
+            nNodal = 3
+        end if
+
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(title, tecVars, FName)
+
+        allocate(buf(domain%nCells), ibuf(domain%nCells))
+        do itime = 1, Modflow%ntime
+            solTime = Modflow%TIMOT(itime)
+            if (itime == 1) then
+                call TecIO_ZoneFE(zoneTitle, domain%TecplotTyp, nPer, domain%nNodes, domain%nElements, &
+                                  nVarIn, nNodal, 0, solTime, 1)
+                call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+                call TecIO_WriteXYZ(domain%node, domain%nNodes)
+                do i = 1, domain%nCells
+                    buf(i) = domain%cell(i)%z
+                    ibuf(i) = domain%cell(i)%iLayer
+                end do
+                call TecIO_WriteD(domain%nCells, buf)
+                call TecIO_WriteI(domain%nCells, ibuf)
+                if (allocated(domain%ibound)) then
+                    call TecIO_WriteI(domain%nCells, domain%ibound)
+                else
+                    ibuf = 0
+                    call TecIO_WriteI(domain%nCells, ibuf)
+                end if
+                do i = 1, domain%nCells
+                    buf(i) = domain%cell(i)%StartingHeads
+                end do
+                call TecIO_WriteD(domain%nCells, buf)
+            else
+                call TecIO_ZoneFE(zoneTitle, domain%TecplotTyp, nPer, domain%nNodes, domain%nElements, &
+                                  nVarIn, nNodal, nShare, solTime, 1, shareConnFromZone=1)
+                call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+            end if
+            if (allocated(domain%head)) call TecIO_WriteR4(domain%nCells, domain%head(:,itime))
+            if (allocated(domain%Drawdown)) call TecIO_WriteR4(domain%nCells, domain%Drawdown(:,itime))
+            if (allocated(domain%cbb_STORAGE)) call TecIO_WriteR4(domain%nCells, domain%cbb_STORAGE(:,itime))
+            if (allocated(domain%cbb_CONSTANT_HEAD)) call TecIO_WriteR4(domain%nCells, domain%cbb_CONSTANT_HEAD(:,itime))
+            if (allocated(domain%cbb_RECHARGE)) call TecIO_WriteR4(domain%nCells, domain%cbb_RECHARGE(:,itime))
+            if (allocated(domain%cbb_WELLS)) call TecIO_WriteR4(domain%nCells, domain%cbb_WELLS(:,itime))
+            if (allocated(domain%cbb_DRAINS)) call TecIO_WriteR4(domain%nCells, domain%cbb_DRAINS(:,itime))
+            if (allocated(domain%cbb_CLN)) call TecIO_WriteR4(domain%nCells, domain%cbb_CLN(:,itime))
+            if (allocated(domain%cbb_SWF)) call TecIO_WriteR4(domain%nCells, domain%cbb_SWF(:,itime))
+            if (allocated(domain%cbb_GWF)) then
+                call TecIO_WriteR4(domain%nCells, domain%cbb_GWF(:,itime))
+                if (trim(domain%name) == 'SWF') then
+                    allocate(flux(domain%nCells))
+                    do i = 1, domain%nCells
+                        flux(i) = real(domain%cbb_GWF(i,itime), kind=dp) / domain%cell(i)%xyArea
+                    end do
+                    call TecIO_WriteD(domain%nCells, flux)
+                    deallocate(flux)
+                end if
+            end if
+            if (allocated(domain%cbb_FLOW_FACE)) call TecIO_WriteR4(domain%nCells, domain%cbb_FLOW_FACE(:,itime))
+            if (allocated(domain%cbb_SWBC)) call TecIO_WriteR4(domain%nCells, domain%cbb_SWBC(:,itime))
+            if (itime == 1) then
+                call TecIO_WriteNodes(domain%idNode, nPer, domain%nElements)
+            end if
+            call TecIO_FlushRetainZone1(1)
+        end do
+        deallocate(buf, ibuf)
+        call TecIO_Close()
+    end subroutine ModflowResultsToTecplotBinary
 
     !-------------------------------------------------------------
     subroutine ModflowFinalHeadsToCSVFile(Modflow,domain)
@@ -5095,13 +5335,6 @@ module MUSG !
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(Modflow%SWF%name)//'.tecplot.dat'
-        
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(Modflow%SWF%name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(Modflow%SWF%name)//' Zone","'//trim(Modflow%SWF%name)//' cell  top",'
@@ -5115,7 +5348,16 @@ module MUSG !
         
         VarSTR=trim(VarSTR)//'"'//trim(Modflow%SWF%name)//' Cell area",'
         nVar=nVar+1
-                
+
+        if(.not. WriteAsciiTecplot) then
+            call SWFToTecplotBinary(Modflow)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        write(FNum,*) 'Title = "'//trim(Modflow%SWF%name)//'"'
         write(FNum,'(a)') trim(VarSTR)
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%SWF%name)//'"  ,N=',Modflow%SWF%nNodes,', E=',Modflow%SWF%nElements,&
@@ -5178,6 +5420,58 @@ module MUSG !
         call FreeUnit(FNum)
         
     end subroutine SWFToTecplot
+
+    subroutine SWFToTecplotBinary(Modflow)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        character(MAX_STR) :: FName, tecVars
+        integer(i4) :: i, nPer, nNodal, nCells
+        integer(i4), allocatable :: ibuf(:)
+        real(dp), allocatable :: buf(:)
+        real(sp), allocatable :: sbuf(:)
+
+        nCells = Modflow%SWF%nCells
+        nPer = Modflow%SWF%nNodesPerElement
+        if (NodalControlVolume) then
+            nNodal = nVar
+        else
+            nNodal = 3
+        end if
+        FName = TecIO_FileName(trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                               trim(Modflow%SWF%name)//'.tecplot.dat')
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(trim(Modflow%SWF%name), tecVars, FName)
+        call TecIO_ZoneFE(trim(Modflow%SWF%name), Modflow%SWF%TecplotTyp, nPer, &
+                          Modflow%SWF%nNodes, Modflow%SWF%nElements, nVar, nNodal, 0, 0.0_dp, 0)
+        call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+        call TecIO_WriteXYZ(Modflow%SWF%node, Modflow%SWF%nNodes)
+        allocate(ibuf(nCells), buf(nCells), sbuf(nCells))
+        do i = 1, nCells
+            ibuf(i) = Modflow%SWF%cell(i)%idZone
+        end do
+        call TecIO_WriteI(nCells, ibuf)
+        do i = 1, nCells
+            buf(i) = Modflow%SWF%cell(i)%z
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            sbuf(i) = Modflow%SWF%cell(i)%Sgcl
+        end do
+        call TecIO_WriteR4(nCells, sbuf)
+        do i = 1, nCells
+            buf(i) = Modflow%SWF%cell(i)%StartingHeads - Modflow%SWF%cell(i)%z
+        end do
+        call TecIO_WriteD(nCells, buf)
+        do i = 1, nCells
+            buf(i) = Modflow%SWF%cell(i)%xyArea
+        end do
+        call TecIO_WriteD(nCells, buf)
+        deallocate(ibuf, buf, sbuf)
+        call TecIO_WriteNodes(Modflow%SWF%idNode, nPer, Modflow%SWF%nElements)
+        call TecIO_Close()
+    end subroutine SWFToTecplotBinary
 
 
     !-------------------------------------------------------------
@@ -5469,12 +5763,6 @@ module MUSG !
 
         ! tecplot output file
         FName=trim(Modflow.MUTPrefix)//'o.'//trim(TMPLT%name)//'.tecplot.dat'
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(TMPLT%name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","'//trim(TMPLT%name)//' Zone","'//trim(TMPLT%name)//' Element Area",'
@@ -5484,7 +5772,16 @@ module MUSG !
             VarSTR=trim(VarSTR)//'"'//trim(TMPLT%name)//'Inner circle radius",'
             nVar=nVar+1
         end if
-            
+
+        if(.not. WriteAsciiTecplot) then
+            call TemplateToTecplotBinary(Modflow, TMPLT)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        write(FNum,*) 'Title = "'//trim(TMPLT%name)//'"'
         write(FNum,'(a)') trim(VarSTR)
 
 
@@ -5539,6 +5836,46 @@ module MUSG !
         call FreeUnit(FNum)
         
     end subroutine TemplateToTecplot
+
+    subroutine TemplateToTecplotBinary(Modflow, TMPLT)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        type(mesh), intent(in) :: TMPLT
+        character(MAX_STR) :: FName, tecVars
+        integer(i4) :: i, nPer, nEls
+        integer(i4), allocatable :: ibuf(:)
+        real(dp), allocatable :: buf(:)
+
+        nEls = TMPLT%nElements
+        nPer = TMPLT%nNodesPerElement
+        FName = TecIO_FileName(trim(Modflow%MUTPrefix)//'o.'//trim(TMPLT%name)//'.tecplot.dat')
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(trim(TMPLT%name), tecVars, FName)
+        call TecIO_ZoneFE(trim(TMPLT%name), TMPLT%TecplotTyp, nPer, TMPLT%nNodes, nEls, &
+                          nVar, 3, 0, 0.0_dp, 0)
+        call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+        call TecIO_WriteXYZ(TMPLT%node, TMPLT%nNodes)
+        allocate(ibuf(nEls), buf(nEls))
+        do i = 1, nEls
+            ibuf(i) = TMPLT%element(i)%idZone
+        end do
+        call TecIO_WriteI(nEls, ibuf)
+        do i = 1, nEls
+            buf(i) = TMPLT%element(i)%xyArea
+        end do
+        call TecIO_WriteD(nEls, buf)
+        if (TMPLT%TecplotTyp == 'fetriangle') then
+            do i = 1, nEls
+                buf(i) = TMPLT%element(i)%rCircle
+            end do
+            call TecIO_WriteD(nEls, buf)
+        end if
+        deallocate(ibuf, buf)
+        call TecIO_WriteNodes(TMPLT%idNode, nPer, nEls)
+        call TecIO_Close()
+    end subroutine TemplateToTecplotBinary
     
     !-------------------------------------------------------------
     subroutine WriteCHDFile(Modflow)
@@ -7181,7 +7518,7 @@ module MUSG !
                     l1=len_trim(output_line)+1
                     write(output_line(l1:),'(a)')	TMPStr                 
                     
-                    write(FNumTecplot,'(a)') output_line 
+                    write(FNumTecplot,'(a)') trim(output_line) 
 
                     
                     DoVars=.false.
@@ -7193,7 +7530,7 @@ module MUSG !
                     write(output_line(l1:),'('//FMT_R8//')')	VarNumRate(i)
                 end do
 
-                write(FNumTecplot,'(a)') output_line
+                write(FNumTecplot,'(a)') trim(output_line)
 
             end if
         end do 
@@ -13181,10 +13518,7 @@ module MUSG !
         if(.not. haveDarcy .and. .not. haveLin) return
 
         FName = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'//trim(domain%name)//'.Velocity.tecplot.dat'
-        call OpenAscii(FNum, FName)
-        call Msg('To File: '//trim(FName))
 
-        write(FNum,*) 'Title = "Modflow '//trim(domain%name)//' Velocity: '//trim(Modflow%Prefix)//'"'
         if(haveDarcy .and. haveLin) then
             VarSTR = 'variables="X","Y","Z","'//trim(domain%name)//' Head","Darcy Vx","Darcy Vy","Darcy Vz","Average Linear Vx","Average Linear Vy","Average Linear Vz"'
             nVar = 10
@@ -13201,6 +13535,15 @@ module MUSG !
         ! NCV: head/velocity are nodal (nCells==nNodes) while E is the FE element count.
         ! Marking them CELLCENTERED makes Tecplot expect E values and misread connectivity.
         if(NodalControlVolume) CellCenteredSTR = ''
+
+        if(.not. WriteAsciiTecplot) then
+            call DomainVelocityToTecplotBinary(Modflow, domain, haveDarcy, haveLin)
+            return
+        end if
+
+        call OpenAscii(FNum, FName)
+        call Msg('To File: '//trim(FName))
+        write(FNum,*) 'Title = "Modflow '//trim(domain%name)//' Velocity: '//trim(Modflow%Prefix)//'"'
         write(FNum,'(a)') trim(VarSTR)
 
         do itime = 1, ntime
@@ -13259,6 +13602,81 @@ module MUSG !
         end do
         call FreeUnit(FNum)
     end subroutine DomainVelocityBinaryToTecplot
+
+    !----------------------------------------------------------------------
+    subroutine DomainVelocityToTecplotBinary(Modflow, domain, haveDarcy, haveLin)
+        implicit none
+        type(ModflowProject), intent(in) :: Modflow
+        type(ModflowDomain), intent(in) :: domain
+        logical, intent(in) :: haveDarcy, haveLin
+        character(MAX_STR) :: FName, title, zoneTitle, asciiBase
+        character(4000) :: tecVars
+        integer(i4) :: itime, nNodal, nPer, nCells, nVarIn
+        real(sp), allocatable :: zeros(:)
+        real(dp) :: solTime
+
+        if (Modflow%ntime < 1) return
+        nCells = domain%nCells
+        nPer = domain%nNodesPerCell
+        if (nPer < 1) nPer = domain%nNodesPerElement
+        title = 'Modflow '//trim(domain%name)//' Velocity: '//trim(Modflow%Prefix)
+        zoneTitle = trim(domain%name)//' Velocity'
+        asciiBase = trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
+                    trim(domain%name)//'.Velocity.tecplot.dat'
+        FName = TecIO_FileName(asciiBase)
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        if (haveDarcy .and. haveLin) then
+            nVarIn = 10
+        else
+            nVarIn = 7
+        end if
+        if (NodalControlVolume) then
+            nNodal = nVarIn
+        else
+            nNodal = 3
+        end if
+
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(title, tecVars, FName)
+
+        allocate(zeros(nCells))
+        zeros = 0.0_sp
+        do itime = 1, Modflow%ntime
+            solTime = Modflow%TIMOT(itime)
+            if (itime == 1) then
+                call TecIO_ZoneFE(zoneTitle, domain%TecplotTyp, nPer, domain%nNodes, domain%nElements, &
+                                  nVarIn, nNodal, 0, solTime, 1)
+                call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+                call TecIO_WriteXYZ(domain%node, domain%nNodes)
+            else
+                call TecIO_ZoneFE(zoneTitle, domain%TecplotTyp, nPer, domain%nNodes, domain%nElements, &
+                                  nVarIn, nNodal, 3, solTime, 1, shareConnFromZone=1)
+                call TecIO_ZoneAux(Modflow%STR_TimeUnit, Modflow%STR_LengthUnit, MUTVersion)
+            end if
+            if (allocated(domain%head)) then
+                call TecIO_WriteR4(nCells, domain%head(:,itime))
+            else
+                call TecIO_WriteR4(nCells, zeros)
+            end if
+            if (haveDarcy) then
+                call TecIO_WriteR4(nCells, domain%Vx_darcy(:,itime))
+                call TecIO_WriteR4(nCells, domain%Vy_darcy(:,itime))
+                call TecIO_WriteR4(nCells, domain%Vz_darcy(:,itime))
+            end if
+            if (haveLin) then
+                call TecIO_WriteR4(nCells, domain%Vx_lin(:,itime))
+                call TecIO_WriteR4(nCells, domain%Vy_lin(:,itime))
+                call TecIO_WriteR4(nCells, domain%Vz_lin(:,itime))
+            end if
+            if (itime == 1) then
+                call TecIO_WriteNodes(domain%idNode, nPer, domain%nElements)
+            end if
+            call TecIO_FlushRetainZone1(1)
+        end do
+        deallocate(zeros)
+        call TecIO_Close()
+    end subroutine DomainVelocityToTecplotBinary
 
     subroutine ReadBinary_DDN_File(Modflow, domain)
         implicit none

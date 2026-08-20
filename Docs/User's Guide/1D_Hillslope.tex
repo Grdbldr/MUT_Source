@@ -53,6 +53,9 @@ The Van Genuchten unsaturated function type was used.
 An initial surface water depth of $1 \times 10^{-6}$ m was assigned to the \swf\ and \cln\ surface flow domains.
 
 Boundary conditions for the \swf\ and \cln\ surface flow domains consist of a flux of $4 \times 10^{-3}$ m/s applied to the entire domain and a specified head slightly above ground surface applied to the cell located at the downstream outflow boundary.
+From version 2025.014 those constant-head records in \texttt{Modflow.chd} include both a start head (the cell starting head) and an end head (the assigned value) so \mfus\ can ramp the outlet over the stress period.
+Examples \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF} therefore differ from a 2025.012 baseline; the critical-depth sibling \texttt{3\_SWF} does not.
+See Appendix~\ref{appendix:release_verification}.
 
 \pagebreak
 Here is a comparison of outflow versus time (upper plot)  and surface water depth versus distance along the slope (lower plot) at the constant head cells for the \swf\ and \cln\ domains at the end of the simulation:

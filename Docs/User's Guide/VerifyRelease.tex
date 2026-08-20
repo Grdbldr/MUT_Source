@@ -1,0 +1,38 @@
+\label{appendix:release_verification}
+\index{mut\_verify}
+\index{release verification}
+This appendix is for developers who rebuild the verification models and compare them with the previous-version baseline. The demonstration problems themselves are described in Chapter~\ref{chapter:ModelVerification}.
+
+\section{Running the comparison}
+The working tree is \texttt{C:\textbackslash Work\textbackslash Examples-Release}. The previous-version baseline is \texttt{C:\textbackslash Work\textbackslash Examples-Base}. Do not copy \texttt{MUT\_Examples} into Examples-Release. After a successful comparison, \texttt{ToRepos.bat} in Examples-Release publishes selected inputs into \texttt{MUT\_Examples}.
+
+The models to run are listed in \texttt{VerificationFolder.List} in Examples-Release: one folder name per line. Blank lines and comments that begin with \texttt{\#} or \texttt{!} are ignored. Extra folders in Examples-Release that are not in the list are ignored.
+
+\texttt{mut\_verify} does not call a separate batch executable. For each listed folder that contains \texttt{\_build.mut} it runs \texttt{mut \_build}, \texttt{usgs\_1 modflow}, and \texttt{mut \_post}.
+
+Open a PowerShell prompt in the \mut\ source repository, not in Examples-Release. After deploying \texttt{mut.exe}:
+\begin{verbatim}
+    cd C:\_repo\GrdBldr\MUT_Source
+    .\Tools\verify_release.ps1
+\end{verbatim}
+Optional skips:
+\begin{verbatim}
+    .\Tools\verify_release.ps1 -SkipBatch
+    .\Tools\verify_release.ps1 -SkipExport
+    .\Tools\verify_release.ps1 -SkipPdf
+    .\Tools\verify_release.ps1 -SkipToRepos
+\end{verbatim}
+\begin{description}
+    \item[\texttt{-SkipBatch}] Do not run \texttt{mut \_build} / \texttt{usgs\_1} / \texttt{mut \_post}. Reuse existing results in Examples-Release, still compare budgets and write this appendix.
+    \item[\texttt{-SkipExport}] Do not run \texttt{tec360} PNG export from \texttt{BatchComparisonPlots.lay}.
+    \item[\texttt{-SkipPdf}] Write the comparison \TeX\ only; do not rebuild this User's Guide PDF.
+    \item[\texttt{-SkipToRepos}] Do not run \texttt{ToRepos.bat}.
+\end{description}
+
+The Python tool can be called directly (this path does not run \texttt{ToRepos.bat}):
+\begin{verbatim}
+    python .\Tools\mut_verify\mut_verify.py
+    python .\Tools\mut_verify\mut_verify.py --skip-batch --skip-export --skip-pdf
+\end{verbatim}
+
+\texttt{mut\_verify} lives in the source repository (\texttt{Tools/mut\_verify}); it is not deployed to \bin. It writes the comparison figures under \texttt{Imagery/verification/} and the results section that follows. Commit the source appendix separately from any \texttt{MUT\_Examples} inputs published by \texttt{ToRepos.bat}.

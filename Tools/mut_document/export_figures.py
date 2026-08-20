@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 from inventory import ArtifactInventory
-from write_layouts import LayoutFile
+from write_layouts import LayoutFile, apply_symmetric_legend_to_layout
 
 
 def _as_posix(path: Path) -> str:
     return str(path).replace("\\", "/")
+
+
+_DIVERGING_CMINMAX = re.compile(
+    r"ColorMapName\s*=\s*'Diverging - Blue/Red'.*?CMin\s*=\s*([^\s]+).*?CMax\s*=\s*([^\s]+)",
+    re.DOTALL | re.IGNORECASE,
+)
 
 
 def write_export_macro(inv: ArtifactInventory, layouts: list[LayoutFile]) -> Path:
@@ -48,25 +55,22 @@ def find_tec360() -> str | None:
     return None
 
 
-def export_figures(
-    inv: ArtifactInventory,
-    layouts: list[LayoutFile],
-    timeout_s: int = 600,
-) -> tuple[bool, str]:
-    macro = write_export_macro(inv, layouts)
-    tec360 = find_tec360()
-    if tec360 is None:
-        return False, "tec360 not found on PATH; skipped PNG export"
-    # Tecplot 360 EX: -b batch, -p macro file. On Windows, start /wait is required
-    # because tec360.exe returns immediately (see Tecplot "Batch Mode and Windows").
+def _tec360_cmd(tec360: str, macro: Path) -> list[str]:
     if os.name == "nt":
-        cmd = ["cmd", "/c", "start", "/wait", "", tec360, "-b", "-p", str(macro)]
-    else:
-        cmd = [tec360, "-b", "-p", str(macro)]
+        return ["cmd", "/c", "start", "/wait", "", tec360, "-b", "-p", str(macro)]
+    return [tec360, "-b", "-p", str(macro)]
+
+
+def _run_tec360(
+    tec360: str,
+    macro: Path,
+    cwd: Path,
+    timeout_s: int,
+) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
-            cmd,
-            cwd=str(inv.model_dir),
+            _tec360_cmd(tec360, macro),
+            cwd=str(cwd),
             capture_output=True,
             text=True,
             timeout=timeout_s,
@@ -75,13 +79,84 @@ def export_figures(
         return False, f"tec360 timed out after {timeout_s}s"
     except OSError as exc:
         return False, f"tec360 failed to start: {exc}"
-    pngs = list(inv.imagery_dir.glob("*.png"))
-    if proc.returncode != 0 and not pngs:
+    if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "").strip()[:500]
         return False, f"tec360 exit {proc.returncode}: {err}"
+    return True, "ok"
+
+
+def _parse_diverging_cminmax(text: str) -> tuple[float | None, float | None]:
+    match = _DIVERGING_CMINMAX.search(text)
+    if not match:
+        return None, None
+    try:
+        return float(match.group(1)), float(match.group(2))
+    except ValueError:
+        return None, None
+
+
+def _adjust_symmetric_legends(
+    inv: ArtifactInventory,
+    layouts: list[LayoutFile],
+    tec360: str,
+    timeout_s: int,
+) -> str:
+    pending = [item for item in layouts if item.symmetric_legend]
+    if not pending:
+        return ""
+    notes: list[str] = []
+    slice_s = max(30, min(timeout_s, 180))
+    for item in pending:
+        saved = inv.layouts_dir / f"{item.section_id}.saved.lay"
+        macro = inv.layouts_dir / f"range_{item.section_id}.mcr"
+        macro.write_text(
+            "#!MC 1410\n"
+            f'$!OpenLayout "{_as_posix(item.path.resolve())}"\n'
+            f'$!SaveLayout "{_as_posix(saved.resolve())}"\n'
+            "$!Quit\n",
+            encoding="utf-8",
+        )
+        ok, msg = _run_tec360(tec360, macro, inv.model_dir, slice_s)
+        if not ok or not saved.is_file():
+            notes.append(f"{item.section_id}: range pass skipped ({msg})")
+            if saved.is_file():
+                saved.unlink()
+            continue
+        cmin, cmax = _parse_diverging_cminmax(
+            saved.read_text(encoding="utf-8", errors="replace")
+        )
+        saved.unlink()
+        if cmin is None or cmax is None:
+            notes.append(f"{item.section_id}: no CMin/CMax in saved layout")
+            continue
+        limit = max(abs(cmin), abs(cmax), 1e-12)
+        apply_symmetric_legend_to_layout(item.path, limit)
+        notes.append(f"{item.section_id}: legend +/-{limit:g}")
+    return "; ".join(notes)
+
+
+def export_figures(
+    inv: ArtifactInventory,
+    layouts: list[LayoutFile],
+    timeout_s: int = 600,
+) -> tuple[bool, str]:
+    tec360 = find_tec360()
+    if tec360 is None:
+        return False, "tec360 not found on PATH; skipped PNG export"
+
+    extra = _adjust_symmetric_legends(inv, layouts, tec360, timeout_s)
+
+    macro = write_export_macro(inv, layouts)
+    # Tecplot 360 EX: -b batch, -p macro file. On Windows, start /wait is required
+    # because tec360.exe returns immediately (see Tecplot "Batch Mode and Windows").
+    ok, msg = _run_tec360(tec360, macro, inv.model_dir, timeout_s)
+    pngs = list(inv.imagery_dir.glob("*.png"))
+    prefix = (extra + "; ") if extra else ""
+    if not ok and not pngs:
+        return False, prefix + msg
     if not pngs:
         return False, (
-            f"tec360 finished (exit {proc.returncode}) but wrote no PNG files; "
-            f"open {macro.name} in Tecplot to debug"
+            prefix
+            + f"tec360 finished but wrote no PNG files; open {macro.name} in Tecplot to debug"
         )
-    return True, f"exported {len(pngs)} PNG file(s) via {tec360}"
+    return True, prefix + f"exported {len(pngs)} PNG file(s) via {tec360}"

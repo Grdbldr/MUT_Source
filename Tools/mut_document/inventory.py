@@ -8,10 +8,12 @@ from pathlib import Path
 
 
 BUILD_TECPLOT_RE = re.compile(
-    r"^_buildo\.(?:Modflow|modflow)\.(.+)\.tecplot\.dat$", re.IGNORECASE
+    r"^_buildo\.(?:Modflow|modflow)\.(.+)\.tecplot(?:\.(?:grid|sol)(?:\.\d+)?)?\.(dat|plt|szplt)$",
+    re.IGNORECASE,
 )
 POST_TECPLOT_RE = re.compile(
-    r"^_posto\.(?:Modflow|modflow)\.(.+)\.tecplot\.dat$", re.IGNORECASE
+    r"^_posto\.(?:Modflow|modflow)\.(.+)\.tecplot(?:\.(?:grid|sol)(?:\.\d+)?)?\.(dat|plt|szplt)$",
+    re.IGNORECASE,
 )
 OBS_TECPLOT_RE = re.compile(
     r"^(?:Modflow|modflow)\.(GWF|SWF|CLN)\.OBS\.tecplot\.dat$", re.IGNORECASE
@@ -29,12 +31,48 @@ def _first_existing(model_dir: Path, names: list[str]) -> Path | None:
     return matches[0] if matches else None
 
 
+def _tecplot_rank(path: Path) -> int:
+    """Lower is better. Prefer a single .szplt over ASCII; never prefer leftover grid/sol .plt."""
+    name = path.name.lower()
+    if name.endswith(".tecplot.szplt"):
+        return 0
+    if name.endswith(".tecplot.dat"):
+        return 1
+    if name.endswith(".tecplot.plt"):
+        return 2
+    if re.search(r"\.tecplot\.sol(?:\.\d+)?\.plt$", name):
+        return 3
+    if name.endswith(".tecplot.grid.plt"):
+        return 4
+    return 5
+
+
+def _iter_tecplot(model_dir: Path) -> list[Path]:
+    found: list[Path] = []
+    for pattern in (
+        "*.tecplot.szplt",
+        "*.tecplot.dat",
+        "*.tecplot.plt",
+        "*.tecplot.sol.plt",
+        "*.tecplot.sol.*.plt",
+        "*.tecplot.grid.plt",
+    ):
+        found.extend(model_dir.glob(pattern))
+    return found
+
+
 def _index_tecplot(model_dir: Path, pattern: re.Pattern[str]) -> dict[str, Path]:
     found: dict[str, Path] = {}
-    for path in sorted(model_dir.glob("*.tecplot.dat")):
+    ranks: dict[str, int] = {}
+    for path in sorted(_iter_tecplot(model_dir)):
         match = pattern.match(path.name)
-        if match:
-            found[match.group(1)] = path
+        if not match:
+            continue
+        key = match.group(1)
+        rank = _tecplot_rank(path)
+        if key not in found or rank < ranks[key]:
+            found[key] = path
+            ranks[key] = rank
     return found
 
 

@@ -10,8 +10,13 @@
 - Docs/ai/DOMAIN_MAP.md
 - Docs/ai/BUILD.md
 - .cursor/rules/mut-fortran.mdc
+- Tools/mut_document/ — model-folder dossier PDF (default after `_build`/`_post`; `no model documentation` skips)
+- Tools/mut_verify/ — release-verification appendix (`verify_release.ps1`); `VerificationFolder.List` in `C:\Work\Examples-Release`; publish with `ToRepos.bat`
+- Tools/commit_local.ps1 — local git commit; appends `MUTVersion`
 
 CODE_ANALYSIS.md is historical; prefer DOMAIN_MAP.md.
+
+Default FE Tecplot is SZL `.tecplot.szplt`; `write ascii tecplot output` restores `.tecplot.dat`.
 
 ## User documentation (TeX — edit, do not mirror)
 
@@ -19,8 +24,10 @@ CODE_ANALYSIS.md is historical; prefer DOMAIN_MAP.md.
 - Package chapters: GWF.tex, CLN.tex, SWF.tex, GSTR.tex, OutputControl.tex, ModelExecution.tex
 - Changelog: Modifications.tex
 - QGIS appendix: QGIS_Useage.tex
+- Release verification appendix: `VerifyRelease.tex` (how to run) plus generated `ReleaseComparison.tex`
 
 ## Build
 
 - Docs/build_mut_guide.bat
+- Tools/verify_release.ps1
 - post_build.bat / post_buildR.bat

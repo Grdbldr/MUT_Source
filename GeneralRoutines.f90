@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG  
-        character(37) :: MUTVersion='2025.022  DEBUG' 
+        character(37) :: MUTVersion='2025.026  DEBUG' 
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion='2025.022 RELEASE' 
+        character(37) :: MUTVersion='2025.026 RELEASE' 
     #endif
 
 
@@ -69,6 +69,8 @@ module GeneralRoutines    !### bit setting routines
     character(MAX_LBL) :: UnitsOfTime='SECONDS'
 
     logical :: EnableTecplotOutput = .true.
+    logical :: WriteAsciiTecplot = .false.
+    logical :: WriteModelDocumentation = .true.
     logical :: EnableQGISOutput = .true.
 
 

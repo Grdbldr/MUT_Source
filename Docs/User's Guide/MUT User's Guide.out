@@ -44,46 +44,65 @@
 \BOOKMARK [1][-]{section.4.4}{3D Visualization of Model Results}{chapter.4}% 44
 \BOOKMARK [2][-]{subsection.4.4.1}{Solution Times and Animation}{section.4.4}% 45
 \BOOKMARK [2][-]{subsection.4.4.2}{Data Set Infomation}{section.4.4}% 46
-\BOOKMARK [2][-]{subsection.4.4.3}{Inactive Cells and Value Blanking }{section.4.4}% 47
-\BOOKMARK [2][-]{subsection.4.4.4}{Slices and Fence Diagrams}{section.4.4}% 48
-\BOOKMARK [2][-]{subsection.4.4.5}{Defining New Variables}{section.4.4}% 49
-\BOOKMARK [2][-]{subsection.4.4.6}{Water Table Isosurface Plot}{section.4.4}% 50
-\BOOKMARK [2][-]{subsection.4.4.7}{Infiltration Plot}{section.4.4}% 51
-\BOOKMARK [1][-]{section.4.5}{Automatic model-folder documentation}{chapter.4}% 52
-\BOOKMARK [1][-]{section.4.6}{General Spatio-Temporal Recharge \(GSTR\)}{chapter.4}% 53
-\BOOKMARK [2][-]{subsection.4.6.1}{MUT instructions}{section.4.6}% 54
-\BOOKMARK [2][-]{subsection.4.6.2}{Name file}{section.4.6}% 55
-\BOOKMARK [2][-]{subsection.4.6.3}{Input file format}{section.4.6}% 56
-\BOOKMARK [2][-]{subsection.4.6.4}{ArcASCII rasters}{section.4.6}% 57
-\BOOKMARK [2][-]{subsection.4.6.5}{Time interpolation}{section.4.6}% 58
-\BOOKMARK [2][-]{subsection.4.6.6}{Budget}{section.4.6}% 59
-\BOOKMARK [2][-]{subsection.4.6.7}{Post-processing to Tecplot}{section.4.6}% 60
-\BOOKMARK [0][-]{chapter.5}{Demonstration Models}{}% 61
-\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 62
-\BOOKMARK [1][-]{section.5.2}{1D Surface Flow}{chapter.5}% 63
-\BOOKMARK [1][-]{section.5.3}{2D Surface/subsurface Flow}{chapter.5}% 64
-\BOOKMARK [1][-]{section.5.4}{3D Surface/subsurface Flow: Field Study of Abdul}{chapter.5}% 65
-\BOOKMARK [0][-]{chapter.6}{References}{}% 66
-\BOOKMARK [0][-]{appendix.A}{QGIS Useage}{}% 67
-\BOOKMARK [1][-]{section.A.1}{QGIS Set-up}{appendix.A}% 68
-\BOOKMARK [1][-]{section.A.2}{Setting the Coordinate Reference System \(CRS\)}{appendix.A}% 69
-\BOOKMARK [1][-]{section.A.3}{Layers}{appendix.A}% 70
-\BOOKMARK [2][-]{subsection.A.3.1}{Layer Properties}{section.A.3}% 71
-\BOOKMARK [2][-]{subsection.A.3.2}{Layer Appearance \(symbology\)}{section.A.3}% 72
-\BOOKMARK [2][-]{subsection.A.3.3}{Layer Clipping}{section.A.3}% 73
-\BOOKMARK [2][-]{subsection.A.3.4}{Vector Layers}{section.A.3}% 74
-\BOOKMARK [3][-]{subsubsection.A.3.4.1}{Loading Vector Layers}{subsection.A.3.4}% 75
-\BOOKMARK [3][-]{subsubsection.A.3.4.2}{Selecting Features}{subsection.A.3.4}% 76
-\BOOKMARK [3][-]{subsubsection.A.3.4.3}{Extract Vertices}{subsection.A.3.4}% 77
-\BOOKMARK [3][-]{subsubsection.A.3.4.4}{Add Geometry Attributes}{subsection.A.3.4}% 78
-\BOOKMARK [3][-]{subsubsection.A.3.4.5}{Georeference an Image}{subsection.A.3.4}% 79
-\BOOKMARK [3][-]{subsubsection.A.3.4.6}{Add a new shapefile}{subsection.A.3.4}% 80
-\BOOKMARK [3][-]{subsubsection.A.3.4.7}{Digitize a new shapefile}{subsection.A.3.4}% 81
-\BOOKMARK [3][-]{subsubsection.A.3.4.8}{Point Sampling From a Raster Layer}{subsection.A.3.4}% 82
-\BOOKMARK [3][-]{subsubsection.A.3.4.9}{Export to a CSV File}{subsection.A.3.4}% 83
-\BOOKMARK [3][-]{subsubsection.A.3.4.10}{Import from a CSV File}{subsection.A.3.4}% 84
-\BOOKMARK [2][-]{subsection.A.3.5}{Raster Layers}{section.A.3}% 85
-\BOOKMARK [3][-]{subsubsection.A.3.5.1}{Loading Raster Layers}{subsection.A.3.5}% 86
-\BOOKMARK [3][-]{subsubsection.A.3.5.2}{Smoothing a Raster Layer}{subsection.A.3.5}% 87
-\BOOKMARK [0][-]{appendix.B}{Microsoft Excel Database Files}{}% 88
-\BOOKMARK [0][-]{appendix.C}{Mut Modifications}{}% 89
+\BOOKMARK [2][-]{subsection.4.4.3}{Velocity vectors}{section.4.4}% 47
+\BOOKMARK [2][-]{subsection.4.4.4}{Inactive Cells and Value Blanking }{section.4.4}% 48
+\BOOKMARK [2][-]{subsection.4.4.5}{Slices and Fence Diagrams}{section.4.4}% 49
+\BOOKMARK [2][-]{subsection.4.4.6}{Defining New Variables}{section.4.4}% 50
+\BOOKMARK [2][-]{subsection.4.4.7}{Water Table Isosurface Plot}{section.4.4}% 51
+\BOOKMARK [2][-]{subsection.4.4.8}{Infiltration Plot}{section.4.4}% 52
+\BOOKMARK [1][-]{section.4.5}{Automatic model-folder documentation}{chapter.4}% 53
+\BOOKMARK [1][-]{section.4.6}{General Spatio-Temporal Recharge \(GSTR\)}{chapter.4}% 54
+\BOOKMARK [2][-]{subsection.4.6.1}{MUT instructions}{section.4.6}% 55
+\BOOKMARK [2][-]{subsection.4.6.2}{Name file}{section.4.6}% 56
+\BOOKMARK [2][-]{subsection.4.6.3}{Input file format}{section.4.6}% 57
+\BOOKMARK [2][-]{subsection.4.6.4}{ArcASCII rasters}{section.4.6}% 58
+\BOOKMARK [2][-]{subsection.4.6.5}{Time interpolation}{section.4.6}% 59
+\BOOKMARK [2][-]{subsection.4.6.6}{Budget}{section.4.6}% 60
+\BOOKMARK [2][-]{subsection.4.6.7}{Post-processing to Tecplot}{section.4.6}% 61
+\BOOKMARK [0][-]{chapter.5}{Demonstration Models}{}% 62
+\BOOKMARK [1][-]{section.5.1}{1D Variably-saturated Flow in a Column}{chapter.5}% 63
+\BOOKMARK [1][-]{section.5.2}{1D Surface Flow}{chapter.5}% 64
+\BOOKMARK [1][-]{section.5.3}{2D Surface/subsurface Flow}{chapter.5}% 65
+\BOOKMARK [1][-]{section.5.4}{3D Surface/subsurface Flow: Field Study of Abdul}{chapter.5}% 66
+\BOOKMARK [0][-]{chapter.6}{References}{}% 67
+\BOOKMARK [0][-]{appendix.A}{QGIS Useage}{}% 68
+\BOOKMARK [1][-]{section.A.1}{QGIS Set-up}{appendix.A}% 69
+\BOOKMARK [1][-]{section.A.2}{Setting the Coordinate Reference System \(CRS\)}{appendix.A}% 70
+\BOOKMARK [1][-]{section.A.3}{Layers}{appendix.A}% 71
+\BOOKMARK [2][-]{subsection.A.3.1}{Layer Properties}{section.A.3}% 72
+\BOOKMARK [2][-]{subsection.A.3.2}{Layer Appearance \(symbology\)}{section.A.3}% 73
+\BOOKMARK [2][-]{subsection.A.3.3}{Layer Clipping}{section.A.3}% 74
+\BOOKMARK [2][-]{subsection.A.3.4}{Vector Layers}{section.A.3}% 75
+\BOOKMARK [3][-]{subsubsection.A.3.4.1}{Loading Vector Layers}{subsection.A.3.4}% 76
+\BOOKMARK [3][-]{subsubsection.A.3.4.2}{Selecting Features}{subsection.A.3.4}% 77
+\BOOKMARK [3][-]{subsubsection.A.3.4.3}{Extract Vertices}{subsection.A.3.4}% 78
+\BOOKMARK [3][-]{subsubsection.A.3.4.4}{Add Geometry Attributes}{subsection.A.3.4}% 79
+\BOOKMARK [3][-]{subsubsection.A.3.4.5}{Georeference an Image}{subsection.A.3.4}% 80
+\BOOKMARK [3][-]{subsubsection.A.3.4.6}{Add a new shapefile}{subsection.A.3.4}% 81
+\BOOKMARK [3][-]{subsubsection.A.3.4.7}{Digitize a new shapefile}{subsection.A.3.4}% 82
+\BOOKMARK [3][-]{subsubsection.A.3.4.8}{Point Sampling From a Raster Layer}{subsection.A.3.4}% 83
+\BOOKMARK [3][-]{subsubsection.A.3.4.9}{Export to a CSV File}{subsection.A.3.4}% 84
+\BOOKMARK [3][-]{subsubsection.A.3.4.10}{Import from a CSV File}{subsection.A.3.4}% 85
+\BOOKMARK [2][-]{subsection.A.3.5}{Raster Layers}{section.A.3}% 86
+\BOOKMARK [3][-]{subsubsection.A.3.5.1}{Loading Raster Layers}{subsection.A.3.5}% 87
+\BOOKMARK [3][-]{subsubsection.A.3.5.2}{Smoothing a Raster Layer}{subsection.A.3.5}% 88
+\BOOKMARK [0][-]{appendix.B}{Microsoft Excel Database Files}{}% 89
+\BOOKMARK [0][-]{appendix.C}{Mut Modifications}{}% 90
+\BOOKMARK [0][-]{appendix.D}{Release verification}{}% 91
+\BOOKMARK [1][-]{section.D.1}{1\137VSF\137Column}{appendix.D}% 92
+\BOOKMARK [1][-]{section.D.2}{1\137VSF\137Column\137Brooks}{appendix.D}% 93
+\BOOKMARK [1][-]{section.D.3}{2\137VSF\137Hillslope}{appendix.D}% 94
+\BOOKMARK [1][-]{section.D.4}{3\1370\137SWF\137CHD}{appendix.D}% 95
+\BOOKMARK [1][-]{section.D.5}{3\1371\137CLN\137for\137SWF}{appendix.D}% 96
+\BOOKMARK [1][-]{section.D.6}{3\137SWF}{appendix.D}% 97
+\BOOKMARK [1][-]{section.D.7}{4\137SWF\137RCH\137CRD}{appendix.D}% 98
+\BOOKMARK [1][-]{section.D.8}{6\137Abdul\137MODHMS}{appendix.D}% 99
+\BOOKMARK [1][-]{section.D.9}{6\137Abdul\137Prism\137Cell}{appendix.D}% 100
+\BOOKMARK [1][-]{section.D.10}{6\137Abdul\137Prism\137Cell\137nc}{appendix.D}% 101
+\BOOKMARK [1][-]{section.D.11}{7\137Superslab}{appendix.D}% 102
+\BOOKMARK [1][-]{section.D.12}{8\137V\137catchment}{appendix.D}% 103
+\BOOKMARK [1][-]{section.D.13}{8\137V\137catchment\137nc}{appendix.D}% 104
+\BOOKMARK [1][-]{section.D.14}{9\137Smith\137Woolhiser}{appendix.D}% 105
+\BOOKMARK [1][-]{section.D.15}{10\137Forsyth \(Observation point\)}{appendix.D}% 106
+\BOOKMARK [1][-]{section.D.16}{10\137Forsyth \(IN-OUT\)}{appendix.D}% 107
+\BOOKMARK [1][-]{section.D.17}{11\137Theis}{appendix.D}% 108

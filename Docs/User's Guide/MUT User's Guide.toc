@@ -15,7 +15,7 @@
 \contentsline {subsubsection}{\numberline {3.3.1.5}Material Zones}{47}{subsubsection.3.3.1.5}%
 \contentsline {subsubsection}{\numberline {3.3.1.6}Initial Conditions}{53}{subsubsection.3.3.1.6}%
 \contentsline {subsubsection}{\numberline {3.3.1.7}Boundary Conditions}{57}{subsubsection.3.3.1.7}%
-\contentsline {section}{\numberline {3.4}Surface Water Flow(\textsf {SWF}) Domain}{58}{section.3.4}%
+\contentsline {section}{\numberline {3.4}Surface Water Flow(\textsf {SWF}) Domain}{59}{section.3.4}%
 \contentsline {subsection}{\numberline {3.4.1}Generating a \textsf {SWF}\ Domain}{59}{subsection.3.4.1}%
 \contentsline {subsubsection}{\numberline {3.4.1.1}Cell Connection Properties}{59}{subsubsection.3.4.1.1}%
 \contentsline {subsubsection}{\numberline {3.4.1.2}Material Properties}{60}{subsubsection.3.4.1.2}%
@@ -42,48 +42,67 @@
 \contentsline {section}{\numberline {4.2}\textsc {Mut}\ Post-processing}{101}{section.4.2}%
 \contentsline {section}{\numberline {4.3}Volumetric Water Budget Plots}{102}{section.4.3}%
 \contentsline {section}{\numberline {4.4}3D Visualization of Model Results}{105}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Solution Times and Animation}{105}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}Data Set Infomation}{106}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}Inactive Cells and Value Blanking }{107}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}Slices and Fence Diagrams}{108}{subsection.4.4.4}%
-\contentsline {subsection}{\numberline {4.4.5}Defining New Variables}{109}{subsection.4.4.5}%
-\contentsline {subsection}{\numberline {4.4.6}Water Table Isosurface Plot}{111}{subsection.4.4.6}%
-\contentsline {subsection}{\numberline {4.4.7}Infiltration Plot}{112}{subsection.4.4.7}%
-\contentsline {section}{\numberline {4.5}Automatic model-folder documentation}{114}{section.4.5}%
-\contentsline {section}{\numberline {4.6}General Spatio-Temporal Recharge (GSTR)}{115}{section.4.6}%
-\contentsline {subsection}{\numberline {4.6.1}MUT instructions}{115}{subsection.4.6.1}%
-\contentsline {subsection}{\numberline {4.6.2}Name file}{116}{subsection.4.6.2}%
-\contentsline {subsection}{\numberline {4.6.3}Input file format}{116}{subsection.4.6.3}%
-\contentsline {subsection}{\numberline {4.6.4}ArcASCII rasters}{117}{subsection.4.6.4}%
-\contentsline {subsection}{\numberline {4.6.5}Time interpolation}{117}{subsection.4.6.5}%
-\contentsline {subsection}{\numberline {4.6.6}Budget}{118}{subsection.4.6.6}%
-\contentsline {subsection}{\numberline {4.6.7}Post-processing to Tecplot}{118}{subsection.4.6.7}%
-\contentsline {chapter}{\numberline {5}Demonstration Models}{119}{chapter.5}%
-\contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{119}{section.5.1}%
-\contentsline {section}{\numberline {5.2}1D Surface Flow}{122}{section.5.2}%
-\contentsline {section}{\numberline {5.3}2D Surface/subsurface Flow}{125}{section.5.3}%
-\contentsline {section}{\numberline {5.4}3D Surface/subsurface Flow: Field Study of Abdul}{128}{section.5.4}%
-\contentsline {chapter}{\numberline {6}References}{131}{chapter.6}%
-\contentsline {chapter}{\numberline {A}\textsc {QGIS}\ Useage}{132}{appendix.A}%
-\contentsline {section}{\numberline {A.1}\textsc {QGIS}\ Set-up}{132}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Setting the Coordinate Reference System (CRS)}{134}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Layers}{136}{section.A.3}%
-\contentsline {subsection}{\numberline {A.3.1}Layer Properties}{136}{subsection.A.3.1}%
-\contentsline {subsection}{\numberline {A.3.2}Layer Appearance (symbology)}{137}{subsection.A.3.2}%
-\contentsline {subsection}{\numberline {A.3.3}Layer Clipping}{138}{subsection.A.3.3}%
-\contentsline {subsection}{\numberline {A.3.4}Vector Layers}{139}{subsection.A.3.4}%
-\contentsline {subsubsection}{\numberline {A.3.4.1}Loading Vector Layers}{139}{subsubsection.A.3.4.1}%
-\contentsline {subsubsection}{\numberline {A.3.4.2}Selecting Features}{140}{subsubsection.A.3.4.2}%
-\contentsline {subsubsection}{\numberline {A.3.4.3}Extract Vertices}{141}{subsubsection.A.3.4.3}%
-\contentsline {subsubsection}{\numberline {A.3.4.4}Add Geometry Attributes}{143}{subsubsection.A.3.4.4}%
-\contentsline {subsubsection}{\numberline {A.3.4.5}Georeference an Image}{146}{subsubsection.A.3.4.5}%
-\contentsline {subsubsection}{\numberline {A.3.4.6}Add a new shapefile}{149}{subsubsection.A.3.4.6}%
-\contentsline {subsubsection}{\numberline {A.3.4.7}Digitize a new shapefile}{151}{subsubsection.A.3.4.7}%
-\contentsline {subsubsection}{\numberline {A.3.4.8}Point Sampling From a Raster Layer}{152}{subsubsection.A.3.4.8}%
-\contentsline {subsubsection}{\numberline {A.3.4.9}Export to a CSV File}{154}{subsubsection.A.3.4.9}%
-\contentsline {subsubsection}{\numberline {A.3.4.10}Import from a CSV File}{156}{subsubsection.A.3.4.10}%
-\contentsline {subsection}{\numberline {A.3.5}Raster Layers}{159}{subsection.A.3.5}%
-\contentsline {subsubsection}{\numberline {A.3.5.1}Loading Raster Layers}{159}{subsubsection.A.3.5.1}%
-\contentsline {subsubsection}{\numberline {A.3.5.2}Smoothing a Raster Layer}{160}{subsubsection.A.3.5.2}%
-\contentsline {chapter}{\numberline {B}\textsc {Microsoft Excel}\ Database Files}{163}{appendix.B}%
-\contentsline {chapter}{\numberline {C}\textsc {Mut}\ Modifications}{168}{appendix.C}%
+\contentsline {subsection}{\numberline {4.4.1}Solution Times and Animation}{106}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Data Set Infomation}{107}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Velocity vectors}{108}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}Inactive Cells and Value Blanking }{109}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}Slices and Fence Diagrams}{110}{subsection.4.4.5}%
+\contentsline {subsection}{\numberline {4.4.6}Defining New Variables}{111}{subsection.4.4.6}%
+\contentsline {subsection}{\numberline {4.4.7}Water Table Isosurface Plot}{113}{subsection.4.4.7}%
+\contentsline {subsection}{\numberline {4.4.8}Infiltration Plot}{114}{subsection.4.4.8}%
+\contentsline {section}{\numberline {4.5}Automatic model-folder documentation}{116}{section.4.5}%
+\contentsline {section}{\numberline {4.6}General Spatio-Temporal Recharge (GSTR)}{117}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}MUT instructions}{117}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Name file}{118}{subsection.4.6.2}%
+\contentsline {subsection}{\numberline {4.6.3}Input file format}{118}{subsection.4.6.3}%
+\contentsline {subsection}{\numberline {4.6.4}ArcASCII rasters}{119}{subsection.4.6.4}%
+\contentsline {subsection}{\numberline {4.6.5}Time interpolation}{119}{subsection.4.6.5}%
+\contentsline {subsection}{\numberline {4.6.6}Budget}{119}{subsection.4.6.6}%
+\contentsline {subsection}{\numberline {4.6.7}Post-processing to Tecplot}{119}{subsection.4.6.7}%
+\contentsline {chapter}{\numberline {5}Demonstration Models}{121}{chapter.5}%
+\contentsline {section}{\numberline {5.1}1D Variably-saturated Flow in a Column}{121}{section.5.1}%
+\contentsline {section}{\numberline {5.2}1D Surface Flow}{124}{section.5.2}%
+\contentsline {section}{\numberline {5.3}2D Surface/subsurface Flow}{127}{section.5.3}%
+\contentsline {section}{\numberline {5.4}3D Surface/subsurface Flow: Field Study of Abdul}{130}{section.5.4}%
+\contentsline {chapter}{\numberline {6}References}{133}{chapter.6}%
+\contentsline {chapter}{\numberline {A}\textsc {QGIS}\ Useage}{134}{appendix.A}%
+\contentsline {section}{\numberline {A.1}\textsc {QGIS}\ Set-up}{134}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Setting the Coordinate Reference System (CRS)}{136}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Layers}{138}{section.A.3}%
+\contentsline {subsection}{\numberline {A.3.1}Layer Properties}{138}{subsection.A.3.1}%
+\contentsline {subsection}{\numberline {A.3.2}Layer Appearance (symbology)}{139}{subsection.A.3.2}%
+\contentsline {subsection}{\numberline {A.3.3}Layer Clipping}{140}{subsection.A.3.3}%
+\contentsline {subsection}{\numberline {A.3.4}Vector Layers}{141}{subsection.A.3.4}%
+\contentsline {subsubsection}{\numberline {A.3.4.1}Loading Vector Layers}{141}{subsubsection.A.3.4.1}%
+\contentsline {subsubsection}{\numberline {A.3.4.2}Selecting Features}{142}{subsubsection.A.3.4.2}%
+\contentsline {subsubsection}{\numberline {A.3.4.3}Extract Vertices}{143}{subsubsection.A.3.4.3}%
+\contentsline {subsubsection}{\numberline {A.3.4.4}Add Geometry Attributes}{145}{subsubsection.A.3.4.4}%
+\contentsline {subsubsection}{\numberline {A.3.4.5}Georeference an Image}{148}{subsubsection.A.3.4.5}%
+\contentsline {subsubsection}{\numberline {A.3.4.6}Add a new shapefile}{151}{subsubsection.A.3.4.6}%
+\contentsline {subsubsection}{\numberline {A.3.4.7}Digitize a new shapefile}{153}{subsubsection.A.3.4.7}%
+\contentsline {subsubsection}{\numberline {A.3.4.8}Point Sampling From a Raster Layer}{154}{subsubsection.A.3.4.8}%
+\contentsline {subsubsection}{\numberline {A.3.4.9}Export to a CSV File}{156}{subsubsection.A.3.4.9}%
+\contentsline {subsubsection}{\numberline {A.3.4.10}Import from a CSV File}{158}{subsubsection.A.3.4.10}%
+\contentsline {subsection}{\numberline {A.3.5}Raster Layers}{161}{subsection.A.3.5}%
+\contentsline {subsubsection}{\numberline {A.3.5.1}Loading Raster Layers}{161}{subsubsection.A.3.5.1}%
+\contentsline {subsubsection}{\numberline {A.3.5.2}Smoothing a Raster Layer}{162}{subsubsection.A.3.5.2}%
+\contentsline {chapter}{\numberline {B}\textsc {Microsoft Excel}\ Database Files}{165}{appendix.B}%
+\contentsline {chapter}{\numberline {C}\textsc {Mut}\ Modifications}{170}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Release verification}{174}{appendix.D}%
+\contentsline {section}{\numberline {D.1}1\_VSF\_Column}{175}{section.D.1}%
+\contentsline {section}{\numberline {D.2}1\_VSF\_Column\_Brooks}{176}{section.D.2}%
+\contentsline {section}{\numberline {D.3}2\_VSF\_Hillslope}{177}{section.D.3}%
+\contentsline {section}{\numberline {D.4}3\_0\_SWF\_CHD}{178}{section.D.4}%
+\contentsline {section}{\numberline {D.5}3\_1\_CLN\_for\_SWF}{179}{section.D.5}%
+\contentsline {section}{\numberline {D.6}3\_SWF}{180}{section.D.6}%
+\contentsline {section}{\numberline {D.7}4\_SWF\_RCH\_CRD}{181}{section.D.7}%
+\contentsline {section}{\numberline {D.8}6\_Abdul\_MODHMS}{182}{section.D.8}%
+\contentsline {section}{\numberline {D.9}6\_Abdul\_Prism\_Cell}{183}{section.D.9}%
+\contentsline {section}{\numberline {D.10}6\_Abdul\_Prism\_Cell\_nc}{184}{section.D.10}%
+\contentsline {section}{\numberline {D.11}7\_Superslab}{185}{section.D.11}%
+\contentsline {section}{\numberline {D.12}8\_V\_catchment}{186}{section.D.12}%
+\contentsline {section}{\numberline {D.13}8\_V\_catchment\_nc}{187}{section.D.13}%
+\contentsline {section}{\numberline {D.14}9\_Smith\_Woolhiser}{188}{section.D.14}%
+\contentsline {section}{\numberline {D.15}10\_Forsyth (Observation point)}{189}{section.D.15}%
+\contentsline {section}{\numberline {D.16}10\_Forsyth (IN-OUT)}{190}{section.D.16}%
+\contentsline {section}{\numberline {D.17}11\_Theis}{191}{section.D.17}%

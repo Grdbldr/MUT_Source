@@ -227,22 +227,20 @@ Module MeshGen
 
         ! tecplot output file
         FName=trim(LocalMesh%name)//'o.tecplot.dat'
-        
-        call OpenAscii(FNum,FName)
-        call Msg('  ')
-        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
-
-        write(FNum,*) 'Title = "'//trim(LocalMesh%name)//'"'
 
         ! static variables
         VarSTR='variables="X","Y","Z","Zone","xyArea","rCircle"'
         nVar=6
 
-        !if(allocated(LocalMesh%rCircle)) then
-        !    VarSTR=trim(VarSTR)//'"'//trim(LocalMesh%name)//'Inner circle radius",'
-        !    nVar=nVar+1
-        !end if
-            
+        if(.not. WriteAsciiTecplot) then
+            call MeshToTecplotBinary(LocalMesh)
+            return
+        end if
+
+        call OpenAscii(FNum,FName)
+        call Msg('  ')
+        call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+        write(FNum,*) 'Title = "'//trim(LocalMesh%name)//'"'
         write(FNum,'(a)') trim(VarSTR)
 
 
@@ -297,6 +295,42 @@ Module MeshGen
         call FreeUnit(FNum)
         
     end subroutine MeshToTecplot
+
+    subroutine MeshToTecplotBinary(LocalMesh)
+        implicit none
+        type(mesh), intent(in) :: LocalMesh
+        character(MAX_STR) :: FName, tecVars
+        integer(i4) :: i, nPer, nEls
+        integer(i4), allocatable :: ibuf(:)
+        real(dp), allocatable :: buf(:)
+
+        nEls = LocalMesh%nElements
+        nPer = LocalMesh%nNodesPerElement
+        FName = TecIO_FileName(trim(LocalMesh%name)//'o.tecplot.dat')
+        tecVars = TecIO_VarsFromHeader(VarSTR)
+        call TecIO_DeleteIfExists(FName)
+        call TecIO_DeleteStalePlt(FName)
+        call TecIO_Open(trim(LocalMesh%name), tecVars, FName)
+        call TecIO_ZoneFE(trim(LocalMesh%name), LocalMesh%TecplotTyp, nPer, LocalMesh%nNodes, nEls, &
+                          nVar, 3, 0, 0.0_dp, 0)
+        call TecIO_WriteXYZ(LocalMesh%node, LocalMesh%nNodes)
+        allocate(ibuf(nEls), buf(nEls))
+        do i = 1, nEls
+            ibuf(i) = LocalMesh%element(i)%idZone
+        end do
+        call TecIO_WriteI(nEls, ibuf)
+        do i = 1, nEls
+            buf(i) = LocalMesh%element(i)%xyArea
+        end do
+        call TecIO_WriteD(nEls, buf)
+        do i = 1, nEls
+            buf(i) = LocalMesh%element(i)%rCircle
+        end do
+        call TecIO_WriteD(nEls, buf)
+        deallocate(ibuf, buf)
+        call TecIO_WriteNodes(LocalMesh%idNode, nPer, nEls)
+        call TecIO_Close()
+    end subroutine MeshToTecplotBinary
     !-------------------------------------------------------------
     subroutine MeshToQGIS(LocalMesh)  ! write csv file with xyz coordinates for QGIS
         implicit none

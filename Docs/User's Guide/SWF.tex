@@ -215,6 +215,7 @@ A constant head boundary condition fixes the head at a \swf\ cell at a given val
         \item \rnum{CHead} [$L$]  Constant hydraulic head.
         \end{enumerate}
           An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
+          The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
     }
 
 A recharge boundary condition forces  water to flow in to the \swf\ model domain at a specified rate.   To add recharge  to the \swf\ model domain use this instruction:

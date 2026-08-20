@@ -22,23 +22,23 @@
       \subsubitem  {\sf GWF Cells} frame, \hyperpage{88}
       \subsubitem  {\sf GWF} frame, \hyperpage{84}
   \item \qgis\ Useage 
-    \subitem  Add a new shapefile, \hyperpage{149}
-    \subitem  Add geometry attributes, \hyperpage{143}
-    \subitem  Clipping a layer, \hyperpage{138}
-    \subitem  Coordinate reference systems (CRS's), \hyperpage{134}
-    \subitem  Digitize a new shapefile, \hyperpage{151}
-    \subitem  Export to a CSV file, \hyperpage{154}
-    \subitem  Extract vertices, \hyperpage{141}
-    \subitem  Georeference an image, \hyperpage{146}
-    \subitem  Import from a CSV file, \hyperpage{156}
-    \subitem  Installation and set-up, \hyperpage{132}
-    \subitem  Layer appearance (symbology), \hyperpage{137}
-    \subitem  Layer properties, \hyperpage{136}
-    \subitem  Loading a raster layer, \hyperpage{159}
-    \subitem  Loading a vector layer, \hyperpage{139}
-    \subitem  Point sampling tool, \hyperpage{152}
-    \subitem  Selecting features, \hyperpage{140}
-    \subitem  Smoothing a raster layer, \hyperpage{160}
+    \subitem  Add a new shapefile, \hyperpage{151}
+    \subitem  Add geometry attributes, \hyperpage{145}
+    \subitem  Clipping a layer, \hyperpage{140}
+    \subitem  Coordinate reference systems (CRS's), \hyperpage{136}
+    \subitem  Digitize a new shapefile, \hyperpage{153}
+    \subitem  Export to a CSV file, \hyperpage{156}
+    \subitem  Extract vertices, \hyperpage{143}
+    \subitem  Georeference an image, \hyperpage{148}
+    \subitem  Import from a CSV file, \hyperpage{158}
+    \subitem  Installation and set-up, \hyperpage{134}
+    \subitem  Layer appearance (symbology), \hyperpage{139}
+    \subitem  Layer properties, \hyperpage{138}
+    \subitem  Loading a raster layer, \hyperpage{161}
+    \subitem  Loading a vector layer, \hyperpage{141}
+    \subitem  Point sampling tool, \hyperpage{154}
+    \subitem  Selecting features, \hyperpage{142}
+    \subitem  Smoothing a raster layer, \hyperpage{162}
   \item \swf\ Domain 
     \subitem  boundary conditions, \hyperpage{63}
     \subitem  cell connection properties, \hyperpage{59}
@@ -50,20 +50,21 @@
   \item \tecplot\ 
     \subitem  Custom labels, \hyperpage{91}
     \subitem  data set information, \hyperpage{86}
-    \subitem  Equations and defining new variables, \hyperpage{109}
+    \subitem  Equations and defining new variables, \hyperpage{111}
     \subitem  frame order, \hyperpage{82}
-    \subitem  Infiltration Plot, \hyperpage{112}
-    \subitem  Isosurfaces, Water Table Plot, \hyperpage{111}
+    \subitem  Infiltration Plot, \hyperpage{114}
+    \subitem  Isosurfaces, Water Table Plot, \hyperpage{113}
     \subitem  probe tool, \hyperpage{86}
-    \subitem  Slices and Fence diagrams, \hyperpage{108}, 
-		\hyperpage{111}
-    \subitem  value blanking, \hyperpage{107}
+    \subitem  Slices and Fence diagrams, \hyperpage{110}, 
+		\hyperpage{113}
+    \subitem  value blanking, \hyperpage{109}
+    \subitem  velocity vectors, \hyperpage{108}
     \subitem  Zoom Tool, \hyperpage{94}
 
   \indexspace
 
   \item Excel 
-    \subitem  cell protection, \hyperpage{164}
+    \subitem  cell protection, \hyperpage{166}
 
   \indexspace
 
@@ -127,13 +128,13 @@
     \subitem  generate uniform rectangles, \hyperpage{7}, 
 		\hyperpage{30}
     \subitem  generate variable rectangles, \hyperpage{30}
-    \subitem  gstr instance name, \hyperpage{116}
+    \subitem  gstr instance name, \hyperpage{117}
     \subitem  gwf alpha, \hyperpage{47}
     \subitem  gwf beta, \hyperpage{47}
     \subitem  gwf brooks, \hyperpage{47}
-    \subitem  gwf constant head, \hyperpage{57}
+    \subitem  gwf constant head, \hyperpage{57, 58}
     \subitem  gwf drain, \hyperpage{58}
-    \subitem  gwf gstr, \hyperpage{116}
+    \subitem  gwf gstr, \hyperpage{118}
     \subitem  gwf initial head, \hyperpage{53}
     \subitem  gwf initial head equals surface elevation, \hyperpage{55}
     \subitem  gwf initial head from depth-saturation table, 
@@ -155,6 +156,7 @@
     \subitem  modflow prefix, \hyperpage{23}
     \subitem  new layer, \hyperpage{37}
     \subitem  new zone, \hyperpage{50}
+    \subitem  no model documentation, \hyperpage{23}, \hyperpage{116}
     \subitem  nodal control volumes, \hyperpage{32}
     \subitem  number of timesteps, \hyperpage{75}
     \subitem  observation point, \hyperpage{73}
@@ -178,8 +180,8 @@
     \subitem  swf initial head from tecplot file, \hyperpage{63}
     \subitem  swf manning, \hyperpage{60}
     \subitem  swf materials database, \hyperpage{61}
-    \subitem  swf obstruction storage height, \hyperpage{60}
-    \subitem  swf recharge, \hyperpage{63}
+    \subitem  swf obstruction storage height, \hyperpage{61}
+    \subitem  swf recharge, \hyperpage{64}
     \subitem  swf to gwf connection length, \hyperpage{60}
     \subitem  swf well, \hyperpage{64}
     \subitem  tadjat, \hyperpage{76}
@@ -189,10 +191,11 @@
     \subitem  top elevation, \hyperpage{33}
     \subitem  type, \hyperpage{75}
     \subitem  Uniform sublayering, \hyperpage{38}
-    \subitem  units of length, \hyperpage{23}
-    \subitem  units of time, \hyperpage{23}
-    \subitem  use local databases, \hyperpage{164}
+    \subitem  units of length, \hyperpage{24}
+    \subitem  units of time, \hyperpage{24}
+    \subitem  use local databases, \hyperpage{166}
     \subitem  wells from id\_x\_y file, \hyperpage{28}
+    \subitem  write ascii tecplot output, \hyperpage{23}
     \subitem  Zone by template, \hyperpage{33}
   \item Installation, \hyperpage{9}
 
@@ -200,10 +203,12 @@
 
   \item Model Build 
     \subitem  visualization, \hyperpage{81}
-  \item model documentation, \hyperpage{114}
+  \item model documentation, \hyperpage{116}
 
   \indexspace
 
+  \item VEL package 
+    \subitem  Tecplot, \hyperpage{108}
   \item Volumetric water budget, \hyperpage{102}
 
 \end{theindex}

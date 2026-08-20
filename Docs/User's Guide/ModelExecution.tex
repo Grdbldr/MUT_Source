@@ -52,9 +52,9 @@ The instruction to post-process the \mfus\ model after execution is:
         \end{enumerate}
          Given \str{Prefix}, this instruction:
          \begin{itemize}
-            \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.dat}.
-            \item  Reads Darcy and average-linear velocity binaries written by the USG \texttt{VEL} package and writes {\tt \_posto.modflow.GWF.Velocity.tecplot.dat} with sequential 1-D arrays \texttt{Darcy Vx/Vy/Vz} and \texttt{Average Linear Vx/Vy/Vz} for Tecplot vector mapping; analogous files are written for \cln\ and \swf\ when those domains exist. Velocity Tecplot requires a USG-Transport build that supports NAM file type \texttt{VEL}.
-            \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat}.
+            \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.szplt} (one TecIO SZL file; all output times as zones on strand 1). Load that single file in 360 EX 2018 R2 and use time animation. With {\sf write ascii tecplot output} (must appear before this instruction) the same data are written as {\tt \_posto.modflow.GWF.tecplot.dat}. Restart instructions {\sf gwf initial head from tecplot file} and {\sf swf initial head from tecplot file} still require ASCII.
+            \item  Reads Darcy and average-linear velocity binaries written by the USG \texttt{VEL} package and writes {\tt \_posto.modflow.GWF.Velocity.tecplot.szplt} with sequential 1-D arrays \texttt{Darcy Vx/Vy/Vz} and \texttt{Average Linear Vx/Vy/Vz} for Tecplot vector mapping; analogous files are written for \cln\ and \swf\ when those domains exist. With {\sf write ascii tecplot output} the velocity file is {\tt \_posto.modflow.GWF.Velocity.tecplot.dat}. Velocity Tecplot requires a USG-Transport build that supports NAM file type \texttt{VEL}.
+            \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat} (ASCII even when SZPLT is the default).
          \end{itemize}
         \squish
     }
@@ -147,6 +147,23 @@ Included are these cell properties:
     \item In this case, cell-by-cell flows are stored in \gwf\ variables 10 to 13 and \swf\ variables 10 to 15.
 \end{itemize}
 
+\subsection{Velocity vectors} \label{section:VelocityVectors}
+\index{\tecplot\ ! velocity vectors}
+\index{VEL package ! Tecplot}
+Head, saturation and cell-by-cell flows live in {\tt \_posto.modflow.GWF.tecplot.szplt} (and the analogous \swf/\cln\ files). Velocity is a \emph{separate} file written by {\tt mut \_post} from the USG \texttt{VEL} binaries:
+
+\begin{verbatim}
+    _posto.modflow.GWF.Velocity.tecplot.szplt
+    _posto.modflow.SWF.Velocity.tecplot.szplt
+    _posto.modflow.CLN.Velocity.tecplot.szplt
+\end{verbatim}
+
+Only domains that exist in the run are written. With {\sf write ascii tecplot output} the same data are {\tt .tecplot.dat}. A USG-Transport executable that recognizes NAM file type \texttt{VEL} is required for those binaries to contain data (see the build-time VEL package in Chapter~\ref{chapter:ModelBuild}).
+
+Each velocity file has nodal $xyz$, domain {\sf Head}, sequential 1-D arrays {\sf Darcy Vx}, {\sf Darcy Vy}, {\sf Darcy Vz} for Tecplot U/V/W mapping, and---when the linear-velocity binary was written---{\sf Average Linear Vx}, {\sf Average Linear Vy}, {\sf Average Linear Vz}. Average-linear velocity is Darcy velocity divided by \gwf\ porosity (and, in conduits, by CLN infill porosity when that column is less than 1). Time animation uses the same strand as the other post-processed files.
+
+In Tecplot~360 EX 2018 R2, load the velocity file (or open {\tt Docs/layouts/GWF\_Results.lay}, which already has a {\sf GWF Velocity} frame; \swf\ and \cln\ have the same pattern). Assign \textbf{3D vectors} to {\sf Darcy Vx/Vy/Vz} (macro command {\tt \$\!GlobalThreeDVector}; do \emph{not} use {\tt \$\!GlobalVector}). Turn {\sf ShowVector} on only after U, V and W are assigned. Hand-made {\tt \_post.lay} files are not overwritten by {\tt mut\_document} and may not include a vector frame.
+
 \subsection{Inactive Cells and Value Blanking }
 The example {\tt 6\_Abdul\_MODHMS} was generated from a 2D rectangular template mesh.  To make it conform to the shape of the original triangular mesh used in example  {\tt 6\_Abdul\_Prism\_Cell}, a region of inactive cells was assigned around the outside of the domain.  The layout file {\sf \_plot.lay} has been configured to show only active cells:
 
@@ -167,7 +184,8 @@ The layout uses the \tecplot\ derived object {\sf Slices} to define the slice lo
 
         \includegraphics[width=.8\textwidth]{4_9_SliceDetails}
 
-The {\sf Definition} tab is configured to position the start and end slice positions and set the number of intermediate slices at 3.
+The {\sf Definition} tab is configured to position the primary slice at mid-$X$,
+the start and end slices inset from the data extents, and five intermediate slices.
 
 The {\sf Contour} tab is configured to contour-flood the slices by {\sf GWF Saturation} value.
 
@@ -215,7 +233,7 @@ Finally, the {\sf Contours and shade} tab is configured to contour flood the iso
 
 \subsection{Infiltration Plot}
 \index{\tecplot\ ! Infiltration Plot}
-The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_Infiltration} defines a new variable {\sf Infiltration [mm/hour]} and uses contour flood and lines to show it.  The contour levels are set up with a red-blue colour map that is symmetric about the value zero. Red shading indicates zones of infiltration, while blue shading indicates zones of \gwf\ discharge to the \swf\ domain.
+The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_Infiltration} defines a new variable {\sf Infiltration [mm/year]} and uses contour flood and lines to show it.  The contour levels use a Banded red-blue colour map that is symmetric about the value zero. Red shading indicates zones of infiltration, while blue shading indicates zones of \gwf\ discharge to the \swf\ domain.
 
         \includegraphics[width=\textwidth]{4_16_Infiltration.png}
 
@@ -226,7 +244,7 @@ Here we can see the infiltration at 3 times:
 \item [6000 seconds] End of simulation.  The stream has drained and water is again infiltrating over the entire  domain.
 \end{description}
 
-The new  variable {\sf Infiltration [mm/hour]} is calculated by the following equation in \tecplot:
+The new  variable {\sf Infiltration [mm/year]} is calculated by the following equation in \tecplot:
 
         \includegraphics[width=.8\textwidth]{4_17_Infiltration_eqn}
 
@@ -242,9 +260,14 @@ The color map is set to {\sf Diverging - Blue/Red} using the drop-down menu.
 
 \section{Automatic model-folder documentation}
 \index{model documentation}
-After \texttt{mut \_build} has been run in a model folder, the Python tool \texttt{mut\_document.py} writes a dossier PDF under a \texttt{Docs} subfolder named after the parent directory (the simulation name).  The PDF summarises the problem comments in \texttt{\_build.mut}, referenced data and include files, mesh construction, materials, initial and boundary conditions, and---when \texttt{usgs\_1} and \texttt{mut \_post} products are present---run status, volumetric-budget mass-balance checks, and result imagery.
+After a successful \texttt{mut \_build} or \texttt{mut \_post}, \mut\ runs the deployed Python tool \texttt{mut\_document.py} by default and writes a dossier PDF under a \texttt{Docs} subfolder named after the parent directory (the simulation name).  Each MUT file is independent: omit {\sf no model documentation} in both files for documentation after build and after post; put it only in \texttt{\_build.mut} for post-only; only in \texttt{\_post.mut} for build-only; or in both to skip Docs entirely.  Place the instruction before \texttt{build modflow usg} or \texttt{postprocess existing modflow model} (see also Chapter~\ref{chapter:ModelBuild}).
 
-From a command prompt rooted at the model folder (after deploying MUT, including the \texttt{mut\_document} folder next to \texttt{mut.exe}):
+        \ins{no model documentation}
+            {No arguments. Skip writing or expanding \texttt{Docs/} after this MUT run. Missing Python, the script, or \texttt{pdflatex} is a warning; \mut\ still ends with \texttt{Normal exit}.}
+
+The PDF summarises the problem comments in \texttt{\_build.mut}, referenced data and include files, mesh construction, materials, initial and boundary conditions, and---when \texttt{usgs\_1} and \texttt{mut \_post} products are present---run status, volumetric-budget mass-balance checks, and result imagery.
+
+To export PNG figures, or to regenerate a folder that was built with {\sf no model documentation}, run the tool from a command prompt rooted at the model folder (after deploying MUT, including the \texttt{mut\_document} folder next to \texttt{mut.exe}):
 \begin{verbatim}
     python %USERBIN%\mut_document\mut_document.py
 \end{verbatim}
@@ -257,7 +280,7 @@ Optional flags:
 The tool does not overwrite hand-made \texttt{\_build.lay} or \texttt{\_post.lay} files.  It writes:
 \begin{itemize}
   \item \texttt{Docs/\textit{folder-name}.pdf} and the generating \texttt{.tex} files
-  \item \texttt{Docs/layouts/\textit{domain}\_Mesh.lay}, \texttt{\textit{domain}\_Variables.lay}, \texttt{\textit{domain}\_scatter.lay}, \texttt{\textit{domain}\_Results.lay}, and \texttt{\textit{domain}\_Observations.lay} for each of GWF, SWF, and CLN when present (Tecplot~360 EX 2018 does not accept multi-page \texttt{\$\!PAGECONTROL} commands).  The mesh layout uses zone colours, named legends, mesh lines, and lighting.  The variables layout has one frame per non-$xyz$ build field.  The scatter layout has one frame per build-time point file (\texttt{\_CELLS}, \texttt{\_CHD}, \texttt{\_RCH}, \texttt{\_SWBC}, \texttt{\_DRN}, \texttt{\_WEL}, \texttt{\_OBS\_scatter}); spheres of size 1.0, coloured by the optional fourth column when present.  The results layout has one frame per post-processed field, plus velocity and on GWF the volume budget.  The observations layout has square frames in two rows (head on top, saturation or depth on the bottom), sites left-to-right alphabetically; extra columns may sit off the initial view.  \texttt{GWF.lay} / \texttt{SWF.lay} / \texttt{CLN.lay} are copies of the mesh layout.
+  \item \texttt{Docs/layouts/\textit{domain}\_Mesh.lay}, \texttt{\textit{domain}\_Variables.lay}, \texttt{\textit{domain}\_scatter.lay}, \texttt{\textit{domain}\_Results.lay}, and \texttt{\textit{domain}\_Observations.lay} for each of GWF, SWF, and CLN when present (Tecplot~360 EX 2018 does not accept multi-page \texttt{\$\!PAGECONTROL} commands).  The mesh, variables, and results layouts load finite-element \texttt{.tecplot.szplt} files when present (ASCII \texttt{.tecplot.dat} if {\sf write ascii tecplot output} was used).  Scatter, observation, and volume-budget files remain ASCII.  The mesh layout uses zone colours, named legends, mesh lines, and lighting.  The variables layout has one frame per non-$xyz$ build field.  The scatter layout has one frame per build-time point file (\texttt{\_CELLS}, \texttt{\_CHD}, \texttt{\_RCH}, \texttt{\_SWBC}, \texttt{\_DRN}, \texttt{\_WEL}, \texttt{\_OBS\_scatter}); spheres of size 1.0, coloured by the optional fourth column when present.  The results layout has one frame per post-processed field, plus velocity.  The observations layout has square frames in two rows (head on top, saturation or depth on the bottom), sites left-to-right alphabetically; extra columns may sit off the initial view.  \texttt{GWF.lay} / \texttt{SWF.lay} / \texttt{CLN.lay} are copies of the mesh layout.  When the corresponding post-process fields exist, the tool also writes \texttt{GWF\_VolumeBudget.lay} (listing-file volumetric rates on their own page, with a line-map legend), \texttt{GWF\_WaterTable.lay} (pressure-head iso-surface at zero, flooded by head), \texttt{SWF\_Infiltration.lay} (SWF-to-GWF flux in mm/hour with a diverging legend centred on zero), and \texttt{GWF\_SaturationSlices.lay} (X-plane saturation slices).  Cartesian 3-D frames default to $3\times$ vertical exaggeration, the Tecplot factory XYZ view ($\psi=60$, $\theta=240$), a contour legend in the upper left, and 8~point Helvetica bold axis titles and tick labels on $X$, $Y$, and $Z$ (Tecplot \texttt{SizeUnits = Point}; this is not a percent of frame height---the Axis Details ``Offset from line (\%)'' field is a separate percentage).  Contour legend labels are integers when the values are readable whole numbers (about 1 to $10^{6}$); smaller ranges such as saturation use two decimal places.  XY time-series frames use the same 8~point axis text.
   \item \texttt{Docs/imagery/*.png} when \texttt{tec360} is on the PATH (otherwise the PDF still builds and points to the layouts)
 \end{itemize}
 Optional user prose may be placed in \texttt{Docs/overview.tex} and extra figures in \texttt{Docs/imagery\_user/}; both are included when present.  Python~3 from the standard library is sufficient; MiKTeX (\texttt{pdflatex}) is required to produce the PDF.

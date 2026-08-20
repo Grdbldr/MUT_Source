@@ -34,7 +34,7 @@ The  example \texttt{1\_Abdul\_prism\_cell} generates an output control file wit
 
 The output control file looks like this:
 \begin{verbatim}
-    # MODFLOW-USG OC file written by Modflow-User-Tools version 2025.022
+    # MODFLOW-USG OC file written by Modflow-User-Tools version 2025.023
     ATSA NPTIMES   10
       9.999999747378752E-005   60.0000000000000        300.000000000000
        600.000000000000        900.000000000000        1200.00000000000
@@ -77,7 +77,7 @@ The output control file looks like this:
 Some key features of this example are:
 \begin{itemize}
     \item \mut\ automatically inserts  the  adaptive time-stepping option (\texttt{ATSA}) in the file, defines the number of print times in the simulation (NPTIMES 10) and the list of print (i.e.\ output) times.
-    \item Darcy and average-linear velocity save units are written for GWF whenever the VEL package is active (always for current \mut\ builds). Analogous binary units for \cln\ and \swf\ are listed in the NAM file when those domains exist.
+    \item Darcy and average-linear velocity save units are written for GWF whenever the VEL package is active (always for current \mut\ builds). Analogous binary units for \cln\ and \swf\ are listed in the NAM file when those domains exist. After {\tt mut \_post}, those binaries become Tecplot velocity files; see Section~\ref{section:VelocityVectors} for vector mapping.
     \item Two stress periods were defined and the listed parameters are using the default values.
 \end{itemize}
 

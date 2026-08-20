@@ -83,6 +83,20 @@ def main(argv: list[str] | None = None) -> int:
     print(f"model: {inv.folder_name}")
     print(f"domains: {', '.join(inv.domains) or '(none)'}")
     print(f"build: {inv.has_build}  usgs: {inv.has_usgs}  post: {inv.has_post}")
+    fe_stems = {n.lower() for n in ("GWF", "SWF", "CLN")}
+    fe_stems.update(f"{n}.velocity" for n in ("GWF", "SWF", "CLN"))
+    fe_stems.update(f"{n}_velocity" for n in ("GWF", "SWF", "CLN"))
+    for table in (inv.build_tecplot, inv.post_tecplot):
+        for key, path in table.items():
+            if key.lower() not in fe_stems:
+                continue
+            if path.name.lower().endswith(".tecplot.dat"):
+                szplt = path.with_suffix(".szplt").name
+                print(
+                    f"note: {path.name} is ASCII; current MUT writes {szplt} "
+                    "for this file. Re-run mut _build / mut _post to load SZL "
+                    "instead of converting .dat."
+                )
 
     build = parse_build(inv)
     usg = parse_usg(inv)

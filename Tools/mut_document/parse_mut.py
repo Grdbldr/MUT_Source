@@ -99,6 +99,12 @@ class StressPeriod:
 
 
 @dataclass
+class BcItem:
+    text: str
+    stress_period: int | None = None
+
+
+@dataclass
 class MutBuildInfo:
     comments: list[str] = field(default_factory=list)
     include_files: list[str] = field(default_factory=list)
@@ -118,7 +124,7 @@ class MutBuildInfo:
     observations: list[Observation] = field(default_factory=list)
     stress_periods: list[StressPeriod] = field(default_factory=list)
     ics: list[str] = field(default_factory=list)
-    bcs: list[str] = field(default_factory=list)
+    bcs: list[BcItem] = field(default_factory=list)
     recharge: str = ""
     oc_times: list[str] = field(default_factory=list)
     sms_set: str = ""
@@ -250,6 +256,10 @@ def _parse_eco(info: MutBuildInfo, eco: Path) -> None:
     current_sp: StressPeriod | None = None
     current_layer: LayerSpec | None = None
 
+    def add_bc(text: str) -> None:
+        sp = current_sp.index if current_sp is not None else None
+        info.bcs.append(BcItem(text=text, stress_period=sp))
+
     def flush_assign() -> None:
         nonlocal pending_assign, in_after_conversion
         if pending_assign is not None:
@@ -373,15 +383,15 @@ def _parse_eco(info: MutBuildInfo, eco: Path) -> None:
 
         elif line.startswith("Assigning SWF recharge:"):
             info.recharge = line.split(":", 1)[1].strip()
-            info.bcs.append(line)
+            add_bc(line)
         elif line.startswith("Recharge strategy:"):
-            info.bcs.append(line)
+            add_bc(line)
         elif line.startswith("Option ") and "recharge" in line.lower():
-            info.bcs.append(line)
+            add_bc(line)
         elif "critical depth" in line.lower() and "define" in line.lower():
-            info.bcs.append(line)
+            add_bc(line)
         elif line.startswith("Find cell closest to XYZ:") and "critical" in "\n".join(lines[max(0, i - 30):i + 5]).lower():
-            info.bcs.append(line)
+            add_bc(line)
 
         elif line.startswith("CSV file :") or line.startswith("CSV file:"):
             info.referenced_files.append((line.split(":", 1)[1].strip(), line.split(":", 1)[1].strip(), True))

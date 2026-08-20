@@ -3,9 +3,11 @@
 \indexentry{Installation|hyperpage}{9}
 \indexentry{Input instructions ! build modflow usg|hyperpage}{21}
 \indexentry{Input instructions ! disable tecplot output|hyperpage}{23}
+\indexentry{Input instructions ! write ascii tecplot output|hyperpage}{23}
+\indexentry{Input instructions ! no model documentation|hyperpage}{23}
 \indexentry{Input instructions ! modflow prefix|hyperpage}{23}
-\indexentry{Input instructions ! units of length|hyperpage}{23}
-\indexentry{Input instructions ! units of time|hyperpage}{23}
+\indexentry{Input instructions ! units of length|hyperpage}{24}
+\indexentry{Input instructions ! units of time|hyperpage}{24}
 \indexentry{Input instructions ! 2d mesh from gb|hyperpage}{26}
 \indexentry{Input instructions ! build triangular mesh|hyperpage}{28}
 \indexentry{Input instructions ! refine inside polygon|hyperpage}{28}
@@ -73,7 +75,7 @@
 \indexentry{\gwf\ Domain ! boundary conditions|hyperpage}{57}
 \indexentry{Input instructions ! gwf constant head|hyperpage}{57}
 \indexentry{Input instructions ! chd zone name|hyperpage}{57}
-\indexentry{Input instructions ! gwf constant head|hyperpage}{57}
+\indexentry{Input instructions ! gwf constant head|hyperpage}{58}
 \indexentry{Input instructions ! gwf drain|hyperpage}{58}
 \indexentry{Input instructions ! gwf recharge|hyperpage}{58}
 \indexentry{Input instructions ! gwf well|hyperpage}{58}
@@ -83,7 +85,7 @@
 \indexentry{\swf\ Domain ! material properties|hyperpage}{60}
 \indexentry{Input instructions ! swf manning|hyperpage}{60}
 \indexentry{Input instructions ! swf depression storage height|hyperpage}{60}
-\indexentry{Input instructions ! swf obstruction storage height|hyperpage}{60}
+\indexentry{Input instructions ! swf obstruction storage height|hyperpage}{61}
 \indexentry{Input instructions ! swf depth for smoothing|hyperpage}{61}
 \indexentry{Input instructions ! swf materials database|hyperpage}{61}
 \indexentry{Input instructions ! chosen zones use swf material number|hyperpage}{61}
@@ -94,7 +96,7 @@
 \indexentry{Input instructions ! swf initial head from tecplot file|hyperpage}{63}
 \indexentry{\swf\ Domain ! boundary conditions|hyperpage}{63}
 \indexentry{Input instructions ! swf constant head|hyperpage}{63}
-\indexentry{Input instructions ! swf recharge|hyperpage}{63}
+\indexentry{Input instructions ! swf recharge|hyperpage}{64}
 \indexentry{Input instructions ! swf well|hyperpage}{64}
 \indexentry{Input instructions ! swf critical depth with sidelength1|hyperpage}{65}
 \indexentry{Input instructions ! swf critical depth|hyperpage}{65}
@@ -146,31 +148,34 @@
 \indexentry{\cln\ Domain ! {\tt \_build.lay} ! {\sf CLN} frame|hyperpage}{97}
 \indexentry{Input instructions ! postprocess existing modflow model|hyperpage}{102}
 \indexentry{Volumetric water budget|hyperpage}{102}
-\indexentry{\tecplot\ ! value blanking|hyperpage}{107}
-\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{108}
-\indexentry{\tecplot\ ! Equations and defining new variables|hyperpage}{109}
-\indexentry{\tecplot\ ! Isosurfaces, Water Table Plot|hyperpage}{111}
-\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{111}
-\indexentry{\tecplot\ ! Infiltration Plot|hyperpage}{112}
-\indexentry{model documentation|hyperpage}{114}
-\indexentry{Input instructions ! gstr instance name|hyperpage}{116}
-\indexentry{Input instructions ! gwf gstr|hyperpage}{116}
-\indexentry{\qgis\ Useage ! Installation and set-up|hyperpage}{132}
-\indexentry{\qgis\ Useage ! Coordinate reference systems (CRS's)|hyperpage}{134}
-\indexentry{\qgis\ Useage ! Layer properties|hyperpage}{136}
-\indexentry{\qgis\ Useage ! Layer appearance (symbology)|hyperpage}{137}
-\indexentry{\qgis\ Useage ! Clipping a layer|hyperpage}{138}
-\indexentry{\qgis\ Useage ! Loading a vector layer|hyperpage}{139}
-\indexentry{\qgis\ Useage ! Selecting features|hyperpage}{140}
-\indexentry{\qgis\ Useage ! Extract vertices|hyperpage}{141}
-\indexentry{\qgis\ Useage ! Add geometry attributes|hyperpage}{143}
-\indexentry{\qgis\ Useage ! Georeference an image|hyperpage}{146}
-\indexentry{\qgis\ Useage ! Add a new shapefile|hyperpage}{149}
-\indexentry{\qgis\ Useage ! Digitize a new shapefile|hyperpage}{151}
-\indexentry{\qgis\ Useage ! Point sampling tool|hyperpage}{152}
-\indexentry{\qgis\ Useage ! Export to a CSV file|hyperpage}{154}
-\indexentry{\qgis\ Useage ! Import from a CSV file|hyperpage}{156}
-\indexentry{\qgis\ Useage ! Loading a raster layer|hyperpage}{159}
-\indexentry{\qgis\ Useage ! Smoothing a raster layer|hyperpage}{160}
-\indexentry{Input instructions ! use local databases|hyperpage}{164}
-\indexentry{Excel ! cell protection|hyperpage}{164}
+\indexentry{\tecplot\ ! velocity vectors|hyperpage}{108}
+\indexentry{VEL package ! Tecplot|hyperpage}{108}
+\indexentry{\tecplot\ ! value blanking|hyperpage}{109}
+\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{110}
+\indexentry{\tecplot\ ! Equations and defining new variables|hyperpage}{111}
+\indexentry{\tecplot\ ! Isosurfaces, Water Table Plot|hyperpage}{113}
+\indexentry{\tecplot\ ! Slices and Fence diagrams|hyperpage}{113}
+\indexentry{\tecplot\ ! Infiltration Plot|hyperpage}{114}
+\indexentry{model documentation|hyperpage}{116}
+\indexentry{Input instructions ! no model documentation|hyperpage}{116}
+\indexentry{Input instructions ! gstr instance name|hyperpage}{117}
+\indexentry{Input instructions ! gwf gstr|hyperpage}{118}
+\indexentry{\qgis\ Useage ! Installation and set-up|hyperpage}{134}
+\indexentry{\qgis\ Useage ! Coordinate reference systems (CRS's)|hyperpage}{136}
+\indexentry{\qgis\ Useage ! Layer properties|hyperpage}{138}
+\indexentry{\qgis\ Useage ! Layer appearance (symbology)|hyperpage}{139}
+\indexentry{\qgis\ Useage ! Clipping a layer|hyperpage}{140}
+\indexentry{\qgis\ Useage ! Loading a vector layer|hyperpage}{141}
+\indexentry{\qgis\ Useage ! Selecting features|hyperpage}{142}
+\indexentry{\qgis\ Useage ! Extract vertices|hyperpage}{143}
+\indexentry{\qgis\ Useage ! Add geometry attributes|hyperpage}{145}
+\indexentry{\qgis\ Useage ! Georeference an image|hyperpage}{148}
+\indexentry{\qgis\ Useage ! Add a new shapefile|hyperpage}{151}
+\indexentry{\qgis\ Useage ! Digitize a new shapefile|hyperpage}{153}
+\indexentry{\qgis\ Useage ! Point sampling tool|hyperpage}{154}
+\indexentry{\qgis\ Useage ! Export to a CSV file|hyperpage}{156}
+\indexentry{\qgis\ Useage ! Import from a CSV file|hyperpage}{158}
+\indexentry{\qgis\ Useage ! Loading a raster layer|hyperpage}{161}
+\indexentry{\qgis\ Useage ! Smoothing a raster layer|hyperpage}{162}
+\indexentry{Input instructions ! use local databases|hyperpage}{166}
+\indexentry{Excel ! cell protection|hyperpage}{166}

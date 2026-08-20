@@ -944,6 +944,7 @@ To assign a uniform constant head to the \gwf\ model domain use this instruction
         \item \rnum{CHead} [$L$]   Constant hydraulic head.
         \end{enumerate}
           An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
+          The CHD package record writes \rnum{CHead} as both the start and end head. \cln\ and \swf\ constant-head records instead ramp from the cell starting head to \rnum{CHead}; see those instructions and Appendix~\ref{appendix:release_verification}.
     }
 
 A drain boundary condition allows water to flow out of the \gwf\ model domain if the hydraulic head of the cell is higher than the drain elevation.   To add a drain to the \gwf\ model domain use this instruction:

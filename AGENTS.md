@@ -36,13 +36,14 @@ Do not treat [CODE_ANALYSIS.md](CODE_ANALYSIS.md) as current architecture; prefe
 
 - User instructions → edit TeX under `Docs/User's Guide/` (`GWF.tex`, `CLN.tex`, `SWF.tex`, `GSTR.tex`, …)
 - Rebuild PDF: [Docs/build_mut_guide.bat](Docs/build_mut_guide.bat) (pdflatex ×3 + makeindex, MiKTeX)
+- Release verification appendix: [Tools/verify_release.ps1](Tools/verify_release.ps1) — from MUT_Source; `C:\Work\Examples-Release` (`VerificationFolder.List` only); never copy MUT_Examples → Examples-Release; publish selected inputs with `ToRepos.bat`. How-to: `Docs/User's Guide/VerifyRelease.tex`
 - Do not duplicate User's Guide prose in Markdown
 
 ## External dependencies
 
 - Simulator: USG-Beta (separate repo) — new packages (GSTR, VEL) are implemented there first
 - Deploy: [post_build.bat](post_build.bat) / [post_buildR.bat](post_buildR.bat) → `%USERBIN%\mut.exe` and `MUT_Examples\_MUT_USERBIN`
-- Test cases: often under `KURT_Model` or `MUT_Examples` (not always in this repo)
+- Test cases: work in `C:\Work\Examples-Release`; published subset is `MUT_Examples` (via `ToRepos.bat`). Other trees such as `KURT_Model` are outside this repo.
 
 ## Domain packages (MODFLOW-USG)
 
@@ -50,8 +51,8 @@ Do not treat [CODE_ANALYSIS.md](CODE_ANALYSIS.md) as current architecture; prefe
 |--------|-----------|--------------|
 | GWF | LPF/BCF, porosity, RCH/RTS/GSTR | `GWF.tex`, `GSTR.tex` |
 | CLN | structure file, infill porosity | `CLN.tex` |
-| SWF | obstruction storage, RTS zones | `SWF.tex` |
-| Post | Tecplot `Vx/Vy/Vz`, GSTR rates | `OutputControl.tex`, `ModelExecution.tex` |
+| SWF | RTS zones; optional `original swf velocity calculation` (VEL `ORIGINAL_SWF_VELOCITY`; both paths use `SWF_THIK`) | `SWF.tex` |
+| Post | Default SZL `.tecplot.szplt` (`Vx/Vy/Vz`, GSTR rates); opt-in `write ascii tecplot output`; default `Docs/` dossier unless `no model documentation` | `OutputControl.tex`, `ModelExecution.tex` |
 | GIS | shapefile/raster workflows | `QGIS_Useage.tex` (appendix) |
 
 ## Agent behavior

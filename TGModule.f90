@@ -208,11 +208,21 @@ module MUT  !### Modflow-USG Tools
 
 
             ! Modflow options
+            else if(index(MUT_CMD, 'write ascii tecplot output') /= 0) then
+                WriteAsciiTecplot = .true.
+                call Msg('*** Tecplot ASCII .dat output enabled for FE mesh/results')
+
+            else if(index(MUT_CMD, 'no model documentation') /= 0) then
+                WriteModelDocumentation = .false.
+                call Msg('*** Model documentation (Docs/) disabled')
+
             else if(index(MUT_CMD, BuildModflowUSG_CMD) /= 0) then
                 call BuildModflowUSG(FnumMUT,MyProject,prefix)
+                if(WriteModelDocumentation) call WriteModelDossier()
 
             else if(index(MUT_CMD, PostprocessExistingModflowModel_CMD) /= 0) then
                 call PostprocessExistingModflowModel(FnumMUT,MyProject,prefix)
+                if(WriteModelDocumentation) call WriteModelDossier()
 
             else
                 call HandleError(ERR_INVALID_INPUT, 'Unrecognized instruction: '//trim(MUT_CMD), 'read_instructions')
@@ -228,6 +238,83 @@ module MUT  !### Modflow-USG Tools
        call Msg('Normal exit')
        call FreeUnit(FnumMUT)
     end subroutine CloseMUT
+
+
+    subroutine WriteModelDossier()
+        ! After a successful _build or _post, run mut_document.py --skip-export.
+        ! Missing Python, script, or pdflatex must not fail the MUT run.
+        implicit none
+
+        character(MAX_STR) :: arg0, exe_dir, userbin_dir, script, cmd
+        integer(i4) :: i, n, cmdstat, exitstat
+        logical :: script_exist, ran
+
+        if(.not. WriteModelDocumentation) return
+
+        script = ' '
+        arg0 = ' '
+        call get_command_argument(0, arg0)
+        n = len_trim(arg0)
+        if(n >= 2) then
+            if(arg0(1:1) == '"' .and. arg0(n:n) == '"') then
+                arg0 = arg0(2:n-1)
+                n = len_trim(arg0)
+            end if
+        end if
+        exe_dir = ' '
+        do i = n, 1, -1
+            if(arg0(i:i) == '\' .or. arg0(i:i) == '/') then
+                exe_dir = arg0(1:i-1)
+                exit
+            end if
+        end do
+        if(len_trim(exe_dir) > 0) then
+            script = trim(exe_dir)//'\mut_document\mut_document.py'
+            inquire(file=trim(script), exist=script_exist)
+            if(.not. script_exist) script = ' '
+        end if
+        ! Prefer %USERBIN% (where post_build deploys mut_document). Do not use
+        ! DefineUserbin here: "use local databases" redirects that to a project
+        ! folder that only has SMS/material CSVs.
+        if(len_trim(script) == 0) then
+            userbin_dir = ' '
+            call GET_ENVIRONMENT_VARIABLE('USERBIN', userbin_dir)
+            if(len_trim(userbin_dir) > 0) then
+                script = trim(userbin_dir)//'\mut_document\mut_document.py'
+                inquire(file=trim(script), exist=script_exist)
+                if(.not. script_exist) script = ' '
+            end if
+        end if
+        if(len_trim(script) == 0) then
+            call WarnMsg('model documentation: mut_document.py not found next to mut.exe or %USERBIN%')
+            return
+        end if
+
+        call Msg('Writing model documentation under Docs/ (PNG export skipped)')
+        ran = .false.
+        cmd = 'python "'//trim(script)//'" --skip-export .'
+        cmdstat = -1
+        exitstat = -1
+        call execute_command_line(trim(cmd), wait=.true., exitstat=exitstat, cmdstat=cmdstat)
+        ! cmdstat/=0 or Windows 9009: python not on PATH; try the py launcher
+        if(cmdstat /= 0 .or. exitstat == 9009) then
+            cmd = 'py "'//trim(script)//'" --skip-export .'
+            cmdstat = -1
+            exitstat = -1
+            call execute_command_line(trim(cmd), wait=.true., exitstat=exitstat, cmdstat=cmdstat)
+        end if
+        if(cmdstat == 0) ran = .true.
+
+        if(.not. ran) then
+            call WarnMsg('model documentation: python/py not found; Docs/ was not updated')
+            return
+        end if
+        if(exitstat /= 0) then
+            call WarnMsg('model documentation: mut_document.py finished with a non-zero status (PDF or layouts may be incomplete)')
+            return
+        end if
+        call Msg('Model documentation written under Docs/')
+    end subroutine WriteModelDossier
 
 
 

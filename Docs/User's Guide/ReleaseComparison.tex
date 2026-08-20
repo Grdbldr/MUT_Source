@@ -1,0 +1,235 @@
+\section{Comparison results}
+This section reports the verification-model comparison for the current \mut\ release against the previous-version baseline. Each figure is one frame from \texttt{BatchComparisonPlots.lay}: solid lines are the current run, dashed lines are the baseline. Coincident lines mean the responses match.
+
+Current volume-budget \texttt{MUTVersion}: \texttt{2025.026 RELEASE}.
+Baseline volume-budget \texttt{MUTVersion}: \texttt{2025.012 RELEASE}.
+
+exported 16/16 PNG file(s) via C:\textbackslash{}Program Files\textbackslash{}Tecplot\textbackslash{}Tecplot 360 EX 2018 R2\textbackslash{}bin\textbackslash{}tec360.EXE.
+
+Numeric status uses the ASCII volume-budget \texttt{IN - OUT} series, compared
+record-by-record when both files list the same \texttt{TOTAL TIME} values.
+\mfus\ often writes several budget dumps at the same time at a stress-period
+boundary. Comparing by interpolated time would pair later dumps with the first
+dump at that time and can false-flag models such as
+\texttt{6\_Abdul\_Prism\_Cell}. With index-wise comparison those examples match
+the 2025.012 baseline bit-for-bit (349 records, max $|$diff$|$ of 0).
+
+The only remaining differences versus 2025.012 are \texttt{3\_0\_SWF\_CHD} and
+\texttt{3\_1\_CLN\_for\_SWF}. From version 2025.014, \cln\ and \swf\ CHD records
+in \texttt{Modflow.chd} write both a start head (the cell starting head) and an
+end head (the assigned constant head). \mfus\ requires both values and
+interpolates between them over the stress period so the assigned head is not
+applied as an instantaneous shock. Version 2025.012 wrote only the assigned
+head on those records. \gwf\ CHD records already used two heads (both equal to
+the assigned value). See also the 2025.014 note in
+Appendix~\ref{chapter:modifications}.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+Model & Status & IN--OUT max $|$diff$|$ \\
+\hline
+1\_VSF\_Column & No change & 0 \\
+1\_VSF\_Column\_Brooks & No change & 0 \\
+2\_VSF\_Hillslope & No change & 0 \\
+3\_0\_SWF\_CHD & Responses differ & 0.00133 \\
+3\_1\_CLN\_for\_SWF & Responses differ & 0.00415 \\
+3\_SWF & No change & 0 \\
+4\_SWF\_RCH\_CRD & No change & 0 \\
+6\_Abdul\_MODHMS & No change & 0 \\
+6\_Abdul\_Prism\_Cell & No change & 0 \\
+6\_Abdul\_Prism\_Cell\_nc & No change & 0 \\
+7\_SuperSlab & No change & 0 \\
+8\_V\_catchment & No change & 0 \\
+8\_V\_catchment\_nc & No change & 0 \\
+9\_Smith\_Woolhiser & No change & 0 \\
+10\_Forsyth & No change & 0 \\
+11\_Theis & No change & 0 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{1\_VSF\_Column}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/1_VSF_Column}
+  \caption{1\_VSF\_Column: current release versus baseline.}
+  \label{fig:verify-1_VSF_Column}
+\end{figure}
+\clearpage
+
+\section{1\_VSF\_Column\_Brooks}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/1_VSF_Column_Brooks}
+  \caption{1\_VSF\_Column\_Brooks: current release versus baseline.}
+  \label{fig:verify-1_VSF_Column_Brooks}
+\end{figure}
+\clearpage
+
+\section{2\_VSF\_Hillslope}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/2_VSF_Hillslope}
+  \caption{2\_VSF\_Hillslope: current release versus baseline.}
+  \label{fig:verify-2_VSF_Hillslope}
+\end{figure}
+\clearpage
+
+\section{3\_0\_SWF\_CHD}
+Responses differ. IN-OUT series differ (max |diff| = 0.00133)
+
+Cause: version 2025.014 began writing both start and end heads on \swf\ CHD records (USG requires both). The 2025.012 baseline wrote only the assigned head. The outlet cell (node 202) now has start and end heads both equal to the assigned value $1.000001$ (the cell starting head already matches the CHD). Completing the two-head record changes \texttt{OUT\_SWF CONST HEAD} through the run (about $0.3873$ to $0.3857$~m$^3$/s at $t=163$~s). Sibling example \texttt{3\_SWF} uses a critical-depth outlet instead of CHD and is unchanged.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/3_0_SWF_CHD}
+  \caption{3\_0\_SWF\_CHD: current release versus baseline.}
+  \label{fig:verify-3_0_SWF_CHD}
+\end{figure}
+\clearpage
+
+\section{3\_1\_CLN\_for\_SWF}
+Responses differ. IN-OUT series differ (max |diff| = 0.00415)
+
+Cause: the same 2025.014 CHD change, for \cln. The outlet record is now a start-to-end ramp from the cell starting head to the assigned CHD $1.000001$ (they differ only in the last decimal place). The 2025.012 file had a single assigned head, which USG applied as an instantaneous shock. That produced a first-step \texttt{IN\_CLN STORAGE} pulse of about $0.00415$ and a $1\%$ mass-balance discrepancy; the ramp removes the shock.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/3_1_CLN_for_SWF}
+  \caption{3\_1\_CLN\_for\_SWF: current release versus baseline.}
+  \label{fig:verify-3_1_CLN_for_SWF}
+\end{figure}
+\clearpage
+
+\section{3\_SWF}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/3_SWF}
+  \caption{3\_SWF: current release versus baseline.}
+  \label{fig:verify-3_SWF}
+\end{figure}
+\clearpage
+
+\section{4\_SWF\_RCH\_CRD}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/4_SWF_RCH_CRD}
+  \caption{4\_SWF\_RCH\_CRD: current release versus baseline.}
+  \label{fig:verify-4_SWF_RCH_CRD}
+\end{figure}
+\clearpage
+
+\section{6\_Abdul\_MODHMS}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/6_Abdul_MODHMS}
+  \caption{6\_Abdul\_MODHMS: current release versus baseline.}
+  \label{fig:verify-6_Abdul_MODHMS}
+\end{figure}
+\clearpage
+
+\section{6\_Abdul\_Prism\_Cell}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/6_Abdul_Prism_Cell}
+  \caption{6\_Abdul\_Prism\_Cell: current release versus baseline.}
+  \label{fig:verify-6_Abdul_Prism_Cell}
+\end{figure}
+\clearpage
+
+\section{6\_Abdul\_Prism\_Cell\_nc}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/6_Abdul_Prism_Cell_nc}
+  \caption{6\_Abdul\_Prism\_Cell\_nc: current release versus baseline.}
+  \label{fig:verify-6_Abdul_Prism_Cell_nc}
+\end{figure}
+\clearpage
+
+\section{7\_Superslab}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/7_Superslab}
+  \caption{7\_Superslab: current release versus baseline.}
+  \label{fig:verify-7_Superslab}
+\end{figure}
+\clearpage
+
+\section{8\_V\_catchment}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/8_V_catchment}
+  \caption{8\_V\_catchment: current release versus baseline.}
+  \label{fig:verify-8_V_catchment}
+\end{figure}
+\clearpage
+
+\section{8\_V\_catchment\_nc}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/8_V_catchment_nc}
+  \caption{8\_V\_catchment\_nc: current release versus baseline.}
+  \label{fig:verify-8_V_catchment_nc}
+\end{figure}
+\clearpage
+
+\section{9\_Smith\_Woolhiser}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/9_Smith_Woolhiser}
+  \caption{9\_Smith\_Woolhiser: current release versus baseline.}
+  \label{fig:verify-9_Smith_Woolhiser}
+\end{figure}
+\clearpage
+
+\section{10\_Forsyth (Observation point)}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/10_Forsyth_Observation_point}
+  \caption{10\_Forsyth (Observation point): current release versus baseline.}
+  \label{fig:verify-10_Forsyth_Observation_point}
+\end{figure}
+\clearpage
+
+\section{10\_Forsyth (IN-OUT)}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{verification/10_Forsyth_IN-OUT}
+  \caption{10\_Forsyth (IN-OUT): current release versus baseline.}
+  \label{fig:verify-10_Forsyth_IN-OUT}
+\end{figure}
+\clearpage
+
+\section{11\_Theis}
+No change. IN-OUT series agree (max |diff| = 0)
+
+\texttt{BatchComparisonPlots.lay} does not currently plot this model.
