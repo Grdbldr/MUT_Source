@@ -89,20 +89,22 @@
 \contentsline {chapter}{\numberline {B}\textsc {Microsoft Excel}\ Database Files}{165}{appendix.B}%
 \contentsline {chapter}{\numberline {C}\textsc {Mut}\ Modifications}{170}{appendix.C}%
 \contentsline {chapter}{\numberline {D}Release verification}{174}{appendix.D}%
-\contentsline {section}{\numberline {D.1}1\_VSF\_Column}{175}{section.D.1}%
-\contentsline {section}{\numberline {D.2}1\_VSF\_Column\_Brooks}{176}{section.D.2}%
-\contentsline {section}{\numberline {D.3}2\_VSF\_Hillslope}{177}{section.D.3}%
-\contentsline {section}{\numberline {D.4}3\_0\_SWF\_CHD}{178}{section.D.4}%
-\contentsline {section}{\numberline {D.5}3\_1\_CLN\_for\_SWF}{179}{section.D.5}%
-\contentsline {section}{\numberline {D.6}3\_SWF}{180}{section.D.6}%
-\contentsline {section}{\numberline {D.7}4\_SWF\_RCH\_CRD}{181}{section.D.7}%
-\contentsline {section}{\numberline {D.8}6\_Abdul\_MODHMS}{182}{section.D.8}%
-\contentsline {section}{\numberline {D.9}6\_Abdul\_Prism\_Cell}{183}{section.D.9}%
-\contentsline {section}{\numberline {D.10}6\_Abdul\_Prism\_Cell\_nc}{184}{section.D.10}%
-\contentsline {section}{\numberline {D.11}7\_Superslab}{185}{section.D.11}%
-\contentsline {section}{\numberline {D.12}8\_V\_catchment}{186}{section.D.12}%
-\contentsline {section}{\numberline {D.13}8\_V\_catchment\_nc}{187}{section.D.13}%
-\contentsline {section}{\numberline {D.14}9\_Smith\_Woolhiser}{188}{section.D.14}%
-\contentsline {section}{\numberline {D.15}10\_Forsyth (Observation point)}{189}{section.D.15}%
-\contentsline {section}{\numberline {D.16}10\_Forsyth (IN-OUT)}{190}{section.D.16}%
-\contentsline {section}{\numberline {D.17}11\_Theis}{191}{section.D.17}%
+\contentsline {section}{\numberline {D.1}Running the comparison}{174}{section.D.1}%
+\contentsline {section}{\numberline {D.2}Comparison results}{175}{section.D.2}%
+\contentsline {section}{\numberline {D.3}1\_VSF\_Column}{176}{section.D.3}%
+\contentsline {section}{\numberline {D.4}1\_VSF\_Column\_Brooks}{177}{section.D.4}%
+\contentsline {section}{\numberline {D.5}2\_VSF\_Hillslope}{178}{section.D.5}%
+\contentsline {section}{\numberline {D.6}3\_0\_SWF\_CHD}{179}{section.D.6}%
+\contentsline {section}{\numberline {D.7}3\_1\_CLN\_for\_SWF}{180}{section.D.7}%
+\contentsline {section}{\numberline {D.8}3\_SWF}{181}{section.D.8}%
+\contentsline {section}{\numberline {D.9}4\_SWF\_RCH\_CRD}{182}{section.D.9}%
+\contentsline {section}{\numberline {D.10}6\_Abdul\_MODHMS}{183}{section.D.10}%
+\contentsline {section}{\numberline {D.11}6\_Abdul\_Prism\_Cell}{184}{section.D.11}%
+\contentsline {section}{\numberline {D.12}6\_Abdul\_Prism\_Cell\_nc}{185}{section.D.12}%
+\contentsline {section}{\numberline {D.13}7\_Superslab}{186}{section.D.13}%
+\contentsline {section}{\numberline {D.14}8\_V\_catchment}{187}{section.D.14}%
+\contentsline {section}{\numberline {D.15}8\_V\_catchment\_nc}{188}{section.D.15}%
+\contentsline {section}{\numberline {D.16}9\_Smith\_Woolhiser}{189}{section.D.16}%
+\contentsline {section}{\numberline {D.17}10\_Forsyth (Observation point)}{190}{section.D.17}%
+\contentsline {section}{\numberline {D.18}10\_Forsyth (IN-OUT)}{191}{section.D.18}%
+\contentsline {section}{\numberline {D.19}11\_Theis}{192}{section.D.19}%
