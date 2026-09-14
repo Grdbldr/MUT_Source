@@ -85,7 +85,7 @@ No change. IN-OUT series agree (max |diff| = 0)
 \section{3\_0\_SWF\_CHD}
 Responses differ. IN-OUT series differ (max |diff| = 0.00133)
 
-Cause: version 2025.014 began writing both start and end heads on \swf\ CHD records (USG requires both). The 2025.012 baseline wrote only the assigned head. The outlet cell (node 202) now has start and end heads both equal to the assigned value $1.000001$ (the cell starting head already matches the CHD). Completing the two-head record changes \texttt{OUT\_SWF CONST HEAD} through the run (about $0.3873$ to $0.3857$~m$^3$/s at $t=163$~s). Sibling example \texttt{3\_SWF} uses a critical-depth outlet instead of CHD and is unchanged.
+Cause: version 2025.014 began writing both start and end heads on \swf\ CHD records (\mfus\ requires both). The 2025.012 baseline wrote only the assigned head. The outlet cell (node 202) now has start and end heads both equal to the assigned value $1.000001$ (the cell starting head already matches the CHD). Completing the two-head record changes \texttt{OUT\_SWF CONST HEAD} through the run (about $0.3873$ to $0.3857$~m$^3$/s at $t=163$~s). Sibling example \texttt{3\_SWF} uses a critical-depth outlet instead of CHD and is unchanged.
 
 \begin{figure}[htbp]
   \centering
@@ -98,7 +98,7 @@ Cause: version 2025.014 began writing both start and end heads on \swf\ CHD reco
 \section{3\_1\_CLN\_for\_SWF}
 Responses differ. IN-OUT series differ (max |diff| = 0.00415)
 
-Cause: the same 2025.014 CHD change, for \cln. The outlet record is now a start-to-end ramp from the cell starting head to the assigned CHD $1.000001$ (they differ only in the last decimal place). The 2025.012 file had a single assigned head, which USG applied as an instantaneous shock. That produced a first-step \texttt{IN\_CLN STORAGE} pulse of about $0.00415$ and a $1\%$ mass-balance discrepancy; the ramp removes the shock.
+Cause: the same 2025.014 CHD change, for \cln. The outlet record is now a start-to-end ramp from the cell starting head to the assigned CHD $1.000001$ (they differ only in the last decimal place). The 2025.012 file had a single assigned head, which \mfus\ applied as an instantaneous shock. That produced a first-step \texttt{IN\_CLN STORAGE} pulse of about $0.00415$ and a $1\%$ mass-balance discrepancy; the ramp removes the shock.
 
 \begin{figure}[htbp]
   \centering

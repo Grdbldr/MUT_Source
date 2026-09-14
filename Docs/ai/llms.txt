@@ -21,9 +21,9 @@ Default FE Tecplot is SZL `.tecplot.szplt`; `write ascii tecplot output` restore
 ## User documentation (TeX — edit, do not mirror)
 
 - Docs/User's Guide/MUT User's Guide.tex
-- Package chapters: GWF.tex, CLN.tex, SWF.tex, GSTR.tex, OutputControl.tex, ModelExecution.tex
+- Package chapters: GWF.tex, CLN.tex, SWF.tex, BoundaryConditions.tex (incl. GSTR.tex), OutputControl.tex, ModelExecution.tex
 - Changelog: Modifications.tex
-- QGIS appendix: QGIS_Useage.tex
+- QGIS appendix: QGIS_Usage.tex
 - Release verification appendix: `VerifyRelease.tex` (how to run) plus generated `ReleaseComparison.tex`
 
 ## Build

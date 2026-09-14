@@ -35,7 +35,7 @@ You should now see the following 3D visualization of the example:
 
         \includegraphics[width=\textwidth]{3_14_BuildLay1DColumn}
 
-\index{\tecplot\ ! frame order}There are 4 Tecplot {\sf Frames} that make up this image.  Each frame can house it's own data for plotting, and have unique settings for visualization.  The {\sf Frames} window at the bottom left corner shows the frame names and plotting order:
+\index{\tecplot\ ! frame order}There are 4 Tecplot {\sf Frames} that make up this image.  Each frame can house its own data for plotting, and has unique settings for visualization.  The {\sf Frames} window at the bottom left corner shows the frame names and plotting order:
 
         \includegraphics[width=.3\textwidth]{3_15_Frames}
 
@@ -80,7 +80,7 @@ The currently active frame title \gwf\ is shown in the {\sf Zone(s)} field, whil
 
 
 
-\index{\tecplot\ ! probe tool} The \tecplot\ Probe Tool \includegraphics{ProbeToolButton} is used to to probe for values of the dataset's variables at a particular point. When selected, the mouse cursor changes to a modified cross-hair which indicates the Probe Tool is active. To obtain {\it interpolated} values of the dataset variables at the specified location, click at any point in the data region.
+\index{\tecplot\ ! probe tool} The \tecplot\ Probe Tool \includegraphics{ProbeToolButton} is used to probe for values of the dataset's variables at a particular point. When selected, the mouse cursor changes to a modified cross-hair which indicates the Probe Tool is active. To obtain {\it interpolated} values of the dataset variables at the specified location, click at any point in the data region.
 
 Shown below are the results of probing the top cell of the \gwf\ domain:
 
@@ -90,7 +90,7 @@ The probe location is indicated by the small '+' sign in the top cell (upper lef
 
 It is important to understand that in \tecplot\ nomenclature, the {\sf Variable Values} tab refers to values assigned to {\sf TMPLT\_GWF} mesh nodes, while the {\sf Cell Centred Values} tab ({\em Not to be confused with \mf\ cells!}) refers to values assigned to {\sf TMPLT\_GWF} mesh elements.
 
-If the mesh-centred control volume approach is used, as is the case for this example, then \mf\ cell locations align with {\sf TMPLT\_GWF} mesh element centroids, and all values except the $XYZ$ coordinates (which are defined at {\sf TMPLT\_GWF} mesh nodes)  are interpolated (as indicated by an asterisk {\sf *} appended to the value}).  The $XYZ$ coordinates show the exact location of the small '+' sign.
+If the mesh-centred control volume approach is used, as is the case for this example, then \mf\ cell locations align with {\sf TMPLT\_GWF} mesh element centroids, and all values except the $XYZ$ coordinates (which are defined at {\sf TMPLT\_GWF} mesh nodes)  are interpolated (as indicated by an asterisk {\sf *} appended to the value).  The $XYZ$ coordinates show the exact location of the small '+' sign.
 
 If we select the {\sf Cell Centred Values} tab, the {\sf Probe} output looks like this:
 
@@ -134,7 +134,7 @@ You must make sure to have the {\sf Variable Values} tab selected to see values.
 
        \includegraphics[width=.5\textwidth]{3_25b_GWF_CellsControlClick}
 
-Now the constant head ({\sf CHD}) value -100 is shown while the {\sf RCH}) value is 0, because this is not an assigned recharge cell.
+Now the constant head ({\sf CHD}) value -100 is shown while the {\sf RCH} value is 0, because this is not an assigned recharge cell.
 
 \subsection{\swf\ Domain}
 The  example \texttt{6\_Abdul\_Prism\_Cell} has a \swf\ domain defined by an irregular 2D surface with a recharge boundary condition assigned to the entire domain and a critical depth outflow boundary condition assigned at the downstream outlet. Since it also has a \gwf\ domain the {\sf \_build.lay} file is a bit more complicated, but has many similarities to  the previous example.
@@ -155,7 +155,7 @@ Send the {\sf GWF} and {\sf Axes} frames to the back to see only the contents of
 The {\sf SWF} frame has very similar contents to the {\sf GWF} frame described earlier, but note that:
 \begin{itemize}
   \item   The data set title {\sf TMPLT\_SWF} indicates that this is the \swf\ domain mesh that was created from the template mesh.
-  \item The names of the data files loaded into the frame are for the \swf\ domain, and there is an extra data set that has been loaded called {\tt CustomLables\_SWF.dat}.
+  \item The names of the data files loaded into the frame are for the \swf\ domain, and there is an extra data set that has been loaded called {\tt CustomLabels\_SWF.dat}.
   \item The contouring legend, showing there are two \swf\ zones called {\sf Grass} and {\sf Streambed} is a bit more descriptive than a list of zone numbers.   These are referred to a custom labels in \tecplot.
 \end{itemize}
 
@@ -184,7 +184,7 @@ Custom labels can also be defined for the \gwf\ and \cln\ domains if desired.
 
 The currently active frame title \swf\ is shown in the {\sf Zone(s)} field, while the data set variables are listed in the {\sf Variable(s)} field. The variables include the $xyz$ coordinates of the {\sf TMPLT\_SWF} mesh nodes, followed by the {\sf SWF Zone} numbers assigned to the {\sf TMPLT\_SWF} mesh elements.  The remainder of the list shows the \mfus\ cell properties that were defined during the model build. The {\sf Var--Range Selected Zone:} area shows the variable {\sf Min:} and {\sf Max:} values for the currently chosen (highlighted) zone and variable (currently \swf\ and {\sf SWF Cell Area} respectively).
 
-For zoned variables, the {\sf SWF Zone} number can be used to check the assigned properties by referring back to the {\tt \_buildo.eco file} output.  For the {\tt 6\_Abdul\_Prism\_Cell} example, the properties of the first zone are shown as being for the material {\sf Streambed}:
+For zoned variables, the {\sf SWF Zone} number can be used to check the assigned properties by referring back to the {\tt \_buildo.eco} file output.  For the {\tt 6\_Abdul\_Prism\_Cell} example, the properties of the first zone are shown as being for the material {\sf Streambed}:
 \begin{verbatim}
     choose zone number
     	Adding zone number:        1
@@ -248,7 +248,7 @@ The {\sf CLN} frame has very similar contents to the {\sf GWF} frame described e
 
         \includegraphics[width=\textwidth]{3_37_CLNZoneColour}
 
-For zoned variables, the {\sf CLN Zone} number can be used to check the assigned properties by referring back to the {\tt \_buildo.eco file} output.  For the {\tt 3\_1\_CLN\_for\_SWF} example, the properties of all zones are shown as being for material {\sf 1, 2D Hillslope 100 m length}:
+For zoned variables, the {\sf CLN Zone} number can be used to check the assigned properties by referring back to the {\tt \_buildo.eco} file output.  For the {\tt 3\_1\_CLN\_for\_SWF} example, the properties of all zones are shown as being for material {\sf 1, 2D Hillslope 100 m length}:
 \begin{verbatim}
     choose all zones
 

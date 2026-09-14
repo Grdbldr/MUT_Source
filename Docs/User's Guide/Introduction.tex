@@ -5,7 +5,7 @@
     \item We currently develop and run it on a \windows\ 10-based computing platform, writing the software using the \ifort\ compiler running inside the \vstudio\ interactive development environment, which includes software version control tools through \github.
     \item A text-based approach is used for the \mut\ interface, in which we first develop an input file of instructions that define our \mfus\ project,  then run \mut\ to read it and write a complete \mfus\ data set. \mut\ also writes output files for \tecplot, a third-party visualization software package, which provides a 3D graphical visualization tool to review the model numerical mesh and material properties in the data set. In future, \mut\ could be extended to support other third-party visualization packages, for example the open source program Paraview.
     \item We will introduce the use of \qgis\footnote{\qgis\ is a geographic information system (GIS) software that is free and open-source. It supports viewing, editing, printing, and analysis of geospatial data in a range of data formats.} software to view and process project data consisting of physiography (e.g.\ DEM's, often provided as raster-formatted TIF files) and model boundaries (e.g.\ often provide as shapefiles).
-    \item \mut\ can post-process a \mfus\ simulation to provide a \tecplot\ visualization of temporal model results, including hydraulic heads, saturations, water depths and flow budget data.  \textit{If applied to output files which were produced by an earlier version of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superceded.}
+    \item \mut\ can post-process a \mfus\ simulation to provide a \tecplot\ visualization of temporal model results, including hydraulic heads, saturations, water depths and flow budget data.  \textit{If applied to output files which were produced by an earlier version of Modflow, results may be mixed.  It is not our intent here to support all existing Modflow packages, many of which have been superseded.}
 \end{itemize}
 
 Changes made to \mut\  since version 1.34 are listed in Appendix~\ref{chapter:modifications}
@@ -83,7 +83,6 @@ Here is an example of an instruction which requires two lines of input, with eac
     \item \rnum{LengthX}[$L$], \inum{nRectX}  Domain length and number of rectangles in the $x$-direction
     \item \rnum{LengthY}[$L$], \inum{nRectY}  Domain length and number of rectangles in the $y$-direction
     \end{enumerate}
-    \squish
     }
 
 In this case the first line of input consists of the real variable \rnum{LengthX} of dimension length [$L$], and a second integer variable \inum{nRectX} which is dimensionless.  A second line of input requires similar variables but for the $y$-direction.
@@ -97,13 +96,17 @@ Here is an example showing possible input file contents for this instruction:
 This input would generate a strip of 1000 rectangular elements with a total length of 1000 length units in the $x$-direction and 1 element with a width of 1 length unit in the $y$-direction.
 
 
-This rest of this document is subivided into these sections:
+The rest of this document is subdivided into these sections:
 \begin{description}
-    \item[Chapter~\ref{chapter:Installation}]\textbf{Software Installation and Useage:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables.
-     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{Model Build} How to build a \mut\ input file, produce a \mfus\ compatible data set and \tecplot\ compatible output files with \mut, then review the results of the model build with \tecplot.
+    \item[Chapter~\ref{chapter:Installation}]\textbf{Software Installation and Usage:} How to install \mut, \mfus\ and \tecplot\ and define \windows\ environment variables. Detailed end-user and developer install steps are in Appendices~\ref{Appendix:EndUserInstall} and~\ref{Appendix:DeveloperInstall}.
+     \item[Chapter~\ref{chapter:ModelBuild}]\textbf{Model Build} How to build a \mut\ input file, produce a \mfus\ compatible data set and \tecplot\ compatible output files with \mut, then review the results of the model build with \tecplot. Includes the \gwf, \swf\ and \cln\ domains, boundary conditions (Section~\ref{section:BoundaryConditions}), stress periods, output control and build visualization.
     \item[Chapter~\ref{chapter:ModelExecution}]\textbf{Model Simulation and Post-Processing} How to run \mfus, convert the output to \tecplot-compatible files with \mut, then visualize them with \tecplot.
-    \item[Chapter~\ref{chapter:ModelVerification}]\textbf{Demonstration Models} These models verify the accuracy of \mfus\ models built using \mut\ and demonstrate it's ability to capture a range of conceptual situations, from simple to complex.
-    \item[Appendix~\ref{Appendix:ExcelUseage}]\textbf{\excel\ Database Files} Details about using the provided \excel\ database files, which are currently used to store \mfus\ model material property and solver parameter data sets.
+    \item[Chapter~\ref{chapter:ModelVerification}]\textbf{Demonstration Models} These models verify the accuracy of \mfus\ models built using \mut\ and demonstrate its ability to capture a range of conceptual situations, from simple to complex.
+    \item[Appendix~\ref{Appendix:EndUserInstall}]\textbf{Model End User Installation} Step-by-step screenshots for downloading \texttt{MUT\_Examples}, setting \bin\ and \texttt{PATH}, and verifying \texttt{mut} and \texttt{usgs\_1}.
+    \item[Appendix~\ref{Appendix:DeveloperInstall}]\textbf{Model Developer Installation} Step-by-step screenshots for installing \vstudio\ and \ifort, and cloning \texttt{MUT\_Source}.
+    \item[Appendix~\ref{Appendix:QGISUsage}]\textbf{\qgis\ Usage} How to prepare DEM rasters and shapefile boundaries that \mut\ consumes during the model build.
+    \item[Appendix~\ref{Appendix:ExcelUsage}]\textbf{\excel\ Database Files} Details about using the provided \excel\ database files, which are currently used to store \mfus\ model material property and solver parameter data sets.
+    \item[Appendix~\ref{chapter:modifications}]\textbf{\mut\ Modifications} Version history of changes to \mut\ since version 1.34.
     \item[Appendix~\ref{appendix:release_verification}]\textbf{Release verification} How to re-run the verification models with \texttt{mut\_verify}, plus comparison of the current \mut\ release against the previous-version baseline, including the \cln/\swf\ CHD start-to-end head ramps that change \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF}.
         \end{description}
 

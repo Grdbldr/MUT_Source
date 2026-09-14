@@ -1,12 +1,17 @@
 # MUT — Current progress
 
-**Last updated:** 2026-08-20
+**Last updated:** 2026-09-10
 **Version in code:** 2025.026 (`GeneralRoutines.f90`)
 **Version in User's Guide:** 2025.026 (title page and `Modifications.tex`)
-**Active plan:** none
+**Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
 
+- User's Guide editorial pass: fixed garbled GWF Tecplot-restart prose, Abdul example labels, Units TimeUnits, `_mut.pfx`, Observtion/meshs/EPGS/CustomLables typos, it's→its, Access→Excel appendix refs, and assorted grammar/spacing consistency issues across install, build, BC, and Tecplot chapters.
+- User's Guide: Boundary Conditions is a Model Build section after CLN (`BoundaryConditions.tex`), organized by BC type with GWF/SWF/CLN coverage; GSTR nested under Recharge; BC prose removed from domain chapters.
+- User's Guide: moved detailed Model Developer install screenshots into new Appendix `DeveloperInstall.tex`; Chapter 2 keeps a short overview and the developed-and-tested environment list.
+- User's Guide: moved detailed Model End User install screenshots into new Appendix `EndUserInstall.tex`; Chapter 2 keeps a short overview, Tecplot licensing note, and QGIS pointer.
+- User's Guide cleanup (review backlog): removed orphan stubs (`Tutorial.tex`, `Recharge.tex`, `IllustrativeExample.tex`) and stale commented `Tecplot.tex` appendix; moved GSTR under Model Build; documented `swf transient recharge` / multi-zone RTS in `SWF.tex` with cross-refs from `GWF.tex`; fixed Usage spelling (`QGIS_Usage.tex`), typos, Excel appendix cross-refs, hyperref metadata, and Introduction roadmap; gitignored and untracked LaTeX build artifacts (`.aux`/`.toc`/`.pdf`/…).
 - Dropped `MUT_Batch` / `Run.MUTBatch`. Verification folders are listed in `VerificationFolder.List` (Examples-Release). `mut_verify` runs `mut _build` / `usgs_1` / `mut _post` per listed folder. User's Guide Appendix D how-to is durable `VerifyRelease.tex`; `ReleaseComparison.tex` remains generated results.
 - `{domain}_scatter.lay` overlay frames (OBS scatter, CHD, …) hide 3-D axes (`ShowAxis = No`) so tick labels do not cover the back `{domain} CELLS` frame, which is the only scatter frame that keeps axes on.
 - `{domain}_Variables.lay` zone frames (e.g. GWF Zone) hide the mesh (`ShowMesh = No`); contour flood and shade stay on. The dedicated `{domain}_Mesh.lay` overlay still shows the mesh.
@@ -38,8 +43,8 @@
 
 ## Next up
 
-- `verify_release.ps1` does not call `mut_document` itself; default-on MUT will now write `Docs/` in Examples-Release (`--skip-export`). Add `no model documentation` to example mut files only if those folders should stay without `Docs/`
 - Prefer `Save to Workspace` for new Cursor plans so they land in `.cursor/plans/`
+- Rebuild User's Guide PDF is local-only (gitignored); run `Docs/build_mut_guide.bat` before release packaging if a PDF deliverable is needed
 
 ## Blockers / external
 

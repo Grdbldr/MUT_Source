@@ -2,7 +2,7 @@
 The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.
 
 Below is an example\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
-  showing an exploded view of a template mesh ({\sf TMPLT}, bottom image) that was used as a basis for generating  finite-element meshs for the \gwf\ ({\sf TMPLT\_GWF}, middle image) and \swf\ ({\sf TMPLT\_SWF}, upper image) domains:
+  showing an exploded view of a template mesh ({\sf TMPLT}, bottom image) that was used as a basis for generating  finite-element meshes for the \gwf\ ({\sf TMPLT\_GWF}, middle image) and \swf\ ({\sf TMPLT\_SWF}, upper image) domains:
 
     \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
 
@@ -178,7 +178,6 @@ Once a template mesh has been defined by any of the mesh generation options desc
     \begin{enumerate}
         \item \str{Prefix}  The {\tt MeshBIN} file prefix, including the path to it (see Footnote~\ref{footnote:RelativePath}).
     \end{enumerate}
-    \squish
     }
 
 There are two ways that \mf\ cell control volumes can be defined from the template mesh.  By default, \mut\ uses a mesh-centred approach as shown here for a triangular-element template mesh:

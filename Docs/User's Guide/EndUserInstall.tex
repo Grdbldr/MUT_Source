@@ -1,0 +1,86 @@
+\label{Appendix:EndUserInstall}
+\index{Installation ! Model end user}
+This appendix gives the step-by-step procedure for obtaining the \mut\ examples, executables and database files from \github, extracting them, and defining the \windows\ environment variables needed to run \mut\ and \mfus\ from the command prompt. A short overview is in Chapter~\ref{chapter:Installation}.
+
+\begin{itemize}
+     \item Click on this link, \url{https://github.com/Grdbldr/MUT_Examples.git}, which will take you to the \mut\_Examples \github\ page.
+     \item Click on the green {\sf Code} button.
+
+        \includegraphics[width=0.97\textwidth]{2_1_github_codebutton}
+
+     \item Choose {\sf Download ZIP} from the drop-down menu.
+
+        \includegraphics[width=0.5\textwidth]{2_2_github_downloadzip}
+
+\end{itemize}
+
+Once the download is complete, the zip file can be found in the \windows\ {\sf Downloads} folder.  The contents need to be extracted to a local directory by {\tt right-clicking} on the download file {\tt MUT-Examples-Main.zip} and choosing {\sf Extract All...} from the drop-down menu:
+
+        \includegraphics[width=0.6\textwidth]{2_2b_ExtractAll.png}
+
+This opens the {\sf Extract Compressed(Zipped) Folders} dialogue, where you are free to choose a different drive and folder to store the extracted files.  Here we changed the destination folder to \verb+C:\MUT+.  Left-click the {\sf Extract} button:
+
+        \includegraphics[width=0.6\textwidth]{2_2c_ExtractAllToMUT.png}
+
+The extracted contents can now be found in the specified destination folder:
+
+        \includegraphics[width=0.8\textwidth]{2_2d_DestFolder.png}
+
+This folder contains a subfolder called \texttt{\_MUT\_USERBIN}, which contains the following files:
+
+
+        \includegraphics[width=0.8\textwidth]{2_2e_Mut_UserBin.png}
+        \phantomsection\label{page:userbin}
+
+
+These include the executable and supporting files for \mut\ and the executable for \mfus.
+
+Before you run \mut\ for the first time, you need to define a windows environment variable called \bin, which contains the path to the \texttt{\_MUT\_USERBIN} folder, and modify the existing \texttt{PATH} variable.
+
+First,  highlight the path by clicking on it in the File Explorer window, then copy it by pressing {\tt CTRL-C} or by {\tt right-clicking} and choosing {\sf Copy} from the drop-down menu, as shown here:
+
+        \includegraphics[width=0.8\textwidth]{2_2f_CopyMut_userbinPpath}
+
+
+To define the environment variables:
+\begin{itemize}
+     \item Type the string {\tt en} in the windows taskbar search field and open the {\sf Edit the system environment variables} dialogue:
+
+        \includegraphics[width=0.6\textwidth]{2_3_EnvVar}
+
+     \item Click on the {\sf Environment variables...} button at the bottom of the dialogue:
+
+        \includegraphics[width=0.4\textwidth]{2_4_EnvVar}
+
+
+     \item Click on the {\sf New} button:
+
+        \includegraphics[width=0.4\textwidth]{2_5_EnvVarNewButton}
+
+     \item Add a new variable named \bin\ and define the variable value by pasting in the path copied earlier, then click the {\sf OK} button:
+
+        \includegraphics[width=0.4\textwidth]{2_6_EnvVarUserBin}
+
+     \item Add the path to \bin\ to the existing \texttt{Path} variable.  First, choose \texttt{Path}, then click the {\sf Edit...} button:
+
+        \includegraphics[width=0.4\textwidth]{2_7_EnvVarEditPath}
+
+     \item Click the {\sf New} button and paste in the path copied earlier, then click the {\sf OK} button:
+
+        \includegraphics[width=0.4\textwidth]{2_8_EnvVarNewPath}
+
+\end{itemize}
+
+You should now be able to run \mut\ and \mfus\ from the command prompt.  To test this, start a new command prompt, then type \texttt{mut}, you should see the \mut\ header:
+
+    \includegraphics[width=0.95\textwidth]{2_9_mutheader}
+
+Type \texttt{ctrl-C} to stop the program.
+
+Run \mfus\ by typing \texttt{usgs\_1}.  You should see the \mfus\ header:
+
+    \includegraphics[width=0.95\textwidth]{2_10_mfusheader}
+
+Type \texttt{ctrl-C} to stop the program.
+
+If this is not the case, check the definitions of the \bin\ and {\tt PATH} variables.  If they are correct, you may need to re-boot your computer and try again.

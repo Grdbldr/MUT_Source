@@ -184,7 +184,7 @@ The table file should contain one data row per depth, with four columns:
 Blank lines and lines beginning with \texttt{\#} are ignored.
 All general cross-section tables used in a model must contain the same number of rows.
 
-You can find detailed information about how to use \dbase\ to modify or define your own lookup tables in Tutorial~\ref{Appendix:ExcelUseage}.
+You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUsage}.
 
 \subsubsection{Initial Conditions}  \index{\cln\ Domain ! initial condition ! initial (starting) depth}
 An initial (or starting) head should be assigned to each cell in the \cln\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
@@ -218,32 +218,5 @@ The following example uses the instruction to start a simulation with \cln\ head
 
             \includegraphics[width=\textwidth]{MUT_InitialCLNHead.png}
 
-
-
-\subsubsection{Boundary Conditions}  \index{\cln\ Domain ! boundary conditions}
-To assign boundary conditions  to the \cln\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
-
-A constant head boundary condition fixes the head at a \cln\ cell at a given value, allowing water to flow into or out of the \cln\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \cln\ model domain use this instruction:
-
-\ins{cln constant head}
-    {
-        \squish
-        \begin{enumerate}
-        \item \rnum{CHead} [$L$]  Constant hydraulic head.
-        \end{enumerate}
-          An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
-          The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
-    }
-
-A well boundary condition forces  water to flow in or out of the \cln\ model domain at a specified rate.   To add a well  to the \cln\ model domain use this instruction:
-
-\ins{cln well}
-    {
-        \squish
-        \begin{enumerate}
-            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
-        \end{enumerate}
-        A pumping  rate of \rnum{PumpRate} is assigned to the chosen cells. Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
-    }
-
+Boundary conditions for the \cln\ domain (constant head and wells) are described in Section~\ref{section:BoundaryConditions}.
 

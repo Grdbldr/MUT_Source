@@ -112,7 +112,7 @@ Zone selections must first be made using the instructions described on page~\pag
         \item \rnum{Depth1} [$L$]  Depth for smoothing height 1.
         \item \rnum{Depth2} [$L$]  Depth for smoothing height 2.
         \end{enumerate}
-          Two depth for smoothing heights are read in \rnum{Depth1} and \rnum{Depth2} and assigned to the chosen zones.
+          Two depths for smoothing are read in \rnum{Depth1} and \rnum{Depth2} and assigned to the chosen zones.
     }
 
 A lookup table of \swf\ material properties  is provided in the file \texttt{SWF.csv}, located in the \bin\ directory as outlined on page~\pageref{page:userbin}.
@@ -151,14 +151,14 @@ The assigned \swf\ material properties are written to the screen and \texttt{.ec
 
 Depression and obstruction storage heights are written to the \texttt{.swf} package.
 
-By default, \mfus\ reconstructs SWF velocity from solved face fluxes using the same smoothed flow depth as the SWF conductance (\texttt{SWF\_THIK}). The following instruction selects the original HydroGeoSphere Manning reconstruction from the water-surface gradient, also using that flow-equation depth (obstruction remains a relative conductivity). \mut\ writes \texttt{OPTIONS} / \texttt{ORIGINAL\_SWF\_VELOCITY} / \texttt{END} in the VEL package; a \texttt{usgs\_1} build that recognizes that option is required.
+By default, \mfus\ reconstructs SWF velocity from solved face fluxes using the same smoothed flow depth as the SWF conductance (\texttt{SWF\_THIK}). The following instruction selects the original HydroGeoSphere Manning reconstruction from the water-surface gradient, also using that flow-equation depth (obstruction remains a relative conductivity). \mut\ writes \texttt{OPTIONS} / \texttt{ORIGINAL\_SWF\_VELOCITY} / \texttt{END} in the VEL package; an \mfus\ build that recognizes that option is required.
 
 \ins{original swf velocity calculation}
     {
         No arguments.  When present, SWF velocity in the \texttt{.SWF.VEL} binary uses the original Manning reconstruction rather than face-flux velocity. \gwf\ and \cln\ velocity are unchanged.
     }
 
-You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUseage}.
+You can find detailed information about how to use \excel\ to modify or define your own lookup tables in Appendix~\ref{Appendix:ExcelUsage}.
 
 \subsubsection{Initial Conditions}  \index{\swf\ Domain ! initial condition ! initial (starting) depth}
 An initial (or starting) head should be assigned to each cell in the \swf\ domain.  This could be an initial guess at the beginning of a transient stress period or a set of hydraulic heads from a previous run.
@@ -201,91 +201,7 @@ The instruction {\sf postprocess existing modflow model}  also writes heads at a
 
 This file can be created using \tecplot, as discussed for the \gwf\ domain on Page~\pageref{page:TecplotWriteData}.
 
-
-
-\subsubsection{Boundary Conditions}  \index{\swf\ Domain ! boundary conditions}
-To assign boundary conditions  to the \swf\ model domain, you must first make a cell selection as described on page~\pageref{page:cellSelect}.
-
-A constant head boundary condition fixes the head at a \swf\ cell at a given value, allowing water to flow into or out of the \swf\ model domain depending on surrounding conditions.    To assign a uniform constant head to the \swf\ model domain use this instruction:
-
-\ins{swf constant head}
-    {
-        \squish
-        \begin{enumerate}
-        \item \rnum{CHead} [$L$]  Constant hydraulic head.
-        \end{enumerate}
-          An constant hydraulic head  of \rnum{CHead} is assigned to the chosen cells.
-          The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
-    }
-
-A recharge boundary condition forces  water to flow in to the \swf\ model domain at a specified rate.   To add recharge  to the \swf\ model domain use this instruction:
-
-\ins{swf recharge}
-    {
-        \squish
-        \begin{enumerate}
-            \item \rnum{RechRate} [$L$ $T^{-1}$] Recharge rate.
-            \item \inum{RechOpt}  Recharge option.
-        \end{enumerate}
-        A recharge rate of \rnum{RechRate} is assigned to the chosen cells.
-
-        The recharge option \inum{RechOpt} is used to define where the recharge is to be applied and in this case should be set to a value of 4, which applies the recharge to the \swf\ domain.
-    }
-
-A well boundary condition forces  water to flow in or out of the \swf\ model domain at a specified rate.   To add a well  to the \swf\ model domain use this instruction:
-
-\ins{swf well}
-    {
-        \squish
-        \begin{enumerate}
-            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
-        \end{enumerate}
-        A pumping  rate of \rnum{PumpRate} is assigned to the chosen cells.  Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
-    }
-
-A critical depth boundary condition assigned to a \swf\ cell allows water to flow out of the \swf\ model domain at a rate that depends on the surface water depth and a contributing length (i.e.\ representing the length of the cell side over which the outflow occurs).
-
-\pagebreak
-One of the following two  instructions can be used to assign a critical depth outflow boundary condition to the \swf\ model domain:
-
-\ins{swf critical depth with sidelength1}
-    {
-          A critical depth outflow boundary condition is assigned to the chosen cells.
-
-          It is assumed that an accurate estimate of the contributing length of a cell can be based on the square root of the cells horizontal area.
-    }
-
-
-\ins{swf critical depth}
-    {
-          A critical depth outflow boundary condition is assigned to the chosen cells.
-
-          The contributing length of the cell outflow boundary is calculated from the \swf\ mesh outer boundary nodes, with each outer boundary node connected to a chosen cell contributing a half-element side length in both directions along the outer boundary.
-    }
-
-Although \textsf{swf critical depth} is less convenient than \textsf{swf critical depth with sidelength1}, it does calculate a contributing length that matches the actual length along the \swf\ mesh outer boundary.
-
-The example \texttt{6\_Abdul\_Prism\_Cell} uses the second approach to define the critical depth outflow boundary condition:
-\begin{verbatim}
-        clear chosen nodes
-        choose gb nodes
-        ./gb/grid.nchos.Outer boundary nodes
-        flag chosen nodes as outer boundary
-
-        clear chosen cells
-        clear chosen nodes
-        choose cells from gb elements
-        ./gb/grid.echos.Critical depth outlet
-        swf critical depth
-\end{verbatim}
-
-Some key features of this example are:
-\begin{itemize}
-    \item \swf\ {\em nodes} are chosen and flagged to be on the outer boundary with the instruction \textsf{flag chosen nodes as outer boundary}.
-    \item \swf\ {\em cells} are chosen using a \gb\ chosen {\em elements} file with the instruction \textsf{choose cells from gb elements}.  Because this example was generated using the mesh-centred control volume approach, there is a 1-to-1 correspondence between template mesh elements and \swf\ cells.
-
-        In the example \texttt{6\_Abdul\_Prism\_Cell\_nc}, the node-centred control volume approach is used and the instruction \textsf{choose cells from gb nodes} is used instead, because in this case there is a 1-to-1 correspondence between template mesh {\em nodes} and \swf\ cells.
-\end{itemize}
+Boundary conditions for the \swf\ domain (constant head, recharge, wells and critical depth outflow) are described in Section~\ref{section:BoundaryConditions}.
 
 The \swf\ and \gwf\ meshes that \mut\ generates inherit node and element information from the template mesh.  Currently, you can define node selections using these instructions: \label{page:nodeSelect}
 

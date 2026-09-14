@@ -1,10 +1,10 @@
 \label{section:StressPeriods}
-A \mfus\ simulation can be broken up into separate periods of time called ''stress periods''.  Boundary conditions can be defined at the beginning of each stress period and changed in subsequent stress periods.
+A \mfus\ simulation can be broken up into separate periods of time called `stress periods''.  Boundary conditions can be defined at the beginning of each stress period and changed in subsequent stress periods.
 
 At least one stress period must be defined using this instruction:
 
 \ins{stress period}
-    {This subtask has several instructions that can be used to define the duration, type and timestepping parameters of the stress period.
+    {This subtask has several instructions that can be used to define the duration, type and time-stepping parameters of the stress period.
 
     An end instruction is required to stop the subtask e.g.:
 
@@ -24,7 +24,6 @@ These instructions can be used to define the stress period parameters:
             \item \textsf{SS} A steady-state stress period in which the simulation is carried out until it reaches a state of equilibrium with the defined boundary conditions.
             \item \textsf{TR} A transient stress period in which the simulation is carried out for a specified duration with the defined boundary conditions.
         \end{itemize}
-        \squish
     }
 
 \ins{duration}
@@ -42,7 +41,6 @@ These instructions can be used to define the stress period parameters:
         \begin{enumerate}
         \item \inum{nSteps}  Number of timesteps to be used for this stress period.
         \end{enumerate}
-        \squish
     }
 
 You can change the default  starting time step size of  $1\times10^{-3}$ time units with this instruction:

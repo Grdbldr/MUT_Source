@@ -15,7 +15,7 @@ This instruction can be used to generate a \mfus\ output control file:
     {\Large \sf end generate output control file}
     }
 
-The  example \texttt{1\_Abdul\_prism\_cell} generates an output control file with 10 output times using these instructions:
+The  example \texttt{6\_Abdul\_Prism\_Cell} generates an output control file with 10 output times using these instructions:
 \begin{verbatim}
     ! -----------------------------------Output Control
     generate output control file
@@ -76,7 +76,7 @@ The output control file looks like this:
 
 Some key features of this example are:
 \begin{itemize}
-    \item \mut\ automatically inserts  the  adaptive time-stepping option (\texttt{ATSA}) in the file, defines the number of print times in the simulation (NPTIMES 10) and the list of print (i.e.\ output) times.
+    \item \mut\ automatically inserts the adaptive time-stepping option (\texttt{ATSA}) in the file, defines the number of print times in the simulation (NPTIMES 10) and the list of print (i.e.\ output) times.
     \item Darcy and average-linear velocity save units are written for GWF whenever the VEL package is active (always for current \mut\ builds). Analogous binary units for \cln\ and \swf\ are listed in the NAM file when those domains exist. After {\tt mut \_post}, those binaries become Tecplot velocity files; see Section~\ref{section:VelocityVectors} for vector mapping.
     \item Two stress periods were defined and the listed parameters are using the default values.
 \end{itemize}

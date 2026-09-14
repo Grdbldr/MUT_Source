@@ -1,0 +1,34 @@
+\label{Appendix:DeveloperInstall}
+\index{Installation ! Model developer}
+This appendix gives the step-by-step procedure for installing \vstudio\ and \ifort, verifying Fortran project support, and cloning the \mut\ source repository from \github. A short overview is in Chapter~\ref{chapter:Installation}.
+
+Install \vstudio\ before \ifort, which will then be automatically integrated into \vstudio.
+
+A free version of the latest \vstudio\ (currently 2022) can be obtained from \url{https://visualstudio.microsoft.com/vs/community/}. Once you are on the site just click the \texttt{Download} button.  This will download a file (e.g.\ \texttt{VisualStudioSetup.exe}) which can be run to install \vstudio.  If you already have a version of \vstudio, you can choose to keep your old version and add the latest version.  When you come to the installation options {\sf Workloads} page, be sure to check the option for \texttt{Desktop development with C++}, shown here:
+
+\includegraphics[width=0.6\textwidth]{2_11_vstudiooption}
+
+A free version of the latest \ifort\ compiler can be obtained from \url{https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit.html}.
+Once you are on the site just click the {\sf Get It Now} button to download the Intel® HPC Toolkit, which includes \ifort.  Choose the {\sf Windows} option then the {\sf Offline Installer} option. Now you can either fill in the required information and start the download or choose to {\sf Continue as guest(download starts immediately)}.  This will download a file (e.g.\ \texttt{w\_HPCKit\_p\_2024.2.1.80\_offline.exe}) which can be run to install \ifort.
+
+You can check the installation of \vstudio\ and \ifort\ by starting \vstudio\ and choosing {\sf Create a new project}.  The window that appears should have  links for creating Fortran projects, as shown here:
+
+\includegraphics[width=0.8\textwidth]{2_12_createproject}
+
+The \mut\ source files can be obtained from a \github\ repository at \url{https://github.com/Grdbldr/MUT_Source.git}.  Since \github\ has been integrated into \vstudio\, we will use it to download the \mut\ repository.  When you start \vstudio\, choose this option:
+
+\includegraphics[width=0.4\textwidth]{2_13_clonerepo}
+
+This opens the dialogue box shown below, where you can define the repository location on \github\ and the path to the local repository.  First copy the link above  in this PDF file (i.e.\ {\tt https://github...}) by right-clicking on it and choosing {\sf Copy Link Address}, then paste it in as the {\sf Repository location}.
+
+\includegraphics[width=0.7\textwidth]{2_14_clonerepodialogue}
+
+Now choose the {\sf GitHub} option under {\sf Browse a Repository} and you will see this dialogue shown below. Choose {\sf Grdbldr/MUT\_Source} from the list of repositories then click the {\sf Clone} button.
+
+  \includegraphics[width=0.45\textwidth]{2_15_clonemutsource}
+
+This shows the \vstudio\ window after {\sf Grdbldr/MUT\_Source} has been cloned. Note the \github\ window on the right side, and information along the bottom about the project:
+
+    \includegraphics[width=0.7\textwidth]{2_16_vstudiomutsource}
+
+%Details about using \github\ in \vstudio\ are given in Appendix~\ref{tutorial:GitInVStudio}.

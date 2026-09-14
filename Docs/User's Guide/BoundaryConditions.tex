@@ -1,0 +1,216 @@
+\label{section:BoundaryConditions}
+\index{Boundary conditions}
+Boundary conditions are assigned after the \gwf, \swf\ and \cln\ domains have been generated and cells (and, where needed, nodes) have been selected.
+In all cases you must first make a cell selection as described on page~\pageref{page:cellSelect} for the active domain.
+This section groups the available instructions by boundary-condition type; under each type the domain-specific forms (\gwf, \swf\ and \cln) are described where they apply.
+
+\subsection{Specified Head (Constant Head)}
+\index{Boundary conditions ! constant head}
+A constant head (CHD) boundary condition fixes the hydraulic head at a cell, allowing water to flow into or out of the domain depending on surrounding conditions.
+
+\subsubsection{\gwf\ Domain}
+Named CHD groups can be reported as separate volumetric-budget terms in the Modflow \texttt{.lst} file (and therefore as separate Tecplot VolumeBudget columns). Immediately before assigning constant head, tag the currently chosen cells with:
+
+\ins{chd zone name}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{ZoneName}   Budget label for this CHD group (maximum 16 characters; underscores recommended).
+        \end{enumerate}
+          The label is applied to cells that receive the next {\sf gwf constant head} assignment. \mfus\ prints separate IN/OUT lines for each named zone, and still prints the aggregate \texttt{CONSTANT HEAD} total.
+    }
+
+To assign a uniform constant head to the \gwf\ model domain use this instruction:
+
+\ins{gwf constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{CHead} [$L$]   Constant hydraulic head.
+        \end{enumerate}
+          A constant hydraulic head of \rnum{CHead} is assigned to the chosen cells.
+          The CHD package record writes \rnum{CHead} as both the start and end head. \cln\ and \swf\ constant-head records instead ramp from the cell starting head to \rnum{CHead}; see those instructions and Appendix~\ref{appendix:release_verification}.
+    }
+
+\subsubsection{\swf\ Domain}
+\ins{swf constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{CHead} [$L$]  Constant hydraulic head.
+        \end{enumerate}
+          A constant hydraulic head of \rnum{CHead} is assigned to the chosen cells.
+          The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
+    }
+
+\subsubsection{\cln\ Domain}
+\ins{cln constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{CHead} [$L$]  Constant hydraulic head.
+        \end{enumerate}
+          A constant hydraulic head of \rnum{CHead} is assigned to the chosen cells.
+          The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
+    }
+
+\subsection{Drains}
+\index{Boundary conditions ! drains}
+A drain boundary condition allows water to leave the domain when the cell head is above the drain elevation. Currently only the \gwf\ domain supports drains in \mut.
+
+\subsubsection{\gwf\ Domain}
+\ins{gwf drain}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{DrainK}  [$L$ $T^{-1}$]  Drain conductance.
+        \end{enumerate}
+          A drain conductance of \rnum{DrainK} is assigned to the chosen cells.  The top elevation of the cell is assigned automatically as the drain elevation.
+    }
+
+\subsection{Specified Flux (Wells)}
+\index{Boundary conditions ! wells}
+A well boundary condition forces a volumetric flux into or out of chosen cells. Positive rates add water; negative rates remove water.
+
+\subsubsection{\gwf\ Domain}
+\ins{gwf well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping rate of \rnum{PumpRate} is assigned to the chosen cells. Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
+    }
+
+\subsubsection{\swf\ Domain}
+\ins{swf well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping rate of \rnum{PumpRate} is assigned to the chosen cells.  Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
+    }
+
+\subsubsection{\cln\ Domain}
+\ins{cln well}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{PumpRate} [$L^{3}$ $T^{-1}$]  Pumping rate.
+        \end{enumerate}
+        A pumping rate of \rnum{PumpRate} is assigned to the chosen cells. Positive pumping rates add water to the domain, negative pumping rates remove water from the domain.
+    }
+
+\subsection{Recharge}
+\index{Boundary conditions ! recharge}
+Recharge applies a flux per unit area to chosen cells.
+\mut\ supports constant-rate stress-period \textsf{RCH}, multi-zone transient \textsf{RTS} on the \swf\ domain, and General Spatio-Temporal Recharge (\textsf{GSTR}) on \gwf, \swf\ and \cln.
+
+\subsubsection{Constant-rate recharge (\textsf{RCH})}
+\paragraph*{\gwf\ Domain}
+\ins{gwf recharge}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{RechRate} [$L$ $T^{-1}$]  Recharge rate.
+            \item \inum{RechOpt}  Recharge option.
+        \end{enumerate}
+        A recharge rate of \rnum{RechRate} is assigned to the chosen cells.
+
+        The recharge option \inum{RechOpt} is used to define where the recharge is to be applied and can have one of the following values:
+        \begin{enumerate}
+            \item To top layer
+            \item To one specified node in each vertical column
+            \item To highest active node in each vertical column
+            \item To the swf domain on top of each vertical column
+        \end{enumerate}
+    }
+
+\paragraph*{\swf\ Domain}
+\ins{swf recharge}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{RechRate} [$L$ $T^{-1}$] Recharge rate.
+            \item \inum{RechOpt}  Recharge option.
+        \end{enumerate}
+        A recharge rate of \rnum{RechRate} is assigned to the chosen cells.
+
+        The recharge option \inum{RechOpt} is used to define where the recharge is to be applied and in this case should be set to a value of 4, which applies the recharge to the \swf\ domain.
+    }
+
+Constant-rate \textsf{RCH} is written per stress period.
+For time-varying rates on the \swf\ domain, use {\sf swf transient recharge} below.
+Spatially and temporally varying ArcASCII recharge that coexists with \textsf{RCH}/\textsf{RTS} is documented under General Spatio-Temporal Recharge (Section~\ref{section:GSTR}).
+
+\subsubsection{Transient recharge (\textsf{RTS})}
+\index{Boundary conditions ! transient recharge}
+Transient multi-zone recharge is currently supported for the \swf\ domain.
+
+\paragraph*{\swf\ Domain}
+For time-varying recharge rates supplied by an RTS file, use this instruction instead of a constant {\sf swf recharge}:
+
+\ins{swf transient recharge}
+    {
+        \squish
+        \begin{enumerate}
+            \item \str{FNameRTS} Name of a single-column RTS file (rates in model length/time units).
+            \item \inum{RechOpt} Recharge option (use 4 for the \swf\ domain).
+        \end{enumerate}
+        Currently chosen cells are tagged with the next RTS zone index.
+        Repeat the instruction with a different cell selection and RTS file to define additional zones.
+        Each source file must contain exactly one rate column; \mut\ merges the zones into a multi-column file \texttt{\_buildo.merged\_RTS.rts} and writes an RTS-capable RCH package with matching \texttt{INRCHZONES} / \texttt{IZNRCH} maps.
+        Record counts and time stamps must align across zone files.
+        Build and post-processing \texttt{.eco} files report whether recharge used stress-period \textsf{RCH} or an RTS file; post-processing also writes applied-rate Tecplot output (e.g.\ \texttt{*.SWF\_RCH\_RTS.tecplot.dat}).
+    }
+
+\subsubsection{General Spatio-Temporal Recharge (\textsf{GSTR})}
+\label{section:GSTR}
+\input{GSTR}
+
+\subsection{Critical Depth Outflow}
+\index{Boundary conditions ! critical depth}
+A critical depth boundary condition assigned to a \swf\ cell allows water to flow out of the domain at a rate that depends on the surface water depth and a contributing length (the length of the cell side over which the outflow occurs).
+This boundary type applies only to the \swf\ domain.
+
+\subsubsection{\swf\ Domain}
+One of the following two instructions can be used:
+
+\ins{swf critical depth with sidelength1}
+    {
+          A critical depth outflow boundary condition is assigned to the chosen cells.
+
+          It is assumed that an accurate estimate of the contributing length of a cell can be based on the square root of the cell's horizontal area.
+    }
+
+\ins{swf critical depth}
+    {
+          A critical depth outflow boundary condition is assigned to the chosen cells.
+
+          The contributing length of the cell outflow boundary is calculated from the \swf\ mesh outer boundary nodes, with each outer boundary node connected to a chosen cell contributing a half-element side length in both directions along the outer boundary.
+    }
+
+Although {\sf swf critical depth} is less convenient than {\sf swf critical depth with sidelength1}, it does calculate a contributing length that matches the actual length along the \swf\ mesh outer boundary.
+
+The example \texttt{6\_Abdul\_Prism\_Cell} uses the second approach:
+\begin{verbatim}
+        clear chosen nodes
+        choose gb nodes
+        ./gb/grid.nchos.Outer boundary nodes
+        flag chosen nodes as outer boundary
+
+        clear chosen cells
+        clear chosen nodes
+        choose cells from gb elements
+        ./gb/grid.echos.Critical depth outlet
+        swf critical depth
+\end{verbatim}
+
+Some key features of this example are:
+\begin{itemize}
+    \item \swf\ {\em nodes} are chosen and flagged to be on the outer boundary with the instruction {\sf flag chosen nodes as outer boundary} (see node selection on page~\pageref{page:nodeSelect}).
+    \item \swf\ {\em cells} are chosen using a \gb\ chosen {\em elements} file with the instruction {\sf choose cells from gb elements}.  Because this example was generated using the mesh-centred control volume approach, there is a 1-to-1 correspondence between template mesh elements and \swf\ cells.
+
+        In the example \texttt{6\_Abdul\_Prism\_Cell\_nc}, the node-centred control volume approach is used and the instruction {\sf choose cells from gb nodes} is used instead, because in this case there is a 1-to-1 correspondence between template mesh {\em nodes} and \swf\ cells.
+\end{itemize}

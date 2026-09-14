@@ -56,5 +56,5 @@ Do not treat generated `.aux` / `.toc` / `.idx` / `.pdf` as source of truth.
 
 ## QGIS
 
-- Documented in `Docs/User's Guide/QGIS_Useage.tex` — not built by MUT
+- Documented in `Docs/User's Guide/QGIS_Usage.tex` — not built by MUT
 - MUT side: ArcASCII rasters (GSTR, elevations) and shape-derived selections

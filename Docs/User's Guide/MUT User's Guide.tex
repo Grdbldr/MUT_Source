@@ -6,7 +6,6 @@
 % -----------------------------------------------------------------------------
 \documentclass[12pt,oneside,openany]{book}
 \usepackage[cm]{fullpage}
-\usepackage{blindtext}
 \usepackage{graphicx}
 %\graphicspath{./SourceMaterial/} %Setting the graphicspath
 %\usepackage[paperwidth=9.25in, paperheight=6.125in]{geometry}
@@ -17,23 +16,21 @@
 \usepackage{hyperref}
 \hypersetup{
 %    bookmarks=true,         % show bookmarks bar?
-    unicode=false,          % non-Latin characters in Acrobat�s bookmarks
-    pdftoolbar=true,        % show Acrobat�s toolbar?
-    pdfmenubar=true,        % show Acrobat�s menu?
-    pdffitwindow=false,     % window fit to page when opened
-    pdfstartview={FitH},    % fits the width of the page to the window
-    pdftitle={My title},    % title
-    pdfauthor={Author},     % author
-    pdfsubject={Subject},   % subject of the document
-    pdfcreator={Creator},   % creator of the document
-    pdfproducer={Producer}, % producer of the document
-    pdfkeywords={keyword1, key2, key3}, % list of keywords
-    pdfnewwindow=true,      % links in new PDF window
-    colorlinks=true,       % false: boxed links; true: colored links
-    linkcolor=blue,          % color of internal links (change box color with linkbordercolor)
-    citecolor=green,        % color of links to bibliography
-    filecolor=cyan,         % color of file links
-    urlcolor=magenta        % color of external links
+    unicode=false,
+    pdftoolbar=true,
+    pdfmenubar=true,
+    pdffitwindow=false,
+    pdfstartview={FitH},
+    pdftitle={Modflow User Tools (MUT) User's Guide},
+    pdfauthor={Rob McLaren, Young-jin Park, Sorab Panday},
+    pdfsubject={MUT User's Guide for MODFLOW-USG with SWF},
+    pdfkeywords={MUT, MODFLOW-USG, SWF, CLN, GWF, Tecplot},
+    pdfnewwindow=true,
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=green,
+    filecolor=cyan,
+    urlcolor=magenta
 }
 
 %\usepackage{wrapfig}
@@ -70,16 +67,17 @@
 % Filenames, system commands typewriter texttt
 \newcommand{\bin}{\texttt{USERBIN}}
 
-\newcommand{\ins}[2]{\includegraphics[width=0.3\textwidth]{BeginInstruction}
-                     \squish
-                     \begin{quote}
-                        {\Large \sf #1 } \\
-                        {#2  \rule{0.1in}{0.in}}
-                     \end{quote}
-                     \squish
-                     \includegraphics[width=0.3\textwidth]{EndInstruction}
-                     \index{Input instructions ! #1}
-                     }
+\newcommand{\ins}[2]{%
+  \includegraphics[width=0.3\textwidth]{BeginInstruction}%
+  \squish
+  \begin{quote}
+    {\Large \sf #1 }\\
+    #2%
+  \end{quote}%
+  \vspace*{-0.15\baselineskip}%
+  \includegraphics[width=0.3\textwidth]{EndInstruction}%
+  \index{Input instructions ! #1}%
+}
 
 \newcommand{\insp}[1]{\hspace*{.5in}{\sf #1} \\
                       \index{Input instructions ! #1} }
@@ -134,14 +132,15 @@
 \pagestyle{plain}
 \chapter{Introduction}\input{Introduction}
 
-\chapter{Software Installation and Useage}\input{Installation}
+\chapter{Software Installation and Usage}\input{Installation}
 
 \chapter{Model Build}\input{ModelBuild}
     \section{Defining the Units of Length and Time}\input{Units}
     \section{Defining the Template Mesh}\input{TemplateMesh}
-    \section{Groundwater Flow(\gwf) Domain}\input{GWF}
-    \section{Surface Water Flow(\swf) Domain} \input{SWF}
-    \section{Connected Linear Network(\cln ) Domain} \input{CLN}
+    \section{Groundwater Flow (\gwf) Domain}\input{GWF}
+    \section{Surface Water Flow (\swf) Domain} \input{SWF}
+    \section{Connected Linear Network (\cln) Domain} \input{CLN}
+    \section{Boundary Conditions}\input{BoundaryConditions}
     \section{Inactive \mfus\ Cells} \input{InactiveCells}
     \section{Observation Points} \input{ObservationPoints}
     \section{Stress Periods} \input{StressPeriods}
@@ -150,7 +149,6 @@
     \section{3D Model Build Visualization} \input{VisualizeBuild}
 
 \chapter{Model Simulation and Post-Processing}\input{ModelExecution}
-    \section{General Spatio-Temporal Recharge (GSTR)}\input{GSTR}
 
 \chapter{Demonstration Models}\input{ModelVerification}
     \section{1D Variably-saturated Flow in a Column} \input{1D_Column}
@@ -162,10 +160,11 @@
 
 \appendix
 
-\chapter{\qgis\ Useage}\input{QGIS_Useage}
+\chapter{Model End User Installation}\input{EndUserInstall}
+\chapter{Model Developer Installation}\input{DeveloperInstall}
+\chapter{\qgis\ Usage}\input{QGIS_Usage}
 \chapter{\excel\ Database Files}\input{Excel}
-%\chapter{\tecplot\ Useage}\input{Tecplot}
-%\chapter{\github\ Useage in \vstudio} \input{GitInVStudio}
+%\chapter{\github\ Usage in \vstudio} \input{GitInVStudio}
 \chapter{\mut\ Modifications}\input{Modifications}
 \chapter{Release verification}\input{VerifyRelease}
 \input{ReleaseComparison}

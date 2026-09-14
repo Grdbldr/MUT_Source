@@ -379,3 +379,18 @@ FodyWeavers.xsd
 /Modflow-User-Tools.exe
 # Accidental literal %USERBIN% path (deploy target is env-expanded elsewhere)
 /%USERBIN%/
+
+# LaTeX build artifacts (User's Guide PDF is generated; TeX is source of truth)
+Docs/User's Guide/*.aux
+Docs/User's Guide/*.toc
+Docs/User's Guide/*.idx
+Docs/User's Guide/*.ind
+Docs/User's Guide/*.ilg
+Docs/User's Guide/*.out
+Docs/User's Guide/*.blg
+Docs/User's Guide/*.synctex
+Docs/User's Guide/*.synctex.gz
+Docs/User's Guide/*.pdf
+Docs/User's Guide/*.lof
+Docs/User's Guide/*.lot
+Docs/User's Guide/*.bbl

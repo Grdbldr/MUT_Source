@@ -1,5 +1,5 @@
 \label{chapter:ModelExecution}
-The steps in our model excution  workflow are:
+The steps in our model execution  workflow are:
 \begin{enumerate}
     \item Run \mfus to create the new project output files (e.g.\ time-varying hydraulic head, drawdown etc).\label{step:modflow}
     \item Run \mut\ to post-process the \mfus\ simulation, which produces \tecplot\ output files for the various model domains (i.e.\ \gwf, \swf\ and/or \cln ) created during the simulation.\label{step:mut2}
@@ -53,10 +53,9 @@ The instruction to post-process the \mfus\ model after execution is:
          Given \str{Prefix}, this instruction:
          \begin{itemize}
             \item  Reads head, drawdown and cell-by-cell flow binary output files for each output time and writes the results to the file {\tt \_posto.modflow.GWF.tecplot.szplt} (one TecIO SZL file; all output times as zones on strand 1). Load that single file in 360 EX 2018 R2 and use time animation. With {\sf write ascii tecplot output} (must appear before this instruction) the same data are written as {\tt \_posto.modflow.GWF.tecplot.dat}. Restart instructions {\sf gwf initial head from tecplot file} and {\sf swf initial head from tecplot file} still require ASCII.
-            \item  Reads Darcy and average-linear velocity binaries written by the USG \texttt{VEL} package and writes {\tt \_posto.modflow.GWF.Velocity.tecplot.szplt} with sequential 1-D arrays \texttt{Darcy Vx/Vy/Vz} and \texttt{Average Linear Vx/Vy/Vz} for Tecplot vector mapping; analogous files are written for \cln\ and \swf\ when those domains exist. With {\sf write ascii tecplot output} the velocity file is {\tt \_posto.modflow.GWF.Velocity.tecplot.dat}. Velocity Tecplot requires a USG-Transport build that supports NAM file type \texttt{VEL}.
+            \item  Reads Darcy and average-linear velocity binaries written by the \mfus\ \texttt{VEL} package and writes {\tt \_posto.modflow.GWF.Velocity.tecplot.szplt} with sequential 1-D arrays \texttt{Darcy Vx/Vy/Vz} and \texttt{Average Linear Vx/Vy/Vz} for Tecplot vector mapping; analogous files are written for \cln\ and \swf\ when those domains exist. With {\sf write ascii tecplot output} the velocity file is {\tt \_posto.modflow.GWF.Velocity.tecplot.dat}. Velocity Tecplot requires a USG-Transport build that supports NAM file type \texttt{VEL}.
             \item scans the \mfus\ listing file, extracts volumetric budget data at each time step and writes the results to the file {\tt \_posto.modflow.VolumeBudget.tecplot.dat} (ASCII even when SZPLT is the default).
          \end{itemize}
-        \squish
     }
 
 \section{Volumetric Water Budget Plots}
@@ -107,7 +106,7 @@ Variable names are derived from the {\tt modflow.lst} file:
 \end{verbatim}
 
 
-This example has a uniform recharge rate of 0.5 $meters/year$ which results in a total recharge of 500 $meters^{3}/year$ when multiplied by the 1000 $meter$ length of the cross-section. Initially, water comes out of storage then but this declines to zero at equilibrium.  Water exiting the surface water outflow critical depth boundary  {\sf OUT\_SWBC} is initially zero then rises to equal the total recharge at equilibrium.  Fluid balance error {\sf IN-OUT} is essentially zero throughout the simulation.
+This example has a uniform recharge rate of 0.5 $meters/year$ which results in a total recharge of 500 $meters^{3}/year$ when multiplied by the 1000 $meter$ length of the cross-section. Initially, water comes out of storage, then declines to zero at equilibrium.  Water exiting the surface water outflow critical depth boundary  {\sf OUT\_SWBC} is initially zero then rises to equal the total recharge at equilibrium.  Fluid balance error {\sf IN-OUT} is essentially zero throughout the simulation.
 
 The probe tool can be used in {\sf XY Line} plots to get exact variable values at a chosen location along the X or Y axis.  The cursor is shown as a vertical line if probing values on the X-axis (i.e.\ over time):
 
@@ -120,7 +119,7 @@ A \tecplot\ layout file, \texttt{\_post.lay}, has been created for each example 
 
         \includegraphics[width=\textwidth]{4_5_Post_Abdul}
 
-The {\tt \_post.lay} layout file is similar to the {\tt \_build.lay} file shown earlier for the same problem: {\sf  SWF, GWF} and {\sf Axes} frames are visible (i.e. placed above the {\sf background} frame in the list).  The {\sf SWF} is currently active (i.e. the name is bolded) and placed at the front of the image (i.e. at the top of the list). It uses a different colormap to make it easier to distinguish the \gwf\ domain below.In this case though, the contoured variables are {\sf SWF Depth} and {\sf GWF Saturation} results from the \mfus\ simulation.
+The {\tt \_post.lay} layout file is similar to the {\tt \_build.lay} file shown earlier for the same problem: {\sf  SWF, GWF} and {\sf Axes} frames are visible (i.e. placed above the {\sf background} frame in the list).  The {\sf SWF} is currently active (i.e. the name is bolded) and placed at the front of the image (i.e. at the top of the list). It uses a different colormap to make it easier to distinguish the \gwf\ domain below. In this case though, the contoured variables are {\sf SWF Depth} and {\sf GWF Saturation} results from the \mfus\ simulation.
 
 \subsection{Solution Times and Animation}
 The model output includes data for several output times, and the image above is showing conditions at a solution time of 3000 seconds, as indicated by the label near the top center of the plot.  The solution time shown is controlled by the slider and button controls near the centre of the {\sf Plot} frame on the left hand side of the image:
@@ -129,7 +128,7 @@ The model output includes data for several output times, and the image above is 
 
 The {\sf Details...} button leads to the {\sf Time animation details} dialogue which allows you to control and save animations of transient model results using the {\sf Export To File} button \includegraphics{ExportToFile}.  There is an example animation in  \texttt{$\backslash$MUT\_Examples-main$\backslash$\-6\_Abdul\_Prism\_Cell} folder in the powerpoint file {\tt Abdul Problem Animation.pptx}.  It used the settings shown in the {\sf Export} dialogue above to limit animation speed and write to an {\tt AVI}-formatted file.  This was then inserted in powerpoint where it can be viewed.
 
-\subsection{Data Set Infomation}
+\subsection{Data Set Information}
 The {\sf Data Set Information} dialogues for the {\sf SWF} and {\sf GWF} frames are shown below:
 
         \includegraphics[width=.8\textwidth]{4_7_DatSetInfo}
@@ -150,7 +149,7 @@ Included are these cell properties:
 \subsection{Velocity vectors} \label{section:VelocityVectors}
 \index{\tecplot\ ! velocity vectors}
 \index{VEL package ! Tecplot}
-Head, saturation and cell-by-cell flows live in {\tt \_posto.modflow.GWF.tecplot.szplt} (and the analogous \swf/\cln\ files). Velocity is a \emph{separate} file written by {\tt mut \_post} from the USG \texttt{VEL} binaries:
+Head, saturation and cell-by-cell flows live in {\tt \_posto.modflow.GWF.tecplot.szplt} (and the analogous \swf/\cln\ files). Velocity is a \emph{separate} file written by {\tt mut \_post} from the \mfus\ \texttt{VEL} binaries:
 
 \begin{verbatim}
     _posto.modflow.GWF.Velocity.tecplot.szplt
@@ -215,7 +214,7 @@ Here we see the variable {\sf 14:Pressure Head} has been added. Because the {\sf
 
         \includegraphics[width=.8\textwidth]{4_12_Drawdown}
 
-Here we see the equation for calculating the variable {\sf Drawdown} has been added to the {\sf Equations(s)} window and the variable {\sf 15:Drawdown} appear in the {\sf Data Set Information} dialogue.  The range shown for {\sf Drawdown} values is negative because simulated heads were always higher than the initial flat water table condition.
+Here we see the equation for calculating the variable {\sf Drawdown} has been added to the {\sf Equations} window and the variable {\sf 15:Drawdown} appears in the {\sf Data Set Information} dialogue.  The range shown for {\sf Drawdown} values is negative because simulated heads were always higher than the initial flat water table condition.
 
 \subsection{Water Table Isosurface Plot}
 \index{\tecplot\ ! Isosurfaces, Water Table Plot}
