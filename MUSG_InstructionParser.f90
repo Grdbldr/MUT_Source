@@ -614,6 +614,7 @@ module MUSG_InstructionParser
         character(MAX_INST) :: AssignCHDZoneName_CMD = 'chd zone name'
         character(MAX_INST) :: AssignDRNtoGWF_CMD = 'gwf drain'
         character(MAX_INST) :: AssignRCHtoGWF_CMD = 'gwf recharge'
+        character(MAX_INST) :: AssignEVTtoGWF_CMD = 'gwf evt'
         character(MAX_INST) :: AssignWELtoGWF_CMD = 'gwf well'
         character(MAX_INST) :: AssignGSTRtoGWF_CMD = 'gwf gstr'
         character(MAX_INST) :: AssignGSTRInstanceName_CMD = 'gstr instance name'
@@ -647,6 +648,9 @@ module MUSG_InstructionParser
             
         else if(index(instruction, AssignRCHtoGWF_CMD) /= 0) then
             call AssignRCHtoDomain(FnumMUT,Modflow,Modflow.GWF)
+
+        else if(index(instruction, AssignEVTtoGWF_CMD) /= 0) then
+            call AssignEVTtoDomain(FnumMUT,Modflow,Modflow.GWF)
 
         else if(index(instruction, AssignGSTRtoGWF_CMD) /= 0) then
             call AssignGSTRtoDomain(FNumMUT, Modflow, Modflow%GWF, 1)

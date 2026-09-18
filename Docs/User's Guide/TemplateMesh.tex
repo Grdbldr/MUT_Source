@@ -1,7 +1,7 @@
 \label{texfile:TemplateMesh}
 The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.
 
-Below is an example\footnote{This example was generated using the \tecplot\ layout file \texttt{MUT\_Examples$\backslash$6\_Abdul\_Prism\_Cell$\backslash$FIG Template Abdul.lay}. }
+Below is an example\footnote{This example was generated using the \tecplot\ layout file \fpath{MUT_Examples\6_Abdul_Prism_Cell\FIG Template Abdul.lay}. }
   showing an exploded view of a template mesh ({\sf TMPLT}, bottom image) that was used as a basis for generating  finite-element meshes for the \gwf\ ({\sf TMPLT\_GWF}, middle image) and \swf\ ({\sf TMPLT\_SWF}, upper image) domains:
 
     \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
@@ -19,7 +19,7 @@ Some key features of this example are:
     2d mesh from gb
     .\gb\grid
 \end{verbatim}
-The instruction \textsf{2d mesh from gb}, which requires a single line of input (i.e.: \texttt{.$\backslash$gb$\backslash$grid}), is documented as shown here:
+The instruction \textsf{2d mesh from gb}, which requires a single line of input (i.e.: \fpath{.\gb\grid}), is documented as shown here:
 
 \ins{2d mesh from gb}
     {
@@ -29,9 +29,9 @@ The instruction \textsf{2d mesh from gb}, which requires a single line of input 
         \end{enumerate}
         Given \str{Prefix}, this instruction reads the 2D finite-element grid data and uses it to define the 2D template mesh.  \str{Prefix} should contain a relative path\footnote{Examples of relative paths are: \label{footnote:RelativePath}
         \begin{description}
-        \item[.$\backslash$gb$\backslash$grid] The \mut\ input folder contains a local folder \texttt{gb} with the data set prefix \texttt{grid}.
-        \item[..$\backslash$gb$\backslash$grid] The parent folder to the \mut\ input folder contains a folder \texttt{gb} with the data set prefix \texttt{grid}.
-        \item[C:$\backslash$gb$\backslash$grid] Absolute path to a drive \texttt{C:} folder \texttt{gb} with the data set prefix \texttt{grid}.  Absolute paths are not recommended as they may lead to portability issues.
+        \item[{\fpath{.\gb\grid}}] The \mut\ input folder contains a local folder \texttt{gb} with the data set prefix \texttt{grid}.
+        \item[{\fpath{..\gb\grid}}] The parent folder to the \mut\ input folder contains a folder \texttt{gb} with the data set prefix \texttt{grid}.
+        \item[{\fpath{C:\gb\grid}}] Absolute path to a drive \texttt{C:} folder \texttt{gb} with the data set prefix \texttt{grid}.  Absolute paths are not recommended as they may lead to portability issues.
         \end{description} }
         to the dataset.
     }
@@ -47,7 +47,7 @@ Most input instructions, including \textsf{2d mesh from gb}, do not include leng
 When databases are used to define material parameter values (see page~\pageref{page:LookupTable}), fields defining the length and time units of each record are included. In this case \mut\ will automatically convert the parameter values to the unit system that has been defined for the \mfus\ model.
 
 \pagebreak
-\mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \texttt{MUT\_Examples$\backslash$\_BuildTriangularMesh$\backslash$\_2DMesh\_Regional}} mesh generation folder are shown below:
+\mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \fpath{MUT_Examples\_BuildTriangularMesh\_2DMesh_Regional}} mesh generation folder are shown below:
 
         \includegraphics[width=\textwidth]{MESH_RegionalInitialFolderFiles.png}
 

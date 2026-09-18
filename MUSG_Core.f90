@@ -117,6 +117,11 @@ module MUSG_Core
         real(dp), allocatable :: Recharge(:)  ! RCH assigned recharge value
         integer(i4) :: nRCHoption  ! RCH option (nrchop in Modflow)
         integer(i4), allocatable :: IRTSZone(:)  ! RTS zone id per cell (0=none)
+
+        real(dp), allocatable :: Evapotranspiration(:)  ! EVT max ET rate (EVTR)
+        real(dp), allocatable :: ETSurface(:)           ! EVT surface elevation (SURF)
+        real(dp), allocatable :: ExtinctionDepth(:)     ! EVT extinction depth (EXDP)
+        integer(i4) :: nEVToption = 0  ! NEVTOP in Modflow
         
         integer(i4) :: nDRNCells=0        
         real(dp), allocatable :: DrainElevation(:)  ! DRN assigned Drain Elevation value
@@ -170,6 +175,7 @@ module MUSG_Core
         real(sp), allocatable :: Cbb_STORAGE(:,:)
         real(sp), allocatable :: Cbb_CONSTANT_HEAD(:,:)
         real(sp), allocatable :: Cbb_RECHARGE(:,:)
+        real(sp), allocatable :: Cbb_ET(:,:)
         real(sp), allocatable :: Cbb_WELLS(:,:)
         real(sp), allocatable :: Cbb_DRAINS(:,:)
         real(sp), allocatable :: Cbb_CLN(:,:)

@@ -150,11 +150,11 @@ def _pretty_units(units: str) -> str:
     text = (units or "").strip()
     if not text:
         return ""
-    return text.lower()
+    return text.upper()
 
 
 def _qty_title(name: str, units: str) -> str:
-    """Axis title with auxiliary units in parentheses, e.g. Head (meters)."""
+    """Axis title with auxiliary units in parentheses, e.g. Head (METERS)."""
     suffix = _pretty_units(units)
     if suffix:
         return f"{name} ({suffix})"
@@ -163,9 +163,9 @@ def _qty_title(name: str, units: str) -> str:
 
 def _obs_y_title(kind: str, length_units: str) -> str:
     if kind == "HEAD":
-        return _qty_title("Head", length_units or "meters")
+        return _qty_title("Head", length_units or "METERS")
     if kind == "DEPTH":
-        return _qty_title("Depth", length_units or "meters")
+        return _qty_title("Depth", length_units or "METERS")
     if kind == "SATURATION":
         return "Saturation (-)"
     return kind.title() if kind else "Value"
@@ -1886,7 +1886,7 @@ def write_layouts(
                     needles or [("Y",)],
                     x_title=_qty_title(
                         "Time",
-                        (getattr(build, "time_units", "") if build else "") or "seconds",
+                        (getattr(build, "time_units", "") if build else "") or "SECONDS",
                     ),
                 )
             elif kind == "vector":
@@ -1933,12 +1933,12 @@ def write_layouts(
         length_u = (
             (getattr(build, "length_units", "") if build else "")
             or header.get("length_units")
-            or "meters"
+            or "METERS"
         )
         time_u = (
             (getattr(build, "time_units", "") if build else "")
             or header.get("time_units")
-            or "seconds"
+            or "SECONDS"
         )
         x_title = _qty_title("Time", time_u)
         names: list[str] = []
@@ -2018,7 +2018,7 @@ def write_layouts(
             time_u = (
                 (getattr(build, "time_units", "") if build else "")
                 or header.get("time_units")
-                or "seconds"
+                or "SECONDS"
             )
             builder = _LayoutBuilder(inv.layouts_dir)
             builder.start_file("GWF Volume Budget")

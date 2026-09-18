@@ -144,6 +144,26 @@ Constant-rate \textsf{RCH} is written per stress period.
 For time-varying rates on the \swf\ domain, use {\sf swf transient recharge} below.
 Spatially and temporally varying ArcASCII recharge that coexists with \textsf{RCH}/\textsf{RTS} is documented under General Spatio-Temporal Recharge (Section~\ref{section:GSTR}).
 
+\subsection{Evapotranspiration (\textsf{EVT})}
+\index{Boundary conditions ! evapotranspiration}
+\index{Boundary conditions ! EVT}
+Classical MODFLOW \textsf{EVT} removes water from the \gwf\ saturated zone as a function of water-table depth. The maximum rate applies when head is at or above the ET surface; the rate declines linearly to zero over the extinction depth below that surface. \textsf{EVT} does not evaporate ponded water from the \swf\ domain.
+
+\paragraph*{\gwf\ Domain}
+\ins{gwf evt}
+    {
+        \squish
+        \begin{enumerate}
+            \item \rnum{EVTR} [$L$ $T^{-1}$]  Maximum ET rate.
+            \item \inum{NEVTOP}  ET option (1 = top layer; 3 = highest active cell in each column). Option 2 is not yet supported by \mut.
+            \item \rnum{EXDP} [$L$]  Extinction depth below the ET surface (must be $> 0$).
+        \end{enumerate}
+        The ET surface elevation (\texttt{SURF}) is set automatically to the land-surface elevation (top of layer~1) for each vertical column.
+        Chosen cells receive \rnum{EVTR}; unchosen top-layer cells receive a zero rate.
+        Repeat the instruction after each \textsf{end stress period} to change rates through the simulation.
+        \mut\ writes \texttt{Modflow.evt} and registers \textsf{EVT} in the name file.
+    }
+
 \subsubsection{Transient recharge (\textsf{RTS})}
 \index{Boundary conditions ! transient recharge}
 Transient multi-zone recharge is currently supported for the \swf\ domain.

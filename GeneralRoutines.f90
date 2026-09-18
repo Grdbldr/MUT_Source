@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG  
-        character(37) :: MUTVersion='2025.026  DEBUG' 
+        character(37) :: MUTVersion='2025.027  DEBUG' 
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion='2025.026 RELEASE' 
+        character(37) :: MUTVersion='2025.027 RELEASE' 
     #endif
 
 
@@ -89,6 +89,7 @@ module GeneralRoutines    !### bit setting routines
     integer(i4) :: BoundaryNode=5
     integer(i4) :: Inactive=6
     integer(i4) :: Well=7
+    integer(i4) :: Evapotranspiration=8
     
     
 

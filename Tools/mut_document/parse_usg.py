@@ -41,6 +41,7 @@ class UsgRunInfo:
     budget_max_abs_disc: float | None = None
     last_times: dict[str, float] = field(default_factory=dict)
     obs_headers: dict[str, list[str]] = field(default_factory=dict)
+    obs_initial: dict[str, dict[str, float]] = field(default_factory=dict)
     obs_final: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
@@ -153,10 +154,11 @@ def _pick(row: dict[str, float], *names: str) -> float | None:
     return None
 
 
-def _parse_obs(path: Path) -> tuple[list[str], dict[str, float]]:
+def _parse_obs(path: Path) -> tuple[list[str], dict[str, float], dict[str, float]]:
+    """Return (variable names, first-record values, last-record values)."""
     header = read_tecplot_header(path)
     variables = header.get("variables") or []
-    last_vals: dict[str, float] = {}
+    first_line = ""
     last_line = ""
     with path.open("r", encoding="utf-8", errors="replace") as handle:
         for line in handle:
@@ -168,11 +170,17 @@ def _parse_obs(path: Path) -> tuple[list[str], dict[str, float]]:
                 [float(p) for p in parts[:2]]
             except ValueError:
                 continue
+            if not first_line:
+                first_line = stripped
             last_line = stripped
-    if last_line and variables:
-        nums = [float(p) for p in last_line.split()[: len(variables)]]
-        last_vals = dict(zip(variables, nums))
-    return variables, last_vals
+
+    def _row_dict(row: str) -> dict[str, float]:
+        if not row or not variables:
+            return {}
+        nums = [float(p) for p in row.split()[: len(variables)]]
+        return dict(zip(variables, nums))
+
+    return variables, _row_dict(first_line), _row_dict(last_line)
 
 
 def _last_step_period_time(path: Path) -> float | None:
@@ -207,7 +215,8 @@ def parse_usg(inv: ArtifactInventory) -> UsgRunInfo:
             if t is not None:
                 info.last_times[domain] = t
     for key, path in inv.obs_tecplot.items():
-        variables, final = _parse_obs(path)
+        variables, initial, final = _parse_obs(path)
         info.obs_headers[key] = variables
+        info.obs_initial[key] = initial
         info.obs_final[key] = final
     return info

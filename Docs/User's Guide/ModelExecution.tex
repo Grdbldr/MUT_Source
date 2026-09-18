@@ -126,7 +126,7 @@ The model output includes data for several output times, and the image above is 
 
         \includegraphics[width=.8\textwidth]{4_6_SolutionSlider}
 
-The {\sf Details...} button leads to the {\sf Time animation details} dialogue which allows you to control and save animations of transient model results using the {\sf Export To File} button \includegraphics{ExportToFile}.  There is an example animation in  \texttt{$\backslash$MUT\_Examples-main$\backslash$\-6\_Abdul\_Prism\_Cell} folder in the powerpoint file {\tt Abdul Problem Animation.pptx}.  It used the settings shown in the {\sf Export} dialogue above to limit animation speed and write to an {\tt AVI}-formatted file.  This was then inserted in powerpoint where it can be viewed.
+The {\sf Details...} button leads to the {\sf Time animation details} dialogue which allows you to control and save animations of transient model results using the {\sf Export To File} button \includegraphics{ExportToFile}.  There is an example animation in  \fpath{\MUT_Examples-main\6_Abdul_Prism_Cell} folder in the powerpoint file {\tt Abdul Problem Animation.pptx}.  It used the settings shown in the {\sf Export} dialogue above to limit animation speed and write to an {\tt AVI}-formatted file.  This was then inserted in powerpoint where it can be viewed.
 
 \subsection{Data Set Information}
 The {\sf Data Set Information} dialogues for the {\sf SWF} and {\sf GWF} frames are shown below:
@@ -168,14 +168,14 @@ The example {\tt 6\_Abdul\_MODHMS} was generated from a 2D rectangular template 
 
         \includegraphics[width=.8\textwidth]{4_7a_MODHMS}
 
- The layout uses \tecplot\ value-blanking \index{\tecplot\ ! value blanking} (in this case based on the value of the blanking variables {\sf SWF Ibound} and {\sf GWF Ibound}) to prevent cells (or portions of cells) from appearing in the image.  The {\sf Plot$\backslash$Blanking$\backslash$Value Blanking...} menu option leads to the {\sf Value Blanking} dialogue for the currently active frame:
+ The layout uses \tecplot\ value-blanking \index{\tecplot\ ! value blanking} (in this case based on the value of the blanking variables {\sf SWF Ibound} and {\sf GWF Ibound}) to prevent cells (or portions of cells) from appearing in the image.  The \menupath{Plot\Blanking\Value Blanking...} menu option leads to the {\sf Value Blanking} dialogue for the currently active frame:
 
         \includegraphics[width=.8\textwidth]{4_7b_ValueBlanking}
 
 Shown here are the dialogues for both the \swf\ and \gwf\ domains, where value blanking constraints are set to prevent \swf\ and \gwf\ domain cells from being shown if the {\sf SWF Ibound} or {\sf GWF Ibound} value is less than or equal to zero.
 
 \subsection{Slices and Fence Diagrams}
-The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_GWF\_Saturation\_Slices.lay} has been configured to show a series of cross-sections in the \gwf\ domain:\index{\tecplot\ ! Slices and Fence diagrams}
+The layout file \fpath{6_Abdul_Prism_Cell\_GWF_Saturation_Slices.lay} has been configured to show a series of cross-sections in the \gwf\ domain:\index{\tecplot\ ! Slices and Fence diagrams}
 
         \includegraphics[width=.8\textwidth]{4_8_Slices}
 
@@ -192,7 +192,7 @@ The {\sf Shade} and {\sf Translucency} boxes are checked to show the slice posit
 
 \subsection{Defining New Variables}
 \index{\tecplot\ ! Equations and defining new variables}
-New variables can be defined in \tecplot\ using the {\sf Data$\backslash$Alter$\backslash$Specify equations...} menu option which leads to the {\sf Specify equations} dialogue:
+New variables can be defined in \tecplot\ using the \menupath{Data\Alter\Specify equations...} menu option which leads to the {\sf Specify equations} dialogue:
 
         \includegraphics[width=.8\textwidth]{4_10_Equations}
 
@@ -218,7 +218,7 @@ Here we see the equation for calculating the variable {\sf Drawdown} has been ad
 
 \subsection{Water Table Isosurface Plot}
 \index{\tecplot\ ! Isosurfaces, Water Table Plot}
-The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_Water\_Table.lay} has been configured to show an isosurface of the water table in the \gwf\ domain at a time of 3000 seconds :\index{\tecplot\ ! Slices and Fence diagrams}
+The layout file \fpath{6_Abdul_Prism_Cell\_Water_Table.lay} has been configured to show an isosurface of the water table in the \gwf\ domain at a time of 3000 seconds :\index{\tecplot\ ! Slices and Fence diagrams}
 
         \includegraphics[width=.8\textwidth]{4_13_Isosurface.png}
 
@@ -232,7 +232,7 @@ Finally, the {\sf Contours and shade} tab is configured to contour flood the iso
 
 \subsection{Infiltration Plot}
 \index{\tecplot\ ! Infiltration Plot}
-The layout file {\tt 6\_Abdul\_Prism\_Cell$\backslash$\_Infiltration} defines a new variable {\sf Infiltration [mm/year]} and uses contour flood and lines to show it.  The contour levels use a Banded red-blue colour map that is symmetric about the value zero. Red shading indicates zones of infiltration, while blue shading indicates zones of \gwf\ discharge to the \swf\ domain.
+The layout file \fpath{6_Abdul_Prism_Cell\_Infiltration} defines a new variable {\sf Infiltration [mm/year]} and uses contour flood and lines to show it.  The contour levels use a Banded red-blue colour map that is symmetric about the value zero. Red shading indicates zones of infiltration, while blue shading indicates zones of \gwf\ discharge to the \swf\ domain.
 
         \includegraphics[width=\textwidth]{4_16_Infiltration.png}
 

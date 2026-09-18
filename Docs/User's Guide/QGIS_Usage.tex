@@ -10,11 +10,11 @@
     We recommend downloading the {\sf Long Term Release} version, which may have a different version number than shown above.
 
 
-    When working on specific projects with \qgis, we recommend creating a folder inside your project directory called, for example, \texttt{KURT\_Model$\backslash$0\_incoming} and copying any raw project conceptual data files (e.g.\ \qgis-compatible, raster and shapefiles, \excel\ files etc.) into it, as shown here:
+    When working on specific projects with \qgis, we recommend creating a folder inside your project directory called, for example, \fpath{KURT_Model\0_incoming} and copying any raw project conceptual data files (e.g.\ \qgis-compatible, raster and shapefiles, \excel\ files etc.) into it, as shown here:
 
             \includegraphics[width=.6\textwidth]{QGIS_FolderStructure}
 
-    When using and modifying the data in \qgis\, we then recommend saving it in a separate working folder called, for example, \texttt{KURT\_Model$\backslash$1\_data}
+    When using and modifying the data in \qgis\, we then recommend saving it in a separate working folder called, for example, \fpath{KURT_Model\1_data}
 
     In \qgis, we can navigate to any folder and add it to the list of favourites as a convenience:
 
@@ -31,11 +31,11 @@
 
     In the example above the chosen projection is \texttt{EPSG:32652 - WGS 84 / UTM zone 52N}, which includes South Korea.   Initially, there may be no {\sf Recently Used Coordinate Reference Systems} to choose from so use the search field to locate it with the string, e.g.\ {\tt EPSG:32652}.  Once the desired projection is located choose it and click the {\sf Apply} button.
 
-    Now project the DEM by choosing {\sf Dem\_all\_5m.tif$\backslash$Layer CRS$\backslash$Set Layer CRS...} to open the dialogue or {\sf Dem\_all\_5m.tif$\backslash$Layer CRS$\backslash$Set to EPSG:32652} if it appears in the menu:
+    Now project the DEM by choosing \menupath{Dem_all_5m.tif\Layer CRS\Set Layer CRS...} to open the dialogue or \menupath{Dem_all_5m.tif\Layer CRS\Set to EPSG:32652} if it appears in the menu:
 
             \includegraphics[width=\textwidth]{QGIS_ProjectDEM.png}
 
-    To re-centre the DEM, choose {\sf Dem\_all\_5m.tif$\backslash$Zoom to Layer(s)}. Note that the displayed coordinates are now in metres.
+    To re-centre the DEM, choose \menupath{Dem_all_5m.tif\Zoom to Layer(s)}. Note that the displayed coordinates are now in metres.
 
 \newpage
 \section{Layers}
@@ -62,13 +62,13 @@
 
                 \includegraphics[width=\textwidth]{QGIS_DEMPropertiesSymbology}
 
-        In the example above we have chosen {\sf Render Type - Hillshade} for the raster layer {\sf Dem\_all\_5m.tif$\backslash$Properties$\backslash$Symbology}.
+        In the example above we have chosen {\sf Render Type - Hillshade} for the raster layer \menupath{Dem_all_5m.tif\Properties\Symbology}.
 
 
     \newpage
     \subsection{Layer Clipping}
         \label{qgis:clip} \index{\qgis\ Usage ! Clipping a layer}
-        Once the extents of the model domain have been determined, the DEM can be clipped to a smaller size which saves disk space. Clip the raster by choosing ({\sf Raster$\backslash$Extraction$\backslash$Clip by extent}) and then the {\sf Clipping extent option$\backslash$Draw on Map Canvas}.  The mouse cursor will be shown as a 'plus' sign. Click and drag a rectangle delimiting the area to take into account, in this case enclosing the regional boundary.  The resulting clipped rectangular region is shown below as a hillshade inside the original unclipped DEM.
+        Once the extents of the model domain have been determined, the DEM can be clipped to a smaller size which saves disk space. Clip the raster by choosing (\menupath{Raster\Extraction\Clip by extent}) and then the \menupath{Clipping extent option\Draw on Map Canvas}.  The mouse cursor will be shown as a 'plus' sign. Click and drag a rectangle delimiting the area to take into account, in this case enclosing the regional boundary.  The resulting clipped rectangular region is shown below as a hillshade inside the original unclipped DEM.
 
             \includegraphics[width=\textwidth]{QGIS_ClippedDem}
 
@@ -92,7 +92,7 @@
         \newpage
         \subsubsection{Extract Vertices}
             \label{qgis:ExtractVertices} \index{\qgis\ Usage ! Extract vertices}
-            In \qgis\, vertices can be extracted from an active vector layer by choosing {\sf Vector$\backslash$Geometry Tools$\backslash$Extract Vertices} as shown below:
+            In \qgis\, vertices can be extracted from an active vector layer by choosing \menupath{Vector\Geometry Tools\Extract Vertices} as shown below:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_ExportVertices_1.png}
 
@@ -115,7 +115,7 @@
         \newpage
         \subsubsection{Add Geometry Attributes}
             \label{qgis:AddGeometryAttributes} \index{\qgis\ Usage ! Add geometry attributes}
-            Geometry attributes (e.g.\ $xy$ coordinates, Delaunay triangle vertice id's) can be extracted from an active vector layer by choosing {\sf Vector$\backslash$Geometry Tools$\backslash$Add geometry attributes...} as shown below:
+            Geometry attributes (e.g.\ $xy$ coordinates, Delaunay triangle vertice id's) can be extracted from an active vector layer by choosing \menupath{Vector\Geometry Tools\Add geometry attributes...} as shown below:
 
                     \includegraphics[width=0.9\textwidth]{qgis_AddGeometryAttributes_1.png}
 
@@ -139,11 +139,11 @@
         \subsubsection{Georeference an Image}
             \label{qgis:Georeference}  \index{\qgis\ Usage ! Georeference an image}
 
-            This image can be imported into \qgis\ using the {\sf Freehand Raster Georeferencer} plugin, which is installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below:
+            This image can be imported into \qgis\ using the {\sf Freehand Raster Georeferencer} plugin, which is installed using \menupath{Plugin\Manage and Install Plugins}, as shown below:
 
                     \includegraphics[width=0.7\textwidth]{QGIS_FreehandPlugin.png}
 
-            Once installed, make sure the plugin toolbar is visible by choosing {\sf View$\backslash$Panels$\backslash$Freehand Raster Georeferencer}.  To import the regional boundary image file, click the {\sf AD} button as shown below left and choose the file shown in the browser window below right:
+            Once installed, make sure the plugin toolbar is visible by choosing \menupath{View\Panels\Freehand Raster Georeferencer}.  To import the regional boundary image file, click the {\sf AD} button as shown below left and choose the file shown in the browser window below right:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_load_reg_png}
 
@@ -160,7 +160,7 @@
         \newpage
         \subsubsection{Add a new shapefile}
             \label{qgis:AddNewShapefile}  \index{\qgis\ Usage ! Add a new shapefile}
-            If the Manage Layers Toolbar is not visible,choose {\sf View$\backslash$Panels$\backslash$Manage Layers Toolbar}.  To create a new shapefile, choose the {\sf New Shapefile Layer...} button \includegraphics[height=0.7\baselineskip]{Button_NewShapefileLayer} to open the dialogue shown below:
+            If the Manage Layers Toolbar is not visible,choose \menupath{View\Panels\Manage Layers Toolbar}.  To create a new shapefile, choose the {\sf New Shapefile Layer...} button \includegraphics[height=0.7\baselineskip]{Button_NewShapefileLayer} to open the dialogue shown below:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_AddNewShapefile.png}
 
@@ -177,7 +177,7 @@
         \newpage
         \subsubsection{Digitize a new shapefile}
             \label{qgis:DigitizeNewShapefile}  \index{\qgis\ Usage ! Digitize a new shapefile}
-            If the digitizing toolbar is not visible, choose {\sf View$\backslash$Panels$\backslash$Digitizing toolbar}.  To start digitizing choose the {\sf Toggle Editing} button \includegraphics[height=0.7\baselineskip]{Button_ToggleEditting}, then the {\sf Add Polygon Feature} button \includegraphics[height=0.7\baselineskip]{Button_AddPolygonFeature}.  The mouse cursor should now be shown as a crosshair.  Move the crosshair to a point on the regional boundary and click the left-mouse button to digitize a new boundary point.  The example below shows a partially digitized polygon:
+            If the digitizing toolbar is not visible, choose \menupath{View\Panels\Digitizing toolbar}.  To start digitizing choose the {\sf Toggle Editing} button \includegraphics[height=0.7\baselineskip]{Button_ToggleEditting}, then the {\sf Add Polygon Feature} button \includegraphics[height=0.7\baselineskip]{Button_AddPolygonFeature}.  The mouse cursor should now be shown as a crosshair.  Move the crosshair to a point on the regional boundary and click the left-mouse button to digitize a new boundary point.  The example below shows a partially digitized polygon:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_DigitizingNewShapefile}
 
@@ -185,7 +185,7 @@
         \newpage
         \subsubsection{Point Sampling From a Raster Layer}
             \label{qgis:PointSamplingTool} \index{\qgis\ Usage ! Point sampling tool}
-            The {\sf PointSamplingTool} can be used to map elevations from a raster layer (i.e.\ a DEM) to the vertices of a vector layer. This plugin may need to be installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below:
+            The {\sf PointSamplingTool} can be used to map elevations from a raster layer (i.e.\ a DEM) to the vertices of a vector layer. This plugin may need to be installed using \menupath{Plugin\Manage and Install Plugins}, as shown below:
 
                     \includegraphics[width=\textwidth]{QGIS_PointSamplingToolPlugin_1.png}
 
@@ -211,7 +211,7 @@
         \newpage
         \subsubsection{Export to a CSV File}
             \label{qgis:ExportToCSVFile} \index{\qgis\ Usage ! Export to a CSV file}
-            The attribute table of an active vector layer can be exported to a {\tt CSV} file by right-clicking on the vector name and choosing {\sf Export$\backslash$Save features as...} as shown below:
+            The attribute table of an active vector layer can be exported to a {\tt CSV} file by right-clicking on the vector name and choosing \menupath{Export\Save features as...} as shown below:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_ExportToCSVFile_1.png}
 
@@ -233,7 +233,7 @@
         \newpage
         \subsubsection{Import from a CSV File}
             \label{qgis:ImportFromCSVFile} \index{\qgis\ Usage ! Import from a CSV file}
-            A new layer can be created by importing data from a {\tt CSV} file.  Choose {\sf Layer$\backslash$Add layer$\backslash$Add text delimited layer...} as shown below:
+            A new layer can be created by importing data from a {\tt CSV} file.  Choose \menupath{Layer\Add layer\Add text delimited layer...} as shown below:
 
                     \includegraphics[width=0.9\textwidth]{QGIS_ImportFromCSVFile_1.png}
 
@@ -268,11 +268,11 @@
         \newpage
         \subsubsection{Smoothing a Raster Layer}
             \label{qgis:smoothing} \index{\qgis\ Usage ! Smoothing a raster layer}
-            A smoothed version a raster layer can be created using the \saga\ plugin {\sf$\backslash$Smoothing(ViGrA)}. This plugin must first be installed using {\sf Plugin$\backslash$Manage and Install Plugins}, as shown below on the left:
+            A smoothed version a raster layer can be created using the \saga\ plugin \menupath{\Smoothing(ViGrA)}. This plugin must first be installed using \menupath{Plugin\Manage and Install Plugins}, as shown below on the left:
 
                     \includegraphics[width=\textwidth]{QGIS_SagaPlugin}
 
-            If the Processing Toolbox panel (above right) is not open choose {\sf View$\backslash$Panels$\backslash$Processing Toolbox}, then search for the string e.g. 'smoothing' to locate the  plugin.
+            If the Processing Toolbox panel (above right) is not open choose \menupath{View\Panels\Processing Toolbox}, then search for the string e.g. 'smoothing' to locate the  plugin.
 
                     \includegraphics[width=\textwidth]{QGIS_SmoothingDialogue}
 
@@ -283,7 +283,7 @@
                     \includegraphics[width=\textwidth]{QGIS_SmoothingDEMInitial.png}
 
 
-            The regions of -9,999 m elevation show up as black areas around the outside edges of the DEM.  To improve the image choose {\sf Output$\backslash$Properties$\backslash$Symbology} and change the {\sf Color gradient$\backslash$Min} value to e.g. 10 m.
+            The regions of -9,999 m elevation show up as black areas around the outside edges of the DEM.  To improve the image choose \menupath{Output\Properties\Symbology} and change the \menupath{Color gradient\Min} value to e.g. 10 m.
 
             After testing with {\sf Size of smoothing filter} of 2, 5, and 10 m, it was found that the 10 m was sufficient to remove the artefacts.  A portion of the DEM  is shown below both before and after smoothing:
 

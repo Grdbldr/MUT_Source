@@ -5,7 +5,7 @@ module MUSG_BoundaryConditions
     use KindParameters
     use GeneralRoutines, only: MAX_INST, MAX_STR, ErrFNum, ErrMsg, Msg, FileReadSTR
     use GeneralRoutines, only: FMT_R4, FMT_R8, TmpSTR, UnitsOfLength, FileCreateSTR, MUTVersion
-    use GeneralRoutines, only: bcheck, chosen, set, ConstantHead, Recharge, Drain, Well, CriticalDepth, ialloc, UnitsOfTime
+    use GeneralRoutines, only: bcheck, chosen, set, ConstantHead, Recharge, Drain, Well, CriticalDepth, Evapotranspiration, ialloc, UnitsOfTime
     use ErrorHandling, only: ERR_LOGIC, HandleError
     use ArrayUtilities, only: AllocChk
     use GeneralRoutines, only: OpenAscii, FreeUnit
@@ -17,7 +17,7 @@ module MUSG_BoundaryConditions
     private
     
     public :: AssignCHDtoDomain, AssignDRNtoDomain, AssignRCHtoDomain
-    public :: AssignTransientRCHtoDomain, AssignWELtoDomain
+    public :: AssignTransientRCHtoDomain, AssignWELtoDomain, AssignEVTtoDomain
     public :: AssignCriticalDepthtoDomain, AssignCriticalDepthtoCellsSide1
     public :: SetPendingCHDZoneName
     public :: SetPendingGSTRInstanceName, AssignGSTRtoDomain, WriteGSTRFile
@@ -238,6 +238,126 @@ module MUSG_BoundaryConditions
             endif                
         end if
     end subroutine AssignRCHtoDomain
+
+    !----------------------------------------------------------------------
+    subroutine AssignEVTtoDomain(FNumMUT,modflow,domain)
+        ! Assign GWF evapotranspiration (EVT package) for the current stress period.
+        ! Reads EVTR, NEVTOP, EXDP. SURF is land-surface elevation (top of layer 1).
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        type(ModflowDomain) :: domain
+
+        integer(i4) :: i, nTop
+        real(dp) :: evtr, exdp
+        integer(i4) :: nEVToption
+
+        if(domain%name /= 'GWF') then
+            call ErrMsg('gwf evt: EVT package applies only to the GWF domain')
+        end if
+
+        read(FNumMUT,*) evtr
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' EVT max rate (EVTR): ', &
+            evtr,'     '//TRIM(modflow.STR_LengthUnit)//'   '//TRIM(modflow.STR_TimeUnit)//'^(-1)'
+        call Msg(trim(TmpSTR))
+
+        read(FNumMUT,*) nEVToption
+        write(TmpSTR,'(a,'//FMT_R8//')') 'Assigning '//domain%name//' EVT option (NEVTOP): ',nEVToption
+        call Msg(trim(TmpSTR))
+        domain%nEVToption = nEVToption
+        if(nEVToption == 1) then
+            call Msg('Option 1 -- evapotranspiration from top layer')
+        else if(nEVToption == 2) then
+            call Msg('Option 2 -- evapotranspiration from one specified node in each vertical column')
+        else if(nEVToption == 3) then
+            call Msg('Option 3 -- evapotranspiration from highest active node in each vertical column')
+        else
+            call ErrMsg('gwf evt: NEVTOP must be 1, 2, or 3')
+        end if
+        if(nEVToption == 2) then
+            call ErrMsg('gwf evt: NEVTOP=2 (IEVT layer index) is not yet supported by MUT')
+        end if
+
+        read(FNumMUT,*) exdp
+        write(TmpSTR,'(a,'//FMT_R8//',a)') 'Assigning '//domain%name//' EVT extinction depth (EXDP): ', &
+            exdp,'     '//TRIM(modflow.STR_LengthUnit)
+        call Msg(trim(TmpSTR))
+        if(exdp <= 0.0d0) then
+            call ErrMsg('gwf evt: extinction depth EXDP must be > 0')
+        end if
+
+        if(.not. allocated(domain%Evapotranspiration)) then
+            allocate(domain%Evapotranspiration(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell EVTR array')
+            domain%Evapotranspiration(:) = 0.0d0
+        end if
+        if(.not. allocated(domain%ETSurface)) then
+            allocate(domain%ETSurface(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell ET surface array')
+            domain%ETSurface(:) = -999.d0
+        end if
+        if(.not. allocated(domain%ExtinctionDepth)) then
+            allocate(domain%ExtinctionDepth(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell EXDP array')
+            domain%ExtinctionDepth(:) = -999.d0
+        end if
+
+        ! Reset rates each stress-period assignment; set chosen cells (typically all).
+        domain%Evapotranspiration(:) = 0.0d0
+        do i=1,domain%nCells
+            if(bcheck(domain%cell(i)%is,chosen)) then
+                call set(domain%cell(i)%is,Evapotranspiration)
+                domain%Evapotranspiration(i) = evtr
+                domain%ExtinctionDepth(i) = exdp
+                domain%ETSurface(i) = domain%cell(i)%Top
+            end if
+        end do
+
+        ! Ensure every top-layer column has SURF/EXDP even if not chosen (EVTR stays 0).
+        do i=1,domain%nCells
+            if(domain%cell(i)%iLayer == 1) then
+                domain%ETSurface(i) = domain%cell(i)%Top
+                if(domain%ExtinctionDepth(i) < 0.0d0) domain%ExtinctionDepth(i) = exdp
+            end if
+        end do
+
+        nTop = domain%nCells / domain%nLayers
+
+        if(modflow.iEVT == 0) then
+            Modflow.FNameEVT = trim(Modflow.Prefix)//'.evt'
+            call OpenAscii(Modflow.iEVT,Modflow.FNameEVT)
+            call Msg('  ')
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameEVT))
+            write(Modflow.iNAM,'(a,i4,a)') 'EVT  ',Modflow.iEVT,' '//trim(Modflow.FNameEVT)
+            write(Modflow.iEVT,'(a,a)') '# MODFLOW-USG EVT file written by Modflow-User-Tools version ', &
+                trim(MUTVersion)
+            write(Modflow.iEVT,*) domain%nEVToption, domain%iCBB
+        end if
+
+        ! Per stress period: INSURF, INEVTR, INEXDP (all read this period)
+        write(Modflow.iEVT,*) 1, 1, 1
+        write(Modflow.iEVT,'(a)') 'INTERNAL  1  (FREE)  -1  ET Surface()'
+        do i=1,domain%nCells
+            if(domain%cell(i)%iLayer == 1) then
+                write(Modflow.iEVT,'('//FMT_R4//')') domain%ETSurface(i)
+            end if
+        end do
+        write(Modflow.iEVT,'(a)') 'INTERNAL  1  (FREE)  -1  Evapotranspiration()'
+        do i=1,domain%nCells
+            if(domain%cell(i)%iLayer == 1) then
+                write(Modflow.iEVT,'('//FMT_R4//')') domain%Evapotranspiration(i)
+            end if
+        end do
+        write(Modflow.iEVT,'(a)') 'INTERNAL  1  (FREE)  -1  Extinction Depth()'
+        do i=1,domain%nCells
+            if(domain%cell(i)%iLayer == 1) then
+                write(Modflow.iEVT,'('//FMT_R4//')') domain%ExtinctionDepth(i)
+            end if
+        end do
+
+        write(TmpSTR,'(a,i8)') 'Wrote EVT arrays for top-layer cells = ', nTop
+        call Msg(trim(TmpSTR))
+    end subroutine AssignEVTtoDomain
     
     !----------------------------------------------------------------------
     integer(i4) function CountRTSZones(FNameRTS)

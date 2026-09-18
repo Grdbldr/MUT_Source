@@ -131,6 +131,7 @@ module MUSG !
     character(MAX_INST) :: AssignCHDZoneName_CMD	            =   'chd zone name'
     character(MAX_INST) :: AssignDRNtoGWF_CMD		            =   'gwf drain'
     character(MAX_INST) :: AssignRCHtoGWF_CMD		            =   'gwf recharge'
+    character(MAX_INST) :: AssignEVTtoGWF_CMD		            =   'gwf evt'
     character(MAX_INST) :: AssignGSTRtoGWF_CMD                  =   'gwf gstr'
     character(MAX_INST) :: AssignGSTRInstanceName_CMD           =   'gstr instance name'
     character(MAX_INST) :: AssignWELtoGWF_CMD		            =   'gwf well'
@@ -711,6 +712,7 @@ module MUSG !
                     index(instruction, AssignCHDZoneName_CMD) /= 0 .or. &
                     index(instruction, AssignDRNtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignRCHtoGWF_CMD) /= 0 .or. &
+                    index(instruction, AssignEVTtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignGSTRtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignGSTRInstanceName_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoGWF_CMD) /= 0 .or. &
@@ -3591,6 +3593,34 @@ module MUSG !
                 call FreeUnit(FNum)
             end if
 
+            if(allocated(domain%Evapotranspiration)) then
+                FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_EVT.tecplot.dat'
+            
+                call OpenAscii(FNum,FName)
+                call Msg('  ')
+                call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
+                write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' EVT"'
+
+                VarSTR='variables="X","Y","Z","EVTR","SURF","EXDP"'
+                nVar=6
+            
+                write(FNum,'(a)') trim(VarSTR)
+            
+                write(ZoneSTR,'(a,i8,a)')'ZONE i=',domain%nCells/domain%nLayers, &
+                    ', t="'//trim(domain%name)//' EVT", datapacking=point'
+        
+                write(FNum,'(a)') trim(ZoneSTR)
+           
+                do i=1,domain%nCells
+                    if(domain%cell(i)%iLayer==1) then
+                        write(FNum,'(6('//FMT_R8//'))') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
+                            domain%Evapotranspiration(i), domain%ETSurface(i), domain%ExtinctionDepth(i)
+                    endif
+                end do
+            
+                call FreeUnit(FNum)
+            end if
+
             if(domain%nSWBCCells > 0) then
                 FName=trim(Modflow.MUTPrefix)//'o.'//trim(Modflow.Prefix)//'.'//trim(domain%name)//'_SWBC.tecplot.dat'
             
@@ -4336,6 +4366,10 @@ module MUSG !
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to RECHARGE",'
             nVar=nVar+1
         end if
+        if(allocated(domain%cbb_ET)) then
+            VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to ET",'
+            nVar=nVar+1
+        end if
         if(allocated(domain%cbb_WELLS)) then
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to WELLS",'
             nVar=nVar+1
@@ -4437,6 +4471,10 @@ module MUSG !
             write(FNum,'(a)') '# cbb_RECHARGE'
             write(FNum,'(10('//FMT_R4//'))') (domain%cbb_RECHARGE(i,1),i=1,domain%nCells)
         end if
+        if(allocated(domain%cbb_ET)) then
+            write(FNum,'(a)') '# cbb_ET'
+            write(FNum,'(10('//FMT_R4//'))') (domain%cbb_ET(i,1),i=1,domain%nCells)
+        end if
         if(allocated(domain%cbb_WELLS)) then
             write(FNum,'(a)') '# cbb_WELLS'
             write(FNum,'(10('//FMT_R4//'))') (domain%cbb_WELLS(i,1),i=1,domain%nCells)
@@ -4529,6 +4567,10 @@ module MUSG !
             if(allocated(domain%cbb_RECHARGE)) then
                 write(FNum,'(a)') '# cbb_RECHARGE'
                 write(FNum,'(10('//FMT_R4//'))') (domain%cbb_RECHARGE(i,j),i=1,domain%nCells)
+            end if
+            if(allocated(domain%cbb_ET)) then
+                write(FNum,'(a)') '# cbb_ET'
+                write(FNum,'(10('//FMT_R4//'))') (domain%cbb_ET(i,j),i=1,domain%nCells)
             end if
             if(allocated(domain%cbb_WELLS)) then
                 write(FNum,'(a)') '# cbb_WELLS'
@@ -4641,6 +4683,7 @@ module MUSG !
             if (allocated(domain%cbb_STORAGE)) call TecIO_WriteR4(domain%nCells, domain%cbb_STORAGE(:,itime))
             if (allocated(domain%cbb_CONSTANT_HEAD)) call TecIO_WriteR4(domain%nCells, domain%cbb_CONSTANT_HEAD(:,itime))
             if (allocated(domain%cbb_RECHARGE)) call TecIO_WriteR4(domain%nCells, domain%cbb_RECHARGE(:,itime))
+            if (allocated(domain%cbb_ET)) call TecIO_WriteR4(domain%nCells, domain%cbb_ET(:,itime))
             if (allocated(domain%cbb_WELLS)) call TecIO_WriteR4(domain%nCells, domain%cbb_WELLS(:,itime))
             if (allocated(domain%cbb_DRAINS)) call TecIO_WriteR4(domain%nCells, domain%cbb_DRAINS(:,itime))
             if (allocated(domain%cbb_CLN)) call TecIO_WriteR4(domain%nCells, domain%cbb_CLN(:,itime))
@@ -13835,6 +13878,14 @@ module MUSG !
                             domain%cbb_RECHARGE=0
                         end if
                         read(FNum,err=9400,end=9400) (domain%cbb_RECHARGE(I,j),I=1,NVAL)
+
+                    else if(trim(adjustl(text)) == 'ET' .or. &
+                            index(text,'EVAPOTRANSPIRATION') .ne.0) then
+                        if(j==1) THEN
+	                        allocate(domain%cbb_ET(NVAL,Modflow.ntime))
+                            domain%cbb_ET=0
+                        end if
+                        read(FNum,err=9400,end=9400) (domain%cbb_ET(I,j),I=1,NVAL)
                             
                     else if(index(text,'WELLS') .ne.0) then
                         if(j==1) THEN

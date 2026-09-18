@@ -1,23 +1,30 @@
 \label{chapter:modifications}
+\label{changes:2025.027}
+Changes in version 2025.027:
+\begin{itemize}
+\item New instruction {\sf gwf evt}: writes the MODFLOW-USG \textsf{EVT} package (head-dependent groundwater ET). Inputs are maximum ET rate \texttt{EVTR}, option \texttt{NEVTOP} (1 or 3), and extinction depth \texttt{EXDP}. ET surface \texttt{SURF} is taken from the land-surface elevation (top of layer~1). Rates may be redefined each stress period. Build scatter includes \texttt{*\_EVT.tecplot.dat}.
+\item Post-processing reads the cell-by-cell budget TEXT \texttt{ET} from \texttt{*.cbb} into Tecplot results as {\em domain} to ET.
+\end{itemize}
+
 \label{changes:2025.026}
 Changes in version 2025.026:
 \begin{itemize}
-\item Model documentation is written by default after a successful \texttt{mut \_build} or \texttt{mut \_post} (\texttt{mut\_document.py --skip-export}). Instruction {\sf no model documentation} skips it for that MUT file only, so documentation can be build-only, post-only, both, or neither. Missing Python, the script, or \texttt{pdflatex} is a warning; MUT still ends with \texttt{Normal exit}. The former instructions {\sf write model documentation} and {\sf write binary tecplot output} are removed.
+\item Model documentation is written by default after a successful \texttt{mut \_build} or \texttt{mut \_post} (\fpath{mut_document.py --skip-export}). Instruction {\sf no model documentation} skips it for that MUT file only, so documentation can be build-only, post-only, both, or neither. Missing Python, the script, or \texttt{pdflatex} is a warning; MUT still ends with \texttt{Normal exit}. The former instructions {\sf write model documentation} and {\sf write binary tecplot output} are removed.
 \item Volume-budget time series is a dedicated \texttt{GWF\_VolumeBudget.lay} (full-page XY plot with a line-map legend) rather than a frame on \texttt{GWF\_Results.lay}.
-\item Release verification uses \texttt{VerificationFolder.List} (one folder name per line) in \texttt{C:\textbackslash Work\textbackslash Examples-Release}. From the \mut\ source repository, \texttt{Tools/verify\_release.ps1} runs \texttt{mut\_verify}, which executes \texttt{mut \_build}, \texttt{usgs\_1} and \texttt{mut \_post} per listed folder. See Appendix~\ref{appendix:release_verification}.
+\item Release verification uses \texttt{VerificationFolder.List} (one folder name per line) in \fpath{C:\Work\Examples-Release}. From the \mut\ source repository, \fpath{Tools/verify_release.ps1} runs \texttt{mut\_verify}, which executes \texttt{mut \_build}, \texttt{usgs\_1} and \texttt{mut \_post} per listed folder. See Appendix~\ref{appendix:release_verification}.
 \end{itemize}
 
 \label{changes:2025.025}
 Changes in version 2025.025:
 \begin{itemize}
-\item Optional instruction {\sf write model documentation}: after a successful \texttt{mut \_build} or \texttt{mut \_post}, MUT runs \texttt{mut\_document.py --skip-export} and writes \texttt{Docs/\textit{folder}.pdf} plus layouts. A documented build is expanded after \texttt{\_post} even if \texttt{\_post.mut} does not repeat the instruction. Missing Python, the script, or \texttt{pdflatex} is a warning; MUT still ends with \texttt{Normal exit}. Manual \texttt{python \%USERBIN\%\textbackslash mut\_document\textbackslash mut\_document.py} remains available for PNG export.
+\item Optional instruction {\sf write model documentation}: after a successful \texttt{mut \_build} or \texttt{mut \_post}, MUT runs \texttt{mut\_document.py --skip-export} and writes \texttt{Docs/\textit{folder}.pdf} plus layouts. A documented build is expanded after \texttt{\_post} even if \texttt{\_post.mut} does not repeat the instruction. Missing Python, the script, or \texttt{pdflatex} is a warning; MUT still ends with \texttt{Normal exit}. Manual \fpath{python \%USERBIN\%\mut_document\mut_document.py} remains available for PNG export.
 \end{itemize}
 
 \label{changes:2025.024}
 Changes in version 2025.024:
 \begin{itemize}
 \item Finite-element \tecplot\ output defaults to one TecIO SZL file per dataset (\texttt{.tecplot.szplt}). Post-processed \gwf/\swf/\cln\ results and velocity are a single file with all output times (later zones share coordinates and connectivity). Optional {\sf write ascii tecplot output} restores ASCII \texttt{.tecplot.dat}. Scatter, custom-label, volume-budget and restart files remain ASCII. The obsolete instruction {\sf write binary tecplot output} is ignored.
-\item Release-verification appendix: \texttt{Tools/verify\_release.ps1} runs the verification models in \texttt{C:\textbackslash Work\textbackslash Examples-Release} against \texttt{Examples-Base}, exports \texttt{BatchComparisonPlots.lay} frames, and includes them as Appendix~\ref{appendix:release_verification}. Volume-budget comparison is index-wise when \texttt{TOTAL TIME} lists match, so duplicate dumps at stress-period boundaries (e.g.\ Abdul) are not false-flagged. Remaining IN--OUT differences in \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF} versus a 2025.012 baseline are the 2025.014 \cln/\swf\ CHD start-to-end head ramps. Selected inputs are published to \texttt{MUT\_Examples} with \texttt{ToRepos.bat} (never the reverse).
+\item Release-verification appendix: \fpath{Tools/verify_release.ps1} runs the verification models in \fpath{C:\Work\Examples-Release} against \texttt{Examples-Base}, exports \texttt{BatchComparisonPlots.lay} frames, and includes them as Appendix~\ref{appendix:release_verification}. Volume-budget comparison is index-wise when \texttt{TOTAL TIME} lists match, so duplicate dumps at stress-period boundaries (e.g.\ Abdul) are not false-flagged. Remaining IN--OUT differences in \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF} versus a 2025.012 baseline are the 2025.014 \cln/\swf\ CHD start-to-end head ramps. Selected inputs are published to \texttt{MUT\_Examples} with \texttt{ToRepos.bat} (never the reverse).
 \end{itemize}
 
 \label{changes:2025.023}
@@ -98,7 +105,7 @@ Changes in version 2025.012:
 \label{changes:2025.011}
 Changes in version 2025.011:
 \begin{itemize}
-\item CLN General (tabular) cross-section geometry: \texttt{Geometry=General} in \texttt{CLN.csv}, optional depth/area/wetted-perimeter/top-width table file
+\item CLN General (tabular) cross-section geometry: \fpath{Geometry=General} in \texttt{CLN.csv}, optional depth/area/wetted-perimeter/top-width table file
 \item USG I/O and runtime hardening: consolidated file-unit utilities, EOF-safe binary reads, deterministic SWF connection ordering
 \end{itemize}
 
