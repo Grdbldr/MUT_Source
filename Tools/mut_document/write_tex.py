@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+import re
 from itertools import groupby
 from pathlib import Path
 
@@ -632,8 +633,22 @@ def _chapter_results(
                 lines.append("\n")
             else:
                 lines.append("No observation values were parsed.\n\n")
-        obs_stem = "GWF_Observations" if (inv.layouts_dir / "GWF_Observations.lay").is_file() else gwf
-        lines.append(_maybe_figure(inv, obs_stem, "Observation time series", "fig:results-obs"))
+        obs_ids = sorted(
+            (sid for sid in layouts if "_Observations_" in sid),
+            key=str.lower,
+        )
+        if obs_ids:
+            lines.append("\\section{Observation time series}\n")
+            lines.append(
+                "Each observation point has its own Tecplot layout and figure, "
+                "with head stacked above saturation (GWF) or depth (SWF).\n\n"
+            )
+            for sid in obs_ids:
+                domain, _, site = sid.partition("_Observations_")
+                site_label = (site or sid).replace("_", " ")
+                caption = f"{domain} {site_label} observation time series"
+                label = "fig:results-obs-" + re.sub(r"[^a-z0-9]+", "-", sid.lower()).strip("-")
+                lines.append(_maybe_figure(inv, sid, caption, label))
 
     vel_stem = gwf
     if not inv.post_file("GWF.Velocity") and inv.post_file("SWF.Velocity"):
@@ -718,7 +733,7 @@ def _chapter_layouts(layouts: list[LayoutFile]) -> str:
         "\\texttt{GWF\\_Mesh.lay} (also copied as \\texttt{GWF.lay}), "
         "\\texttt{GWF\\_Variables.lay}, \\texttt{GWF\\_scatter.lay}, "
         "\\texttt{GWF\\_Results.lay}, and "
-        "\\texttt{GWF\\_Observations.lay}, "
+        "\\texttt{GWF\\_Observations\\_\\textit{site}.lay} (one file per observation point), "
         "and the same pattern for SWF and CLN. "
         "The mesh, variables, and results layouts load finite-element "
         "\\texttt{.tecplot.szplt} files when present (ASCII \\texttt{.tecplot.dat} "
@@ -734,9 +749,8 @@ def _chapter_layouts(layouts: list[LayoutFile]) -> str:
         "Observation-point frames label each sphere with its assigned name "
         "to the right of the symbol. "
         "The results layout has one frame per post-processed field, plus velocity. "
-        "The observations layout has one frame per series: square frames, head on the top row, "
-        "saturation (or depth) on the bottom, sites left-to-right alphabetically "
-        "(further columns may sit off the initial paper view). "
+        "Each observations layout covers one site: stacked frames filling the page "
+        "(head above saturation or depth) so axis text stays readable when exported. "
         "When post-process fields allow it, additional layouts are written: "
         "\\texttt{GWF\\_VolumeBudget.lay} (listing-file volumetric rates, own page), "
         "\\texttt{GWF\\_WaterTable.lay} (pressure-head iso-surface at zero), "
