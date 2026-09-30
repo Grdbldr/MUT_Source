@@ -1,11 +1,13 @@
 # MUT — Current progress
 
-**Last updated:** 2026-09-10
-**Version in code:** 2025.026 (`GeneralRoutines.f90`)
-**Version in User's Guide:** 2025.026 (title page and `Modifications.tex`)
+**Last updated:** 2026-09-29
+**Version in code:** 2025.029 (`GeneralRoutines.f90`)
+**Version in User's Guide:** 2025.029 (title page and `Modifications.tex`)
 **Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
+
+- 2025.029: `swbc zone name` names critical-depth (SWBC) outlet groups. MUT writes a zone column in `.swbc` plus `.swbczone` (NAM `SWBZ`); USG-Beta entry 20 reports one budget term and SWF cbb record per zone. Post reads zone records (`SWF to <zone>` + combined `SWF to SWBC`); `mut_document` reports per-outlet and combined outflow and splits the SWBC scatter layer by outlet.
 
 - User's Guide editorial pass: fixed garbled GWF Tecplot-restart prose, Abdul example labels, Units TimeUnits, `_mut.pfx`, Observtion/meshs/EPGS/CustomLables typos, it's→its, Access→Excel appendix refs, and assorted grammar/spacing consistency issues across install, build, BC, and Tecplot chapters.
 - User's Guide: Boundary Conditions is a Model Build section after CLN (`BoundaryConditions.tex`), organized by BC type with GWF/SWF/CLN coverage; GSTR nested under Recharge; BC prose removed from domain chapters.

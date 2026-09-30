@@ -627,6 +627,7 @@ module MUSG_InstructionParser
         character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD = 'swf critical depth'
         character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD = 'swf critical depth with sidelength1'
         character(MAX_INST) :: AssignGSTRtoSWF_CMD = 'swf gstr'
+        character(MAX_INST) :: AssignSWBCZoneName_CMD = 'swbc zone name'
         
         ! CLN boundary condition commands
         character(MAX_INST) :: AssignCHDtoCLN_CMD = 'cln constant head'
@@ -639,6 +640,9 @@ module MUSG_InstructionParser
 
         else if(index(instruction, AssignGSTRInstanceName_CMD) /= 0) then
             call SetPendingGSTRInstanceName(FNumMUT, Modflow)
+
+        else if(index(instruction, AssignSWBCZoneName_CMD) /= 0) then
+            call SetPendingSWBCZoneName(FNumMUT, Modflow)
 
         else if(index(instruction, AssignCHDtoGWF_CMD) /= 0) then
             call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.GWF)

@@ -142,6 +142,7 @@ module MUSG !
     character(MAX_INST) :: AssignWELtoSWF_CMD		            =   'swf well'
     character(MAX_INST) :: AssignCriticalDepthtoSWF_CMD         =   'swf critical depth'
     character(MAX_INST) :: AssignCriticalDepthtoCellsSide1_CMD	=   'swf critical depth with sidelength1'
+    character(MAX_INST) :: AssignSWBCZoneName_CMD	            =   'swbc zone name'
     character(MAX_INST) :: AssignCHDtoCLN_CMD                   =   'cln constant head'
     character(MAX_INST) :: AssignWELtoCLN_CMD		            =   'cln well'
     character(MAX_INST) :: AssignGSTRtoCLN_CMD                  =   'cln gstr'
@@ -723,6 +724,7 @@ module MUSG !
                     index(instruction, AssignWELtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignCriticalDepthtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignCriticalDepthtoCellsSide1_CMD) /= 0 .or. &
+                    index(instruction, AssignSWBCZoneName_CMD) /= 0 .or. &
                     index(instruction, AssignCHDtoCLN_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoCLN_CMD) /= 0 .or. &
                     index(instruction, AssignGSTRtoCLN_CMD) /= 0) then
@@ -3629,7 +3631,11 @@ module MUSG !
                 call Msg(FileCreateSTR//'Tecplot file: '//trim(FName))
                 write(FNum,'(a)') 'Title = " Modflow '//trim(domain%name)//' SWBC"'
 
-                VarSTR='variables="X","Y","Z","SWBC"'
+                if(Modflow%nSWBCZones > 0 .and. allocated(domain%SWBCZoneID)) then
+                    VarSTR='variables="X","Y","Z","SWBC","SWBC Zone"'
+                else
+                    VarSTR='variables="X","Y","Z","SWBC"'
+                end if
                 nVar=3
             
                 write(FNum,'(a)') trim(VarSTR)
@@ -3639,8 +3645,15 @@ module MUSG !
                 write(FNum,'(a)') trim(ZoneSTR)
            
                 do i=1,domain%nCells
-                    if(bcheck(domain%cell(i)%is,CriticalDepth)) write(FNum,'(4('//FMT_R8//'))') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
-                        domain%cell(i)%CriticalDepthLength
+                    if(bcheck(domain%cell(i)%is,CriticalDepth)) then
+                        if(Modflow%nSWBCZones > 0 .and. allocated(domain%SWBCZoneID)) then
+                            write(FNum,'(4('//FMT_R8//'),i6)') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
+                                domain%cell(i)%CriticalDepthLength, domain%SWBCZoneID(i)
+                        else
+                            write(FNum,'(4('//FMT_R8//'))') domain%cell(i)%x,domain%cell(i)%y,domain%cell(i)%z,&
+                                domain%cell(i)%CriticalDepthLength
+                        end if
+                    end if
                 end do
             
                 call FreeUnit(FNum)
@@ -3804,7 +3817,7 @@ module MUSG !
                 'hyd ', 'SFR ', 'MDT ', 'GAGE', 'LVDA', 'SYF ', 'lmt6',&  ! 49
                 'MNW1', 'CHDZ', '    ', 'KDEP', 'SUB ', 'UZF ', 'gwm ',&  ! 56
                 'SWT ', 'PATH', 'PTH ', '    ', '    ', '    ', '    ',&  ! 63
-                'TVM ', 'SWF ', 'SWBC', 'OBPT', 'GSTR', 'VEL ', 31*'    '/
+                'TVM ', 'SWF ', 'SWBC', 'OBPT', 'GSTR', 'VEL ', 'SWBZ', 30*'    '/
         integer(i4) :: maxunit, nc 
 
         INCLUDE 'openspec.inc'
@@ -3919,7 +3932,8 @@ module MUSG !
         Modflow.iOBPT =iunit(67)
         Modflow.iGSTR =iunit(68)
         Modflow.iVELPkg =iunit(69)
-        do i=1,69
+        Modflow.iSWBCZONE =iunit(70)
+        do i=1,70
             if(iunit(i) > 0) then
                 file_open_flag(iunit(i)) = .true.
             end if
@@ -4199,6 +4213,7 @@ module MUSG !
             call Msg('-------Read data from SWBC:')
             CALL ReadSWBC(Modflow)  ! based on modflow routine SWF2BC1U1AR
             call ReadSWBC2(Modflow) ! based on modflow routine SWF2BC1U1RP
+            call ReadSWBCZone(Modflow)
         end if
         
         IF(Modflow.iSMS/=0) THEN
@@ -4328,7 +4343,7 @@ module MUSG !
 
         integer(i4) :: Fnum
         character(MAX_STR) :: FName
-        integer(i4) :: i, j, nvar, nVarShared
+        integer(i4) :: i, j, k, nvar, nVarShared
 
         character(4000) :: VarSharedStr
 
@@ -4401,6 +4416,12 @@ module MUSG !
         if(allocated(domain%cbb_SWBC)) then
             VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to SWBC",'
             nVar=nVar+1
+        end if
+        if(allocated(domain%Cbb_SWBCZone)) then
+            do j=1,size(domain%Cbb_SWBCZone,3)
+                VarSTR=trim(VarSTR)//'"'//trim(domain%name)//' to '//trim(adjustl(Modflow%SWBCZoneName(j)))//'",'
+                nVar=nVar+1
+            end do
         end if
 
         if(.not. WriteAsciiTecplot) then
@@ -4507,6 +4528,12 @@ module MUSG !
             write(FNum,'(a)') '# cbb_SWBC'
             write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWBC(i,1),i=1,domain%nCells)
         end if
+        if(allocated(domain%Cbb_SWBCZone)) then
+            do k=1,size(domain%Cbb_SWBCZone,3)
+                write(FNum,'(a)') '# cbb_SWBC zone '//trim(adjustl(Modflow%SWBCZoneName(k)))
+                write(FNum,'(10('//FMT_R4//'))') (domain%Cbb_SWBCZone(i,1,k),i=1,domain%nCells)
+            end do
+        end if
         
         do i=1,domain%nElements
             if(domain%nNodesPerCell==8) then
@@ -4603,6 +4630,12 @@ module MUSG !
             if(allocated(domain%cbb_SWBC)) then
                 write(FNum,'(a)') '# cbb_SWBC'
                 write(FNum,'(10('//FMT_R4//'))') (domain%cbb_SWBC(i,j),i=1,domain%nCells)
+            end if
+            if(allocated(domain%Cbb_SWBCZone)) then
+                do k=1,size(domain%Cbb_SWBCZone,3)
+                    write(FNum,'(a)') '# cbb_SWBC zone '//trim(adjustl(Modflow%SWBCZoneName(k)))
+                    write(FNum,'(10('//FMT_R4//'))') (domain%Cbb_SWBCZone(i,j,k),i=1,domain%nCells)
+                end do
             end if
             !write(FNum,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="GWF" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain%nNodes,', E=',domain%nCells,', datapacking=block, &
             !zonetype=febrick, VARLOCATION=([4,5,6]=CELLCENTERED), VARSHARELIST=([1,2,3,4,]), CONNECTIVITYSHAREZONE=1 '
@@ -4701,6 +4734,11 @@ module MUSG !
             end if
             if (allocated(domain%cbb_FLOW_FACE)) call TecIO_WriteR4(domain%nCells, domain%cbb_FLOW_FACE(:,itime))
             if (allocated(domain%cbb_SWBC)) call TecIO_WriteR4(domain%nCells, domain%cbb_SWBC(:,itime))
+            if (allocated(domain%Cbb_SWBCZone)) then
+                do i = 1, size(domain%Cbb_SWBCZone,3)
+                    call TecIO_WriteR4(domain%nCells, domain%Cbb_SWBCZone(:,itime,i))
+                end do
+            end if
             if (itime == 1) then
                 call TecIO_WriteNodes(domain%idNode, nPer, domain%nElements)
             end if
@@ -7147,7 +7185,7 @@ module MUSG !
         implicit none
         type (ModflowProject) Modflow
 
-        integer(i4) :: i, j, k
+        integer(i4) :: i, j, k, iz
         integer(i4) :: nconn, nOther, p, q, selfPos
         integer(i4) :: connID(MAX_CNCTS), connIDOther(MAX_CNCTS)
         real(sp) :: connLen(MAX_CNCTS), connLenOther(MAX_CNCTS)
@@ -7319,9 +7357,30 @@ module MUSG !
             write(Modflow.iSWBC,*) 1  ! reuse bc data from last stress period if negative
             do i=1,Modflow%SWF%nCells
                 if(bcheck(Modflow%SWF%Cell(i)%is,CriticalDepth)) then
-                    write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%cell(i)%CriticalDepthLength
+                    if(Modflow%nSWBCZones > 0) then
+                        iz=0
+                        if(allocated(Modflow%SWF%SWBCZoneID)) iz=Modflow%SWF%SWBCZoneID(i)
+                        write(Modflow.iSWBC,'(i10,1x,'//FMT_R4//',i6)') i+Modflow%GWF%nCells+Modflow%CLN%nCells, &
+                            Modflow%SWF%cell(i)%CriticalDepthLength, iz
+                    else
+                        write(Modflow.iSWBC,'(5('//FMT_R4//'))') i+Modflow%GWF%nCells+Modflow%CLN%nCells, Modflow%SWF%cell(i)%CriticalDepthLength
+                    end if
                 end if
             end do
+
+            ! Named SWBC zone map for USGs_1 split volumetric budget
+            if(Modflow%nSWBCZones > 0) then
+                Modflow%FNameSWBCZONE = trim(Modflow%Prefix)//'.swbczone'
+                call OpenAscii(Modflow%iSWBCZONE, Modflow%FNameSWBCZONE)
+                call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameSWBCZONE))
+                write(Modflow%iNAM,'(a,i4,a)') 'SWBZ ',Modflow%iSWBCZONE,' '//trim(Modflow%FNameSWBCZONE)
+                write(Modflow%iSWBCZONE,'(a,a)') '# MODFLOW-USG SWBCZONE file written by Modflow-User-Tools version ',trim(MUTVersion)
+                write(Modflow%iSWBCZONE,*) Modflow%nSWBCZones
+                do i=1,Modflow%nSWBCZones
+                    write(Modflow%iSWBCZONE,'(i8,2x,a)') i, trim(Modflow%SWBCZoneName(i))
+                end do
+                call FreeUnit(Modflow%iSWBCZONE)
+            end if
         end if
         
         ! Initialize SWF_GSF file 
@@ -10648,7 +10707,8 @@ module MUSG !
       
       type (ModflowProject) Modflow
       
-      integer(i4) :: in, np, L
+      integer(i4) :: in, np, L, iz, ierr, ic, noff
+      CHARACTER*400 LINE
       
       in=modflow.iSWBC 
       iout=FNumEco
@@ -10696,8 +10756,24 @@ module MUSG !
 !     1     'DRAIN NO.      NODE         DRAIN EL.  CONDUCTANCE',
 !     2     dummyc16,20,0,IFREFM,NEQS,5,5,0)
 !         end if
+          ! Optional third column is the SWBZ zone id (0 or missing = unnamed)
+          noff=Modflow%GWF%nCells+Modflow%CLN%nCells
+          if(Modflow%SWF%nCells > 0 .and. .not. allocated(Modflow%SWF%SWBCZoneID)) then
+              allocate(Modflow%SWF%SWBCZoneID(Modflow%SWF%nCells))
+          end if
+          if(allocated(Modflow%SWF%SWBCZoneID)) Modflow%SWF%SWBCZoneID(:)=0
           DO L=1,NSWBC
-              READ(IN,*) ISWBC(L),VSWBC(1,L)
+              READ(IN,'(a)') LINE
+              iz=0
+              READ(LINE,*,iostat=ierr) ISWBC(L),VSWBC(1,L),iz
+              if(ierr /= 0) then
+                  iz=0
+                  READ(LINE,*) ISWBC(L),VSWBC(1,L)
+              end if
+              ic=ISWBC(L)-noff
+              if(allocated(Modflow%SWF%SWBCZoneID)) then
+                  if(ic >= 1 .and. ic <= Modflow%SWF%nCells) Modflow%SWF%SWBCZoneID(ic)=iz
+              end if
           end do
       END IF
 !      NDRAIN=NNPDRN
@@ -10720,6 +10796,39 @@ module MUSG !
 !8------RETURN.
       RETURN
       END SUBROUTINE ReadSWBC2
+!------------------------------------------------------------------
+      SUBROUTINE ReadSWBCZone(modflow)! based on SWF2BC1U1ZONEAR
+!     READ NAMED SWBC ZONE BUDGET LABELS (id -> 16-char name)
+      USE GLOBAL,      ONLY:IOUT
+      implicit none
+      type (ModflowProject) Modflow
+      CHARACTER*400 LINE
+      integer(i4) :: in, lloc, istart, istop, n, iz, id, nz
+      real(sp) :: r
+
+      in=modflow.iSWBCZONE
+      iout=FNumEco
+      Modflow%nSWBCZones=0
+      if(in <= 0) return
+      CALL URDCOM(IN,IOUT,LINE)
+      LLOC=1
+      CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,nz,R,IOUT,IN)
+      if(nz <= 0) return
+      if(nz > 100) call ErrMsg('SWBZ: more than 100 SWBC zones')
+      Modflow%SWBCZoneName(:)=' '
+      do iz=1,nz
+          READ(IN,'(a)') LINE
+          LLOC=1
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,2,id,R,IOUT,IN)
+          CALL URWORD(LINE,LLOC,ISTART,ISTOP,0,n,R,IOUT,IN)
+          if(id < 1 .or. id > nz) call ErrMsg('SWBZ: zone id out of range')
+          n=min(16,ISTOP-ISTART+1)
+          if(n > 0) Modflow%SWBCZoneName(id)=LINE(ISTART:ISTART+n-1)
+          call Msg('SWBC zone '//trim(Modflow%SWBCZoneName(id)))
+      end do
+      Modflow%nSWBCZones=nz
+      RETURN
+      END SUBROUTINE ReadSWBCZone
      
 !------------------------------------------------------------------
       SUBROUTINE ReadRCH_StressPeriods(Modflow)
@@ -13781,6 +13890,8 @@ module MUSG !
         character*16   :: text
         character*16  :: CompName(100)
         real(sp), allocatable :: dummy(:)
+        character(16) :: lctext, lczone
+        integer(i4) :: iz, izSWBC
         
         
         !real(sp) :: rmin
@@ -13838,7 +13949,31 @@ module MUSG !
               
                 if((NVAL.le.0)) go to 9300
                 if(ICODE .gt. 0)then
-                    if(index(TEXT,'FLOW JA FACE') .ne. 0 .or. &
+                    izSWBC=0
+                    if(Modflow%nSWBCZones > 0) then
+                        lctext=adjustl(text)
+                        call LwrCse(lctext)
+                        do iz=1,Modflow%nSWBCZones
+                            lczone=adjustl(Modflow%SWBCZoneName(iz))
+                            call LwrCse(lczone)
+                            if(trim(lctext)==trim(lczone)) izSWBC=iz
+                        end do
+                    end if
+                    if(izSWBC > 0 .or. index(text,'SWBC') .ne.0) then
+                        if(.not. allocated(domain%cbb_SWBC)) then
+	                        allocate(domain%cbb_SWBC(NVAL,Modflow.ntime))
+                            domain%cbb_SWBC=0
+                        end if
+                        if(Modflow%nSWBCZones > 0 .and. .not. allocated(domain%Cbb_SWBCZone)) then
+                            allocate(domain%Cbb_SWBCZone(NVAL,Modflow.ntime,Modflow%nSWBCZones))
+                            domain%Cbb_SWBCZone=0
+                        end if
+                        allocate(dummy(NVAL))
+                        read(FNum,err=9400,end=9400) (dummy(I),I=1,NVAL)
+                        domain%cbb_SWBC(:,j)=domain%cbb_SWBC(:,j)+dummy(:)
+                        if(izSWBC > 0) domain%Cbb_SWBCZone(:,j,izSWBC)=dummy(:)
+                        deallocate(dummy)
+                    else if(index(TEXT,'FLOW JA FACE') .ne. 0 .or. &
                        index(TEXT,'FLOW CLN FACE') .ne. 0 .or. &
                        index(TEXT,'FLOW SWF FACE') .ne. 0) then
                         if(j==1) then
@@ -13920,13 +14055,6 @@ module MUSG !
                                 domain%cbb_GWF=0
                         end if
                         read(FNum,err=9400,end=9400) (domain%cbb_GWF(I,j),I=1,NVAL)
-
-                    else if(index(text,'SWBC') .ne.0) then
-                        if(j==1) THEN
-	                            allocate(domain%cbb_SWBC(NVAL,Modflow.ntime))
-                                domain%cbb_SWBC=0
-                        end if
-                        read(FNum,err=9400,end=9400) (domain%cbb_SWBC(I,j),I=1,NVAL)
 
                     else 
                         call HandleError(ERR_INVALID_INPUT, trim(domain%FNameCBB)//': TEXT variable '//trim(text)//' not currently recognized', 'read_budget_file')

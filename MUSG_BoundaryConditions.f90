@@ -19,7 +19,7 @@ module MUSG_BoundaryConditions
     public :: AssignCHDtoDomain, AssignDRNtoDomain, AssignRCHtoDomain
     public :: AssignTransientRCHtoDomain, AssignWELtoDomain, AssignEVTtoDomain
     public :: AssignCriticalDepthtoDomain, AssignCriticalDepthtoCellsSide1
-    public :: SetPendingCHDZoneName
+    public :: SetPendingCHDZoneName, SetPendingSWBCZoneName
     public :: SetPendingGSTRInstanceName, AssignGSTRtoDomain, WriteGSTRFile
     
     ! Boundary condition command strings (these would be moved from Modflow_USG.f90)
@@ -63,6 +63,70 @@ module MUSG_BoundaryConditions
         modflow%PendingCHDZoneID = modflow%nCHDZones
         call Msg('CHD zone name: '//trim(zname))
     end subroutine SetPendingCHDZoneName
+
+    !----------------------------------------------------------------------
+    subroutine SetPendingSWBCZoneName(FNumMUT, modflow)
+        ! Read SWBC zone budget name and set as pending for the next swf critical depth assign
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        character(MAX_STR) :: line
+        character(16) :: zname
+        integer(i4) :: i, n
+
+        read(FNumMUT,'(a)') line
+        line = adjustl(line)
+        n = min(16, len_trim(line))
+        if(n <= 0) then
+            call ErrMsg('swbc zone name: blank zone name')
+        end if
+        if(index(line(1:n),' ') > 0) then
+            call ErrMsg('swbc zone name: zone name may not contain blanks: '//line(1:n))
+        end if
+        zname = ' '
+        zname(1:n) = line(1:n)
+
+        ! Reuse existing zone id if name already defined
+        do i=1,modflow%nSWBCZones
+            if(modflow%SWBCZoneName(i) == zname) then
+                modflow%PendingSWBCZoneID = i
+                call Msg('SWBC zone name (existing): '//trim(zname))
+                return
+            end if
+        end do
+
+        if(modflow%nSWBCZones >= 100) then
+            call ErrMsg('swbc zone name: exceeded MAX_SWBC_ZONES')
+        end if
+        modflow%nSWBCZones = modflow%nSWBCZones + 1
+        modflow%SWBCZoneName(modflow%nSWBCZones) = zname
+        modflow%PendingSWBCZoneID = modflow%nSWBCZones
+        call Msg('SWBC zone name: '//trim(zname))
+    end subroutine SetPendingSWBCZoneName
+
+    !----------------------------------------------------------------------
+    subroutine TagChosenSWBCZone(modflow,domain)
+        ! Store the pending SWBC zone id on every chosen critical-depth cell, then clear it
+        implicit none
+        type(ModflowProject) :: modflow
+        type(ModflowDomain) :: domain
+        integer(i4) :: i
+
+        if(.not. allocated(domain%SWBCZoneID)) then
+            allocate(domain%SWBCZoneID(domain%nCells),stat=ialloc)
+            call AllocChk(ialloc,'Cell SWBC zone id array')
+            domain%SWBCZoneID(:)=0
+        end if
+        if(modflow%PendingSWBCZoneID > 0) then
+            call Msg('    using SWBC zone: '//trim(modflow%SWBCZoneName(modflow%PendingSWBCZoneID)))
+        end if
+        do i=1,domain%nCells
+            if(bcheck(domain%cell(i)%is,chosen) .and. bcheck(domain%cell(i)%is,CriticalDepth)) then
+                domain%SWBCZoneID(i)=modflow%PendingSWBCZoneID
+            end if
+        end do
+        modflow%PendingSWBCZoneID = 0
+    end subroutine TagChosenSWBCZone
     
     !----------------------------------------------------------------------
     subroutine AssignCHDtoDomain(FNumMUT,modflow,domain) 
@@ -791,6 +855,8 @@ module MUSG_BoundaryConditions
                 endif
             enddo
         endif
+
+        call TagChosenSWBCZone(modflow,domain)
  
         if(modflow%iSWBC == 0) then ! Initialize SWBC file and write data to NAM
             modflow%FNameSWBC=trim(modflow%Prefix)//'.swbc'
@@ -831,6 +897,8 @@ module MUSG_BoundaryConditions
                 end if
             end do
         end if
+
+        call TagChosenSWBCZone(modflow,domain)
  
         if(modflow%iSWBC == 0) then ! Initialize SWBC file and write data to NAM
             modflow%FNameSWBC=trim(modflow%Prefix)//'.swbc'

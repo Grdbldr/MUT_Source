@@ -548,9 +548,13 @@ def _chapter_results(
             "At the last tabulated budget time "
             f"({tex_escape(_fmt_num(b.time))}):\n"
         )
-        items = [
-            f"IN recharge: {_fmt_num(b.in_recharge)}",
-            f"OUT SWBC: {_fmt_num(b.out_swbc)}",
+        items = [f"IN recharge: {_fmt_num(b.in_recharge)}"]
+        for zname, zval in b.out_swbc_zones.items():
+            items.append(f"OUT SWBC {zname}: {_fmt_num(zval)}")
+        items.append(
+            f"OUT SWBC{' (combined outlets)' if b.out_swbc_zones else ''}: {_fmt_num(b.out_swbc)}"
+        )
+        items += [
             f"IN total: {_fmt_num(b.in_total)}",
             f"OUT total: {_fmt_num(b.out_total)}",
             f"IN minus OUT: {_fmt_num(b.in_minus_out)}",
@@ -567,6 +571,17 @@ def _chapter_results(
                 + ". Values near 1 indicate approximate equilibrium between applied "
                 "rainfall and outlet discharge (storage change small).\n\n"
             )
+            if b.out_swbc_zones:
+                parts = [
+                    f"{zname} {zval / b.in_recharge:.4f}"
+                    + (f" ({100.0 * zval / b.out_swbc:.1f}% of outflow)" if b.out_swbc else "")
+                    for zname, zval in b.out_swbc_zones.items()
+                ]
+                lines.append(
+                    "Per-outlet SWBC outflow / recharge inflow: "
+                    + tex_escape("; ".join(parts))
+                    + ".\n\n"
+                )
         if b.percent_discrepancy is not None and abs(b.percent_discrepancy) < 1.0:
             lines.append(
                 "The final percent discrepancy is small ($<1\\%$), which is consistent "

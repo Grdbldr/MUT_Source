@@ -20,7 +20,8 @@ _NAM_LINE = re.compile(r"^(\S+)\s+(\S+)\s+(\S.*)$")
 class BudgetSnapshot:
     time: float | None = None
     in_recharge: float | None = None
-    out_swbc: float | None = None
+    out_swbc: float | None = None  # combined critical-depth outflow (all SWBC zones)
+    out_swbc_zones: dict[str, float] = field(default_factory=dict)  # named SWBZ zones
     in_total: float | None = None
     out_total: float | None = None
     in_minus_out: float | None = None
@@ -31,6 +32,7 @@ class BudgetSnapshot:
 @dataclass
 class UsgRunInfo:
     packages: list[tuple[str, str]] = field(default_factory=list)
+    swbc_zone_names: list[str] = field(default_factory=list)
     nam_header: str = ""
     elapsed: str = ""
     run_end: str = ""
@@ -56,6 +58,30 @@ def _parse_nam(path: Path, info: UsgRunInfo) -> None:
         match = _NAM_LINE.match(stripped)
         if match:
             info.packages.append((match.group(1), match.group(3).strip()))
+            if match.group(1).upper() == "SWBZ":
+                info.swbc_zone_names = _parse_swbz(path.parent / match.group(3).strip())
+
+
+def _parse_swbz(path: Path) -> list[str]:
+    """Zone names from a SWBZ file: comment header, NZ, then NZ lines of 'id name'."""
+    if not path.is_file():
+        return []
+    rows = [
+        ln.split()
+        for ln in path.read_text(encoding="utf-8", errors="replace").splitlines()
+        if ln.strip() and not ln.lstrip().startswith("#")
+    ]
+    if not rows:
+        return []
+    try:
+        nz = int(rows[0][0])
+    except ValueError:
+        return []
+    names = [""] * nz
+    for parts in rows[1 : nz + 1]:
+        if len(parts) >= 2 and parts[0].isdigit() and 1 <= int(parts[0]) <= nz:
+            names[int(parts[0]) - 1] = parts[1]
+    return [n for n in names if n]
 
 
 def _parse_lst_tail(path: Path, info: UsgRunInfo) -> None:
@@ -129,10 +155,19 @@ def _parse_budget(path: Path, info: UsgRunInfo) -> None:
             disc = row.get("PERCENT DISCREPANCY")
             if disc is not None:
                 max_abs = max(max_abs, abs(disc))
+            zones = {
+                name: v
+                for name in info.swbc_zone_names
+                if (v := _pick(row, "OUT_" + name)) is not None
+            }
+            out_swbc = _pick(row, "OUT_SWBC")
+            if zones:
+                out_swbc = (out_swbc or 0.0) + sum(zones.values())
             last = BudgetSnapshot(
                 time=values[0] if values else None,
                 in_recharge=_pick(row, "IN_RECHARGE"),
-                out_swbc=_pick(row, "OUT_SWBC"),
+                out_swbc=out_swbc,
+                out_swbc_zones=zones,
                 in_total=_pick(row, "IN_TOTAL IN", "TOTAL IN"),
                 out_total=_pick(row, "TOTAL OUT"),
                 in_minus_out=_pick(row, "IN - OUT"),

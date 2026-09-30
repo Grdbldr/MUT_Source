@@ -908,7 +908,9 @@ class _LayoutBuilder:
         show_axes: bool = True,
         transparent: bool = True,
         point_labels: list[str] | None = None,
+        keep_only: tuple[int, int] | None = None,
     ) -> None:
+        """keep_only=(var_num, value) blanks every point whose var differs from value."""
         x, y, w, h = slot
         if self.frame_count_on_page == 0:
             self.chunks.append(
@@ -929,6 +931,11 @@ class _LayoutBuilder:
                 show_axes=show_axes,
             )
         )
+        if keep_only:
+            self.chunks.append(_value_keep_only(*keep_only))
+            self.chunks.append(
+                f"$!RenameDataSetZone\n  Zone = 1\n  Name = '{_escape(frame_name)}'\n"
+            )
         if point_labels:
             self.chunks.append(_scatter_obs_labels(read_point_xyz(path), point_labels))
         self.chunks.append(_linking(link_view=True, link_size=True))
@@ -1042,6 +1049,7 @@ _SCATTER_STYLE = {
     "WEL": ("Magenta", 1.0),
     "OBS_SCATTER": ("Red", 1.0),
 }
+_SWBC_ZONE_COLORS = ("Custom8", "Custom3", "Custom13", "Custom28")
 
 
 def _scatter_files(inv: ArtifactInventory, domain: str) -> list[tuple[str, Path]]:
@@ -1111,6 +1119,22 @@ def _value_blanking(var_num: int | None) -> str:
       VarA = {var_num}
       RelOp = LessThanOrEqual
       ValueCutoff = 0
+      }}
+    }}
+"""
+
+
+def _value_keep_only(var_num: int, value: int) -> str:
+    return f"""$!Blanking
+  Value
+    {{
+    Include = Yes
+    Constraint 1
+      {{
+      Include = Yes
+      VarA = {var_num}
+      RelOp = NotEqualTo
+      ValueCutoff = {value}
       }}
     }}
 """
@@ -1840,15 +1864,31 @@ def write_layouts(
         if not files:
             return []
         slot = _overlap_slot()
-        n = len(files)
-        names: list[str] = []
         prefix = domain.upper() + "_"
-        for i, (key, path) in enumerate(files):
+        # One layer per file; SWBC with named zones becomes one layer per outlet.
+        layers: list[tuple[str, Path, str, tuple[int, int] | None, str | None]] = []
+        for key, path in files:
             label = key.replace("_", " ")
             suffix = key.upper()[len(prefix) :] if key.upper().startswith(prefix) else key.upper()
             if suffix == "OBS_SCATTER":
                 label = f"{domain} OBS"
+            zone_var = (
+                var_index(read_tecplot_header(path).get("variables") or [], "SWBC Zone")
+                if suffix == "SWBC" and usg.swbc_zone_names
+                else None
+            )
+            if zone_var:
+                for iz, zname in enumerate(usg.swbc_zone_names, start=1):
+                    color = _SWBC_ZONE_COLORS[(iz - 1) % len(_SWBC_ZONE_COLORS)]
+                    layers.append((suffix, path, f"{label} {zname}", (zone_var, iz), color))
+            else:
+                layers.append((suffix, path, label, None, None))
+        n = len(layers)
+        names: list[str] = []
+        for i, (suffix, path, label, keep_only, zone_color) in enumerate(layers):
             color, frame_size = _SCATTER_STYLE.get(suffix, ("Red", 1.0))
+            if zone_color:
+                color = zone_color
             top_index = n - 1 - i
             labels = _obs_names_for_domain(build, domain) if "OBS" in suffix else None
             b.add_scatter(
@@ -1862,6 +1902,7 @@ def write_layouts(
                 show_axes=(suffix == "CELLS"),
                 transparent=(suffix != "CELLS"),
                 point_labels=labels,
+                keep_only=keep_only,
             )
             names.append(label)
         return names

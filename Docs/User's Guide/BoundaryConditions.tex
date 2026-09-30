@@ -213,6 +213,42 @@ One of the following two instructions can be used:
 
 Although {\sf swf critical depth} is less convenient than {\sf swf critical depth with sidelength1}, it does calculate a contributing length that matches the actual length along the \swf\ mesh outer boundary.
 
+\paragraph{Named outlets.}
+\index{Boundary conditions ! critical depth ! named zones}
+By default all critical depth cells are reported together as a single \texttt{SWBC} volumetric-budget term. To report separate outlets (for example two catchment outlets), tag each group of cells immediately before the critical depth instruction with:
+
+\ins{swbc zone name}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{ZoneName}   Budget label for this critical depth group (maximum 16 characters, no blanks; underscores recommended).
+        \end{enumerate}
+          The label is applied to the cells that receive the next {\sf swf critical depth} or {\sf swf critical depth with sidelength1} assignment. Repeating a name adds cells to the existing zone.
+    }
+
+When at least one zone is named, \mut\ writes a zone id as a third column of the \texttt{.swbc} file and a \texttt{.swbczone} map file (NAM type \texttt{SWBZ}). \mfus\ then prints one IN/OUT line per zone instead of \texttt{SWBC}, and saves one \swf\ cell-by-cell record per zone; critical depth cells without a zone keep the \texttt{SWBC} label. The sum of the zone terms equals the unzoned \texttt{SWBC} term. Post-processing adds \texttt{IN\_}/\texttt{OUT\_}{\em ZoneName} columns to the VolumeBudget Tecplot file, \swf\ results variables \swf\ to {\em ZoneName} alongside the combined \swf\ to SWBC, and a \texttt{SWBC Zone} column to the build scatter file \texttt{*\_SWBC.tecplot.dat}.
+
+For example, two outlets A and B:
+\begin{verbatim}
+        clear chosen cells
+        choose cells from xyz list
+            224562.618075775,329692.764796124,0
+            224524.557045581,329512.523755688,0
+            end
+        swbc zone name
+        Outlet_A
+        swf critical depth
+
+        clear chosen cells
+        choose cells from xyz list
+            235922.820107068,330050.46088884,0
+            235799.630126383,330094.549842411,0
+            end
+        swbc zone name
+        Outlet_B
+        swf critical depth
+\end{verbatim}
+
 The example \texttt{6\_Abdul\_Prism\_Cell} uses the second approach:
 \begin{verbatim}
         clear chosen nodes

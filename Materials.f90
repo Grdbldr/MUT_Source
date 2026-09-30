@@ -244,6 +244,7 @@ Module Materials
 
 	    character(*) :: FName
 	    character(256) :: line
+	    character(MAX_LBL) :: OptField
         integer(i4) :: id
 
 		call Msg('Materials file '//trim(FName))
@@ -311,15 +312,15 @@ Module Materials
             ! Other geometries: [InfillPorosity] (numeric only)
             GeneralSectionTableFile(id)=''
             InfillPorosity(id)=1.0
+            ! A non-numeric trailing field (e.g. a Notes column) is ignored.
             if(len_trim(line) > 0) then
                 if(trim(Geometry(id)) == 'General') then
                     GeneralSectionTableFile(id)=ParseLineSTR(line)
-                    if(len_trim(line) > 0) then
-                        InfillPorosity(id)=ParseLineRNUM(line)
-                        if(InfillPorosity(id) <= 0.0) InfillPorosity(id)=1.0
-                    end if
-                else
-                    InfillPorosity(id)=ParseLineRNUM(line)
+                end if
+                if(len_trim(line) > 0) then
+                    OptField=ParseLineSTR(line)
+                    read(OptField,*,iostat=status) InfillPorosity(id)
+                    if(status /= 0) InfillPorosity(id)=1.0
                     if(InfillPorosity(id) <= 0.0) InfillPorosity(id)=1.0
                 end if
             end if

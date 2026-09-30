@@ -21,7 +21,7 @@ Navigation for agents. User-facing prose lives in TeX; this table only points at
 | Cell selection | `MUSG_Selection.f90` | — | `ModelBuild.tex` | Chosen-cell bit flags |
 | Material DBs | `MUSG_Database.f90`, `Materials.f90` | SMS, GWF/CLN/SWF/ET CSV | `Excel.tex` | Sparse IDs allowed |
 | Material assign | `MUSG_MaterialProperties.f90` | LPF/BCF, CLN, SWF props | `GWF.tex`, `CLN.tex`, `SWF.tex` | GWF porosity for ALV; CLN `InfillPorosity` |
-| BCs | `MUSG_BoundaryConditions.f90` | CHD, DRN, RCH/RTS, WEL, critical depth, … | `BoundaryConditions.tex` (Model Build section) | By BC type; domain forms for GWF/SWF/CLN; RTS zone merge; `chd zone name` |
+| BCs | `MUSG_BoundaryConditions.f90` | CHD, DRN, RCH/RTS, WEL, critical depth, … | `BoundaryConditions.tex` (Model Build section) | By BC type; domain forms for GWF/SWF/CLN; RTS zone merge; `chd zone name`; `swbc zone name` (named SWBC outlets, NAM `SWBZ`) |
 | GSTR | `MUSG_Core.f90` (`GSTRInstance`), `raster.f90` | GSTR in USG-Beta | `GSTR.tex` (Model Build / Boundary Conditions / Recharge) | ArcASCII snapshots; named instances on GWF/CLN/SWF |
 | ICs | `MUSG_InitialConditions.f90` | STRT | domain chapters | |
 | Stress periods | `MUSG_StressPeriods.f90` | DIS / TDIS | `StressPeriods.tex` | |

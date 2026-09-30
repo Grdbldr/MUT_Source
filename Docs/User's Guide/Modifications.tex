@@ -1,4 +1,11 @@
 \label{chapter:modifications}
+\label{changes:2025.029}
+Changes in version 2025.029:
+\begin{itemize}
+\item New instruction {\sf swbc zone name}: names the critical depth (\textsf{SWBC}) cells assigned by the next {\sf swf critical depth} instruction so that each outlet is reported as its own volumetric-budget term and \swf\ cell-by-cell record. \mut\ writes a zone column in \texttt{.swbc} and a \texttt{.swbczone} map (NAM type \texttt{SWBZ}); requires \mfus\ with SWBZ support (USG-Beta change log entry 20). Without named zones the \textsf{SWBC} output is unchanged.
+\item Post-processing reads the named SWBC records, writes \swf\ to {\em ZoneName} result variables plus the combined \swf\ to SWBC, and \texttt{mut\_document} reports each outlet, the combined outflow, and per-outlet outflow/recharge ratios.
+\end{itemize}
+
 \label{changes:2025.027}
 Changes in version 2025.027:
 \begin{itemize}

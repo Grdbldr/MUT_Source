@@ -133,6 +133,7 @@ module MUSG_Core
         ! SWF boundary conditions
         integer(i4) :: nSWBCCells=0        
         real(dp), allocatable :: CriticalDepth(:)  ! SWBC assigned critical depth boundary cell value
+        integer(i4), allocatable :: SWBCZoneID(:)  ! named SWBC budget zone id (0=unnamed)
 
         integer(i4), allocatable :: ibound(:)
         integer(i4), allocatable :: laybcd(:)  ! size nLayers, non-zero value indicates layer has a quasi-3D confining bed below
@@ -183,6 +184,7 @@ module MUSG_Core
         real(sp), allocatable :: Cbb_FLOW_FACE(:,:)
         real(sp), allocatable :: Cbb_GWF(:,:)
         real(sp), allocatable :: Cbb_SWBC(:,:)
+        real(sp), allocatable :: Cbb_SWBCZone(:,:,:)  ! per named SWBC zone (cell, time, zone)
 
         real(sp), allocatable :: laycbd(:)
 
@@ -399,6 +401,13 @@ module MUSG_Core
         ! SWBC file
         character(128) :: FNameSWBC
         integer(i4) :: iSWBC
+
+        ! Named SWBC budget zones (LST VBNM labels, max 16 chars)
+        integer(i4) :: nSWBCZones=0
+        integer(i4) :: PendingSWBCZoneID=0
+        character(16) :: SWBCZoneName(100)
+        character(128) :: FNameSWBCZONE
+        integer(i4) :: iSWBCZONE=0
 
         ! STO file
         character(128) :: FNameSTO
