@@ -25,13 +25,25 @@ def tex_escape(text: str) -> str:
     return "".join(_SPECIAL.get(ch, ch) for ch in text)
 
 
+def tex_fpath(path: str) -> str:
+    """Wrap a filesystem path in the guide's breakable \\fpath macro."""
+    return r"\fpath{" + path.replace("%", r"\%").replace("#", r"\#") + "}"
+
+
+def _export_note_tex(note: str) -> str:
+    head, sep, path = note.partition(" via ")
+    if not sep:
+        return tex_escape(note)
+    return tex_escape(head + sep) + tex_fpath(path)
+
+
 def write_stub(tex_path: Path) -> None:
     """Committed placeholder so pdflatex works before a verification run."""
     tex_path.parent.mkdir(parents=True, exist_ok=True)
     tex_path.write_text(
         r"""\section{Comparison results}
 This section compares the verification models listed in \texttt{VerificationFolder.List}
-against the previous-version baseline (\texttt{C:\textbackslash Work\textbackslash Examples-Base}).
+against the previous-version baseline (\fpath{C:\Work\Examples-Base}).
 Solid lines are the current \mut\ release; dashed lines are the baseline.
 
 Run \texttt{Tools/verify\_release.ps1} from the \mut\ source repository to
@@ -48,7 +60,7 @@ replace this placeholder with the comparison figures.
 _FOLDER_NOTES = {
     "3_0_swf_chd": (
         r"Cause: version 2025.014 began writing both start and end heads on "
-        r"\swf\ CHD records (USG requires both). The 2025.012 baseline wrote "
+        r"\swf\ CHD records (\mfus\ requires both). The 2025.012 baseline wrote "
         r"only the assigned head. The outlet cell (node 202) now has start and "
         r"end heads both equal to the assigned value $1.000001$ (the cell "
         r"starting head already matches the CHD). Completing the two-head "
@@ -61,7 +73,7 @@ _FOLDER_NOTES = {
         r"Cause: the same 2025.014 CHD change, for \cln. The outlet record is "
         r"now a start-to-end ramp from the cell starting head to the assigned "
         r"CHD $1.000001$ (they differ only in the last decimal place). The "
-        r"2025.012 file had a single assigned head, which USG applied as an "
+        r"2025.012 file had a single assigned head, which \mfus\ applied as an "
         r"instantaneous shock. That produced a first-step "
         r"\texttt{IN\_CLN STORAGE} pulse of about $0.00415$ and a $1\%$ "
         r"mass-balance discrepancy; the ramp removes the shock."
@@ -157,7 +169,7 @@ def write_comparison_tex(
         "tecplot png export skipped",
     }
     if export_note and not skip_note:
-        parts.append(tex_escape(export_note) + ".")
+        parts.append(_export_note_tex(export_note) + ".")
         parts.append("")
     parts.append(_INTERPRETATION.strip())
     parts.append("")

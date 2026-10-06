@@ -47,6 +47,7 @@ Most input instructions, including \textsf{2d mesh from gb}, do not include leng
 When databases are used to define material parameter values (see page~\pageref{page:LookupTable}), fields defining the length and time units of each record are included. In this case \mut\ will automatically convert the parameter values to the unit system that has been defined for the \mfus\ model.
 
 \pagebreak
+\hypertarget{BuildTriangularMesh}{}
 \mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \fpath{MUT_Examples\_BuildTriangularMesh\_2DMesh_Regional}} mesh generation folder are shown below:
 
         \includegraphics[width=\textwidth]{MESH_RegionalInitialFolderFiles.png}

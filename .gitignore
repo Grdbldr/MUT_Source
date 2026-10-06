@@ -394,3 +394,9 @@ Docs/User's Guide/*.pdf
 Docs/User's Guide/*.lof
 Docs/User's Guide/*.lot
 Docs/User's Guide/*.bbl
+
+# Generated project catalogue (rebuild with Docs/build_mut_catalogue.bat)
+Docs/Catalogue/
+
+# Local scratch helper with machine-specific paths
+Docs/User's Guide/OpenInPowerPoint.html

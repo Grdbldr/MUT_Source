@@ -1,11 +1,15 @@
 # MUT — Current progress
 
-**Last updated:** 2026-09-29
-**Version in code:** 2025.029 (`GeneralRoutines.f90`)
-**Version in User's Guide:** 2025.029 (title page and `Modifications.tex`)
+**Last updated:** 2026-10-06
+**Version in code:** 2025.030 (`GeneralRoutines.f90`)
+**Version in User's Guide:** 2025.030 (title page and `Modifications.tex`)
 **Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
+
+- 2025.030: release verification re-run (16 PNGs, `ReleaseComparison.tex`). `Tools/mut_verify/write_comparison_tex.py` now emits the Tecplot export path and stub baseline path as `\fpath{...}` and uses `\mfus` in the CHD notes, so regenerated appendices keep breakable paths.
+
+- Project catalogue: `Tools/mut_catalogue/mut_catalogue.py` scans MUT_Examples, MUT_Source, KURT_Model, and the KAERI Report. `Docs/build_mut_catalogue.bat` writes `Docs/Catalogue/MUT Catalogue.pdf` (User's Guide book style, colour-coded `file:///` links, index). Generated catalogue files are gitignored.
 
 - 2025.029: `swbc zone name` names critical-depth (SWBC) outlet groups. MUT writes a zone column in `.swbc` plus `.swbczone` (NAM `SWBZ`); USG-Beta entry 20 reports one budget term and SWF cbb record per zone. Post reads zone records (`SWF to <zone>` + combined `SWF to SWBC`); `mut_document` reports per-outlet and combined outflow and splits the SWBC scatter layer by outlet.
 
