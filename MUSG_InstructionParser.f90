@@ -621,6 +621,7 @@ module MUSG_InstructionParser
         
         ! SWF boundary condition commands
         character(MAX_INST) :: AssignCHDtoSWF_CMD = 'swf constant head'
+        character(MAX_INST) :: AssignTransientCHDtoSWF_CMD = 'swf transient constant head'
         character(MAX_INST) :: AssignRCHtoSWF_CMD = 'swf recharge'
         character(MAX_INST) :: AssignTransientRCHtoSWF_CMD = 'swf transient recharge'
         character(MAX_INST) :: AssignWELtoSWF_CMD = 'swf well'
@@ -663,6 +664,9 @@ module MUSG_InstructionParser
             call AssignWELtoDomain(FnumMUT,Modflow,Modflow.GWF)
             
         ! SWF boundary conditions
+        else if(index(instruction, AssignTransientCHDtoSWF_CMD) /= 0) then
+            call AssignTransientCHDtoSWF(FnumMUT,Modflow,Modflow.SWF)
+
         else if(index(instruction, AssignCHDtoSWF_CMD) /= 0) then
             call AssignCHDtoDomain(FnumMUT,Modflow,Modflow.SWF)
             

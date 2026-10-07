@@ -129,8 +129,12 @@ def is_match(max_diff: float, scale: float) -> bool:
 
 
 def compare_folder(release_dir: Path, base_dir: Path, folder: str) -> dict[str, object]:
-    """Compare IN-OUT for one verification folder."""
-    cur_path = budget_path(release_dir / folder)
+    """Compare IN-OUT for one verification folder.
+
+    Current results are read from ``release_dir/Verification/<folder>``.
+    The baseline stays flat: ``base_dir/<folder>`` (Examples-Base).
+    """
+    cur_path = budget_path(release_dir / "Verification" / folder)
     base_path = budget_path(base_dir / folder)
     result: dict[str, object] = {
         "folder": folder,

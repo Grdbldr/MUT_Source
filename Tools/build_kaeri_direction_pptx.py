@@ -24,8 +24,8 @@ KURT_RTS = Path(
 KURT_GSTR = Path(
     r"C:\_repo\Work_v2\KURT_Model\2_models\2_TestTransientRainfall\4_GSTR\Docs_meeting"
 )
-EX_ABDUL = Path(r"C:\_repo\Grdbldr\MUT_Examples\6_Abdul_Prism_Cell")
-EX_CLN = Path(r"C:\_repo\Grdbldr\MUT_Examples\3_1_CLN_for_SWF")
+EX_ABDUL = Path(r"C:\_repo\Grdbldr\MUT_Examples\Verification\6_Abdul_Prism_Cell")
+EX_CLN = Path(r"C:\_repo\Grdbldr\MUT_Examples\Verification\3_1_CLN_for_SWF")
 
 # 4:3 report size (Appendix J)
 SLIDE_W = Inches(10.0)

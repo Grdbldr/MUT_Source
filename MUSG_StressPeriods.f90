@@ -33,13 +33,17 @@ module MUSG_StressPeriods
         integer(i4), intent(in) :: FNumMUT
         type(ModflowProject), intent(inout) :: Modflow
         
-        integer(i4), parameter :: MAXStressPeriods=100
+        integer(i4), parameter :: MAXStressPeriods=10000
         character(MAX_INST) :: instruction
         integer(i4) :: status
         
         Modflow%nPeriods=Modflow%nPeriods+1  
         write(TmpSTR,'(a,i8)')'Stress period ',Modflow%nPeriods
         call Msg(trim(TmpSTR))
+        if(Modflow%nPeriods > MAXStressPeriods) then
+            write(TmpSTR,'(a,i0)') 'Number of stress periods exceeds MAXStressPeriods = ',MAXStressPeriods
+            call HandleError(ERR_INVALID_INPUT, trim(TmpSTR), 'StressPeriod')
+        end if
         
         if(Modflow%nPeriods == 1) then
             allocate(Modflow%StressPeriodDuration(MAXStressPeriods), Modflow%StressPeriodnTsteps(MAXStressPeriods), &

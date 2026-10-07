@@ -1,7 +1,7 @@
 \label{texfile:TemplateMesh}
 The next step in the model build workflow is to define a template mesh, which is a 2D finite-element mesh that is used to generate a 3D \gwf\ (and possibly a 2D \swf) finite-element mesh.
 
-Below is an example\footnote{This example was generated using the \tecplot\ layout file \fpath{MUT_Examples\6_Abdul_Prism_Cell\FIG Template Abdul.lay}. }
+Below is an example\footnote{This example was generated using the \tecplot\ layout file \fpath{MUT_Examples\Verification\6_Abdul_Prism_Cell\FIG Template Abdul.lay}. }
   showing an exploded view of a template mesh ({\sf TMPLT}, bottom image) that was used as a basis for generating  finite-element meshes for the \gwf\ ({\sf TMPLT\_GWF}, middle image) and \swf\ ({\sf TMPLT\_SWF}, upper image) domains:
 
     \includegraphics[width=0.87\textwidth]{3_7_tmpltAbdul}
@@ -48,7 +48,7 @@ When databases are used to define material parameter values (see page~\pageref{p
 
 \pagebreak
 \hypertarget{BuildTriangularMesh}{}
-\mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \fpath{MUT_Examples\_BuildTriangularMesh\_2DMesh_Regional}} mesh generation folder are shown below:
+\mut\ can now generate 2D-triangular-element meshes given a list of $xy$ coordinates that define the outer boundary of the model domain and a target element size for the mesh triangles.  There are also optional instructions for refining portions of the mesh inside a polygon or at a point location. The initial contents of an example\footnote{This example can be found in  folder \fpath{MUT_Examples\Demonstration\_BuildTriangularMesh\2_meshes\_2DMesh_Regional}} mesh generation folder are shown below:
 
         \includegraphics[width=\textwidth]{MESH_RegionalInitialFolderFiles.png}
 

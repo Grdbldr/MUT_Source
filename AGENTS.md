@@ -36,14 +36,14 @@ Do not treat [CODE_ANALYSIS.md](CODE_ANALYSIS.md) as current architecture; prefe
 
 - User instructions → edit TeX under `Docs/User's Guide/` (`GWF.tex`, `CLN.tex`, `SWF.tex`, `BoundaryConditions.tex`, `GSTR.tex`, …)
 - Rebuild PDF: [Docs/build_mut_guide.bat](Docs/build_mut_guide.bat) (pdflatex ×3 + makeindex, MiKTeX)
-- Release verification appendix: [Tools/verify_release.ps1](Tools/verify_release.ps1) — from MUT_Source; `C:\Work\Examples-Release` (`VerificationFolder.List` only); never copy MUT_Examples → Examples-Release; publish selected inputs with `ToRepos.bat`. How-to: `Docs/User's Guide/VerifyRelease.tex`
+- Release verification appendix: [Tools/verify_release.ps1](Tools/verify_release.ps1) — from MUT_Source; `C:\Work\Examples-Release\Verification` (`VerificationFolder.List` only); never copy MUT_Examples → Examples-Release; publish verification inputs with `Verification\ToRepos.bat`. Demonstration models use `Demonstration\ToRepos.bat`. How-to: `Docs/User's Guide/VerifyRelease.tex`
 - Do not duplicate User's Guide prose in Markdown
 
 ## External dependencies
 
 - Simulator: USG-Beta (separate repo) — new packages (GSTR, VEL) are implemented there first
 - Deploy: [post_build.bat](post_build.bat) / [post_buildR.bat](post_buildR.bat) → `%USERBIN%\mut.exe` and `MUT_Examples\_MUT_USERBIN`
-- Test cases: work in `C:\Work\Examples-Release`; published subset is `MUT_Examples` (via `ToRepos.bat`). Other trees such as `KURT_Model` are outside this repo.
+- Test cases: work in `C:\Work\Examples-Release` (`Verification` and `Demonstration`). Published subsets are `MUT_Examples\Verification` and `MUT_Examples\Demonstration` (via each folder's `ToRepos.bat`). Other trees such as `KURT_Model` are outside this repo.
 
 ## Domain packages (MODFLOW-USG)
 

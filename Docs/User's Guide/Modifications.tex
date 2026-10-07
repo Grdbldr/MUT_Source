@@ -1,4 +1,11 @@
 \label{chapter:modifications}
+\label{changes:2025.031}
+Changes in version 2025.031:
+\begin{itemize}
+\item New instruction {\sf swf transient constant head}: assigns start and end heads to chosen \swf\ cells for the current stress period, so the CHD file gets a new list in each stress period where it is used (for example a tidal sea level). The maximum number of stress periods is raised from 100 to 10000. Models without the instruction write the same CHD file as before, except that a {\sf chd zone name} on a static {\sf swf constant head} is now written to the zone column instead of 0.
+\item Example models are split into \fpath{Verification} and \fpath{Demonstration} folders under both \fpath{C:\Work\Examples-Release} and \texttt{MUT\_Examples}; each folder is published by its own \texttt{ToRepos.bat}. Release verification runs from \fpath{Examples-Release\Verification}.
+\end{itemize}
+
 \label{changes:2025.030}
 Changes in version 2025.030:
 \begin{itemize}
@@ -26,7 +33,7 @@ Changes in version 2025.026:
 \begin{itemize}
 \item Model documentation is written by default after a successful \texttt{mut \_build} or \texttt{mut \_post} (\fpath{mut_document.py --skip-export}). Instruction {\sf no model documentation} skips it for that MUT file only, so documentation can be build-only, post-only, both, or neither. Missing Python, the script, or \texttt{pdflatex} is a warning; MUT still ends with \texttt{Normal exit}. The former instructions {\sf write model documentation} and {\sf write binary tecplot output} are removed.
 \item Volume-budget time series is a dedicated \texttt{GWF\_VolumeBudget.lay} (full-page XY plot with a line-map legend) rather than a frame on \texttt{GWF\_Results.lay}.
-\item Release verification uses \texttt{VerificationFolder.List} (one folder name per line) in \fpath{C:\Work\Examples-Release}. From the \mut\ source repository, \fpath{Tools/verify_release.ps1} runs \texttt{mut\_verify}, which executes \texttt{mut \_build}, \texttt{usgs\_1} and \texttt{mut \_post} per listed folder. See Appendix~\ref{appendix:release_verification}.
+\item Release verification uses \texttt{VerificationFolder.List} (one folder name per line) in \fpath{C:\Work\Examples-Release\Verification}. From the \mut\ source repository, \fpath{Tools/verify_release.ps1} runs \texttt{mut\_verify}, which executes \texttt{mut \_build}, \texttt{usgs\_1} and \texttt{mut \_post} per listed folder. See Appendix~\ref{appendix:release_verification}.
 \end{itemize}
 
 \label{changes:2025.025}
@@ -39,7 +46,7 @@ Changes in version 2025.025:
 Changes in version 2025.024:
 \begin{itemize}
 \item Finite-element \tecplot\ output defaults to one TecIO SZL file per dataset (\texttt{.tecplot.szplt}). Post-processed \gwf/\swf/\cln\ results and velocity are a single file with all output times (later zones share coordinates and connectivity). Optional {\sf write ascii tecplot output} restores ASCII \texttt{.tecplot.dat}. Scatter, custom-label, volume-budget and restart files remain ASCII. The obsolete instruction {\sf write binary tecplot output} is ignored.
-\item Release-verification appendix: \fpath{Tools/verify_release.ps1} runs the verification models in \fpath{C:\Work\Examples-Release} against \texttt{Examples-Base}, exports \texttt{BatchComparisonPlots.lay} frames, and includes them as Appendix~\ref{appendix:release_verification}. Volume-budget comparison is index-wise when \texttt{TOTAL TIME} lists match, so duplicate dumps at stress-period boundaries (e.g.\ Abdul) are not false-flagged. Remaining IN--OUT differences in \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF} versus a 2025.012 baseline are the 2025.014 \cln/\swf\ CHD start-to-end head ramps. Selected inputs are published to \texttt{MUT\_Examples} with \texttt{ToRepos.bat} (never the reverse).
+\item Release-verification appendix: \fpath{Tools/verify_release.ps1} runs the verification models in \fpath{C:\Work\Examples-Release\Verification} against the flat \texttt{Examples-Base} tree, exports \texttt{BatchComparisonPlots.lay} frames, and includes them as Appendix~\ref{appendix:release_verification}. Volume-budget comparison is index-wise when \texttt{TOTAL TIME} lists match, so duplicate dumps at stress-period boundaries (e.g.\ Abdul) are not false-flagged. Remaining IN--OUT differences in \texttt{3\_0\_SWF\_CHD} and \texttt{3\_1\_CLN\_for\_SWF} versus a 2025.012 baseline are the 2025.014 \cln/\swf\ CHD start-to-end head ramps. Selected inputs are published to \fpath{MUT_Examples\Verification} with \fpath{Verification\ToRepos.bat} (never the reverse).
 \end{itemize}
 
 \label{changes:2025.023}

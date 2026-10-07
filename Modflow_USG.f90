@@ -136,6 +136,7 @@ module MUSG !
     character(MAX_INST) :: AssignGSTRInstanceName_CMD           =   'gstr instance name'
     character(MAX_INST) :: AssignWELtoGWF_CMD		            =   'gwf well'
     character(MAX_INST) :: AssignCHDtoSWF_CMD		            =   'swf constant head'
+    character(MAX_INST) :: AssignTransientCHDtoSWF_CMD          =   'swf transient constant head'
     character(MAX_INST) :: AssignRCHtoSWF_CMD		            =   'swf recharge'
     character(MAX_INST) :: AssignTransientRCHtoSWF_CMD          =   'swf transient recharge'
     character(MAX_INST) :: AssignGSTRtoSWF_CMD                  =   'swf gstr'
@@ -509,7 +510,7 @@ module MUSG !
                     ! Default boundary conditions for extra stress periods
                     if(Modflow.nPeriods>1) then
                         do i=2,Modflow.nPeriods
-                            if(modflow.iCHD>0) write(modflow.iCHD,'(i10)') -1
+                            if(modflow.iCHD>0 .and. Modflow%nTransCHD==0) write(modflow.iCHD,'(i10)') -1
                             if(modflow.iDRN>0) write(modflow.iDRN,'(i10)') -1
                             if(modflow.iRCH>0) write(modflow.iRCH,'(i10)') -1
                             if(modflow.iWel>0) write(modflow.iWel,'(3(i10))') -1, 0 -1
@@ -718,6 +719,7 @@ module MUSG !
                     index(instruction, AssignGSTRInstanceName_CMD) /= 0 .or. &
                     index(instruction, AssignWELtoGWF_CMD) /= 0 .or. &
                     index(instruction, AssignCHDtoSWF_CMD) /= 0 .or. &
+                    index(instruction, AssignTransientCHDtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignRCHtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignTransientRCHtoSWF_CMD) /= 0 .or. &
                     index(instruction, AssignGSTRtoSWF_CMD) /= 0 .or. &
@@ -5964,19 +5966,85 @@ module MUSG !
         
         type (ModflowProject) Modflow
         
-        integer(i4) :: i, nTotal, iz
+        integer(i4) :: i, nTotal, iz, iPer, nPer, maxAct
+        integer(i4), allocatable :: nTransInPeriod(:)
         logical :: writeZones
 
         nTotal = Modflow%GWF%nCHDCells+Modflow%CLN%nCHDCells+Modflow%SWF%nCHDCells
         writeZones = (Modflow%nCHDZones > 0)
+
+        ! Transient SWF CHD records counted per stress period
+        nPer = max(1, Modflow%nPeriods)
+        allocate(nTransInPeriod(nPer))
+        nTransInPeriod(:) = 0
+        do i=1,Modflow%nTransCHD
+            iPer = min(Modflow%TransCHDPeriod(i), nPer)
+            nTransInPeriod(iPer) = nTransInPeriod(iPer) + 1
+        end do
+        maxAct = nTotal + maxval(nTransInPeriod)
  	
         !------------------- CHD file
         if(writeZones) then
-            write(modflow.iCHD,*) nTotal, ' AUXILIARY CHDZONE' ! MXACTC + AUX
+            write(modflow.iCHD,*) maxAct, ' AUXILIARY CHDZONE' ! MXACTC + AUX
         else
-            write(modflow.iCHD,*) nTotal ! maximum number of CHD cells in any stress period
+            write(modflow.iCHD,*) maxAct ! maximum number of CHD cells in any stress period
         end if
-        write(modflow.iCHD,*) nTotal ! number of CHD cells to read
+        write(modflow.iCHD,*) nTotal + nTransInPeriod(1) ! number of CHD cells to read
+        call WriteStaticCHD(.false.)
+        call WriteTransientCHD(1)
+
+        ! Later stress periods: rewrite the full list where transient records exist, otherwise reuse (-1)
+        if(Modflow%nTransCHD > 0) then
+            do iPer=2,nPer
+                if(nTransInPeriod(iPer) > 0) then
+                    write(modflow.iCHD,*) nTotal + nTransInPeriod(iPer)
+                    call WriteStaticCHD(.true.)
+                    call WriteTransientCHD(iPer)
+                else
+                    write(modflow.iCHD,'(i10)') -1
+                end if
+            end do
+        end if
+
+        ! Named CHD zone map for USGs_1 split volumetric budget
+        if(writeZones) then
+            Modflow%FNameCHDZONE = trim(Modflow%Prefix)//'.chdzone'
+            call OpenAscii(Modflow%iCHDZONE, Modflow%FNameCHDZONE)
+            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameCHDZONE))
+            write(Modflow%iNAM,'(a,i4,a)') 'CHDZ ',Modflow%iCHDZONE,' '//trim(Modflow%FNameCHDZONE)
+            write(Modflow%iCHDZONE,'(a,a)') '# MODFLOW-USG CHDZONE file written by Modflow-User-Tools version ',trim(MUTVersion)
+            write(Modflow%iCHDZONE,*) Modflow%nCHDZones
+            do i=1,Modflow%nCHDZones
+                write(Modflow%iCHDZONE,'(i8,2x,a)') i, trim(Modflow%CHDZoneName(i))
+            end do
+            ! Close without releasing the unit: the NAM entry above needs it to stay unique
+            close(Modflow%iCHDZONE)
+        end if
+
+    contains
+
+        subroutine WriteTransientCHD(jPer)
+            integer(i4), intent(in) :: jPer
+            integer(i4) :: k, kPer, node
+            do k=1,Modflow%nTransCHD
+                kPer = min(Modflow%TransCHDPeriod(k), nPer)
+                if(kPer /= jPer) cycle
+                node = Modflow%GWF%nCells+Modflow%CLN%nCells+Modflow%TransCHDCell(k)
+                if(writeZones) then
+                    write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
+                        node, Modflow%TransCHDStart(k), Modflow%TransCHDEnd(k), Modflow%TransCHDZone(k)
+                else
+                    write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') &
+                        node, Modflow%TransCHDStart(k), Modflow%TransCHDEnd(k)
+                end if
+            end do
+        end subroutine WriteTransientCHD
+
+        subroutine WriteStaticCHD(laterPeriod)
+            ! laterPeriod: CLN/SWF start head equals the assigned head (no ramp from starting head)
+            logical, intent(in) :: laterPeriod
+            real(dp) :: hs
+            integer(i4) :: i, iz
             
         if(allocated(Modflow%GWF%ConstantHead)) then
             do i=1,Modflow%GWF%nCells
@@ -5999,13 +6067,15 @@ module MUSG !
                     ! Write START and END heads (USG CHD requires both). Prefer ramp from
                     ! cell starting head to the assigned CHD so large drawdowns are not
                     ! applied as an instantaneous shock at the first time step.
+                    hs = Modflow%CLN%Cell(i)%StartingHeads
+                    if(laterPeriod) hs = Modflow%CLN%ConstantHead(i)
                     if(writeZones) then
                         write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
-                            Modflow%GWF%nCells+i,Modflow%CLN%Cell(i)%StartingHeads, &
+                            Modflow%GWF%nCells+i,hs, &
                             Modflow%CLN%ConstantHead(i),0
                     else
                         write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') &
-                            Modflow%GWF%nCells+i,Modflow%CLN%Cell(i)%StartingHeads, &
+                            Modflow%GWF%nCells+i,hs, &
                             Modflow%CLN%ConstantHead(i)
                     end if
                 end if
@@ -6015,32 +6085,23 @@ module MUSG !
         if(allocated(Modflow%SWF%ConstantHead)) then
             do i=1,Modflow%SWF%nCells
                 if(bcheck(Modflow%SWF%Cell(i)%is,ConstantHead)) then
+                    hs = Modflow%SWF%Cell(i)%StartingHeads
+                    if(laterPeriod) hs = Modflow%SWF%ConstantHead(i)
                     if(writeZones) then
+                        iz = 0
+                        if(allocated(Modflow%SWF%ConstantHeadZoneID)) iz = Modflow%SWF%ConstantHeadZoneID(i)
                         write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'),2x,i8)') &
                             Modflow%GWF%nCells+Modflow%CLN%nCells+i, &
-                            Modflow%SWF%Cell(i)%StartingHeads,Modflow%SWF%ConstantHead(i),0
+                            hs,Modflow%SWF%ConstantHead(i),iz
                     else
                         write(modflow.iCHD,'(i8,2x,2(1x,'//FMT_R8//'))') &
                             Modflow%GWF%nCells+Modflow%CLN%nCells+i, &
-                            Modflow%SWF%Cell(i)%StartingHeads,Modflow%SWF%ConstantHead(i)
+                            hs,Modflow%SWF%ConstantHead(i)
                     end if
                 end if
             end do
         end if
-
-        ! Named CHD zone map for USGs_1 split volumetric budget
-        if(writeZones) then
-            Modflow%FNameCHDZONE = trim(Modflow%Prefix)//'.chdzone'
-            call OpenAscii(Modflow%iCHDZONE, Modflow%FNameCHDZONE)
-            call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow%FNameCHDZONE))
-            write(Modflow%iNAM,'(a,i4,a)') 'CHDZ ',Modflow%iCHDZONE,' '//trim(Modflow%FNameCHDZONE)
-            write(Modflow%iCHDZONE,'(a,a)') '# MODFLOW-USG CHDZONE file written by Modflow-User-Tools version ',trim(MUTVersion)
-            write(Modflow%iCHDZONE,*) Modflow%nCHDZones
-            do i=1,Modflow%nCHDZones
-                write(Modflow%iCHDZONE,'(i8,2x,a)') i, trim(Modflow%CHDZoneName(i))
-            end do
-            call FreeUnit(Modflow%iCHDZONE)
-        end if
+        end subroutine WriteStaticCHD
         
     end subroutine WriteCHDFile
 

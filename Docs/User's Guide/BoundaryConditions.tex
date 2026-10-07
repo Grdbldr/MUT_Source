@@ -43,6 +43,18 @@ To assign a uniform constant head to the \gwf\ model domain use this instruction
           The CHD package record writes two heads: the cell starting head at the beginning of the stress period and \rnum{CHead} at the end. \mfus\ interpolates between them so the assigned head is not applied as an instantaneous shock.
     }
 
+To prescribe a head that changes from one stress period to the next (for example a tidal sea level), place this instruction after each {\sf stress period} block:
+
+\ins{swf transient constant head}
+    {
+        \squish
+        \begin{enumerate}
+        \item \rnum{StartHead}, \rnum{EndHead} [$L$]  Head at the start and end of the current stress period (one line).
+        \end{enumerate}
+          The chosen cells receive a CHD record for the current stress period only, with start head \rnum{StartHead} and end head \rnum{EndHead}. \mfus\ interpolates linearly between them over the stress period, so a sequence of short stress periods gives a piecewise-linear head history.
+          Stress periods without a {\sf swf transient constant head} assignment reuse the previous CHD list. A preceding {\sf chd zone name} applies to these records. A cell cannot carry both a static {\sf swf constant head} and a transient one.
+    }
+
 \subsubsection{\cln\ Domain}
 \ins{cln constant head}
     {

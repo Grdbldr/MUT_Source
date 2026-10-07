@@ -4,9 +4,9 @@
 This appendix is for developers who rebuild the verification models and compare them with the previous-version baseline. The demonstration problems themselves are described in Chapter~\ref{chapter:ModelVerification}.
 
 \section{Running the comparison}
-The working tree is \fpath{C:\Work\Examples-Release}. The previous-version baseline is \fpath{C:\Work\Examples-Base}. Do not copy \texttt{MUT\_Examples} into Examples-Release. After a successful comparison, \texttt{ToRepos.bat} in Examples-Release publishes selected inputs into \texttt{MUT\_Examples}.
+The working tree is \fpath{C:\Work\Examples-Release}. Verification models are in \fpath{C:\Work\Examples-Release\Verification}. The previous-version baseline is \fpath{C:\Work\Examples-Base}, where each model folder stays directly under that folder. Do not copy \texttt{MUT\_Examples} into Examples-Release. After a successful comparison, \fpath{Verification\ToRepos.bat} publishes verification inputs into \fpath{MUT_Examples\Verification}. Demonstration models live in \fpath{C:\Work\Examples-Release\Demonstration} and are published separately by that folder's \fpath{ToRepos.bat} into \fpath{MUT_Examples\Demonstration}.
 
-The models to run are listed in \texttt{VerificationFolder.List} in Examples-Release: one folder name per line. Blank lines and comments that begin with \texttt{\#} or \texttt{!} are ignored. Extra folders in Examples-Release that are not in the list are ignored.
+The models to run are listed in \texttt{VerificationFolder.List} in the Verification folder: one folder name per line. Blank lines and comments that begin with \texttt{\#} or \texttt{!} are ignored. Folders that are not in the list, including everything under Demonstration, are ignored.
 
 \texttt{mut\_verify} does not call a separate batch executable. For each listed folder that contains \texttt{\_build.mut} it runs \texttt{mut \_build}, \texttt{usgs\_1 modflow}, and \texttt{mut \_post}.
 
@@ -26,7 +26,7 @@ Optional skips:
     \item[\texttt{-SkipBatch}] Do not run \texttt{mut \_build} / \texttt{usgs\_1} / \texttt{mut \_post}. Reuse existing results in Examples-Release, still compare budgets and write this appendix.
     \item[\texttt{-SkipExport}] Do not run \texttt{tec360} PNG export from \texttt{BatchComparisonPlots.lay}.
     \item[\texttt{-SkipPdf}] Write the comparison \TeX\ only; do not rebuild this User's Guide PDF.
-    \item[\texttt{-SkipToRepos}] Do not run \texttt{ToRepos.bat}.
+    \item[\texttt{-SkipToRepos}] Do not run \fpath{Verification\ToRepos.bat}.
 \end{description}
 
 The Python tool can be called directly (this path does not run \texttt{ToRepos.bat}):

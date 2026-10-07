@@ -1,4 +1,8 @@
-"""Run mut _build / usgs_1 / mut _post for each listed verification folder."""
+"""Run mut _build / usgs_1 / mut _post for each listed verification folder.
+
+Model folders are Examples-Release/Verification/<name>. The batch log stays
+in the Examples-Release root.
+"""
 
 from __future__ import annotations
 
@@ -102,7 +106,7 @@ def run_batch(
 
         n = len(folders)
         for i, folder in enumerate(folders, start=1):
-            folder_dir = release_dir / folder
+            folder_dir = release_dir / "Verification" / folder
             header = f"======== {i}/{n} {folder} ========"
             log.write(f"\n{header}\n")
             print(header, flush=True)

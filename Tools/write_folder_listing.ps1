@@ -11,7 +11,7 @@
     User's Guide. The generated file header records the regenerate command.
 
 .PARAMETER Folder
-    Folder to list (e.g. C:\Work\Examples-Release\1_VSF_Column).
+    Folder to list (e.g. C:\Work\Examples-Release\Verification\1_VSF_Column).
 
 .PARAMETER OutTex
     Output .tex snippet path. Relative paths are resolved from the current
@@ -28,7 +28,7 @@
     LaTeX size command applied to the listing (default \small).
 
 .EXAMPLE
-    .\Tools\write_folder_listing.ps1 -Folder C:\Work\Examples-Release\1_VSF_Column `
+    .\Tools\write_folder_listing.ps1 -Folder C:\Work\Examples-Release\Verification\1_VSF_Column `
         -OutTex "Docs\User's Guide\listings\1_VSF_Column_build.tex" `
         -Exclude '_posto.*','Modflow.lst'
 #>

@@ -44,7 +44,12 @@ def export_comparison_frames(
     cwd: Path,
     timeout_s: int = 1800,
 ) -> tuple[bool, str, list[tuple[int, str, Path]]]:
-    """Export one PNG per layout frame. Returns (ok, message, exported list)."""
+    """Export one PNG per layout frame. Returns (ok, message, exported list).
+
+    ``cwd`` is the Tecplot working directory. Pass the Verification folder so
+    layout paths such as ``10_Forsyth\\...`` and ``..\\..\\Examples-Base\\...``
+    resolve next to the models.
+    """
     frames = parse_layout_frames(layout_path)
     if not frames:
         return False, f"no $!FrameName entries in {layout_path}", []

@@ -1,11 +1,13 @@
 # MUT — Current progress
 
-**Last updated:** 2026-10-06
-**Version in code:** 2025.030 (`GeneralRoutines.f90`)
-**Version in User's Guide:** 2025.030 (title page and `Modifications.tex`)
+**Last updated:** 2026-10-07
+**Version in code:** 2025.031 (`GeneralRoutines.f90`)
+**Version in User's Guide:** 2025.031 (title page and `Modifications.tex`)
 **Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
+
+- Example trees are split into `Verification` and `Demonstration` under both `C:\Work\Examples-Release` and `MUT_Examples`. Each folder has its own `ToRepos.bat`. Verification still compares against the flat `Examples-Base` tree. Demonstration publish copies the seven chosen models (including `_BuildTriangularMesh`) into `MUT_Examples\Demonstration`.
 
 - 2025.030: release verification re-run (16 PNGs, `ReleaseComparison.tex`). `Tools/mut_verify/write_comparison_tex.py` now emits the Tecplot export path and stub baseline path as `\fpath{...}` and uses `\mfus` in the CHD notes, so regenerated appendices keep breakable paths.
 
@@ -18,7 +20,7 @@
 - User's Guide: moved detailed Model Developer install screenshots into new Appendix `DeveloperInstall.tex`; Chapter 2 keeps a short overview and the developed-and-tested environment list.
 - User's Guide: moved detailed Model End User install screenshots into new Appendix `EndUserInstall.tex`; Chapter 2 keeps a short overview, Tecplot licensing note, and QGIS pointer.
 - User's Guide cleanup (review backlog): removed orphan stubs (`Tutorial.tex`, `Recharge.tex`, `IllustrativeExample.tex`) and stale commented `Tecplot.tex` appendix; moved GSTR under Model Build; documented `swf transient recharge` / multi-zone RTS in `SWF.tex` with cross-refs from `GWF.tex`; fixed Usage spelling (`QGIS_Usage.tex`), typos, Excel appendix cross-refs, hyperref metadata, and Introduction roadmap; gitignored and untracked LaTeX build artifacts (`.aux`/`.toc`/`.pdf`/…).
-- Dropped `MUT_Batch` / `Run.MUTBatch`. Verification folders are listed in `VerificationFolder.List` (Examples-Release). `mut_verify` runs `mut _build` / `usgs_1` / `mut _post` per listed folder. User's Guide Appendix D how-to is durable `VerifyRelease.tex`; `ReleaseComparison.tex` remains generated results.
+- Dropped `MUT_Batch` / `Run.MUTBatch`. Verification folders are listed in `VerificationFolder.List` (`Examples-Release\Verification`). `mut_verify` runs `mut _build` / `usgs_1` / `mut _post` per listed folder. User's Guide Appendix D how-to is durable `VerifyRelease.tex`; `ReleaseComparison.tex` remains generated results.
 - `{domain}_scatter.lay` overlay frames (OBS scatter, CHD, …) hide 3-D axes (`ShowAxis = No`) so tick labels do not cover the back `{domain} CELLS` frame, which is the only scatter frame that keeps axes on.
 - `{domain}_Variables.lay` zone frames (e.g. GWF Zone) hide the mesh (`ShowMesh = No`); contour flood and shade stay on. The dedicated `{domain}_Mesh.lay` overlay still shows the mesh.
 - Volume budget is `GWF_VolumeBudget.lay` (full-page XY, line-map legend, all rate terms except percent discrepancy), not a frame on `GWF_Results.lay`. Dossier figure and User's Guide list the dedicated layout.
@@ -30,7 +32,7 @@
 - `GWF_WaterTable.lay`: iso-surface is contour group 2 = Pressure Head at 0 (new variable index = nvars+1 after AlterData). SZL variable names are CR-separated in the file tail (`GWF to STORAGE` is var 10 on Abdul; a 9-name schema had bound the iso-surface to that CBB field). Zone `ShowIsosurfaces = Yes`; 3× vertical exaggeration; factory XYZ view and contour legend top-left.
 - SZPLT replace while Tecplot has the file mapped: `TecIO_DeleteIfExists` no longer skips a locked `.tecplot.szplt` (that path leaked the Fortran unit and surfaced as `tecend142: TecIO error -1` / `Cannot write to file`). It now stops with a message to close the dataset in Tecplot 360. Reproduced on Abdul `_build` with `tec360` holding `_buildo.Modflow.GWF.tecplot.szplt`.
 - Default-on model documentation: after a successful `mut _build` or `mut _post`, MUT runs `%USERBIN%\mut_document\mut_document.py --skip-export` unless that MUT file contains `no model documentation` (build only / post only / both / neither). Missing Python, the script, or pdflatex is a `WarnMsg`; MUT still ends with `Normal exit`. Manual `python %USERBIN%\mut_document\mut_document.py` remains for PNG export.
-- Release-verification appendix: `Tools/verify_release.ps1` runs folders listed in `VerificationFolder.List` in `C:\Work\Examples-Release` against `C:\Work\Examples-Base`, exports `BatchComparisonPlots.lay` frames, writes `ReleaseComparison.tex` (User's Guide Appendix D results), then publishes selected inputs with `ToRepos.bat`. Never copies MUT_Examples → Examples-Release. Versus 2025.012: Abdul matches bit-for-bit once IN–OUT is compared index-wise (duplicate TOTAL TIME dumps at SP boundaries were a false positive). `3_0_SWF_CHD` and `3_1_CLN_for_SWF` differ because 2025.014 writes CLN/SWF CHD as start→end head ramps; `3_SWF` (critical depth) is unchanged.
+- Release-verification appendix: `Tools/verify_release.ps1` runs folders listed in `VerificationFolder.List` in `C:\Work\Examples-Release\Verification` against flat `C:\Work\Examples-Base`, exports `BatchComparisonPlots.lay` frames, writes `ReleaseComparison.tex` (User's Guide Appendix D results), then publishes verification inputs with `Verification\ToRepos.bat`. Never copies MUT_Examples → Examples-Release. Versus 2025.012: Abdul matches bit-for-bit once IN–OUT is compared index-wise (duplicate TOTAL TIME dumps at SP boundaries were a false positive). `3_0_SWF_CHD` and `3_1_CLN_for_SWF` differ because 2025.014 writes CLN/SWF CHD as start→end head ramps; `3_SWF` (critical depth) is unchanged.
 - Default FE Tecplot is one TecIO SZL `.tecplot.szplt` per dataset (`FileFormat=1`). `_post` writes a single file with all output times (later zones share XYZ, four static cell fields, and connectivity from zone 1; `tecflush142` retains zone 1 via a by-reference wrapper because vendor `tecio.f90` incorrectly marks the first argument `VALUE`). Velocity is `_posto.*.Velocity.tecplot.szplt` sharing XYZ+connectivity. Opt-in `write ascii tecplot output` restores `.tecplot.dat`. Classic PLT grid+sol writers removed.
 - Binary Tecplot `_post` (Abdul prism): 2018 R2 solution files may contain only one solution time — superseded by SZPLT multi-time files in 2025.024
 - Velocity Tecplot (`DomainVelocityBinaryToTecplot`): under `nodal control volumes`, do not mark Head/Vx/Vy/Vz as `CELLCENTERED` (values are nodal; E is FE element count) — fixes Tecplot “Bad or Missing FE Cell Indices”
@@ -65,4 +67,4 @@
 - Model documentation: `C:\_repo\Work_v2\KURT_Model\2_models\1_Regional_Boundary_Average_Rainfall`
 - GSTR: `C:\_repo\Work_v2\KURT_Model\` (look for `4_GSTR` / `_build.mut` under transient-rainfall models)
 - Deployed MUT: `C:\_repo\Grdbldr\MUT_Examples\_MUT_USERBIN\mut.exe`
-- Release verification: `C:\Work\Examples-Release` vs `C:\Work\Examples-Base`
+- Release verification: `C:\Work\Examples-Release\Verification` vs flat `C:\Work\Examples-Base`

@@ -4,9 +4,11 @@
 
 .DESCRIPTION
     Working tree is C:\Work\Examples-Release (never copies FROM MUT_Examples).
-    Uses VerificationFolder.List only. Extra problem-set folders in Examples-Release are ignored.
-    After a successful run, calls ToRepos.bat so Robocopy publishes selected inputs
-    into C:\_repo\GrdBldr\MUT_Examples. Does not commit or push.
+    Verification models live in Examples-Release\Verification (VerificationFolder.List).
+    Demonstration models are not run or published by this script.
+    After a successful run, calls Verification\ToRepos.bat so Robocopy publishes
+    verification inputs into C:\_repo\GrdBldr\MUT_Examples\Verification.
+    Does not commit or push.
 
 .PARAMETER SkipBatch
     Skip mut _build / usgs_1 / mut _post.
@@ -18,7 +20,7 @@
     Write TeX only; do not rebuild the User's Guide PDF.
 
 .PARAMETER SkipToRepos
-    Do not run ToRepos.bat after verification.
+    Do not run Verification\ToRepos.bat after verification.
 
 .PARAMETER ReleaseDir
     Working/run tree. Default: C:\Work\Examples-Release
@@ -105,13 +107,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $SkipToRepos) {
-    $toRepos = Join-Path $ReleaseDir 'ToRepos.bat'
+    $verificationDir = Join-Path $ReleaseDir 'Verification'
+    $toRepos = Join-Path $verificationDir 'ToRepos.bat'
     if (-not (Test-Path -LiteralPath $toRepos)) {
         throw "ToRepos.bat not found: $toRepos"
     }
     Write-Host ''
-    Write-Host "Publishing selected inputs with ToRepos.bat (Robocopy -> MUT_Examples)"
-    Push-Location $ReleaseDir
+    Write-Host "Publishing verification inputs with Verification\ToRepos.bat (Robocopy -> MUT_Examples\Verification)"
+    Push-Location $verificationDir
     try {
         cmd /c ToRepos.bat
         # Robocopy: 0-7 are success
@@ -138,11 +141,11 @@ if (-not $SkipToRepos) {
     }
 }
 else {
-    Write-Host 'Skipping ToRepos.bat'
+    Write-Host 'Skipping Verification\ToRepos.bat'
 }
 
 Write-Host ''
 Write-Host 'Verification appendix updated (local only; not committed).'
-Write-Host "Commit MUT_Source (appendix TeX/PNGs) and MUT_Examples (if ToRepos ran) with version $version."
+Write-Host "Commit MUT_Source (appendix TeX/PNGs) and MUT_Examples\Verification (if ToRepos ran) with version $version."
 Write-Host '  .\Tools\commit_local.ps1 -Message "Add release-verification appendix"'
 exit 0

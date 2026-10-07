@@ -382,6 +382,14 @@ module MUSG_Core
         character(128) :: FNameCHDZONE
         integer(i4) :: iCHDZONE=0
 
+        ! Transient SWF CHD records: start/end head per stress period (USG CHD SHEAD/EHEAD)
+        integer(i4) :: nTransCHD=0
+        integer(i4), allocatable :: TransCHDPeriod(:)
+        integer(i4), allocatable :: TransCHDCell(:)    ! SWF cell index (local)
+        integer(i4), allocatable :: TransCHDZone(:)
+        real(dp), allocatable :: TransCHDStart(:)
+        real(dp), allocatable :: TransCHDEnd(:)
+
         ! EVT file
         character(128) :: FNameEVT
         integer(i4) :: iEVT

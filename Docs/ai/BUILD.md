@@ -28,9 +28,9 @@ Do not treat generated `.aux` / `.toc` / `.idx` / `.pdf` as source of truth.
 ## Release verification appendix
 
 - Command (from MUT_Source root, after deploying `mut.exe`): `.\Tools\verify_release.ps1`
-- Working tree: `C:\Work\Examples-Release` (`VerificationFolder.List` folders only; extra problem-set subfolders are ignored)
-- Baseline: `C:\Work\Examples-Base`
-- **Never** copy MUT_Examples → Examples-Release. After a successful run the script calls `ToRepos.bat` so Robocopy publishes selected inputs into `C:\_repo\GrdBldr\MUT_Examples`
+- Working tree: `C:\Work\Examples-Release\Verification` (`VerificationFolder.List` folders only; `Demonstration` is ignored)
+- Baseline: `C:\Work\Examples-Base` (model folders stay directly under that folder)
+- **Never** copy MUT_Examples → Examples-Release. After a successful run the script calls `Verification\ToRepos.bat` so Robocopy publishes verification inputs into `C:\_repo\GrdBldr\MUT_Examples\Verification`. Demonstration models are published separately with `Demonstration\ToRepos.bat`
 - Flags: `-SkipBatch`, `-SkipExport`, `-SkipPdf`, `-SkipToRepos`
 - Appendix: `Docs/User's Guide/VerifyRelease.tex` (how to run) plus generated `ReleaseComparison.tex` and PNGs under `Imagery/verification/`
 - Commit MUT_Source (appendix) and MUT_Examples (published inputs) separately; do not auto-push. Do not auto-promote Examples-Release → Examples-Base

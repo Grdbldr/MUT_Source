@@ -16,7 +16,7 @@ module MUSG_BoundaryConditions
     implicit none
     private
     
-    public :: AssignCHDtoDomain, AssignDRNtoDomain, AssignRCHtoDomain
+    public :: AssignCHDtoDomain, AssignTransientCHDtoSWF, AssignDRNtoDomain, AssignRCHtoDomain
     public :: AssignTransientRCHtoDomain, AssignWELtoDomain, AssignEVTtoDomain
     public :: AssignCriticalDepthtoDomain, AssignCriticalDepthtoCellsSide1
     public :: SetPendingCHDZoneName, SetPendingSWBCZoneName
@@ -172,7 +172,16 @@ module MUSG_BoundaryConditions
         ! Pending zone applies only to the following CHD assignment
         modflow%PendingCHDZoneID = 0
         
-        if(modflow.iCHD == 0) then ! Initialize CHD file and write data to NAM
+        call OpenCHDFile(modflow)
+    end subroutine AssignCHDtoDomain
+
+    !----------------------------------------------------------------------
+    subroutine OpenCHDFile(modflow)
+        ! Initialize CHD file and write data to NAM (once)
+        implicit none
+        type(ModflowProject) :: modflow
+
+        if(modflow.iCHD == 0) then
             Modflow.FNameCHD=trim(Modflow.Prefix)//'.chd'
             call OpenAscii(Modflow.iCHD,Modflow.FNameCHD)
             call Msg('  ')
@@ -180,7 +189,77 @@ module MUSG_BoundaryConditions
             write(Modflow.iNAM,'(a,i4,a)') 'CHD  ',Modflow.iCHD,' '//trim(Modflow.FNameCHD)
             write(Modflow.iCHD,'(a,a)') '# MODFLOW-USG CHD file written by Modflow-User-Tools version ',trim(MUTVersion)
         end if
-    end subroutine AssignCHDtoDomain
+    end subroutine OpenCHDFile
+
+    !----------------------------------------------------------------------
+    subroutine AssignTransientCHDtoSWF(FNumMUT,modflow,domain)
+        ! Assign a start/end constant head to chosen SWF cells for the current stress period.
+        ! USG CHD interpolates linearly from start to end head over the stress period.
+        ! Must follow a 'stress period' block; records are written by WriteCHDFile.
+        implicit none
+        integer(i4) :: FNumMUT
+        type(ModflowProject) :: modflow
+        type(ModflowDomain) :: domain
+
+        integer(i4) :: i, iPer, nNew, nCap
+        real(dp) :: hStart, hEnd
+        integer(i4), allocatable :: itmp(:)
+        real(dp), allocatable :: rtmp(:)
+
+        read(FNumMUT,*) hStart, hEnd
+        iPer = max(1, modflow%nPeriods)
+        write(TmpSTR,'(a,i0,a,2('//FMT_R8//'),a)') 'Assigning SWF transient constant head, stress period ',iPer, &
+            ', start/end: ',hStart,hEnd,'     '//TRIM(UnitsOfLength)
+        call Msg(trim(TmpSTR))
+        if(modflow%PendingCHDZoneID > 0) then
+            call Msg('    using CHD zone: '//trim(modflow%CHDZoneName(modflow%PendingCHDZoneID)))
+        end if
+
+        nNew = 0
+        do i=1,domain%nCells
+            if(bcheck(domain%cell(i)%is,chosen)) nNew = nNew + 1
+        end do
+        if(nNew == 0) then
+            call HandleError(ERR_LOGIC, 'swf transient constant head: no SWF cells chosen', 'AssignTransientCHDtoSWF')
+        end if
+
+        if(.not. allocated(modflow%TransCHDPeriod)) then
+            nCap = max(1024, nNew)
+            allocate(modflow%TransCHDPeriod(nCap), modflow%TransCHDCell(nCap), modflow%TransCHDZone(nCap), &
+                modflow%TransCHDStart(nCap), modflow%TransCHDEnd(nCap), stat=ialloc)
+            call AllocChk(ialloc,'Transient CHD record arrays')
+        else if(modflow%nTransCHD + nNew > size(modflow%TransCHDPeriod)) then
+            nCap = max(2*size(modflow%TransCHDPeriod), modflow%nTransCHD + nNew)
+            allocate(itmp(nCap)); itmp(:modflow%nTransCHD) = modflow%TransCHDPeriod(:modflow%nTransCHD)
+            call move_alloc(itmp, modflow%TransCHDPeriod)
+            allocate(itmp(nCap)); itmp(:modflow%nTransCHD) = modflow%TransCHDCell(:modflow%nTransCHD)
+            call move_alloc(itmp, modflow%TransCHDCell)
+            allocate(itmp(nCap)); itmp(:modflow%nTransCHD) = modflow%TransCHDZone(:modflow%nTransCHD)
+            call move_alloc(itmp, modflow%TransCHDZone)
+            allocate(rtmp(nCap)); rtmp(:modflow%nTransCHD) = modflow%TransCHDStart(:modflow%nTransCHD)
+            call move_alloc(rtmp, modflow%TransCHDStart)
+            allocate(rtmp(nCap)); rtmp(:modflow%nTransCHD) = modflow%TransCHDEnd(:modflow%nTransCHD)
+            call move_alloc(rtmp, modflow%TransCHDEnd)
+        end if
+
+        do i=1,domain%nCells
+            if(bcheck(domain%cell(i)%is,chosen)) then
+                if(bcheck(domain%cell(i)%is,ConstantHead)) then
+                    call HandleError(ERR_LOGIC, 'swf transient constant head: cell already has a static swf constant head', &
+                        'AssignTransientCHDtoSWF')
+                end if
+                modflow%nTransCHD = modflow%nTransCHD + 1
+                modflow%TransCHDPeriod(modflow%nTransCHD) = iPer
+                modflow%TransCHDCell(modflow%nTransCHD) = i
+                modflow%TransCHDZone(modflow%nTransCHD) = modflow%PendingCHDZoneID
+                modflow%TransCHDStart(modflow%nTransCHD) = hStart
+                modflow%TransCHDEnd(modflow%nTransCHD) = hEnd
+            end if
+        end do
+
+        modflow%PendingCHDZoneID = 0
+        call OpenCHDFile(modflow)
+    end subroutine AssignTransientCHDtoSWF
     
     !----------------------------------------------------------------------
     subroutine AssignDRNtoDomain(FNumMUT,modflow,domain) 

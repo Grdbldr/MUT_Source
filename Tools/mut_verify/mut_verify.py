@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Run verification models and write the User's Guide release-comparison appendix.
 
-Never copies MUT_Examples into Examples-Release. Work in the release tree;
-publish selected inputs afterward with ToRepos.bat (see verify_release.ps1).
+Never copies MUT_Examples into Examples-Release. Verification models live in
+Examples-Release/Verification. Publish those inputs afterward with
+Verification/ToRepos.bat (see verify_release.ps1).
 
     python mut_verify.py
     python mut_verify.py --skip-batch --skip-pdf
@@ -35,8 +36,8 @@ _MUTVERSION = re.compile(r"MUTVersion\s*=\s*'([^']+)'")
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run VerificationFolder.List models in Examples-Release, export "
-            "BatchComparisonPlots.lay frames, and write the User's Guide appendix."
+            "Run VerificationFolder.List models in Examples-Release\\Verification, "
+            "export BatchComparisonPlots.lay frames, and write the User's Guide appendix."
         )
     )
     parser.add_argument(
@@ -129,8 +130,9 @@ def main(argv: list[str] | None = None) -> int:
     release_dir = args.release_dir.resolve()
     base_dir = args.base_dir.resolve()
     guide_dir = args.guide_dir.resolve()
-    layout = release_dir / "BatchComparisonPlots.lay"
-    batch_file = release_dir / "VerificationFolder.List"
+    verification_dir = release_dir / "Verification"
+    layout = verification_dir / "BatchComparisonPlots.lay"
+    batch_file = verification_dir / "VerificationFolder.List"
     tex_path = guide_dir / "ReleaseComparison.tex"
     imagery_dir = guide_dir / "Imagery" / "verification"
 
@@ -146,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
 
     folders = parse_folder_list(batch_file)
     print(f"release: {release_dir}")
+    print(f"verification: {verification_dir}")
     print(f"baseline: {base_dir}")
     print(f"models in VerificationFolder.List: {len(folders)}")
     print("note: never copying MUT_Examples into the release tree")
@@ -180,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
                 exported.append((number, name, png))
     else:
         ok, export_note, exported = export_comparison_frames(
-            layout, imagery_dir, release_dir, timeout_s=args.export_timeout
+            layout, imagery_dir, verification_dir, timeout_s=args.export_timeout
         )
         print(("export: " if ok else "export skipped: ") + export_note)
 

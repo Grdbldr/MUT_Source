@@ -30,7 +30,7 @@ Navigation for agents. User-facing prose lives in TeX; this table only points at
 | CLN intersection | `CLNIntersection.f90` | CLN structure / `.xyzList` | `CLN.tex` | Split CLN at mesh faces |
 | Tecplot | `Tecplot.f90` | `.szplt` / `.dat` | `ModelExecution.tex`, `VisualizeBuild.tex` | Sequential 1-D `Vx`, `Vy`, `Vz`; default TecIO SZL (one full file; post shares later zones from zone 1) |
 | Model dossier PDF | `Tools/mut_document/` | `Docs/<folder>.pdf`, `Docs/layouts/*.lay` | `ModelBuild.tex`, `ModelExecution.tex` | Default after `mut _build` / `_post` (`--skip-export`); `no model documentation` skips that run; optional `GWF_VolumeBudget` / `GWF_WaterTable` / `SWF_Infiltration` / `GWF_SaturationSlices` layouts |
-| Release verification | `Tools/mut_verify/`, `Tools/verify_release.ps1` | `C:\Work\Examples-Release` vs `Examples-Base` | `VerifyRelease.tex`, `ReleaseComparison.tex` (appendix) | `VerificationFolder.List` only; publish selected inputs with `ToRepos.bat`; never copy MUT_Examples → Examples-Release |
+| Release verification | `Tools/mut_verify/`, `Tools/verify_release.ps1` | `Examples-Release\Verification` vs flat `Examples-Base` | `VerifyRelease.tex`, `ReleaseComparison.tex` (appendix) | `VerificationFolder.List` only; publish with `Verification\ToRepos.bat`; never copy MUT_Examples → Examples-Release |
 | Rasters | `raster.f90` | ArcASCII | `QGIS_Usage.tex`, `GSTR.tex` | DEM / GSTR snapshots |
 | Version / I/O | `GeneralRoutines.f90` | — | `Modifications.tex` | `MUTVersion` |
 | QGIS | — (workflow, not a MUT package) | shapefiles, rasters | `QGIS_Usage.tex` | Appendix; MUT consumes rasters/shapes |
@@ -44,4 +44,4 @@ _model/
   mut _post           ← Tecplot from USG binaries
 ```
 
-Examples may live under `C:\Work\Examples-Release` (working tree), `C:\_repo\Grdbldr\MUT_Examples` (published subset via `ToRepos.bat`), or project trees such as `KURT_Model`.
+Examples may live under `C:\Work\Examples-Release` (`Verification` and `Demonstration`), `C:\_repo\Grdbldr\MUT_Examples` (published subsets via each folder's `ToRepos.bat`), or project trees such as `KURT_Model`.
