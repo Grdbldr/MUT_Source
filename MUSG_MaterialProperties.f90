@@ -6,7 +6,7 @@ module MUSG_MaterialProperties
     use KindParameters
     use GeneralRoutines, only: MAX_INST, MAX_STR, Msg, ErrMsg, TmpSTR, FMT_R4, FMT_R8
     use GeneralRoutines, only: UnitsOfLength, UnitsOfTime, LengthConverter, TimeConverter
-    use GeneralRoutines, only: bcheck, chosen
+    use GeneralRoutines, only: bcheck, chosen, WarnMsg
     use GeneralRoutines, only: USERBIN, DefineUserbin
     use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, HandleError
     use GeneralRoutines, only: OpenAscii, FreeUnit
@@ -23,6 +23,7 @@ module MUSG_MaterialProperties
     public :: CLN_AssignCircularRadius, CLN_AssignRectangularWidthHeight
     public :: AssignManningtoSWF, AssignDepressiontoSWF, AssignObstructiontoSWF
     public :: AssignDepthForSmoothingtoSWF
+    public :: MaterialAssignmentSummary
     
     contains
     
@@ -301,6 +302,7 @@ module MUSG_MaterialProperties
         
         integer(i4) :: i
         integer(i4) :: iMaterial
+        logical, allocatable :: IsChosen(:)
         
         real(sp) :: LengthConversionFactor
         real(sp) :: TimeConversionFactor
@@ -370,6 +372,15 @@ module MUSG_MaterialProperties
             call Msg(TmpSTR)
         endif
 
+        if(domain%name == 'GWF') then
+            call PrepareMaterialTracker(domain%idMaterial,domain%nCells)
+            allocate(IsChosen(domain%nCells))
+            do i=1,domain%nCells
+                IsChosen(i)=bcheck(domain%cell(i)%is,chosen)
+            end do
+            call CheckMaterialOverwrite('GWF','cells',IsChosen,domain%idMaterial,iMaterial,GWF_MaterialName, &
+                ChosenZoneList(domain),domain%nMaterialOverwrites)
+        endif
        
         do i=1,domain%nCells
             if(bcheck(domain%cell(i)%is,chosen)) then
@@ -456,6 +467,7 @@ module MUSG_MaterialProperties
         integer(i4) :: nrows, ios
         real(sp) :: fdepth, farea, fwetperi, ftopwid
         logical :: exists
+        logical, allocatable :: IsChosen(:)
 
         read(FNumMUT,*) iMaterial
         write(TmpSTR,'(i5)') iMaterial
@@ -523,6 +535,13 @@ module MUSG_MaterialProperties
             call Msg(TmpSTR)
         endif
 
+        call PrepareMaterialTracker(CLN%idCLNMaterial,CLN%nZones)
+        allocate(IsChosen(CLN%nZones))
+        do i=1,CLN%nZones
+            IsChosen(i)=bcheck(CLN%zone(i)%is,chosen)
+        end do
+        call CheckMaterialOverwrite(trim(CLN%name),'zones',IsChosen,CLN%idCLNMaterial,iMaterial,CLN_Name, &
+            ChosenZoneList(CLN),CLN%nMaterialOverwrites)
       
         do i=1,CLN%nZones
             if(bcheck(CLN%zone(i)%is,chosen)) then
@@ -691,6 +710,7 @@ module MUSG_MaterialProperties
         
         integer(i4) :: i
         integer(i4) :: iMaterial
+        logical, allocatable :: IsChosen(:)
 
         real(sp) :: LengthConversionFactor
         real(sp) :: TimeConversionFactor
@@ -735,7 +755,13 @@ module MUSG_MaterialProperties
             call Msg(TmpSTR)
         endif
 
-       
+        call PrepareMaterialTracker(domain%idSWFMaterial,domain%nZones)
+        allocate(IsChosen(domain%nZones))
+        do i=1,domain%nZones
+            IsChosen(i)=bcheck(domain%zone(i)%is,chosen)
+        end do
+        call CheckMaterialOverwrite(trim(domain%name),'zones',IsChosen,domain%idSWFMaterial,iMaterial,SWF_MaterialName, &
+            ChosenZoneList(domain),domain%nMaterialOverwrites)
 
         do i=1,domain%nZones
             if(bcheck(domain%zone(i)%is,chosen)) then
@@ -766,6 +792,162 @@ module MUSG_MaterialProperties
         end if     
 
     end subroutine AssignMaterialtoSWF
+
+    !----------------------------------------------------------------------
+    subroutine PrepareMaterialTracker(idAssigned,n)
+        ! Allocate (or reset if the domain size changed) the per-cell/per-zone material tracker
+        implicit none
+
+        integer(i4), allocatable, intent(inout) :: idAssigned(:)
+        integer(i4), intent(in) :: n
+
+        if(allocated(idAssigned)) then
+            if(size(idAssigned) == n) return
+            deallocate(idAssigned)
+        end if
+        allocate(idAssigned(n),stat=ialloc)
+        call AllocChk(ialloc,'Material assignment tracking array')
+        idAssigned=0
+
+    end subroutine PrepareMaterialTracker
+
+    !----------------------------------------------------------------------
+    function ChosenZoneList(Domain) result(ZoneList)
+        implicit none
+
+        type(ModflowDomain), intent(in) :: Domain
+        character(len=:), allocatable :: ZoneList
+
+        integer(i4) :: i
+        character(16) :: str
+
+        ZoneList=''
+        do i=1,Domain%nZones
+            if(btest(Domain%zone(i)%is,chosen)) then
+                write(str,'(i0)') i
+                ZoneList=ZoneList//' '//trim(str)
+            end if
+        end do
+        if(len(ZoneList) == 0) ZoneList=' none'
+
+    end function ChosenZoneList
+
+    !----------------------------------------------------------------------
+    subroutine CheckMaterialOverwrite(DomainName,ItemLabel,IsChosen,idAssigned,iMaterial,MatName,ZoneList,nOverwrites)
+        ! Warn (non-fatal) when a material assignment replaces a different material assigned earlier
+        ! in this build, then record the new assignment. The usual cause is a missing
+        ! 'clear chosen zones': 'choose zone number' adds to the current zone selection.
+        implicit none
+
+        character(*), intent(in) :: DomainName
+        character(*), intent(in) :: ItemLabel       ! 'cells' or 'zones'
+        logical, intent(in) :: IsChosen(:)
+        integer(i4), intent(inout) :: idAssigned(:)
+        integer(i4), intent(in) :: iMaterial
+        character(*), intent(in) :: MatName(:)
+        character(*), intent(in) :: ZoneList
+        integer(i4), intent(inout) :: nOverwrites
+
+        integer(i4) :: k, nChosen, nReplaced, nPrev, nZonesChosen
+        character(len=:), allocatable :: WarnStr
+
+        nChosen=count(IsChosen)
+        nReplaced=count(IsChosen .and. idAssigned > 0 .and. idAssigned /= iMaterial)
+        nZonesChosen=0
+        if(ZoneList /= ' none') nZonesChosen=count([(ZoneList(k:k) == ' ', k=1,len(ZoneList))])
+
+        if(nReplaced > 0) then
+            nOverwrites=nOverwrites+1
+            write(TmpSTR,'(i0,a,i0,a,i0,a)') nReplaced,' of ',nChosen,' chosen '//DomainName//' '//ItemLabel// &
+                ' already had a different material assigned and are now overwritten with material ',iMaterial, &
+                ', '//trim(MatName(iMaterial))
+            WarnStr=trim(TmpSTR)
+            do k=1,size(MatName)
+                if(k == iMaterial) cycle
+                nPrev=count(IsChosen .and. idAssigned == k)
+                if(nPrev == 0) cycle
+                write(TmpSTR,'(a,i0,a,i0,a)') '    ',nPrev,' '//ItemLabel//' previously had material ',k,', '//trim(MatName(k))
+                WarnStr=WarnStr//new_line('a')//trim(TmpSTR)
+            end do
+            WarnStr=WarnStr//new_line('a')//DomainName//' zones currently chosen:'//ZoneList
+            if(nZonesChosen > 1) then
+                WarnStr=WarnStr//new_line('a')//'Did you forget ''clear chosen zones'' before ''choose zone number''? '// &
+                    '(choose zone number ADDS to the current zone selection). Ignore if the overwrite is intended.'
+            else
+                WarnStr=WarnStr//new_line('a')//'Ignore if a base material is intentionally being replaced in a subregion; '// &
+                    'otherwise check for a missing ''clear chosen cells'' or ''clear chosen zones''.'
+            end if
+            call WarnMsg(WarnStr)
+        end if
+
+        where(IsChosen) idAssigned=iMaterial
+
+    end subroutine CheckMaterialOverwrite
+
+    !----------------------------------------------------------------------
+    subroutine MaterialAssignmentSummary(Domain)
+        ! Before the domain files are written: report how many cells (GWF) or zones (SWF, CLN) carry
+        ! each material, and warn if a multi-zone domain ended up with one material after overwrites.
+        implicit none
+
+        type(ModflowDomain), intent(in) :: Domain
+
+        select case(trim(Domain%name))
+        case ('GWF')
+            if(.not. allocated(Domain%idMaterial)) return
+            call ReportMaterialCounts('GWF','cells',Domain%idMaterial,GWF_MaterialName,Domain%nZones,Domain%nMaterialOverwrites)
+        case ('SWF')
+            if(.not. allocated(Domain%idSWFMaterial)) return
+            call ReportMaterialCounts('SWF','zones',Domain%idSWFMaterial,SWF_MaterialName,Domain%nZones,Domain%nMaterialOverwrites)
+        case ('CLN')
+            if(.not. allocated(Domain%idCLNMaterial)) return
+            call ReportMaterialCounts('CLN','zones',Domain%idCLNMaterial,CLN_Name,Domain%nZones,Domain%nMaterialOverwrites)
+        end select
+
+    end subroutine MaterialAssignmentSummary
+
+    !----------------------------------------------------------------------
+    subroutine ReportMaterialCounts(DomainName,ItemLabel,idAssigned,MatName,nZones,nOverwrites)
+        implicit none
+
+        character(*), intent(in) :: DomainName
+        character(*), intent(in) :: ItemLabel
+        integer(i4), intent(in) :: idAssigned(:)
+        character(*), intent(in) :: MatName(:)
+        integer(i4), intent(in) :: nZones
+        integer(i4), intent(in) :: nOverwrites
+
+        integer(i4) :: k, nk, nUsed, kUsed, nNone
+        character(len=:), allocatable :: WarnStr
+
+        call Msg(' ')
+        call Msg(DomainName//' material assignment summary:')
+        nUsed=0
+        kUsed=0
+        do k=1,size(MatName)
+            nk=count(idAssigned == k)
+            if(nk == 0) cycle
+            nUsed=nUsed+1
+            kUsed=k
+            write(TmpSTR,'(a,i5,a,i10,a)') '    material ',k,', '//trim(MatName(k))//': ',nk,' '//ItemLabel
+            call Msg(trim(TmpSTR))
+        end do
+        nNone=count(idAssigned <= 0)
+        if(nNone > 0) then
+            write(TmpSTR,'(a,i10,a)') '    no material assigned: ',nNone,' '//ItemLabel
+            call Msg(trim(TmpSTR))
+        end if
+
+        if(nZones > 1 .and. nUsed == 1 .and. nNone == 0 .and. nOverwrites > 0) then
+            write(TmpSTR,'(a,i0,a,i0,a,i0,a)') 'All ',size(idAssigned),' '//DomainName//' '//ItemLabel//' ended up with material ', &
+                kUsed,', '//trim(MatName(kUsed))//', although the '//DomainName//' domain has ',nZones, &
+                ' zones and earlier material assignments were overwritten.'
+            WarnStr=trim(TmpSTR)//new_line('a')//'Check that each zone has its intended material '// &
+                '(did you forget ''clear chosen zones'' between zone selections?).'
+            call WarnMsg(WarnStr)
+        end if
+
+    end subroutine ReportMaterialCounts
 
     !----------------------------------------------------------------------
     subroutine CLN_AssignCircularRadius(FnumMUT,CLN)

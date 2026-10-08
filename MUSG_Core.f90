@@ -205,9 +205,10 @@ module MUSG_Core
         real(sp), allocatable       :: GenTopWidth(:,:)  ! (NGENTABROWS, nZones)
 
         ! GWF cell properties (zoned)
-        integer(i4), allocatable :: idMaterial(:)   ! material ID for each cell
-        integer(i4), allocatable :: idSWFMaterial(:)   ! SWF material ID for each cell
-        integer(i4), allocatable :: idCLNMaterial(:)   ! CLN material ID for each cell
+        integer(i4), allocatable :: idMaterial(:)   ! GWF material assigned to each cell (0=none yet)
+        integer(i4), allocatable :: idSWFMaterial(:)   ! SWF material assigned to each zone (0=none yet)
+        integer(i4), allocatable :: idCLNMaterial(:)   ! CLN material assigned to each zone (0=none yet)
+        integer(i4) :: nMaterialOverwrites=0   ! material assignments that replaced a different material
         
         integer(i4), allocatable    :: FlowTreatment(:)       ! confined/unconfined, laminar/turbulent etc
 

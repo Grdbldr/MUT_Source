@@ -1,11 +1,13 @@
 # MUT — Current progress
 
-**Last updated:** 2026-10-07
-**Version in code:** 2025.031 (`GeneralRoutines.f90`)
-**Version in User's Guide:** 2025.031 (title page and `Modifications.tex`)
+**Last updated:** 2026-10-08
+**Version in code:** 2025.032 (`GeneralRoutines.f90`)
+**Version in User's Guide:** 2025.032 (title page and `Modifications.tex`)
 **Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
+
+- 2025.032: material-overwrite `WarnMsg` in `MUSG_MaterialProperties.f90` (`CheckMaterialOverwrite`, `MaterialAssignmentSummary`). Per-cell (GWF `idMaterial`) / per-zone (SWF `idSWFMaterial`, CLN `idCLNMaterial`) trackers; warns when an assignment replaces a different material (hint points at `clear chosen zones` when >1 zone is chosen). Pre-write eco summary of cells/zones per material, plus a warning when a multi-zone domain ends with one material after overwrites. Triggered by 14 KURT models where missing `clear chosen zones` gave every GWF cell Host Rock. `7_SuperSlab`-style base+subregion overwrites also warn (documented as ignorable in `GWF.tex`).
 
 - Example trees are split into `Verification` and `Demonstration` under both `C:\Work\Examples-Release` and `MUT_Examples`. Each folder has its own `ToRepos.bat`. Verification still compares against the flat `Examples-Base` tree. Demonstration publish copies the seven chosen models (including `_BuildTriangularMesh`) into `MUT_Examples\Demonstration`.
 

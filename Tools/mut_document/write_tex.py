@@ -252,6 +252,15 @@ def _preamble(title: str, pdf_title: str) -> str:
 \usepackage{{xcolor}}
 \usepackage{{xurl}}
 \usepackage{{float}}
+\usepackage{{newunicodechar}}
+\newunicodechar{{≈}}{{\ensuremath{{\approx}}}}
+\newunicodechar{{→}}{{\ensuremath{{\rightarrow}}}}
+\newunicodechar{{←}}{{\ensuremath{{\leftarrow}}}}
+\newunicodechar{{≤}}{{\ensuremath{{\leq}}}}
+\newunicodechar{{≥}}{{\ensuremath{{\geq}}}}
+\newunicodechar{{±}}{{\ensuremath{{\pm}}}}
+\newunicodechar{{×}}{{\ensuremath{{\times}}}}
+\newunicodechar{{°}}{{\ensuremath{{^\circ}}}}
 \hypersetup{{
   colorlinks=true,
   linkcolor=blue,
@@ -264,7 +273,10 @@ def _preamble(title: str, pdf_title: str) -> str:
   columns=fullflexible,
   frame=single,
   showstringspaces=false,
-  keepspaces=true
+  keepspaces=true,
+  literate={{≈}}{{{{$\approx$}}}}1 {{→}}{{{{$\rightarrow$}}}}1 {{←}}{{{{$\leftarrow$}}}}1
+    {{≤}}{{{{$\leq$}}}}1 {{≥}}{{{{$\geq$}}}}1 {{±}}{{{{$\pm$}}}}1 {{×}}{{{{$\times$}}}}1
+    {{°}}{{{{$^\circ$}}}}1 {{—}}{{{{---}}}}1 {{–}}{{{{--}}}}1
 }}
 \graphicspath{{{{imagery/}}{{imagery_user/}}}}
 \title{{{tex_escape(title)}}}

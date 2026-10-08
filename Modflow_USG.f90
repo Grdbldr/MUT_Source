@@ -480,6 +480,10 @@ module MUSG !
 
                     call ModflowObservationPointsFile(Modflow) 
 
+                    call MaterialAssignmentSummary(Modflow%GWF)
+                    call MaterialAssignmentSummary(Modflow%SWF)
+                    call MaterialAssignmentSummary(Modflow%CLN)
+
                     if(Modflow%GWF%nCells >0) then
                         call WriteGWFFiles(Modflow)
                         call GWFToTecplot(Modflow)

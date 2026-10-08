@@ -1,4 +1,10 @@
 \label{chapter:modifications}
+\label{changes:2025.032}
+Changes in version 2025.032:
+\begin{itemize}
+\item New input warning when a material assignment ({\sf chosen cells use gwf material number}, {\sf chosen zones use swf material number}, {\sf chosen zones use cln material number}) overwrites \gwf\ cells or \swf/\cln\ zones that already received a different material earlier in the build. The usual cause is a missing {\sf clear chosen zones}: {\sf choose zone number} adds to the current zone selection, so the next {\sf choose cells by chosen zones} also picks up the earlier zones. Before the domain files are written, the \texttt{eco} file lists the number of cells or zones assigned each material, with a further warning if a multi-zone domain ends up with one material after overwrites. The build is not stopped and model input files are unchanged.
+\end{itemize}
+
 \label{changes:2025.031}
 Changes in version 2025.031:
 \begin{itemize}

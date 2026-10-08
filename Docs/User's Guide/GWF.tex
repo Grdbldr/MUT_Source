@@ -617,6 +617,7 @@ During the model build, each \gwf\ cell is assigned a zone number from either th
         \begin{enumerate}
         \item \inum{value}  The number of the zone to be chosen.
         \end{enumerate}
+    This instruction {\em adds} the zone to the current zone selection; it does not replace it. Use {\sf clear chosen zones} (and {\sf clear chosen cells}) before choosing the next zone if each zone is to receive its own material.
     }
 
 \ins{clear chosen zones}
@@ -700,7 +701,37 @@ Some key features to note are:
     \item As we choose zone numbers, the list of currently chosen zones grows accordingly.
     \item The final number of \gwf\ cells chosen is equal to the total number of cells in the domain, since we had selected all 3 layers prior to converting the  zone selection to a cell selection.
 \end{itemize}
-Since we are assigning uniform properties to the entire model domain, this example could be simplified by simply choosing all cells then assigning properties.  However, if you wanted to assign different material properties to each zone, you can easily do so by modifying the example to assign properties to one zone at a time, being careful to clear the zone and cell selections for each layer.
+Since we are assigning uniform properties to the entire model domain, this example could be simplified by simply choosing all cells then assigning properties.  However, if you wanted to assign different material properties to each zone, you can easily do so by modifying the example to assign properties to one zone at a time, being careful to clear the zone and cell selections for each layer:
+\begin{verbatim}
+        clear chosen zones
+        choose zone number
+        1
+        clear chosen cells
+        choose cells by chosen zones
+        chosen cells use gwf material number
+        1
+
+        clear chosen zones
+        choose zone number
+        2
+        clear chosen cells
+        choose cells by chosen zones
+        chosen cells use gwf material number
+        2
+\end{verbatim}
+If {\sf clear chosen zones} is left out, the second {\sf choose cells by chosen zones} picks up zones 1 and 2, and material 2 overwrites the zone 1 cells; after a third zone every cell would carry the last material.
+
+\index{\gwf\ Domain ! material overwrite warning}
+To catch this, \mut\ tracks which material each \gwf\ cell (and each \swf\ or \cln\ zone) has already received during the build. When a {\sf chosen cells use gwf material number}, {\sf chosen zones use swf material number} or {\sf chosen zones use cln material number} instruction overwrites cells or zones that already had a different material, an input warning is written to the screen and the \texttt{eco} file, for example:
+\begin{verbatim}
+!?!? Input warning:
+39690 of 56700 chosen GWF cells already had a different material assigned
+and are now overwritten with material 3, Host Rock
+    39690 cells previously had material 2, Fractured Rock
+GWF zones currently chosen: 1 2 3
+Did you forget 'clear chosen zones' before 'choose zone number'? ...
+\end{verbatim}
+Before the domain files are written, the \texttt{eco} file also lists how many cells (or zones) carry each material, with a further warning if a domain with more than one zone ends up with a single material after such overwrites. These are warnings only: an intentional overwrite, such as a base material replaced in a subregion as in the {\sf new zone} example below, also produces the warning and can be ignored.
 
 In some cases, we may want to assign material properties to selected subregions of the model domain.  In such situations, we first select a subset of cells, then assign them a unique zone number using the instruction:
 
