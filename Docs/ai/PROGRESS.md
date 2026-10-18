@@ -1,11 +1,111 @@
 # MUT — Current progress
 
-**Last updated:** 2026-10-08
+**Last updated:** 2026-10-15
 **Version in code:** 2025.032 (`GeneralRoutines.f90`)
 **Version in User's Guide:** 2025.032 (title page and `Modifications.tex`)
 **Active plan:** none (User's Guide cleanup from high-level review)
 
 ## Done recently
+
+- QGIS plugin 0.6.1 grid size limits and cancel: soft limit 40 M cells regional / 50 M focus (confirm), hard limit 250 M (`core/geo.py` `MAX_GRID_CELLS`, `grid_advice` suggests a cell size). Wizard Run page and focus dialog (Accept extent, Download 1 m DEM) confirm or refuse via `confirm_grid_size`; headless `run`/`focus-run` raise `GridTooLargeError` before downloading unless `--allow-large-grid`. `warp_to_grid`, gap fill and hillshade pass a GDAL callback so Cancel aborts within seconds and deletes partial files (no cache meta written). User's Guide `QGIS_Usage.tex` updated.
+- Grand River Watershed published to `MUT_Examples\Demonstration` (plan `grand_river_torepos`):
+  - `Examples-Release\Demonstration\ToRepos.bat` copies `project.yaml`, the `.qgz`, reports, `1_data` vector/json/md files, `2_mesh`, and only four rasters from `1_data/surfaces` (`ground_top`, `bedrock_bottom`, `surficial_thickness`, `lake_depth`).
+  - `MUT_Examples\.gitignore` keeps `*.tif` ignored, with `!` exceptions for those four. The result is 35 files, 137.7 MB; the largest file is 41.7 MB, under GitHub's 50 MB warning. Git LFS is not used.
+  - Not published: `0_incoming/downloads` (233 MB cache), hillshades, water-surface, 1 m site and focus rasters. In a clone, the `.qgz` shows those layers missing until the builder is re-run.
+  - Each recommit of regenerated surfaces adds about 120 MB to git history, so commit them rarely.
+  - `Project.load` rebases paths saved under another `output_folder` (data folder, boundary, focus boundaries, mesh fixed points, data files) onto the `project.yaml` folder, so copied or cloned projects resolve.
+- MUT Model Builder "Add streams" mesh option (plugin 0.6.0, plan `mesh_add_streams_option`):
+  - **What it adds:** an "Add streams" group in "New mesh..." (source, levels, minimum length, stream spacing, main river name, canals, DEM threshold, "Find streams" preview via `StreamsTask`), `MeshSpec.streams: StreamOptions` in `project.yaml`, headless `mesh --streams ...` and a `streams` preview subcommand.
+  - **Sources** (`core/streams.py`, no QGIS imports; `auto` = OHN in Ontario, NHDPlus HR in the US, then OSM):
+    - Ontario Hydro Network watercourses (LIO_Open01/26) and NHDPlus HR NetworkNHDFlowline (MapServer/3): ids by envelope, then batches of 1000 with halving on error, `outSR` = project EPSG, cached in `0_incoming/downloads/streams_<source>_<key>.json`. NHD canals/ditches (ftype 336) are skipped unless canals are on.
+    - OSM `waterway=river|stream` (+canal): Overpass in 0.5° tiles, split into quarters (twice) when a tile fails; `timeout:180`.
+    - DEM: GRASS `r.stream.extract` on `ground_top.tif` with the `r.watershed` accumulation from `local_watershed.hydro_rasters`; lines oriented by accumulation.
+  - **Ranking:** lines split at shared vertices and joined at 1 m-snapped nodes. Loose downstream ends are joined to another network's line within 50 m (split there) or to another stream's start within 300 m when names agree; union-find over networks prevents loops. At splits one downstream edge is kept (same name/level path, else longest); loops cut. Upstream length per edge; level 1 traced upstream from sinks outside the boundary or within 1 km of it (interior sinks seed level 2 unless none reach the boundary) by largest upstream length (named main river preferred at ≥ 30%, NHD `levelpathi` continuity absolute); tributaries of level k become level k+1 when ≥ `min_length_km` lies inside the boundary. Paths clipped to the mesh polygon, kept downstream-ordered.
+  - **Mesh** (`core/mesh.py`): `stream_points` resamples each path at the stream spacing with nodes at junctions/ends, merges nodes of different streams within spacing/4 (lower level wins), inserts boundary outlets into the rings (or snaps within boundary spacing/4), drops other nodes near the boundary, and splits chains where links leave the polygon. `triangulate`/`smooth` recover missing chain links with fixed midpoints; the interior lattice avoids densified chain samples. `Mesh.level` per node; new source `stream`.
+  - **Outputs:** `nodes.stream_level`, a `streams` layer in the mesh GeoPackage, `stream_level` in `_xyCoord.csv`, `<slug>.nchos.Stream level k` and `.nchos.Streams` (80-char header record, then one 4-byte logical per node, `.TRUE.` = -1 as in Abdul `grid.nchos.Outlet`), `mesh.json` `streams` summary with citation, and commented `choose cells from gb nodes` lines in `mut_snippet.txt`. QGIS: streams styled by level, stream nodes cyan.
+  - **Tests:**
+    - Grand River (OHN, 3 levels, 300 m): level 1 Grand River 305 km; level 2 includes Nith, Speed, Fairchild, McKenzie, Whitemans (64 streams, 1388 km); 11,412 stream nodes, all 11,419 stream links are mesh edges, area exact; ~36 s with cache.
+    - Grand River from the DEM (10 km² threshold): main stem 311 km (OHN 312 km), 30 level-2 streams; ~60 s including `r.watershed`.
+    - Boulder Creek, CO (NHDPlus HR via `auto`): main river Boulder Creek; mesh with smoothing OK.
+    - Synthetic network: braid (named branch kept), short tributary dropped, sub-tributary at level 3, junctions and outlets are single shared nodes, all links are edges, `.nchos` counts correct.
+    - `mut.exe`: `choose gb nodes` in `tmplt` (89) and `swf` (18), and `choose cells from gb nodes` in `swf` (59) match the mesh exactly. In a layered GWF domain the read fails, because GWF `nNodes` counts every node layer; documented as SWF/template only.
+    - Grand River from OSM: whole-area Overpass query returned 500/502, so queries are tiled (9 tiles, ~15 min while Overpass was busy). OSM streams are broken at ponds/culverts (1565 near-miss junctions, gaps of 70–300 m between same-name pieces); with gap joins and the outlet rule, level 1 = Grand River (+2 short pieces reaching the boundary), 105 level-2 streams. Orienting OSM ways by DEM end elevations was tried and dropped (it broke the Nith).
+    - After the outlet rule: OHN level 1 = Grand River only (305 km); NHDPlus Boulder level 1 = Boulder Creek, Dry Creek.
+  - **Notes:** OHN rarely labels segments (only 2 "Grand River" pieces), so level-1 selection relies on upstream length and names come from the longest named part. `ChooseCellsFromGBNodes` reads the file name as `character*80` and, for GWF, loops `i=1,nCells` over a `togon(nNodes)` array; worth fixing in MUT.
+  - **Docs:** `QGIS_Usage.tex` §Adding Streams, outputs list and headless examples.
+  - **Follow-ups:** the mesh dialog says why "Build mesh" is disabled (empty mesh name). The wizard, focus and mesh dialogs call `refresh_qgz`, which skips rewriting `<slug>.qgz` when it is the project open in QGIS (that rewrite caused the "Project Has Changed on Disk" prompt) and tells the user to save with Ctrl+S.
+- MUT Model Builder Delaunay mesh generation (plugin 0.5.0, plan `delaunay_mesh_generation`):
+  - **What it adds:** "New mesh..." (`plugin/mesh_dialog.py`, `MeshTask`) and headless `mesh` (`--name`, `--spacing-m`, `--points`, `--fixed-points`, `--smooth`, `--preview`, `--no-qgz`). Automates the manual KURT QGIS workflow (`KURT_Model/_QGIS/Deluanay triangles inside regional boundary*.qgz`).
+  - **Algorithm** (`core/mesh.py`, no QGIS imports):
+    - Fixed points every `boundary_spacing_m` along each boundary ring and hole, keeping the corners of the ring simplified at spacing/4.
+    - Optional fixed user points from a point layer or file. Map layers are copied to `fixed_points.gpkg` so memory layers work.
+    - Free interior points on a hexagonal lattice; the spacing is bisected until the count is close to `interior_points`, and points within half a spacing of the boundary or a fixed point are dropped.
+    - scipy Delaunay, keeping triangles whose centroid is inside the boundary-point polygon. Missing boundary edges are recovered by inserting fixed midpoints.
+    - Optional Laplacian smoothing of free nodes only, re-triangulating after each pass.
+  - **Outputs** in `2_mesh/<slug>/`: Grid Builder `.grd/.xyc/.in3/.ean` (Fortran unformatted, 4-byte markers, matching the Abdul `gb/node894.*` layout), `.gpkg` (`nodes` with a `fixed` flag and source, `elements`), Kiera-style `_xyCoord.csv` / `_idNode.csv`, `mesh.json`, and `mut_snippet.txt` (`nodal control volumes` + `2d mesh from gb ..\..\2_mesh\<slug>\<slug>`). `project.yaml` gets a `meshes:` list (`MeshSpec`); the `.qgz` gets a group per built mesh. `write_qgz` no longer needs a regional run.
+  - **Tests:**
+    - L-shaped boundary with a hole and 4 wells: 949 nodes, 1753 triangles. No triangle lies outside the boundary, the area matches exactly, the Grid Builder files read back unchanged, and fixed nodes do not move when smoothed.
+    - Noisy 3000-vertex watershed-like boundary: minimum angle 17.6°, mean minimum angle 58°.
+    - `mut.exe` 2025.032 built the model from `mut_snippet.txt`: 1753 elements, and 1898 node-centred GWF cells (949 nodes × 2 node layers).
+    - Offscreen dialog and `populate_mesh` test passes.
+  - **Boundary fit fix:**
+    - **Problem:** at Grand River, mesh edges did not follow the model boundary. Rings had been Douglas-Peucker simplified at spacing/4 (75 m) and corners closer than 0.3 × spacing were dropped, so 1% of boundary vertices were up to 75 m off and 708 edges crossed the boundary.
+    - **Fix:** every ring vertex is now kept, and long sides are split at the spacing, so the mesh outline is the model boundary (0.000 m offset, identical area; no edge more than 1 cm outside).
+    - **New option:** `MeshSpec.boundary_tolerance_m` (dialog "Boundary simplification", headless `--simplify-m`, default 0) removes detail on noisy DEM-traced boundaries.
+    - **Reporting:** `mesh.json` `stats.boundary` records the offset and the shortest side; a warning is logged when the shortest side is below spacing/10.
+  - **Note:** `ReadGridBuilderMesh` sets `Element(:)%Typ` before `Element` is allocated (`MeshGeneration.f90` line 98); it is harmless in the release build but worth fixing.
+  - **Docs:** `QGIS_Usage.tex` §Mesh Generation and a headless example.
+- MUT Model Builder dams and reservoir levels (plugin 0.4.1, plan `dams_and_reservoir_levels`):
+  - **What it adds:** a report-only "Dams and reservoir levels" section after "Lake bathymetry" in the regional and focus reports.
+  - **Lookup** (`core/dams.py`, called from `Fetcher.dams` after bathymetry is applied):
+    - Dams come from the Ontario Dam Inventory (LIO_Open04/0; ids first, then batches), or from OSM `waterway=dam|weir` outside Ontario. The OSM query is single-attempt with a 100 s timeout, because the Overpass dam query stalled for minutes.
+    - Each dam is matched to a corrected lake within 300 m.
+    - GRCA KiWIS HK hourly series (`07.NRT.PRODUCTION.HOURLY`) gives 10-year stats, monthly medians and the DEM-level percentile. Downloads are cached for 7 days.
+    - Published targets come from the curated `core/data/reservoir_targets.json` (GRCA 2016 values for Luther, Shand, Conestogo and Guelph; Woolwich, Laurel Creek and Shades Mills have no published numbers).
+    - Name matching ignores apostrophes and a plural "s" (e.g. "Shade's Mill Dam" vs "Shades Mills Dam").
+  - **Failure handling:** on failure, a warning plus `stats["dams"]["error"]`; the run continues.
+  - **Grand River test:** 81 dams on corrected lakes, 11 with GRCA levels, 4 with targets; about 40 s with caches. Luther's DEM surface is 481.64 m, at the 67th percentile of 2016–2026 (median 481.47 m). Targets: upper operating limit 482.0 m, lower rule curve 480.6 m for Oct–Mar. Shades Mills' DEM surface is below its whole record, suggesting a winter-drawdown flight or a datum offset.
+- MUT Model Builder lake bathymetry (plugin 0.4.0):
+  - **Why:** HRDEM and MRDEM lakes are hydro-flattened. For example, Luther Lake is a flat 481.6 m water surface.
+  - **New module** `core/bathymetry.py`:
+    - Lakes come from OpenStreetMap via Overpass (`natural=water`, `landuse=reservoir`; rivers, canals and drains skipped), cached in `0_incoming/downloads`.
+    - Water level is the median DEM value inside the eroded mask.
+    - Depth source, per cell: local `bathymetry_depth_m` / `bathymetry_elevation`, then Ontario MNRF LIO contours and points (layers 30/27; ids fetched first, then batches of 200 halved on server error), then an estimate. The estimate follows Hollister & Milstead (2010): distance to shore × max depth / max distance, with max depth = median land slope × max distance, as in GLOBathy.
+    - Lakes extending beyond a focus grid use the regional `lake_depth.tif` and the method recorded in the regional `lakes.geojson`. Lakes extending beyond the regional grid (Lake Erie) are not corrected and are listed in the report.
+    - The surface is only lowered (`minimum`).
+  - **Wiring:**
+    - `Fetcher.lakes` runs for regional `ground_top` (before bedrock) and focus DEMs.
+    - It writes `*_water_surface.tif`, `lake_depth*.tif` and `lakes.geojson`.
+    - If it fails, the DEM is kept and `stats["bathymetry"]["error"]` makes the report state in bold that bathymetry was NOT applied.
+  - **Options:** `lake_bathymetry` (default on) and `lake_min_area_ha` (2). UI: a wizard Sources check box and spin, plus a focus dialog check box. Headless: `--bathymetry on|off`, `--lake-min-ha` on `run`/`focus-run`.
+  - **Flagging:**
+    - The log line reads `BATHYMETRY APPLIED`.
+    - The report has a "Lake bathymetry" section: a bold statement, a per-lake table (ESTIMATED in capitals) and caveats.
+    - In the `.qgz`, the lake outline layer is rule-styled by method; there are hidden depth and before-correction layers; the ground layer is renamed "with lake bottoms (bathymetry)".
+    - `sources.json` gets the MNRF and estimated records.
+  - **Grand River test** (`%TEMP%\qmb_gr`): 686 lakes corrected, 45 measured (Conestogo, Belwood, Puslinch, Caledon, …) and 641 estimated. Luther Lake is estimated at a maximum of 6.4 m (30 m) or 7.4 m (2 m focus), with a mean of about 2 m; there is no MNRF survey there. The regional run takes about 50 s with caches.
+  - **Docs:** new `QGIS_Usage.tex` §Lake Bathymetry.
+  - **Not yet:** the user's `C:\Work\Examples-Release\Demonstration\Grand River Watershed` must be rebuilt (regional run, then focus areas) to apply it.
+- MUT Model Builder focus areas (plugin 0.3.0, plan `newfocusarea_tool`):
+  - **Wizard is regional only.** Removed the site area: `site_buffer_km`, `site_grid`, `ground_top_site_1m.tif` and the blend into `ground_top.tif`. Old YAML keys (`site_buffer_km`, `options.blend_width_m`) are ignored on load. The Site page is now "Location".
+  - **New dialog.** "New focus area..." (`plugin/focus_dialog.py`) outlines named subregions in four ways: rectangle, digitized outline (custom `QgsMapTool`), vector file, or OpenStreetMap feature search inside the regional area plus its local watershed.
+  - **Watershed delineation** (`core/local_watershed.py`): GRASS `r.watershed` on `ground_top.tif` via a `qgis_process` subprocess, cached in `1_data/focus/_hydro`. The outlet is the cell of largest accumulation inside the feature, then `r.water.outlet`. Global Watersheds is the alternative. The result is unioned with the feature outline.
+  - **Two-step build.** "Accept extent" calls `define_focus`, which writes `1_data/focus/<slug>/focus_boundary.geojson` and sets status `defined` in `project.yaml` (`focus_areas:` list). "Download 1 m DEM" runs `FocusTask` → `build_focus`, which writes `ground_top_<res>m.tif`, its hillshade, `sources.json` and `<slug>_focus_report.md`. The regional report gets a "Focus areas" table, and the `.qgz` gets one group per built focus area.
+  - **Headless:** `focus-search`, `focus-add` (`--rect=`/`--file`/`--feature` with `--pick`/`--delineate dem|global|none`, `--margin-m`, `--res-m`) and `focus-run`.
+  - **Grand River tests:**
+    - Luther Marsh Wildlife Management Area: the outline is 65.7 km² from the regional DEM and 63.7 km² from Global Watersheds.
+    - A 2 m build of that outline (4905 × 6300 cells, HRDEM, about 2 min) filled 100%; focus minus regional is +0.01 ± 0.20 m.
+    - 1 m rectangle builds also succeeded.
+    - The offscreen dialog test covers all four outline methods and the download.
+    - The wizard boundary test still passes.
+  - **Docs:** `QGIS_Usage.tex` has a new §Focus Areas.
+
+- MUT Model Builder source loss and fix (2026-10-13 13:32). All files under `Tools/qgis_mut_builder/` were deleted (empty folders left). The QGIS plugin junction was also removed: QGIS's Plugin Manager uninstall/reinstall deletes recursively through a junction. The source was rebuilt by replaying the agent transcripts' Write/StrReplace calls (28 files, no edit failed; wizard offscreen and Ottawa headless tests pass). `install_plugin.ps1` now copies by default; `-Link` is opt-in with a warning. The plugin is still untracked in git; commit it.
+- MUT Model Builder model boundary (plugin 0.2.0). New wizard page "Model boundary" (between Site and Existing data) and `core/boundary.py`. Modes: `square` (default), `rectangle` (`QgsMapToolExtent` drag), `watershed` (search by name) and `file` (vector polygons merged). Watershed sources: USGS WBD HUC2–12 ArcGIS REST (US, ±2° envelope, layers queried in parallel; the server often returns 502/504 for some levels, which are logged and skipped), OpenStreetMap Nominatim/Overpass rivers and basins, and Global Watersheds (mghydro, MERIT-Hydro) delineation at the site or at several outlets along a named river (largest first). The boundary is written to `1_data/boundary/model_boundary.geojson` with name, source and citation. The regional grid is the boundary extent plus `boundary_margin_km`. The report gets a boundary section with in-boundary stats, and the `.qgz` a green "Model boundary" layer. Headless `init` options: `--boundary-rect`, `--watershed` (with `--pick`/`--outlet`), `--watershed-at-site`, `--boundary-file`, `--margin-km`; `--lat`/`--lon` are optional (the site defaults to the centroid). New `watersheds` subcommand. Tested: wizard offscreen (rectangle, file, WBD HUC10, at-site delineation, YAML reload) and headless Geum River (9,375 km², 4152 × 5510 grid). User's Guide: `QGIS_Usage.tex` §Model Boundary.
+- MUT Model Builder regional DEM in Canada: Grand River `ground_top.tif` showed bands trending ~12° north of east. They were hedgerows/woodlots/roads along the Ontario lot-line survey grid in Copernicus GLO-30 (a surface model), not a resampling beat (2-D spectrum peaks at 12.5° and 102.5°). New coarse provider `nrcan_mrdem30` (`core/providers/mrdem.py`, MRDEM-30 bare-earth DTM, one national COG, CGVD2013) runs before Copernicus; site-minus-regional at Grand River went from −2.65 ± 5.58 m to −0.06 ± 0.34 m. Existing `project.yaml` files with an explicit `providers:` list must add `nrcan_mrdem30`. Folder scan (`core/inventory.py`) now skips `1_data/surfaces` so a data folder equal to the output folder does not feed earlier outputs back in as `ground_dem`.
+- MUT Model Builder QGIS plugin (`Tools/qgis_mut_builder/`): five-page wizard (project, map-picked site with regional/site buffers and auto UTM, existing-data inventory with editable roles, sources/options, background run) writes `project.yaml` and builds `1_data/surfaces/ground_top.tif`, `ground_top_site_1m.tif`, `bedrock_bottom.tif`, `surficial_thickness.tif` (+ GDAL hillshades), `sources.json`, a Markdown report and a styled `.qgz`. Local files first, then Copernicus GLO-30 (AWS COG, no key) / OpenTopography globaldem (key); fine DEM from USGS 3DEP (TNM API), NRCan HRDEM (STAC), AHN and England EA (WCS, tiled), OpenTopography lidar catalogue (search only); bedrock from local elevation/depth or Shangguan 2017 BDTICM. Site DEM blended into the regional DEM over `blend_width_m`; bedrock held `min_thickness_m` below ground. Headless: `Tools\qgis_mut_builder.cmd init|inventory|run`. QGIS's OpenSSL needs `core/net.py` (drops `SSLKEYLOGFILE`, combined certifi + Windows-store CA bundle for requests and GDAL). Tested headless at KURT (Korea), Boulder (3DEP), Ottawa (HRDEM), Utrecht (AHN), London (EA), and the wizard offscreen. User's Guide: `QGIS_Usage.tex` §Automated Model Set-up.
+
+- `mut_document` per-zone pages: `{domain}_Zone_<nn>.lay` for zones 1..highest (assigned or named). One frame loads the build mesh twice: dataset zone 1 is the translucent model shell (`BoundaryFaces`, `SurfaceTranslucency = 80`, shade only); dataset zone 2 is the chosen zone (`ContourType = PrimaryValue` so each zone is one flat Mesh-legend colour). Value blanking is frame-wide, so a cell-centred `Zone Keep` variable (1 on the shell, 1 only for the chosen zone on the copy) drives it. A two-frame overlay was tried first; the axis-less overlay frame did not register with the axes frame. Title `{domain} Zone n: material` (material omitted when unnamed). PDF Mesh chapter gains a `Zones` section, one figure per page; stale `*_Zone_*` layouts/PNGs are removed. Verified on 7_SuperSlab and 6_Abdul_Prism_Cell.
 
 - 2025.032: material-overwrite `WarnMsg` in `MUSG_MaterialProperties.f90` (`CheckMaterialOverwrite`, `MaterialAssignmentSummary`). Per-cell (GWF `idMaterial`) / per-zone (SWF `idSWFMaterial`, CLN `idCLNMaterial`) trackers; warns when an assignment replaces a different material (hint points at `clear chosen zones` when >1 zone is chosen). Pre-write eco summary of cells/zones per material, plus a warning when a multi-zone domain ends with one material after overwrites. Triggered by 14 KURT models where missing `clear chosen zones` gave every GWF cell Host Rock. `7_SuperSlab`-style base+subregion overwrites also warn (documented as ignorable in `GWF.tex`).
 
@@ -53,6 +153,7 @@
 
 ## Next up
 
+- MUT Model Builder: generate `_build.mut` / mesh inputs from `1_data/surfaces` (out of scope for the first plugin plan); OpenTopography globaldem fallback is untested without an API key
 - Prefer `Save to Workspace` for new Cursor plans so they land in `.cursor/plans/`
 - Rebuild User's Guide PDF is local-only (gitignored); run `Docs/build_mut_guide.bat` before release packaging if a PDF deliverable is needed
 

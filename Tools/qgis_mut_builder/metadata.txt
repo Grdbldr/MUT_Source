@@ -1,0 +1,12 @@
+[general]
+name=MUT Model Builder
+qgisMinimumVersion=3.28
+description=Define a regional hydrogeological model, build the top (ground) and bottom (bedrock) surfaces of its surficial layer for MUT, and add ~1 m focus areas.
+about=A wizard collects the project name, description, location, model boundary (square, rectangle drawn on the map, watershed found online by name, or vector file), existing-data folder and output folder. The plugin then uses local rasters where available, otherwise downloads a regional ~30 m DEM (NRCan MRDEM-30 bare-earth DTM in Canada, Copernicus GLO-30 elsewhere) and a bedrock surface (local file, or the global Shangguan et al. 2017 depth to bedrock). "New focus area..." outlines named subregions of the regional model (rectangle, digitized outline, vector file, or a feature such as a wetland plus its local watershed delineated with GRASS or Global Watersheds); after the user accepts the extent it builds a ~1 m ground surface from public lidar (USGS 3DEP, NRCan HRDEM, AHN, UK Environment Agency). Lakes, which lidar shows as a flat water surface, are lowered to a lake bottom from local bathymetry files, Ontario MNRF surveys, or an estimate from lake shape and surrounding slope (clearly flagged as estimated); dams on those lakes are reported with measured reservoir levels (GRCA) and published target elevations. "New mesh..." builds a 2D Delaunay triangle mesh of the model area (fixed boundary and user points, evenly spaced free interior points, optional smoothing), optionally with fixed nodes and mesh edges along rivers and streams ranked into levels (Ontario Hydro Network, USGS NHDPlus HR, OpenStreetMap, or extracted from the DEM), and writes Grid Builder files that MUT reads with "2d mesh from gb" plus chosen-node files per stream level. Outputs are GeoTIFFs in a UTM projection, a QGIS project and Markdown reports.
+version=0.6.1
+author=Rob McLaren
+email=robertmclaren231@gmail.com
+category=Plugins
+tags=hydrogeology,groundwater,MODFLOW,DEM,bedrock,watershed,bathymetry,MUT
+experimental=True
+deprecated=False

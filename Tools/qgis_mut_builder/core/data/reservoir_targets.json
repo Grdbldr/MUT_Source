@@ -1,0 +1,107 @@
+{
+  "about": "Published target (rule-curve) elevations of reservoirs, matched to dams by name. Elevations in metres as published by the dam owner. Add entries with a citation; 'targets' may be empty when only a description is published.",
+  "reservoirs": [
+    {
+      "dam": "Luther Dam",
+      "aliases": ["Luther Marsh Dam"],
+      "lake": "Luther Lake",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": null,
+      "maximum_high_m": 482.0,
+      "targets": [
+        {"label": "Upper operating limit, maximum desired level", "when": "all year", "elevation_m": 482.0},
+        {"label": "Lower rule curve minimum", "when": "Oct 1 - Mar 1, early winter and late fall", "elevation_m": 480.6}
+      ],
+      "notes": "Rule curve set for low-flow augmentation to the upper Grand River (Legatt target 0.42 m3/s). Mar 1 - Sep 30: operating range between the upper and lower rule curves. Oct 1 - Mar 1: upper curve from the Luther Marsh Management Plan (1991). The reservoir may operate below 480.6 m.",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Appendix 2 and Appendix 4.",
+      "url": "https://www.grandriver.ca/media/ybgeenah/grca-reservoir-yield-tech-report-may2016_final.pdf"
+    },
+    {
+      "dam": "Shand Dam",
+      "aliases": ["Belwood Lake", "Lake Belwood"],
+      "lake": "Lake Belwood",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": 425.074,
+      "maximum_high_m": 425.379,
+      "targets": [
+        {"label": "Target lake level", "when": "Apr 1", "elevation_m": 423.698},
+        {"label": "Target lake level", "when": "May 1", "elevation_m": 424.574},
+        {"label": "Target lake level", "when": "Jun 1", "elevation_m": 425.074},
+        {"label": "Target lake level", "when": "Oct 15", "elevation_m": 417.010}
+      ],
+      "notes": "Rule curve revised February 2004; balances spring flood storage and summer low-flow augmentation.",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Tables 2 and 3.",
+      "url": "https://www.grandriver.ca/media/ybgeenah/grca-reservoir-yield-tech-report-may2016_final.pdf"
+    },
+    {
+      "dam": "Conestogo Dam",
+      "aliases": ["Conestogo Lake"],
+      "lake": "Conestogo Lake",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": 393.192,
+      "maximum_high_m": 393.497,
+      "targets": [
+        {"label": "Target lake level", "when": "Apr 1", "elevation_m": 391.973},
+        {"label": "Target lake level", "when": "May 1", "elevation_m": 392.579},
+        {"label": "Target lake level", "when": "Jun 1", "elevation_m": 393.192},
+        {"label": "Target lake level", "when": "Oct 15", "elevation_m": 386.205}
+      ],
+      "notes": "Rule curve revised February 2004.",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Tables 2 and 3.",
+      "url": "https://www.grandriver.ca/media/ybgeenah/grca-reservoir-yield-tech-report-may2016_final.pdf"
+    },
+    {
+      "dam": "Guelph Dam",
+      "aliases": ["Guelph Lake Dam", "Guelph Lake"],
+      "lake": "Guelph Lake",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": 348.0,
+      "maximum_high_m": 348.996,
+      "targets": [
+        {"label": "Target lake level", "when": "Apr 1", "elevation_m": 347.472},
+        {"label": "Target lake level", "when": "May 1", "elevation_m": 347.853},
+        {"label": "Target lake level", "when": "Jun 1", "elevation_m": 347.853},
+        {"label": "Target lake level", "when": "Oct 15", "elevation_m": 346.000}
+      ],
+      "notes": "",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Tables 2 and 3.",
+      "url": "https://www.grandriver.ca/media/ybgeenah/grca-reservoir-yield-tech-report-may2016_final.pdf"
+    },
+    {
+      "dam": "Woolwich Dam",
+      "aliases": ["Woolwich Reservoir"],
+      "lake": "Woolwich Reservoir",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": null,
+      "maximum_high_m": null,
+      "targets": [],
+      "notes": "Rule curve shown on the GRCA reservoir charts; target elevations are not published as numbers (listed as 'varies').",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Table 3.",
+      "url": "https://www.grandriver.ca/our-watershed/river-data/reservoir-levels/"
+    },
+    {
+      "dam": "Laurel Creek Dam",
+      "aliases": ["Laurel Creek Reservoir"],
+      "lake": "Laurel Creek Reservoir",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": null,
+      "maximum_high_m": null,
+      "targets": [],
+      "notes": "Rule curve shown on the GRCA reservoir charts; target elevations are not published as numbers (listed as 'varies').",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Table 3.",
+      "url": "https://www.grandriver.ca/our-watershed/river-data/reservoir-levels/"
+    },
+    {
+      "dam": "Shades Mills Dam",
+      "aliases": ["Shades Mill Dam", "Shades Mills Reservoir"],
+      "lake": "Shades Mills Reservoir",
+      "owner": "Grand River Conservation Authority",
+      "normal_high_m": null,
+      "maximum_high_m": null,
+      "targets": [],
+      "notes": "Rule curve shown on the GRCA reservoir charts; target elevations are not published as numbers (listed as 'varies').",
+      "citation": "Grand River Conservation Authority, 2016. A Framework for Identifying Indicators of Water Resource Conditions (reservoir yield technical report), May 2016, Table 3.",
+      "url": "https://www.grandriver.ca/our-watershed/river-data/reservoir-levels/"
+    }
+  ]
+}

@@ -144,6 +144,11 @@ def export_figures(
     if tec360 is None:
         return False, "tec360 not found on PATH; skipped PNG export"
 
+    current = {item.section_id + ".png" for item in layouts}
+    for png in inv.imagery_dir.glob("*_Zone_*.png"):
+        if png.name not in current:
+            png.unlink()
+
     extra = _adjust_symmetric_legends(inv, layouts, tec360, timeout_s)
 
     macro = write_export_macro(inv, layouts)

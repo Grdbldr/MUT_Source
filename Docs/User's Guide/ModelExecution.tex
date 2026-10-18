@@ -287,7 +287,8 @@ The tool does not overwrite hand-made \fpath{_build.lay} or \fpath{_post.lay} fi
         \fpath{domain_Mesh.lay},
         \fpath{domain_Variables.lay},
         \fpath{domain_scatter.lay},
-        \fpath{domain_Results.lay}, and
+        \fpath{domain_Results.lay},
+        \fpath{domain_Zone_<nn>.lay} (one layout per zone), and
         \fpath{domain_Observations_<site>.lay} (one layout per observation point)
         (Tecplot~360 EX 2018 does not accept multi-page \verb|$!PAGECONTROL| commands).
         The mesh, variables, and results layouts load finite-element \texttt{.tecplot.szplt} files when present
@@ -295,6 +296,9 @@ The tool does not overwrite hand-made \fpath{_build.lay} or \fpath{_post.lay} fi
         Scatter, observation, and volume-budget files remain ASCII.
         The mesh layout uses zone colours, named legends, mesh lines, and lighting.
         The variables layout has one frame per non-$xyz$ build field.
+        Each zone layout shows one zone as a shaded volume (in its mesh-layout colour) inside a translucent
+        outline of the entire model, titled with the zone number and material name;
+        the PDF places one zone per page in the Mesh chapter.
         The scatter layout has one frame per build-time point file
         (\fpath{_CELLS}, \fpath{_CHD}, \fpath{_RCH}, \fpath{_SWBC}, \fpath{_DRN}, \fpath{_WEL}, \fpath{_OBS_scatter});
         spheres of size 1.0, coloured by the optional fourth column when present.

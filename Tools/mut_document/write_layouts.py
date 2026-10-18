@@ -245,6 +245,21 @@ def _zone_labels(build: MutBuildInfo | None, domain: str) -> list[str]:
     return [names.get(i, f"Zone {i}") for i in range(1, nmax + 1)]
 
 
+def _zone_numbers(build: MutBuildInfo | None, domain: str, n_zones: int) -> list[int]:
+    """1..highest zone (assigned material zones or n_zones), so unassigned base zones appear."""
+    found: set[int] = set()
+    if build is not None:
+        for assign in build.assignments:
+            if assign.domain.upper() != domain.upper() or not assign.zone:
+                continue
+            try:
+                found.add(int(float(assign.zone)))
+            except ValueError:
+                continue
+    top = max([n_zones, 1, *found])
+    return list(range(1, top + 1))
+
+
 def _write_custom_labels(path: Path, labels: list[str]) -> None:
     lines = ["CUSTOMLABELS\n"]
     for name in labels:
@@ -335,6 +350,141 @@ $!ActiveFieldMaps = [1]
   UseLightingEffect = Yes
 $!View Fit
 {_default_3d_finish()}
+"""
+
+
+def _zone_volume_style(
+    frame_name: str, title: str, zone_var: int, keep_var: int, n_zones: int, zone: int
+) -> str:
+    """Dataset zone 1 = translucent model shell; dataset zone 2 = the chosen zone.
+
+    Value blanking is frame-wide, so a cell-centred keep flag (1 on the shell,
+    1 only for the chosen zone on the copy) selects what is drawn.
+    """
+    n_levels = max(n_zones, 1)
+    levels = "\n".join(f"{i + 0.5:g}" for i in range(1, n_levels + 1))
+    return f"""$!PlotType = Cartesian3D
+$!FrameName = '{_escape(frame_name)}'
+$!ActiveFieldMaps = [1-2]
+{_threed_axis_block()}$!AlterData
+  Equation = '{{Zone Keep}} = 1'
+  ValueLocation = CellCentered
+$!AlterData  [2]
+  Equation = '{{Zone Keep}} = 1 - MIN(ABS(V{zone_var} - {zone}), 1)'
+$!GlobalContour  1
+  Var = {zone_var}
+  DefNumLevels = {n_levels}
+  Legend
+    {{
+    Show = No
+    }}
+$!ContourLevels New
+  ContourGroup = 1
+  RawData
+{n_levels}
+{levels}
+$!FieldMap  [1]
+  Mesh
+    {{
+    Show = No
+    }}
+  Contour
+    {{
+    Show = No
+    }}
+  Shade
+    {{
+    Show = Yes
+    Color = Custom2
+    }}
+  EdgeLayer
+    {{
+    Show = Yes
+    Color = Black
+    LineThickness = 0.1
+    }}
+  Surfaces
+    {{
+    SurfacesToPlot = BoundaryFaces
+    }}
+  Effects
+    {{
+    LightingEffect = Gouraud
+    UseTranslucency = Yes
+    SurfaceTranslucency = 80
+    }}
+$!FieldMap  [2]
+  Mesh
+    {{
+    Show = Yes
+    Color = Black
+    }}
+  Contour
+    {{
+    Show = Yes
+    ContourType = PrimaryValue
+    Color = Multi
+    UseLightingEffect = Yes
+    }}
+  Shade
+    {{
+    Show = Yes
+    Color = Custom2
+    }}
+  EdgeLayer
+    {{
+    Show = Yes
+    Color = Black
+    LineThickness = 0.1
+    }}
+  Surfaces
+    {{
+    SurfacesToPlot = ExposedCellFaces
+    }}
+  Effects
+    {{
+    LightingEffect = Gouraud
+    UseTranslucency = No
+    }}
+$!FieldLayers
+  ShowMesh = Yes
+  ShowContour = Yes
+  ShowShade = Yes
+  ShowEdge = Yes
+  UseLightingEffect = Yes
+  UseTranslucency = Yes
+$!View Fit
+{_default_3d_finish()}$!Blanking
+  Value
+    {{
+    Include = Yes
+    Constraint 1
+      {{
+      Include = Yes
+      VarA = {keep_var}
+      RelOp = LessThan
+      ValueCutoff = 0.5
+      }}
+    }}
+{_zone_title_text(title)}"""
+
+
+def _zone_title_text(title: str) -> str:
+    return f"""$!AttachText
+  AnchorPos
+    {{
+    X = 50
+    Y = 97
+    }}
+  TextShape
+    {{
+    FontFamily = 'Helvetica'
+    IsBold = Yes
+    SizeUnits = Frame
+    Height = 3.5
+    }}
+  Anchor = HeadCenter
+  Text = '{_escape(title)}'
 """
 
 
@@ -833,6 +983,28 @@ class _LayoutBuilder:
         self.chunks.append(_zone_flood(frame_name, var_num, n_zones))
         if self.frame_count_on_page > 0:
             self.chunks.append(_linking(link_view=True))
+        self.frame_count_on_page += 1
+
+    def add_zone_volume(
+        self,
+        mesh: Path,
+        domain: str,
+        zone: int,
+        title: str,
+        zone_var: int,
+        n_vars: int,
+        n_zones: int,
+    ) -> None:
+        """One frame: translucent model shell plus the chosen zone as a solid."""
+        x, y, w, h = _overlap_slot()
+        self.chunks.append(_frame_layout(x, y, w, h, transparent=False))
+        self.chunks.append(_read_3d(_dataset_paths(mesh), append=False, reset_style=True))
+        self.chunks.append(_read_3d(_dataset_paths(mesh), append=True))
+        self.chunks.append(
+            _zone_volume_style(
+                f"{domain} Zone {zone}", title, zone_var, n_vars + 1, n_zones, zone
+            )
+        )
         self.frame_count_on_page += 1
 
     def add_3d(
@@ -1788,6 +1960,7 @@ def _remove_stale_layouts(layouts_dir: Path, keep: set[str]) -> None:
             or path.name.startswith(stale_prefixes)
             or path.name in _DERIVED_LAYOUTS
             or "_Observations" in path.name
+            or "_Zone_" in path.name
         ):
             path.unlink()
 
@@ -2022,6 +2195,23 @@ def write_layouts(
             builder.start_file(f"{domain} Variables")
             frames = fill_variables(builder, domain, mesh)
             emit_builder(f"{domain}_Variables", f"{domain} Variables", builder, frames)
+
+            mesh_vars = read_tecplot_header(mesh).get("variables") or []
+            zone_var = var_index(mesh_vars, *_zone_needles(domain))
+            if zone_var:
+                _, n_zones = labels_for(domain)
+                names = _zone_labels(build, domain)
+                for zone in _zone_numbers(build, domain, n_zones):
+                    label = names[zone - 1] if 0 < zone <= len(names) else f"Zone {zone}"
+                    title = f"{domain} Zone {zone}"
+                    if not label.startswith("Zone "):
+                        title += f": {label}"
+                    builder = _LayoutBuilder(inv.layouts_dir)
+                    builder.start_file(f"{domain} Zone {zone}")
+                    builder.add_zone_volume(
+                        mesh, domain, zone, title, zone_var, len(mesh_vars), n_zones
+                    )
+                    emit_builder(f"{domain}_Zone_{zone:02d}", title, builder, [title])
 
         builder = _LayoutBuilder(inv.layouts_dir)
         builder.start_file(f"{domain} Scatter")

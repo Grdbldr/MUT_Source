@@ -429,6 +429,26 @@ def _chapter_mesh(inv: ArtifactInventory, build: MutBuildInfo, layouts: dict[str
     lines.append("\\section{Visualization}\n")
     stem = inv.domains[0] if inv.domains else "GWF"
     lines.append(_maybe_figure(inv, stem, "Mesh construction", "fig:mesh"))
+    zone_layouts = sorted(
+        (item for sid, item in layouts.items() if "_Zone_" in sid),
+        key=lambda item: item.section_id,
+    )
+    if zone_layouts:
+        lines.append("\\section{Zones}\n")
+        lines.append(
+            "Each zone is shown on its own page as a shaded volume inside a "
+            "translucent outline of the entire model.\n"
+        )
+        for item in zone_layouts:
+            lines.append("\\clearpage\n")
+            lines.append(
+                _maybe_figure(
+                    inv,
+                    item.section_id,
+                    item.page_name,
+                    "fig:zone:" + item.section_id.lower().replace("_", ":"),
+                )
+            )
     return "".join(lines)
 
 
@@ -761,6 +781,9 @@ def _chapter_layouts(layouts: list[LayoutFile]) -> str:
         "\\texttt{GWF\\_Variables.lay}, \\texttt{GWF\\_scatter.lay}, "
         "\\texttt{GWF\\_Results.lay}, and "
         "\\texttt{GWF\\_Observations\\_\\textit{site}.lay} (one file per observation point), "
+        "\\texttt{GWF\\_Zone\\_\\textit{nn}.lay} (one file per zone: the zone as a shaded "
+        "solid under a translucent boundary of the whole model, titled with the zone "
+        "number and material name), "
         "and the same pattern for SWF and CLN. "
         "The mesh, variables, and results layouts load finite-element "
         "\\texttt{.tecplot.szplt} files when present (ASCII \\texttt{.tecplot.dat} "
