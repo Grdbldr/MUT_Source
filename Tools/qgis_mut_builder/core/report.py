@@ -196,6 +196,132 @@ def dams_lines(result) -> list[str]:
     return lines
 
 
+def climate_lines(project, result) -> list[str]:
+    """Domain-mean precipitation, temperature and PET."""
+    stats = result.stats.get("climate")
+    if stats is None:
+        return []
+    lines = ["## Climate", ""]
+    if stats.get("error"):
+        return lines + [f"Climate retrieval failed: {stats['error']}. Run again to retry.", ""]
+    if not project.options.climate_retrieval:
+        return lines + ["Off: `climate_retrieval: false`.", ""]
+    lta = stats.get("lta") or {}
+    if not lta:
+        return lines + ["No climate series was written.", ""]
+    months = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+    monthly = stats.get("monthly_lta") or {}
+    base = project.output_path
+    daily = stats.get("daily")
+    monthly_path = stats.get("monthly")
+    lines += [
+        f"**Source:** {stats.get('source', '?')} for {stats.get('start')} to {stats.get('end')} "
+        f"({stats.get('n_days', 0)} days, {stats.get('n_months', 0)} months).",
+        "",
+        f"- Long-term average precipitation: **{lta.get('P_m_per_yr', float('nan')):.3f} m/yr** "
+        f"({lta.get('P_m_per_d', float('nan')):.5f} m/d)",
+        f"- Long-term average PET: **{lta.get('PET_m_per_yr', float('nan')):.3f} m/yr** "
+        f"({lta.get('PET_m_per_d', float('nan')):.5f} m/d)",
+        f"- Long-term average temperature: **{lta.get('T_C', float('nan')):.2f} °C**",
+        "",
+    ]
+    if daily:
+        lines.append(f"- Daily series: `{_rel(Path(daily), base)}`")
+    if monthly_path:
+        lines.append(f"- Monthly series: `{_rel(Path(monthly_path), base)}`")
+    if stats.get("lta_file"):
+        lines.append(f"- Long-term average JSON: `{_rel(Path(stats['lta_file']), base)}`")
+    lines.append("")
+    if monthly:
+        lines += [
+            "| Month | P (m/d) | PET (m/d) | T (°C) |",
+            "|---|---|---|---|",
+        ]
+        for m in range(1, 13):
+            row = monthly.get(str(m))
+            if not row:
+                continue
+            lines.append(
+                f"| {months[m - 1]} | {row['P_m_per_d']:.5f} | {row['PET_m_per_d']:.5f} | {row['T_C']:.2f} |"
+            )
+        lines.append("")
+    lines += [
+        "Daymet PET uses Hargreaves–Samani from daily tmax/tmin; Open-Meteo uses FAO ET0. "
+        "Build MUT project can write these rates as SWF recharge and GWF EVT.",
+        "",
+        "Caveats:",
+        "",
+        "- Values are a domain mean over sample points in the regional bounding box, not a full gridded field.",
+        "- Reanalysis and Daymet differ from gauge observations; use local climate data when available.",
+        "",
+    ]
+    return lines
+
+
+def flows_lines(project, result) -> list[str]:
+    """Observed river discharge near level-1 outlets."""
+    stats = result.stats.get("flows")
+    if stats is None:
+        return []
+    lines = ["## River flows", ""]
+    if stats.get("error"):
+        return lines + [f"River-flow retrieval failed: {stats['error']}. Run again to retry.", ""]
+    gauges = stats.get("gauges") or []
+    if not gauges:
+        warn = stats.get("warnings") or []
+        extra = f" ({'; '.join(warn[:3])})" if warn else ""
+        return lines + [f"No discharge gauge was matched near a model outlet.{extra}", ""]
+    months = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+    base = project.output_path
+    lines += [
+        "Gauges nearest each level-1 stream outlet (ECCC HYDAT in Canada, USGS elsewhere). "
+        "Observed discharge is for calibration against model critical-depth (SWBC) outflow; "
+        "it is not prescribed as a well.",
+        "",
+        "| Outlet | Agency | Station | Distance (km) | Mean Q (m³/s) | Median Q (m³/s) | 5–95% (m³/s) | Record |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for g in gauges:
+        lta = g.get("lta") or {}
+        lines.append(
+            f"| {g.get('outlet', '')} | {g.get('agency', '').upper()} | "
+            f"{g.get('station_id', '')} {g.get('station_name', '')} | "
+            f"{g.get('distance_km', float('nan')):.1f} | "
+            f"{lta.get('mean_m3s', float('nan')):.2f} | {lta.get('median_m3s', float('nan')):.2f} | "
+            f"{lta.get('p5_m3s', float('nan')):.2f}–{lta.get('p95_m3s', float('nan')):.2f} | "
+            f"{lta.get('from', '')} to {lta.get('to', '')} |"
+        )
+    lines.append("")
+    for g in gauges:
+        monthly = g.get("monthly_lta") or {}
+        if monthly:
+            lines.append(
+                f"**{g.get('station_id')}** monthly median Q: "
+                + ", ".join(
+                    f"{months[int(m) - 1]} {v:.2f}"
+                    for m, v in sorted(monthly.items(), key=lambda kv: int(kv[0]))
+                )
+                + " m³/s."
+            )
+            lines.append("")
+        if g.get("daily"):
+            lines.append(f"- Daily: `{_rel(Path(g['daily']), base)}`")
+        if g.get("monthly"):
+            lines.append(f"- Monthly: `{_rel(Path(g['monthly']), base)}`")
+        lines.append("")
+    if stats.get("gauges_file"):
+        lines.append(f"Gauge locations: `{_rel(Path(stats['gauges_file']), base)}`.")
+        lines.append("")
+    lines += [
+        "Caveats:",
+        "",
+        "- The nearest gauge may lie upstream or on a tributary; check the name and drainage area.",
+        "- Provisional real-time values can be revised in HYDAT / NWIS.",
+        "",
+    ]
+    return lines
+
+
 def _rel(path: Path, base: Path) -> str:
     try:
         return str(Path(path).relative_to(base))
@@ -398,6 +524,8 @@ def write_report(project, result, regional: Grid) -> Path:
     if result.outputs:
         lines += bathymetry_lines(project, result)
         lines += dams_lines(result)
+    lines += climate_lines(project, result)
+    lines += flows_lines(project, result)
 
     if project.has_boundary:
         area = result.stats.get("boundary", {}).get("area_km2")

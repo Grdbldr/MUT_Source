@@ -16,7 +16,9 @@ from .providers import PROVIDERS, FetchContext, Provider, SourceRecord, default_
 from .providers.local import LocalFiles, raster_pixel_m
 from .bathymetry import apply_bathymetry, lake_stats, write_lakes
 from .boundary import boundary_area_km2, contains_point
+from .climate import retrieve_climate
 from .dams import reservoir_dams
+from .flows import retrieve_flows
 from .raster import fill_small_gaps, hillshade, polygon_mask, read_array, write_array
 from .report import write_report
 
@@ -176,6 +178,41 @@ class Fetcher:
         self.result.stats["dams"] = found.stats()
         self.result.records.extend(found.records)
 
+    def climate(self, grid: Grid) -> None:
+        """Domain-mean precip, temperature and PET for the regional area (Daymet → Open-Meteo)."""
+        if not self.project.options.climate_retrieval:
+            self.log("Climate: retrieval is off (climate_retrieval: false)")
+            return
+        try:
+            found = retrieve_climate(self.project, grid.geo_bbox(), self.log, self.refresh, self.is_canceled)
+        except InterruptedError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            self.warn(f"Climate retrieval failed: {exc}")
+            self.result.stats["climate"] = {"error": str(exc)}
+            return
+        for text in found.warnings:
+            self.warn(text)
+        self.result.stats["climate"] = found.stats()
+        self.result.records.extend(found.records)
+
+    def flows(self) -> None:
+        """Discharge gauges near level-1 outlets (ECCC → USGS)."""
+        if not self.project.options.climate_retrieval:
+            return
+        try:
+            found = retrieve_flows(self.project, self.log, self.refresh, self.is_canceled)
+        except InterruptedError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            self.warn(f"River-flow retrieval failed: {exc}")
+            self.result.stats["flows"] = {"error": str(exc)}
+            return
+        for text in found.warnings:
+            self.warn(text)
+        self.result.stats["flows"] = found.stats()
+        self.result.records.extend(found.records)
+
     def ground_dems(self) -> tuple[list[Path], list[Path]]:
         """Local ground DEMs split into (fine, coarse) by pixel size."""
         project = self.project
@@ -245,6 +282,11 @@ class _Runner(Fetcher):
             )
         else:
             self.warn("No bedrock surface found; bedrock_bottom.tif and surficial_thickness.tif were not written.")
+
+        self.progress(92)
+        self.climate(regional)
+        self.progress(96)
+        self.flows()
 
         self.result.ok = bottom is not None
         return self.finish(regional)

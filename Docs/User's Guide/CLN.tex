@@ -17,11 +17,15 @@ This is sufficient for the short-term purpose of solving the example \texttt{3\_
 A \cln\ domain can be added to the \mfus\ model using this instruction:
 
 \ins{generate cln domain}
-    {This subtask is currently limited to defining the \cln\ domain from a single pair of $xyz$ coordinates and a specified number of cells.
+    {This subtask defines the \cln\ domain from $xyz$ pairs, $xyz$ lists or structure files.
 
     An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate cln domain}
+
+    After a successful generate, \mut\ writes \fpath{<prefix>.cln.DomainBIN} and a \fpath{.reuse} stamp so later builds can skip generation when the generate-block inputs are unchanged (same pattern as the \gwf\ DomainBIN).
+
+    When CLN package files are written, CLN--GWF cell connections (nearest GWF cell and face-intersection FLENGW lengths) are cached as \fpath{<prefix>.cln.gwfconn.bin} with a matching \fpath{.reuse} stamp. Later builds reuse those connections when the GWF and CLN domain checksums are unchanged, skipping the expensive mesh-intersection step.
     }
 
 This instruction can be used to define a simple \cln\ domain:
@@ -97,7 +101,31 @@ Some key features of this example are:
     {\Large \sf end cln from xyz list}
     }
 
+Long conduit polylines that cross many \gwf\ (and, when present, \swf) cells should be split at mesh faces before {\sf generate cln domain}.  After the \gwf\ and optional \swf\ domains exist in memory, use:
 
+\ins{cln mesh intersection}
+    {
+        \squish
+        \begin{enumerate}
+        \item \str{InputXYZ}  Path to a \cln\ polyline \fpath{.xyzList} (header {\tt ID X Y Z}, then vertices in order).
+        \item \str{OutputDat}  Path for the split structure file (typically ending in \fpath{.dat}).
+        \end{enumerate}
+        \mut\ intersects the polyline with in-memory \gwf\ faces and, when a \swf\ domain is defined, \swf\ faces; writes \str{OutputDat} and a companion \fpath{.xyzList} (same stem) for {\sf cln from xyz list}.
+        Face topology for each mesh is built once per build and reused for later {\sf cln mesh intersection} instructions in the same run.
+        On later builds, if those two outputs still exist and a sidecar \fpath{.reuse} stamp matches the current \mut\ version, input file size and content checksum, and in-memory mesh fingerprint, the expensive intersection is skipped and the previous splits are reused.  Delete the \fpath{.reuse} file or the split outputs to force a rebuild.
+    }
+
+Example (after {\sf generate layered gwf domain} and optional {\sf generate swf domain}):
+\begin{verbatim}
+    cln mesh intersection
+    ..\..\2_mesh\Regional\Streams_CLN.xyzList
+    Streams_CLN_1_split.dat
+
+    generate cln domain
+        cln from xyz list
+        Streams_CLN_1_split.xyzList
+    end generate cln domain
+\end{verbatim}
 
 \subsubsection{Cell Connection Properties}  \index{\cln\ Domain ! cell connection properties}
 

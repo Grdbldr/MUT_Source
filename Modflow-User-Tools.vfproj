@@ -70,6 +70,7 @@
 			<File RelativePath=".\MUSG_BoundaryConditions.f90"/>
 			<File RelativePath=".\MUSG_Core.f90"/>
 			<File RelativePath=".\MUSG_Database.f90"/>
+			<File RelativePath=".\MUSG_DomainCache.f90"/>
 			<File RelativePath=".\MUSG_InitialConditions.f90"/>
 			<File RelativePath=".\MUSG_InstructionParser.f90"/>
 			<File RelativePath=".\MUSG_MaterialProperties.f90"/>

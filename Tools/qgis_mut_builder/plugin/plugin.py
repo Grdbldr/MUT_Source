@@ -1,4 +1,4 @@
-"""QGIS plugin entry: "New hydrogeological model..." (wizard), "New focus area..." and "New mesh..." actions."""
+"""QGIS plugin entry: regional wizard, focus area, mesh, streams, and Build MUT project actions."""
 
 from __future__ import annotations
 
@@ -14,9 +14,13 @@ class MutModelBuilderPlugin:
         self.action: QAction | None = None
         self.focus_action: QAction | None = None
         self.mesh_action: QAction | None = None
+        self.streams_action: QAction | None = None
+        self.build_action: QAction | None = None
         self.wizard = None
         self.focus_dialog = None
         self.mesh_dialog = None
+        self.streams_dialog = None
+        self.build_dialog = None
 
     def initGui(self) -> None:  # noqa: N802 (QGIS API)
         icon = QgsApplication.getThemeIcon("/mActionNewMap.svg")
@@ -40,17 +44,35 @@ class MutModelBuilderPlugin:
         self.iface.addPluginToMenu(MENU, self.mesh_action)
         self.iface.addToolBarIcon(self.mesh_action)
 
+        icon = QgsApplication.getThemeIcon("/mActionAddLine.svg")
+        self.streams_action = QAction(icon, "Add streams...", self.iface.mainWindow())
+        self.streams_action.setToolTip(
+            "Find rivers for a built mesh and attach as CLN, or rebuild the mesh with fixed stream nodes"
+        )
+        self.streams_action.triggered.connect(self.open_streams_dialog)
+        self.iface.addPluginToMenu(MENU, self.streams_action)
+        self.iface.addToolBarIcon(self.streams_action)
+
+        icon = QgsApplication.getThemeIcon("/mActionFileSaveAs.svg")
+        self.build_action = QAction(icon, "Build MUT project...", self.iface.mainWindow())
+        self.build_action.setToolTip(
+            "Write 2_models/<name>/_build.mut and elevation lists from the open project's mesh and surfaces"
+        )
+        self.build_action.triggered.connect(self.open_build_dialog)
+        self.iface.addPluginToMenu(MENU, self.build_action)
+        self.iface.addToolBarIcon(self.build_action)
+
     def unload(self) -> None:
-        for dialog in (self.wizard, self.focus_dialog, self.mesh_dialog):
+        for dialog in (self.wizard, self.focus_dialog, self.mesh_dialog, self.streams_dialog, self.build_dialog):
             if dialog is not None:
                 dialog.cleanup()
                 dialog.close()
-        self.wizard = self.focus_dialog = self.mesh_dialog = None
-        for action in (self.action, self.focus_action, self.mesh_action):
+        self.wizard = self.focus_dialog = self.mesh_dialog = self.streams_dialog = self.build_dialog = None
+        for action in (self.action, self.focus_action, self.mesh_action, self.streams_action, self.build_action):
             if action is not None:
                 self.iface.removePluginMenu(MENU, action)
                 self.iface.removeToolBarIcon(action)
-        self.action = self.focus_action = self.mesh_action = None
+        self.action = self.focus_action = self.mesh_action = self.streams_action = self.build_action = None
 
     def open_wizard(self) -> None:
         from .wizard import ModelBuilderWizard
@@ -78,3 +100,21 @@ class MutModelBuilderPlugin:
         self.mesh_dialog.show()
         self.mesh_dialog.raise_()
         self.mesh_dialog.activateWindow()
+
+    def open_streams_dialog(self) -> None:
+        from .streams_dialog import StreamsDialog
+
+        if self.streams_dialog is None or not self.streams_dialog.isVisible():
+            self.streams_dialog = StreamsDialog(self.iface)
+        self.streams_dialog.show()
+        self.streams_dialog.raise_()
+        self.streams_dialog.activateWindow()
+
+    def open_build_dialog(self) -> None:
+        from .build_dialog import BuildMutDialog
+
+        if self.build_dialog is None or not self.build_dialog.isVisible():
+            self.build_dialog = BuildMutDialog(self.iface)
+        self.build_dialog.show()
+        self.build_dialog.raise_()
+        self.build_dialog.activateWindow()

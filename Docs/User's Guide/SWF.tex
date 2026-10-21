@@ -26,6 +26,8 @@ The \swf\ domain is generated using this instruction:
     An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate swf domain}
+
+    After a successful generate, \mut\ writes \fpath{<prefix>.swf.DomainBIN} and a \fpath{.reuse} stamp so later builds can skip generation when the template and elevation inputs are unchanged (same pattern as the \gwf\ DomainBIN).
     }
 
 Here, the \textsf{top elevation} instruction has the same options as described in Section~\ref{section:topelev} for the \gwf\ domain.

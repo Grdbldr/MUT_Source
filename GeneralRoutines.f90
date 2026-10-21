@@ -6,12 +6,12 @@ module GeneralRoutines    !### bit setting routines
     
     !_DEBUG Windows Defined as 1 only if option dbglibs, MT[d], or MD[d] is specified.
     #ifdef _DEBUG  
-        character(37) :: MUTVersion='2025.033  DEBUG' 
+        character(37) :: MUTVersion='2025.037  DEBUG'
         integer(i4) :: iDBG
         character(9) :: FNameDBG='debug.txt'
 
     #else
-        character(37) :: MUTVersion='2025.033 RELEASE' 
+        character(37) :: MUTVersion='2025.037 RELEASE'
     #endif
 
 
@@ -29,7 +29,7 @@ module GeneralRoutines    !### bit setting routines
     
     integer(i4), Parameter :: MAX_OBS=1000    ! assuming never more than 1000 Observation Points per domain
 
-    integer(i4), parameter :: MAX_CNCTS=20     ! assuming never more than 20 cell-cell or element-element connections
+    integer(i4), parameter :: MAX_CNCTS=48     ! cell-cell / element-element connections (stream junctions need headroom before NCV dedup)
 
     character(MAX_STR) :: USERBIN
     logical :: LocalUserbin = .false.

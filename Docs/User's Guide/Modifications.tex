@@ -1,4 +1,37 @@
 \label{chapter:modifications}
+\label{changes:2025.037}
+Changes in version 2025.037:
+\begin{itemize}
+\item Fix empty \fpath{.rch} (header only) after DomainBIN reuse: recharge rates are written from \texttt{nRCHoption} (option~4 writes all SWF cells; options~1--3 write top-layer GWF cells) instead of gating on \texttt{domain\%name}, which can be blank when a DomainBIN is reloaded. Domain reuse also restores the domain name (\texttt{GWF}/\texttt{SWF}/\texttt{CLN}) from the cache tag. New RCH files are opened with replace semantics so a truncated prior header cannot linger.
+\end{itemize}
+
+\label{changes:2025.036}
+Changes in version 2025.036:
+\begin{itemize}
+\item CLN--GWF connection reuse: after computing nearest-GWF cells and face-intersection FLENGW lengths, \mut\ writes \fpath{<prefix>.cln.gwfconn.bin} plus a \fpath{.reuse} stamp (version and GWF/CLN domain checksums). On a later build with unchanged domains, \texttt{FindCLNtoGWFConnections} and \texttt{FindCLN\_MeshIntersections} are skipped. Delete the bin or stamp to force a rebuild. Nearest-cell progress is logged every 1000 cells instead of every cell.
+\end{itemize}
+
+\label{changes:2025.035}
+Changes in version 2025.035:
+\begin{itemize}
+\item Fix asymmetric JA for nodal-control-volume meshes with high-degree nodes (e.g.\ stream junctions): node-centred connections are deduplicated while building so temporary lists no longer overflow \texttt{MAX\_CNCTS} and corrupt neighbouring columns. \texttt{MAX\_CNCTS} raised from 20 to 48. Delete stale \fpath{*.DomainBIN} files after upgrading so they are rebuilt.
+\end{itemize}
+
+\label{changes:2025.034}
+Changes in version 2025.034:
+\begin{itemize}
+\item Domain mesh reuse across builds: after a successful {\sf generate layered gwf domain}, {\sf generate swf domain} or {\sf generate cln domain}, \mut\ writes \fpath{<prefix>.gwf.DomainBIN} / \fpath{.swf.DomainBIN} / \fpath{.cln.DomainBIN} plus a \fpath{.reuse} stamp (version, NCV flag, template fingerprint, generate-block and referenced-file checksums). On a later build with unchanged inputs, the DomainBIN is loaded and domain generation is skipped; materials, boundary conditions and package/GSF rewrite still run. Delete the DomainBIN or stamp to force a rebuild.
+\item {\sf cln mesh intersection}: face topology for \gwf/\swf\ is built once per build and reused for successive stream files; the \fpath{.reuse} stamp fingerprints XYZ content (not mtime alone) and logs which field failed on a miss.
+\item After {\sf 2d mesh from gb} (and other template mesh options), the template is saved as \fpath{TMPLT.MeshBIN} so {\sf read mesh} matches the User's Guide auto-save behaviour.
+\end{itemize}
+
+\label{changes:2025.033}
+Changes in version 2025.033:
+\begin{itemize}
+\item {\sf cln mesh intersection} reuses existing \fpath{*_split.dat} / \fpath{*_split.xyzList} when a matching \fpath{.reuse} stamp shows that the input XYZ file and in-memory \gwf/\swf\ mesh fingerprint are unchanged (and the \mut\ version matches). Delete the stamp or split outputs to force a rebuild. Documented in the \cln\ chapter.
+\item When a Tecplot \fpath{.tecplot.szplt} cannot be replaced because it is open in another program, an interactive console prompts you to save/close the dataset and press Enter to retry (or {\tt q} to abort). Non-interactive (batch) runs still stop immediately with the previous error message.
+\end{itemize}
+
 \label{changes:2025.032}
 Changes in version 2025.032:
 \begin{itemize}

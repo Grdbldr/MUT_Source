@@ -997,6 +997,12 @@ def build_mesh(
     elif chains and len(f"{rel}.nchos.Stream level {spec.streams.levels}") > GB_PATH_MAX:
         warn(f"The stream node file paths are longer than {GB_PATH_MAX} characters; shorten the mesh name")
     spec.status = "built" if result.ok else "defined"
+    if network is not None and result.ok:
+        spec.stream_mode = "embedded"
+        # Remesh with fixed stream nodes supersedes a prior CLN-on-existing-mesh export.
+        spec.cln_xyz_file = ""
+    elif result.ok and spec.stream_mode == "embedded":
+        spec.stream_mode = "none"
     project.set_mesh(spec)
     project.save()
     progress(100)

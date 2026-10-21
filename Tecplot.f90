@@ -452,28 +452,57 @@ module Tecplot !
 
 
     subroutine TecIO_DeleteIfExists(fname)
+        ! Delete fname so TecIO can recreate it. If the file is locked (usually an open
+        ! Tecplot SZPLT), prompt interactively to save/close then retry; batch/CI fails immediately.
+        use ifport, only: isatty
         implicit none
         character(*), intent(in) :: fname
-        integer(i4) :: u, ios
-        logical :: exists
+        integer(i4) :: u, ios, attempt, max_attempts
+        logical :: exists, interactive
+        character(MAX_STR) :: reply
 
         inquire(file=trim(fname), exist=exists)
         if (.not. exists) return
-        open(newunit=u, file=trim(fname), status='old', action='readwrite', iostat=ios)
-        if (ios /= 0) then
-            call HandleError(ERR_FILE_IO, &
-                'Cannot replace '//trim(fname)// &
-                ' because it is open in another program. Close that dataset in Tecplot 360 (or exit tec360) and re-run.', &
-                'TecIO_DeleteIfExists')
-        end if
-        close(u, status='delete', iostat=ios)
-        if (ios /= 0) then
-            close(u, iostat=ios)
-            call HandleError(ERR_FILE_IO, &
-                'Cannot replace '//trim(fname)// &
-                ' because it is open in another program. Close that dataset in Tecplot 360 (or exit tec360) and re-run.', &
-                'TecIO_DeleteIfExists')
-        end if
+
+        interactive = isatty(5)
+        max_attempts = 1
+        if (interactive) max_attempts = 5
+
+        do attempt = 1, max_attempts
+            open(newunit=u, file=trim(fname), status='old', action='readwrite', iostat=ios)
+            if (ios == 0) then
+                close(u, status='delete', iostat=ios)
+                if (ios == 0) return
+                close(u, iostat=ios)
+            end if
+
+            if (.not. interactive .or. attempt == max_attempts) then
+                call HandleError(ERR_FILE_IO, &
+                    'Cannot replace '//trim(fname)// &
+                    ' because it is open in another program. Close that dataset in Tecplot 360 (or exit tec360) and re-run.', &
+                    'TecIO_DeleteIfExists')
+            end if
+
+            call WarnMsg('Cannot replace '//trim(fname)// &
+                ' because it is open in another program (often Tecplot 360).')
+            call WarnMsg('Save your layout if needed, close that dataset (or exit tec360), then press Enter to retry (or q Enter to abort).')
+            reply = ' '
+            read(*, '(a)', iostat=ios) reply
+            if (ios /= 0) then
+                call HandleError(ERR_FILE_IO, &
+                    'Cannot replace '//trim(fname)// &
+                    ' because it is open in another program. Close that dataset in Tecplot 360 (or exit tec360) and re-run.', &
+                    'TecIO_DeleteIfExists')
+            end if
+            if (len_trim(reply) > 0) then
+                if (reply(1:1) == 'q' .or. reply(1:1) == 'Q') then
+                    call HandleError(ERR_FILE_IO, &
+                        'Cannot replace '//trim(fname)// &
+                        ' because it is open in another program. Close that dataset in Tecplot 360 (or exit tec360) and re-run.', &
+                        'TecIO_DeleteIfExists')
+                end if
+            end if
+        end do
     end subroutine TecIO_DeleteIfExists
 
 

@@ -15,6 +15,8 @@ BOUNDARY_MODES = ("square", "rectangle", "watershed", "file")
 FOCUS_MODES = ("rectangle", "digitized", "file", "feature_watershed", "feature")
 DELINEATIONS = ("none", "regional_dem", "global_watersheds")
 STREAM_SOURCES = ("auto", "ohn", "nhdplus", "osm", "dem")
+STREAM_MODES = ("none", "cln", "embedded")
+CLIMATE_MODES = ("none", "average", "transient")
 LEGACY_KEYS = ("site_buffer_km",)
 LEGACY_OPTIONS = ("blend_width_m",)
 
@@ -48,6 +50,7 @@ class Options:
     min_thickness_m: float = 1.0
     lake_bathymetry: bool = True
     lake_min_area_ha: float = 2.0
+    climate_retrieval: bool = True
 
 
 def slugify(name: str, default: str = "project") -> str:
@@ -116,12 +119,16 @@ class MeshSpec:
     smoothing_iterations: int = 0
     boundary_tolerance_m: float = 0.0
     streams: StreamOptions | None = None
+    stream_mode: str = "none"
+    cln_xyz_file: str = ""
     status: str = "defined"
     created: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
 
     def __post_init__(self) -> None:
         if isinstance(self.streams, dict):
             self.streams = StreamOptions(**self.streams)
+        if self.stream_mode not in STREAM_MODES:
+            raise ValueError(f"Mesh stream_mode must be one of {STREAM_MODES}")
         if self.boundary_spacing_m <= 0:
             raise ValueError("Mesh boundary point spacing must be positive")
         if self.boundary_tolerance_m < 0:
@@ -134,6 +141,28 @@ class MeshSpec:
     @property
     def slug(self) -> str:
         return slugify(self.name, "mesh")
+
+
+@dataclass
+class ModelSpec:
+    """A starter MODFLOW-USG model folder under ``2_models/<slug>/`` with ``_build.mut``."""
+
+    name: str
+    mesh: str
+    include_swf: bool = True
+    include_cln: bool = True
+    include_stream_nchos: bool = True
+    climate: str = "average"
+    status: str = "defined"
+    created: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
+
+    def __post_init__(self) -> None:
+        if self.climate not in CLIMATE_MODES:
+            raise ValueError(f"Model climate must be one of {CLIMATE_MODES}")
+
+    @property
+    def slug(self) -> str:
+        return slugify(self.name, "model")
 
 
 @dataclass
@@ -156,6 +185,7 @@ class Project:
     options: Options = field(default_factory=Options)
     focus_areas: list[FocusArea] = field(default_factory=list)
     meshes: list[MeshSpec] = field(default_factory=list)
+    models: list[ModelSpec] = field(default_factory=list)
     created: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
 
     def __post_init__(self) -> None:
@@ -251,6 +281,20 @@ class Project:
         """Add ``spec``, replacing any mesh with the same name."""
         self.meshes = [m for m in self.meshes if m.slug != spec.slug] + [spec]
 
+    @property
+    def model_root(self) -> Path:
+        return self.output_path / "2_models"
+
+    def model_dir(self, model: ModelSpec) -> Path:
+        return self.model_root / model.slug
+
+    def get_model(self, name: str) -> ModelSpec | None:
+        return next((m for m in self.models if m.name == name or m.slug == slugify(name, "model")), None)
+
+    def set_model(self, model: ModelSpec) -> None:
+        """Add ``model``, replacing any model with the same name."""
+        self.models = [m for m in self.models if m.slug != model.slug] + [model]
+
     def files_with_role(self, *roles: str) -> list[Path]:
         return [Path(f.path) for f in self.data_files if f.role in roles]
 
@@ -279,9 +323,11 @@ class Project:
         options = dict(data.get("options") or {})
         for key in LEGACY_OPTIONS:
             options.pop(key, None)
-        data["options"] = Options(**options)
+        known_opts = set(Options.__dataclass_fields__)
+        data["options"] = Options(**{k: v for k, v in options.items() if k in known_opts})
         data["focus_areas"] = [FocusArea(**f) for f in (data.get("focus_areas") or [])]
         data["meshes"] = [MeshSpec(**m) for m in (data.get("meshes") or [])]
+        data["models"] = [ModelSpec(**m) for m in (data.get("models") or [])]
         data["data_files"] = [DataFile(**f) for f in (data.get("data_files") or [])]
         data["providers"] = list(data.get("providers") or [])
         known = set(cls.__dataclass_fields__)
@@ -327,6 +373,7 @@ class Project:
             focus.boundary_file = moved(focus.boundary_file)
         for spec in self.meshes:
             spec.fixed_points_file = moved(spec.fixed_points_file)
+            spec.cln_xyz_file = moved(spec.cln_xyz_file)
         for data_file in self.data_files:
             data_file.path = moved(data_file.path)
         self.output_folder = str(new)

@@ -18,6 +18,7 @@ module MUSG !
     use MUSG_ObservationPoints
     use MUSG_InstructionParser
     use CLNIntersection
+    use MUSG_DomainCache
     use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, ERR_LOGIC, ERR_MATH, HandleError
     implicit none
     
@@ -454,6 +455,8 @@ module MUSG !
         type (mesh) TMPLT
         
         integer(i4) :: i
+        integer(kind=8) :: domain_block_cs, domain_files_cs
+        logical :: domain_peek_ok
         
         Modflow.MUTPrefix=prefix
 
@@ -469,6 +472,7 @@ module MUSG !
         
         ! Initialize JustBuilt to .false. at the start of each build
         JustBuilt = .false.
+        call ResetCLNFaceReadyFlags()
 
         BuildModflowUSG_InstructionLoop:do
             
@@ -578,6 +582,10 @@ module MUSG !
                 call HandleMeshGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt)
                 ! TemplateBuild is called after mesh generation to determine cell connections
                 call TemplateBuild(Modflow,TMPLT)
+                ! Persist MeshBIN so later builds can use "read mesh" (UG auto-save)
+                if (len_trim(TMPLT%name) > 0) then
+                    call SaveMeshBIN(TMPLT)
+                end if
             
             !else if(index(instruction, QuadtreeMeshFromGWV_CMD)  /= 0) then
             !    ! Build the 2D template mesh from a grdbldr 2D mesh
@@ -587,30 +595,55 @@ module MUSG !
             ! Domain generation instructions - handled by MUSG_InstructionParser
             else if(index(instruction, GenerateSWFDomain_CMD)  /= 0) then
                 call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
-                call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
-                call BuildModflowSWFDomain(Modflow)   
-                call AddSWFFiles(Modflow)
-                
-                if(EnableQGISOutput) then
-                    call CellsToQGIS(Modflow%SWF)
-                    !call MeshToQGIS(Modflow%SWF)
-                endif
-
+                if (TryReuseDomain(FNumMUT, Modflow%Prefix, 'swf', TMPLT, Modflow%SWF)) then
+                    call InitSWFZoneDefaultsAfterLoad(Modflow%SWF)
+                    call AddSWFFiles(Modflow)
+                    if(EnableQGISOutput) call CellsToQGIS(Modflow%SWF)
+                else
+                    call PeekGenerateBlockFingerprint(FNumMUT, domain_block_cs, domain_files_cs, domain_peek_ok)
+                    call GenerateSWFDomain(FnumMUT,TMPLT,Modflow%SWF) ! inherit cell connection from TMPLT
+                    call BuildModflowSWFDomain(Modflow)
+                    call AddSWFFiles(Modflow)
+                    if(EnableQGISOutput) then
+                        call CellsToQGIS(Modflow%SWF)
+                    endif
+                    if (domain_peek_ok) then
+                        call SaveDomainCacheAfterBuild(Modflow%Prefix, 'swf', TMPLT, Modflow%SWF, &
+                            domain_block_cs, domain_files_cs)
+                    end if
+                end if
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateLayeredGWFDomain_CMD)  /= 0) then
                 call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
-                call GenerateLayeredGWFDomain(FnumMUT,TMPLT,Modflow%GWF) ! inherit cell connection from TMPLT and extend for GWF domain layers
-                call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,Modflow%GWF)
-                
+                if (TryReuseDomain(FNumMUT, Modflow%Prefix, 'gwf', TMPLT, Modflow%GWF)) then
+                    continue
+                else
+                    call PeekGenerateBlockFingerprint(FNumMUT, domain_block_cs, domain_files_cs, domain_peek_ok)
+                    call GenerateLayeredGWFDomain(FnumMUT,TMPLT,Modflow%GWF) ! inherit cell connection from TMPLT and extend for GWF domain layers
+                    call BuildModflowGWFDomain(FnumMUT,Modflow,TMPLT,Modflow%GWF)
+                    if (domain_peek_ok) then
+                        call SaveDomainCacheAfterBuild(Modflow%Prefix, 'gwf', TMPLT, Modflow%GWF, &
+                            domain_block_cs, domain_files_cs)
+                    end if
+                end if
                 JustBuilt=.true.
             
             else if(index(instruction, GenerateCLNDomain_CMD)  /= 0) then
                 call HandleDomainGenerationInstruction(instruction, FNumMUT, TMPLT, Modflow, JustBuilt, EnableQGISOutput)
-                call GenerateCLNDomain(FnumMUT,Modflow%CLN)
-                call BuildModflowCLNDomain(Modflow)
-                call AddCLNFiles(Modflow)
-                
+                if (TryReuseDomain(FNumMUT, Modflow%Prefix, 'cln', TMPLT, Modflow%CLN)) then
+                    call InitCLNZoneDefaultsAfterLoad(Modflow%CLN)
+                    call AddCLNFiles(Modflow)
+                else
+                    call PeekGenerateBlockFingerprint(FNumMUT, domain_block_cs, domain_files_cs, domain_peek_ok)
+                    call GenerateCLNDomain(FnumMUT,Modflow%CLN)
+                    call BuildModflowCLNDomain(Modflow)
+                    call AddCLNFiles(Modflow)
+                    if (domain_peek_ok) then
+                        call SaveDomainCacheAfterBuild(Modflow%Prefix, 'cln', TMPLT, Modflow%CLN, &
+                            domain_block_cs, domain_files_cs)
+                    end if
+                end if
                 JustBuilt=.true.
 
          
@@ -766,35 +799,25 @@ module MUSG !
         integer(i4) :: i, j
 
         Modflow%CLN%name='CLN'
-                
-        if(NodalControlVolume) then
-            Modflow%CLN%nCells=Modflow%CLN%nNodes
-        else
-            Modflow%CLN%nCells=Modflow%CLN%nElements
-        end if            
+
+        ! CLN cells are mesh-centred (one cell per line element) even when
+        ! GWF uses nodal control volumes; Cell is allocated to nElements.
+        Modflow%CLN%nCells=Modflow%CLN%nElements
         
         Modflow%CLN%nNodesPerCell=Modflow%CLN%nNodesPerElement
 
-        ! Modflow CLN cell coordinate 
-        if(NodalControlVolume) then
-            do i=1,Modflow%CLN%nCells
-                Modflow%CLN%cell(i)%x=Modflow%CLN%node(i)%x
-                Modflow%CLN%cell(i)%y=Modflow%CLN%node(i)%y
-                Modflow%CLN%cell(i)%z=Modflow%CLN%node(i)%z
+        ! Modflow CLN cell coordinate (element-centred)
+        do i=1,Modflow%CLN%nCells
+            Modflow%CLN%cell(i)%x=Modflow%CLN%element(i)%x
+            Modflow%CLN%cell(i)%y=Modflow%CLN%element(i)%y
+
+            ! zc from centroid of the idNode array coordinates
+            zc=0.0
+            do j=1,Modflow%CLN%nNodesPerCell
+                zc=zc+Modflow%CLN%node(Modflow%CLN%idNode(j,i))%z
             end do
-        else
-            do i=1,Modflow%CLN%nCells
-                Modflow%CLN%cell(i)%x=Modflow%CLN%element(i)%x
-                Modflow%CLN%cell(i)%y=Modflow%CLN%element(i)%y
- 
-                ! zc from centroid of the idNode array coordinates
-                zc=0.0
-                do j=1,Modflow%CLN%nNodesPerCell
-                    zc=zc+Modflow%CLN%node(Modflow%CLN%idNode(j,i))%z
-                end do
-                Modflow%CLN%cell(i)%z=zc/Modflow%CLN%nNodesPerCell
-            end do
-        end if
+            Modflow%CLN%cell(i)%z=zc/Modflow%CLN%nNodesPerCell
+        end do
         
         ! Modflow CLN cell layer number
         do i=1,Modflow%CLN%nCells
@@ -1944,23 +1967,19 @@ module MUSG !
           
         write(ZoneSTR,'(a,i8,a,i8,a)')'ZONE t="'//trim(Modflow%CLN%name)//'"  ,N=',Modflow%CLN%nNodes,', E=',Modflow%CLN%nElements,&
         ', datapacking=block, zonetype='//trim(Modflow%CLN%TecplotTyp)
-            
-        if(NodalControlVolume) then
-            write(FNum,'(a)') trim(ZoneSTR) 
-        else
-            CellCenteredSTR=', VARLOCATION=([4'
-            if(nVar.ge.5) then
-                do j=5,nVar
-                    if(.not. NodalControlVolume) then  ! z Cell is not CELLCENTERED
-                        write(str2,'(i2)') j
-                        CellCenteredSTR=trim(CellCenteredSTR)//','//str2
-                    end if
-                end do
-            end if
-            CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
 
-            write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR) 
+        ! CLN is always mesh-centred (nCells==nElements), even when GWF uses NCV.
+        ! Vars 4..nVar are cell-sized; marking them nodal under NCV made TecIO expect
+        ! nNodes values and fail at tecend with "need N for variable 8".
+        CellCenteredSTR=', VARLOCATION=([4'
+        if(nVar.ge.5) then
+            do j=5,nVar
+                write(str2,'(i2)') j
+                CellCenteredSTR=trim(CellCenteredSTR)//','//str2
+            end do
         end if
+        CellCenteredSTR=trim(CellCenteredSTR)//']=CELLCENTERED)'
+        write(FNum,'(a)') trim(ZoneSTR)//trim(CellCenteredSTR)
         
         write(FNum,'(a)') '# x'
         write(FNum,'(5('//FMT_R8//'))') (Modflow%CLN%node(i)%x,i=1,Modflow%CLN%nNodes)
@@ -2008,11 +2027,8 @@ module MUSG !
 
         nCells = Modflow%CLN%nCells
         nPer = Modflow%CLN%nNodesPerElement
-        if (NodalControlVolume) then
-            nNodal = nVar
-        else
-            nNodal = 3
-        end if
+        ! CLN cells are always element-centred (see BuildModflowCLNDomain); only XYZ are nodal.
+        nNodal = 3
         FName = TecIO_FileName(trim(Modflow%MUTPrefix)//'o.'//trim(Modflow%Prefix)//'.'// &
                                trim(Modflow%CLN%name)//'.tecplot.dat')
         tecVars = TecIO_VarsFromHeader(VarSTR)
@@ -2316,15 +2332,6 @@ module MUSG !
         write(TmpSTR,'(a, i8)') 'Number of new CLN cells: ',nCells 
         call Msg(trim(TmpSTR))
         
-        if(.not. allocated(CLNDomain%cell)) then  
-            allocate(CLNDomain%cell(nCells),stat=ialloc)
-	        call AllocChk(ialloc,'CLNDomain%cell array')
-	        !CLNDomain%node%x = -999.0d0
-	        !CLNDomain%node%y = -999.0d0
-	        !CLNDomain%node%z = -999.0d0
-        endif
-
-        
         TotalLength=sqrt((xp(1) - xp(2))**2 + (yp(1) - yp(2))**2 + (zp(1) - zp(2))**2)
         write(TmpSTR,'(a, '//FMT_R8//')') 'Total Length of new CLN: ',TotalLength 
         call Msg(trim(TmpSTR))
@@ -2376,8 +2383,9 @@ module MUSG !
         
         if(.not. allocated(CLNDomain%element)) then  
             CLNDomain%nElements=CLNDomain%nNodes-1
-            allocate(CLNDomain%Element(CLNDomain%nElements), CLNDomain%idNode(CLNDomain%nNodesPerElement,CLNDomain%nElements), stat=ialloc)
-            call AllocChk(ialloc,'Read_gbldr_slice 2d element arrays')
+            allocate(CLNDomain%Element(CLNDomain%nElements), CLNDomain%Cell(CLNDomain%nElements), &
+                     CLNDomain%idNode(CLNDomain%nNodesPerElement,CLNDomain%nElements), stat=ialloc)
+            call AllocChk(ialloc,'CLNFromXYZPair element arrays')
             CLNDomain%Element(:)%idZone = 0 ! automatic initialization
             CLNDomain%idNode(:,:) = 0 ! automatic initialization
             CLNDomain%element%iLayer = 0
@@ -2390,17 +2398,19 @@ module MUSG !
             CLNDomain%cell%LowestElevation=-999.0d0
             CLNDomain%cell%SlopeAngle=-999.0d0
         else
+            ! Append: add only this pair's cells (not nNodes-1, which assumes one continuous chain)
             nSizeInit=CLNDomain%nElements
-            CLNDomain%nElements=CLNDomain%nNodes-1
+            CLNDomain%nElements=nElementsInit+nCells
             call growInteger2dArray(CLNDomain%idNode,2,nSizeInit,CLNDomain%nElements)
             call growElementArray(CLNDomain%Element,nSizeInit,CLNDomain%nElements)
+            call GrowCLNCellArray(CLNDomain%Cell, nSizeInit, CLNDomain%nElements)
         end if
 
-        ! generate line element incidences
+        ! generate line element incidences for the newly added nodes only
         do i=nElementsInit+1,CLNDomain%nElements
             CLNDomain%element(i)%idZone=CLNDomain%nZones
-            CLNDomain%idNode(1,i)=i
-            CLNDomain%idNode(2,i)=i+1
+            CLNDomain%idNode(1,i)=nNodesInit+(i-nElementsInit)
+            CLNDomain%idNode(2,i)=nNodesInit+(i-nElementsInit)+1
             CLNDomain%element(i)%x=(CLNDomain%node(CLNDomain%idNode(2,i))%x + CLNDomain%node(CLNDomain%idNode(1,i))%x)/2.0d0
             CLNDomain%element(i)%y=(CLNDomain%node(CLNDomain%idNode(2,i))%y + CLNDomain%node(CLNDomain%idNode(1,i))%y)/2.0d0
             CLNDomain%element(i)%z=(CLNDomain%node(CLNDomain%idNode(2,i))%z + CLNDomain%node(CLNDomain%idNode(1,i))%z)/2.0d0
@@ -2408,7 +2418,12 @@ module MUSG !
                                                     (CLNDomain%node(CLNDomain%idNode(2,i))%y -   CLNDomain%node(CLNDomain%idNode(1,i))%y)**2 + & 
                                                     (CLNDomain%node(CLNDomain%idNode(2,i))%z -   CLNDomain%node(CLNDomain%idNode(1,i))%z)**2) 
             CLNDomain%cell(i)%LowestElevation=min (CLNDomain%node(CLNDomain%idNode(2,i))%z,    CLNDomain%node(CLNDomain%idNode(1,i))%z)
-            CLNDomain%cell(i)%SlopeAngle=asin(abs (CLNDomain%node(CLNDomain%idNode(2,i))%z-    CLNDomain%node(CLNDomain%idNode(1,i))%z))* 180.0d0 * pi
+            if (CLNDomain%cell(i)%Length > 0.0d0) then
+                CLNDomain%cell(i)%SlopeAngle=asin(abs (CLNDomain%node(CLNDomain%idNode(2,i))%z-    CLNDomain%node(CLNDomain%idNode(1,i))%z)/ &
+                                                    CLNDomain%cell(i)%Length)* 180.0d0 / pi
+            else
+                CLNDomain%cell(i)%SlopeAngle=0.0d0
+            end if
         end do
                     
         !CLNDomain%IsDefined=.true.
@@ -2545,6 +2560,7 @@ module MUSG !
         call move_alloc(nodeTMP, CLNDomain%node)
         
         if(.not. allocated(CLNDomain%element)) then
+            ! First polyline: one continuous chain → nElements = nNodes - 1
             CLNDomain%nElements = CLNDomain%nNodes - 1
             allocate(CLNDomain%Element(CLNDomain%nElements), &
                      CLNDomain%Cell(CLNDomain%nElements), &
@@ -2562,10 +2578,14 @@ module MUSG !
             CLNDomain%cell%LowestElevation = -999.0d0
             CLNDomain%cell%SlopeAngle = -999.0d0
         else
+            ! Append another (possibly disconnected) polyline: only add its segments.
+            ! Using nNodes-1 here falsely links the previous path's last node to this path and
+            ! overruns idNode/Cell (access violation on the 2nd+ cln from xyz list).
             nSizeInit = CLNDomain%nElements
-            CLNDomain%nElements = CLNDomain%nNodes - 1
+            CLNDomain%nElements = nElementsInit + cln_struct%nCells
             call growInteger2dArray(CLNDomain%idNode, 2, nSizeInit, CLNDomain%nElements)
             call growElementArray(CLNDomain%Element, nSizeInit, CLNDomain%nElements)
+            call GrowCLNCellArray(CLNDomain%Cell, nSizeInit, CLNDomain%nElements)
         end if
         
         do i = nElementsInit + 1, CLNDomain%nElements
@@ -2586,9 +2606,13 @@ module MUSG !
                                              CLNDomain%node(CLNDomain%idNode(1, i))%z)**2)
             CLNDomain%cell(i)%LowestElevation = min(CLNDomain%node(CLNDomain%idNode(2, i))%z, &
                                                      CLNDomain%node(CLNDomain%idNode(1, i))%z)
-            CLNDomain%cell(i)%SlopeAngle = asin(abs(CLNDomain%node(CLNDomain%idNode(2, i))%z - &
-                                                     CLNDomain%node(CLNDomain%idNode(1, i))%z) / &
-                                                 CLNDomain%cell(i)%Length) * 180.0d0 / PI
+            if (CLNDomain%cell(i)%Length > 0.0d0) then
+                CLNDomain%cell(i)%SlopeAngle = asin(abs(CLNDomain%node(CLNDomain%idNode(2, i))%z - &
+                                                         CLNDomain%node(CLNDomain%idNode(1, i))%z) / &
+                                                     CLNDomain%cell(i)%Length) * 180.0d0 / PI
+            else
+                CLNDomain%cell(i)%SlopeAngle = 0.0d0
+            end if
         end do
         
         call Msg(' ')
@@ -2597,6 +2621,34 @@ module MUSG !
         write(TmpSTR, '(a,i8)') 'Number of elements      ', CLNDomain%nElements
         call Msg(TmpSTR)
     end subroutine BuildCLNDomainFromXYZFile
+
+    !----------------------------------------------------------------------
+    subroutine GrowCLNCellArray(cellArray, nSizeIn, nSizeOut)
+        ! Grow ModflowDomain%Cell when appending CLN polylines (Element/idNode already grown).
+        implicit none
+        type(cell), allocatable, intent(inout) :: cellArray(:)
+        integer(i4), intent(in) :: nSizeIn, nSizeOut
+        type(cell), allocatable :: cellTMP(:)
+        integer(i4) :: iSize
+
+        if (.not. allocated(cellArray)) then
+            allocate(cellArray(nSizeOut), stat=ialloc)
+            call AllocChk(ialloc, 'GrowCLNCellArray allocate')
+            cellArray%Length = -999.0d0
+            cellArray%LowestElevation = -999.0d0
+            cellArray%SlopeAngle = -999.0d0
+            return
+        end if
+        iSize = size(cellArray)
+        if (nSizeOut <= iSize) return
+        allocate(cellTMP(nSizeOut), stat=ialloc)
+        call AllocChk(ialloc, 'GrowCLNCellArray grow')
+        cellTMP(1:nSizeIn) = cellArray
+        cellTMP(nSizeIn+1:nSizeOut)%Length = -999.0d0
+        cellTMP(nSizeIn+1:nSizeOut)%LowestElevation = -999.0d0
+        cellTMP(nSizeIn+1:nSizeOut)%SlopeAngle = -999.0d0
+        call move_alloc(cellTMP, cellArray)
+    end subroutine GrowCLNCellArray
     
    
     subroutine GenerateLayeredGWFDomain(FNumMUT,TMPLT,GWFDomain)
@@ -4442,8 +4494,10 @@ module MUSG !
             
         write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain%name)//'" SOLUTIONTIME=',modflow.TIMOT(1), &
             ',N=',domain%nNodes,', E=',domain%nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
-        
-        if(NodalControlVolume) then
+
+        ! NCV only implies nodal field lengths when nCells==nNodes (GWF/SWF). CLN stays
+        ! mesh-centred (nCells==nElements), so its cell fields must stay CELLCENTERED.
+        if(NodalControlVolume .and. domain%nCells == domain%nNodes) then
             call AppendAuxdata(Modflow,ZoneSTR)
             write(FNum,'(a)') trim(ZoneSTR)
         else
@@ -4569,7 +4623,7 @@ module MUSG !
             write(ZoneSTR,'(a,f20.4,a,i8,a,i8,a)')'ZONE t="'//trim(domain%name)//'" SOLUTIONTIME=',modflow.TIMOT(j),',N=',domain%nNodes,', &
                 E=',domain%nElements,', datapacking=block, zonetype='//trim(domain%TecplotTyp)
             
-            if(NodalControlVolume) then
+            if(NodalControlVolume .and. domain%nCells == domain%nNodes) then
                 call AppendAuxdata(Modflow,ZoneSTR)
 
                 write(FNum,'(a)') trim(ZoneSTR)// & 
@@ -4678,7 +4732,8 @@ module MUSG !
         zoneTitle = trim(domain%name)
         tecVars = TecIO_VarsFromHeader(VarSTR)
         nShare = 7
-        if (NodalControlVolume) then
+        ! Nodal value locations only when cells are node-sized (true NCV GWF/SWF).
+        if (NodalControlVolume .and. domain%nCells == domain%nNodes) then
             nNodal = nVarIn
         else
             nNodal = 3
@@ -5644,7 +5699,7 @@ module MUSG !
         
         integer(i4) :: i, j, jNode, kNode
         
-        real(dp) :: FractionSide
+        real(dp) :: FractionSide, parea
         
         integer(i4) :: ia_TMP(domain%nNodes)
         integer(i4) :: ConnectionList_TMP(MAX_CNCTS,domain%nNodes)
@@ -5758,7 +5813,9 @@ module MUSG !
             ConnectionList_TMP(ia_TMP(i),i)=-i
         end do
 
-        ! Loop in order around nodes in element and form cell connection lists
+        ! Loop in order around nodes in element and form cell connection lists.
+        ! Dedup while adding: shared triangle edges would otherwise overflow MAX_CNCTS
+        ! and corrupt the next node's column (asymmetric JA).
         do i=1,domain%nElements
             do j=1,domain%nNodesPerElement
                 jNode=domain%idNode(j,i)
@@ -5768,48 +5825,32 @@ module MUSG !
                     kNode=domain%idNode(J+1,i)
                 end if
                 
-                ! jnode 
-                ia_TMP(jNode)=ia_TMP(jNode)+1
-                ConnectionList_TMP(ia_TMP(jNode),jNode)=kNode
                 ! Fraction (0 to 1) of distance from jNode to xSide, ySide
                 FractionSide=sqrt((domain%node(jNode)%x-domain%element(i)%xSide(j))**2+(domain%node(jNode)%y-domain%element(i)%ySide(j))**2)/domain%Element(i)%SideLength(j)
-                ConnectionLength_TMP(ia_TMP(jNode),jNode)=FractionSide*domain%Element(i)%SideLength(j)
                 if(domain%nNodesPerElement == 3) then ! fetriangles 
                     if(domain%ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
+                        parea=sqrt( &
                             (domain%Element(i)%xCircle-domain%Element(domain%ConnectionList(j,i))%xCircle)**2+ &
                             (domain%Element(i)%yCircle-domain%Element(domain%ConnectionList(j,i))%yCircle)**2)
                     else
-                        PerpendicularArea_TMP(ia_TMP(jNode),jNode)=sqrt( &
+                        parea=sqrt( &
                             (domain%Element(i)%xCircle-domain%element(i)%xSide(j))**2+ &
                             (domain%Element(i)%yCircle-domain%element(i)%ySide(j))**2)
                     endif    
                 else
-                    PerpendicularArea_TMP(ia_TMP(jNode),jNode)=domain%Element(i)%SideLength(j)
+                    parea=domain%Element(i)%SideLength(j)
                 endif
 
-                ! knode 
-                ia_TMP(kNode)=ia_TMP(kNode)+1
-                ConnectionList_TMP(ia_TMP(kNode),kNode)=jNode
-                ! Fraction (0 to 1) of distance from jNode to xSide, ySide
-                ConnectionLength_TMP(ia_TMP(kNode),kNode)=(1.0d0-FractionSide)*domain%Element(i)%SideLength(j)
-                if(domain%nNodesPerElement == 3) then ! fetriangles 
-                    if(domain%ConnectionList(j,i) > 0) then
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
-                            (domain%Element(i)%xCircle-domain%Element(domain%ConnectionList(j,i))%xCircle)**2+ &
-                            (domain%Element(i)%yCircle-domain%Element(domain%ConnectionList(j,i))%yCircle)**2)
-                    else
-                        PerpendicularArea_TMP(ia_TMP(kNode),kNode)=sqrt( &
-                            (domain%Element(i)%xCircle-domain%element(i)%xSide(j))**2+ &
-                            (domain%Element(i)%yCircle-domain%element(i)%ySide(j))**2)
-                    endif
-                else
-                    PerpendicularArea_TMP(ia_TMP(kNode),kNode)=domain%Element(i)%SideLength(j)
-                endif
+                call AddNodeCentredConnection(ia_TMP, ConnectionList_TMP, &
+                    ConnectionLength_TMP, PerpendicularArea_TMP, &
+                    jNode, kNode, FractionSide*domain%Element(i)%SideLength(j), parea)
+                call AddNodeCentredConnection(ia_TMP, ConnectionList_TMP, &
+                    ConnectionLength_TMP, PerpendicularArea_TMP, &
+                    kNode, jNode, (1.0d0-FractionSide)*domain%Element(i)%SideLength(j), parea)
             end do
         end do
         
-        ! Sort cell connection list, remove duplicates and determine ia
+        ! Sort cell connection list and determine ia (duplicates already removed)
         deallocate(domain%ia, domain%ConnectionList)
         allocate(domain%ia(domain%nNodes), &
                  domain%ConnectionList(MAX_CNCTS,domain%nNodes), &
@@ -5838,6 +5879,45 @@ module MUSG !
            
         return
     end subroutine IaJa_CellGeometry_NodeCentred
+
+    !----------------------------------------------------------------------
+    subroutine AddNodeCentredConnection(ia_TMP, ConnectionList_TMP, &
+            ConnectionLength_TMP, PerpendicularArea_TMP, &
+            iFrom, iTo, clen, parea)
+        ! Append iFrom->iTo, or if already present sum perpendicular area (shared edge).
+        implicit none
+        integer(i4), intent(inout) :: ia_TMP(:)
+        integer(i4), intent(inout) :: ConnectionList_TMP(:,:)
+        real(dp), intent(inout) :: ConnectionLength_TMP(:,:)
+        real(dp), intent(inout) :: PerpendicularArea_TMP(:,:)
+        integer(i4), intent(in) :: iFrom, iTo
+        real(dp), intent(in) :: clen, parea
+        integer(i4) :: kk, slot
+        character(MAX_STR) :: msg
+
+        slot = 0
+        do kk = 1, ia_TMP(iFrom)
+            if (abs(ConnectionList_TMP(kk, iFrom)) == iTo) then
+                slot = kk
+                exit
+            end if
+        end do
+        if (slot > 0) then
+            PerpendicularArea_TMP(slot, iFrom) = PerpendicularArea_TMP(slot, iFrom) + parea
+            return
+        end if
+        if (ia_TMP(iFrom) >= MAX_CNCTS) then
+            write(msg, '(a,i0,a,i0,a,i0)') &
+                'Node-centred connection limit MAX_CNCTS=', MAX_CNCTS, &
+                ' exceeded for node ', iFrom, ' linking to ', iTo
+            call HandleError(ERR_LOGIC, trim(msg), 'AddNodeCentredConnection')
+        end if
+        ia_TMP(iFrom) = ia_TMP(iFrom) + 1
+        slot = ia_TMP(iFrom)
+        ConnectionList_TMP(slot, iFrom) = iTo
+        ConnectionLength_TMP(slot, iFrom) = clen
+        PerpendicularArea_TMP(slot, iFrom) = parea
+    end subroutine AddNodeCentredConnection
  !-------------------------------------------------------------
     subroutine TemplateToTecplot(Modflow,TMPLT)
         implicit none
@@ -6149,6 +6229,8 @@ module MUSG !
         
         call Msg('  ')
         call Msg('Finding CLN to GWF cell connections...')
+
+        if (TryReuseCLNGWFConnections(Modflow%Prefix, Modflow%GWF, Modflow%CLN)) return
         
         if (.not. allocated(Modflow%CLN%CLNGWFCellID)) then
             allocate(Modflow%CLN%CLNGWFCellID(Modflow%CLN%nCells), stat=ialloc)
@@ -6173,8 +6255,11 @@ module MUSG !
             end do
             Modflow%CLN%CLNGWFCellID(i) = iCell
             
-            write(TMPStr, '(a,i8,a,i8,a,f12.4)') '  CLN cell ', i, ' -> GWF cell ', iCell, '  dist=', dist_min
-            call Msg(TMPStr)
+            if (i == 1 .or. i == Modflow%CLN%nCells .or. mod(i, 1000) == 0) then
+                write(TMPStr, '(a,i8,a,i8,a,f12.4)') &
+                    '  CLN cell ', i, ' -> GWF cell ', iCell, '  dist=', dist_min
+                call Msg(TMPStr)
+            end if
         end do
         
         ! Write CLN-GWF face intersection points to tecplot scatter file
@@ -6206,32 +6291,11 @@ module MUSG !
             end if
         end do
         
-        ! Clear stale 2D face topology inherited from the template mesh copy
-        ! so BuildFaceTopologyFrommesh rebuilds it correctly for the 3D mesh
-        if (allocated(Modflow%GWF%FaceHost)) then
-            deallocate(Modflow%GWF%FaceHost)
-            deallocate(Modflow%GWF%FaceNeighbour)
-            deallocate(Modflow%GWF%FaceCentroidX)
-            deallocate(Modflow%GWF%FaceCentroidY)
-            deallocate(Modflow%GWF%FaceCentroidZ)
-            if (allocated(Modflow%GWF%LocalFaceNodes)) deallocate(Modflow%GWF%LocalFaceNodes)
-        end if
-        
-        ! Set correct 3D element type for face topology rebuild.
-        ! feprism is MUT-internal only; GWFToTecplot writes 8-node degenerate
-        ! bricks, so restore febrick afterward for Tecplot-compatible output.
-        if (Modflow%GWF%nNodesPerElement == 6) then
-            Modflow%GWF%TecplotTyp = 'feprism'
-        else if (Modflow%GWF%nNodesPerElement == 8) then
-            Modflow%GWF%TecplotTyp = 'febrick'
-        end if
+        ! Reuse 3D face topology if already built for cln mesh intersection
+        call EnsureCLNFaceTopology(Modflow%GWF, .true.)
         
         ! Find face intersections between CLN line segments and GWF mesh
         call FindCLN_MeshIntersections(cln_struct, Modflow%GWF, intersections)
-
-        if (Modflow%GWF%nNodesPerElement == 6) then
-            Modflow%GWF%TecplotTyp = 'febrick'
-        end if
         
         ! Collect entry/exit point pairs per CLN-GWF connection
         maxNodeIncidents = 20
@@ -6572,6 +6636,8 @@ module MUSG !
         
         write(TMPStr, '(a,i8)') 'Total CLN-GWF connections: ', nConnections
         call Msg(TMPStr)
+
+        call SaveCLNGWFConnectionsCache(Modflow%Prefix, Modflow%GWF, Modflow%CLN)
         
     end subroutine FindCLNtoGWFConnections
 
@@ -13749,9 +13815,9 @@ module MUSG !
             nVar = 7
             CellCenteredSTR = ', VARLOCATION=([4,5,6,7]=CELLCENTERED)'
         end if
-        ! NCV: head/velocity are nodal (nCells==nNodes) while E is the FE element count.
-        ! Marking them CELLCENTERED makes Tecplot expect E values and misread connectivity.
-        if(NodalControlVolume) CellCenteredSTR = ''
+        ! NCV: head/velocity are nodal when nCells==nNodes (GWF/SWF). CLN stays
+        ! mesh-centred; marking its cell-sized fields nodal makes TecIO expect nNodes.
+        if(NodalControlVolume .and. domain%nCells == domain%nNodes) CellCenteredSTR = ''
 
         if(.not. WriteAsciiTecplot) then
             call DomainVelocityToTecplotBinary(Modflow, domain, haveDarcy, haveLin)
@@ -13847,7 +13913,7 @@ module MUSG !
         else
             nVarIn = 7
         end if
-        if (NodalControlVolume) then
+        if (NodalControlVolume .and. domain%nCells == domain%nNodes) then
             nNodal = nVarIn
         else
             nNodal = 3

@@ -568,7 +568,10 @@ def write_lakes(lakes: list[Lake], path: Path) -> Path:
         props = {k: v for k, v in asdict(lake).items() if k != "geometry"}
         features.append({"type": "Feature", "properties": props, "geometry": lake.geometry})
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"type": "FeatureCollection", "name": path.stem, "features": features}), encoding="utf-8")
+    path.write_text(
+        json.dumps({"type": "FeatureCollection", "name": path.stem, "features": features}, indent=2),
+        encoding="utf-8",
+    )
     return path
 
 

@@ -16,14 +16,11 @@ from qgis.gui import QgsFileWidget, QgsMapLayerComboBox
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtGui import QDesktopServices
 from qgis.PyQt.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPlainTextEdit,
     QProgressBar,
@@ -33,11 +30,10 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from ..core.mesh import mesh_outputs, preview
-from ..core.project import STREAM_SOURCES, MeshSpec, Project, StreamOptions
-from ..core.qgis_project import populate_mesh, refresh_qgz, streams_layer
-from ..core.streams import SOURCE_LABELS
+from ..core.project import MeshSpec, Project
+from ..core.qgis_project import populate_mesh, refresh_qgz
 from .focus_dialog import FocusAreaDialog
-from .task import MeshTask, StreamsTask
+from .task import MeshTask
 from .wizard import SETTINGS, _spin
 
 
@@ -56,18 +52,18 @@ class MeshDialog(QDialog):
         super().__init__(iface.mainWindow())
         self.iface = iface
         self.setWindowTitle("MUT Model Builder: new mesh")
-        self.resize(720, 860)
+        self.resize(720, 560)
         self.project: Project | None = None
         self.task: MeshTask | None = None
-        self.stream_task: StreamsTask | None = None
 
         layout = QVBoxLayout(self)
         intro = QLabel(
-            "Builds a 2D Delaunay triangle mesh of the regional model area (2_mesh/&lt;name&gt;/). Points on the "
-            "model boundary and optional user points are <b>fixed</b>; interior points are evenly spaced and "
-            "<b>free</b> to move during smoothing. <i>Add streams</i> also fixes nodes along ranked rivers and "
-            "streams, with mesh edges along them. MUT reads the mesh with <tt>2d mesh from gb</tt>; with "
-            "<tt>nodal control volumes</tt> each point becomes a MODFLOW cell."
+            "Builds a 2D Delaunay triangle mesh of the regional model area (<tt>2_mesh/&lt;name&gt;/</tt>). "
+            "Points on the model boundary and optional user points are <b>fixed</b>; interior points are evenly "
+            "spaced and <b>free</b> to move during smoothing. Pick an existing mesh name from the list to reuse "
+            "its settings, or type a new name. For rivers use <b>Add streams...</b> after the mesh is built. "
+            "MUT reads the mesh with <tt>2d mesh from gb</tt>; with <tt>nodal control volumes</tt> each point "
+            "becomes a MODFLOW cell."
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
@@ -80,7 +76,10 @@ class MeshDialog(QDialog):
         self.name = QComboBox()
         self.name.setEditable(True)
         self.name.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.name.lineEdit().setPlaceholderText("Mesh name, e.g. Regional")
+        self.name.lineEdit().setPlaceholderText("Existing name or new, e.g. Regional")
+        self.name.setToolTip(
+            "Select a mesh already listed in the project, or type a new name to create 2_mesh/<slug>/"
+        )
         self.name.currentTextChanged.connect(self.name_changed)
         form.addRow("Mesh name", self.name)
         self.spacing = _spin(1, 100000, 300, 1, " m", 50)
@@ -112,7 +111,6 @@ class MeshDialog(QDialog):
         layout.addLayout(form)
         for box in (self.spacing, self.points, self.tolerance):
             box.valueChanged.connect(self.show_preview)
-        layout.addWidget(self._streams_box())
 
         self.summary = QLabel("Open a project file.")
         self.summary.setWordWrap(True)
@@ -141,123 +139,8 @@ class MeshDialog(QDialog):
             self.yaml.setFilePath(str(start))
         self.update_buttons()
 
-    def _streams_box(self) -> QGroupBox:
-        box = QGroupBox("Add streams (fixed nodes and mesh edges along rivers and streams)")
-        box.setCheckable(True)
-        box.setChecked(False)
-        self.streams_box = box
-        form = QFormLayout(box)
-        self.stream_source = QComboBox()
-        for key in STREAM_SOURCES:
-            self.stream_source.addItem(SOURCE_LABELS[key], key)
-        self.stream_source.setToolTip(
-            "Automatic tries the Ontario Hydro Network (Ontario), USGS NHDPlus HR (United States), then OpenStreetMap. "
-            "'From the regional DEM' extracts streams from ground_top.tif with GRASS r.stream.extract."
-        )
-        self.stream_source.currentIndexChanged.connect(self.stream_source_changed)
-        form.addRow("Source", self.stream_source)
-        self.stream_levels = _int_spin(1, 6, 2)
-        self.stream_levels.setToolTip(
-            "1 = the main river only (e.g. the Grand River); 2 = also the streams flowing into it; 3 = also their "
-            "tributaries; ..."
-        )
-        form.addRow("Levels", self.stream_levels)
-        self.stream_min_length = _spin(0, 1000, 5, 1, " km", 1)
-        self.stream_min_length.setToolTip("Streams shorter than this inside the boundary are left out")
-        form.addRow("Minimum stream length", self.stream_min_length)
-        self.stream_spacing = _spin(0, 100000, 0, 0, " m", 50)
-        self.stream_spacing.setSpecialValueText("same as the boundary spacing")
-        self.stream_spacing.setToolTip("Distance between fixed nodes along the streams")
-        form.addRow("Stream node spacing", self.stream_spacing)
-        self.main_river = QLineEdit()
-        self.main_river.setPlaceholderText("optional, e.g. Grand River")
-        self.main_river.setToolTip(
-            "Name of the main river; at confluences the branch with this name is followed for level 1. "
-            "Otherwise the branch with the most stream length upstream is followed."
-        )
-        form.addRow("Main river name", self.main_river)
-        self.include_canals = QCheckBox("Include canals (OpenStreetMap)")
-        form.addRow("", self.include_canals)
-        self.dem_threshold = _spin(0.01, 100000, 10, 2, " km2", 1)
-        self.dem_threshold.setToolTip("Smallest drainage area that starts a stream when extracting from the DEM")
-        form.addRow("DEM stream threshold", self.dem_threshold)
-        row = QHBoxLayout()
-        self.find_button = QPushButton("Find streams")
-        self.find_button.setToolTip("Download or extract the streams, rank them into levels and show them on the map")
-        self.find_button.clicked.connect(self.find_streams)
-        row.addWidget(self.find_button)
-        row.addStretch()
-        form.addRow(row)
-        self.stream_summary = QLabel("")
-        self.stream_summary.setWordWrap(True)
-        form.addRow(self.stream_summary)
-        box.toggled.connect(lambda _on: self.update_buttons())
-        self.stream_source_changed()
-        return box
-
-    def stream_source_changed(self) -> None:
-        source = self.stream_source.currentData()
-        self.dem_threshold.setEnabled(source == "dem")
-        self.include_canals.setEnabled(source in ("auto", "osm"))
-
-    def stream_options(self) -> StreamOptions | None:
-        if not self.streams_box.isChecked():
-            return None
-        return StreamOptions(
-            source=self.stream_source.currentData(),
-            levels=self.stream_levels.value(),
-            min_length_km=self.stream_min_length.value(),
-            spacing_m=self.stream_spacing.value(),
-            main_river=self.main_river.text().strip(),
-            include_canals=self.include_canals.isChecked(),
-            dem_threshold_km2=self.dem_threshold.value(),
-        )
-
-    def set_stream_options(self, opts: StreamOptions | None) -> None:
-        self.streams_box.setChecked(opts is not None)
-        if opts is None:
-            return
-        self.stream_source.setCurrentIndex(max(0, self.stream_source.findData(opts.source)))
-        self.stream_levels.setValue(opts.levels)
-        self.stream_min_length.setValue(opts.min_length_km)
-        self.stream_spacing.setValue(opts.spacing_m)
-        self.main_river.setText(opts.main_river)
-        self.include_canals.setChecked(opts.include_canals)
-        self.dem_threshold.setValue(opts.dem_threshold_km2)
-
-    def find_streams(self) -> None:
-        if self.project is None or self.busy():
-            return
-        spec = self.trial_spec()
-        if spec.streams is None:
-            return
-        self.stream_task = StreamsTask(self.project, spec)
-        self.stream_task.message.connect(self.append)
-        self.stream_task.completed.connect(self.on_streams)
-        self.stream_summary.setText("Searching for streams ...")
-        self.update_buttons()
-        QgsApplication.taskManager().addTask(self.stream_task)
-
-    def on_streams(self, ok: bool) -> None:
-        task, self.stream_task = self.stream_task, None
-        self.update_buttons()
-        if task is None:
-            return
-        if not ok or task.network is None:
-            self.stream_summary.setText("No streams found; see the log.")
-            self.append(task.error or "Stream search failed.")
-            return
-        self.stream_summary.setText(task.network.describe().replace("\n", "<br>"))
-        title = f"{task.spec.name} streams (preview)"
-        qproject = QgsProject.instance()
-        for old in qproject.mapLayersByName(title):
-            qproject.removeMapLayer(old.id())
-        layer = streams_layer(task.path, title)
-        if layer.isValid():
-            qproject.addMapLayer(layer)
-
     def busy(self) -> bool:
-        return self.task is not None or self.stream_task is not None
+        return self.task is not None
 
     def append(self, text: str) -> None:
         self.log.appendPlainText(text)
@@ -301,17 +184,19 @@ class MeshDialog(QDialog):
                 box.setValue(value)
                 box.blockSignals(False)
             self.file.setFilePath(spec.fixed_points_file)
-            self.set_stream_options(spec.streams)
         self.show_preview()
 
     def trial_spec(self) -> MeshSpec:
+        existing = self.project.get_mesh(self.mesh_name()) if self.project and self.mesh_name() else None
         return MeshSpec(
             name=self.mesh_name() or "mesh",
             boundary_spacing_m=self.spacing.value(),
             boundary_tolerance_m=self.tolerance.value(),
             interior_points=self.points.value(),
             smoothing_iterations=self.smooth.value(),
-            streams=self.stream_options(),
+            streams=None,
+            stream_mode="none",
+            cln_xyz_file=existing.cln_xyz_file if existing else "",
         )
 
     def show_preview(self) -> None:
@@ -331,18 +216,21 @@ class MeshDialog(QDialog):
             f"(spacing about {p['interior_spacing_m']:,.0f} m), {p['total_points']:,} nodes in total; "
             f"shortest boundary side {p['shortest_boundary_side_m']:,.0f} m.<br>"
             f"Meshes: {existing}."
-            + ("" if self.mesh_name() else "<br><b>Type a mesh name above to enable Build mesh.</b>")
+            + (
+                ""
+                if self.mesh_name()
+                else "<br><b>Pick an existing mesh name or type a new one to enable Build mesh.</b>"
+            )
         )
 
     def update_buttons(self) -> None:
         if not hasattr(self, "build_button"):
             return
         busy = self.busy()
+        existing = self.project.get_mesh(self.mesh_name()) if self.project and self.mesh_name() else None
         self.build_button.setEnabled(self.project is not None and not busy and bool(self.mesh_name()))
-        self.find_button.setEnabled(self.project is not None and not busy and self.streams_box.isChecked())
         self.cancel_button.setEnabled(busy)
-        spec = self.project.get_mesh(self.mesh_name()) if self.project and self.mesh_name() else None
-        self.folder_button.setEnabled(spec is not None and self.project.mesh_dir(spec).exists())
+        self.folder_button.setEnabled(existing is not None and self.project.mesh_dir(existing).exists())
 
     def fixed_points_file(self, spec: MeshSpec) -> str:
         """The chosen point layer copied to the mesh folder (so memory layers work), else the chosen file."""
@@ -374,6 +262,7 @@ class MeshDialog(QDialog):
         except RuntimeError as exc:
             QMessageBox.warning(self, "Mesh", str(exc))
             return
+        self._cancel_logged = False
         self.task = MeshTask(self.project, spec)
         self.task.message.connect(self.append)
         self.task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -407,9 +296,12 @@ class MeshDialog(QDialog):
         self.show_preview()
 
     def cancel(self) -> None:
-        for task in (self.task, self.stream_task):
-            if task is not None:
-                task.cancel()
+        if self.task is None:
+            return
+        if not getattr(self, "_cancel_logged", False):
+            self.append("Cancel requested — stopping after the current step…")
+            self._cancel_logged = True
+        self.task.cancel()
 
     def open_folder(self) -> None:
         spec = self.project.get_mesh(self.mesh_name()) if self.project else None

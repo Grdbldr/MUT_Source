@@ -11,7 +11,11 @@
     python-qgis-ltr.bat run_headless.py focus-run C:\\Work\\Site\\project.yaml --name Luther
     python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --spacing-m 300 --points 5000
     python-qgis-ltr.bat run_headless.py streams C:\\Work\\Site\\project.yaml --name Regional --stream-levels 3
-    python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-levels 2
+    python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-mode cln
+    python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-mode embedded
+    python-qgis-ltr.bat run_headless.py build C:\\Work\\Site\\project.yaml --mesh Regional --name Regional
+    python-qgis-ltr.bat run_headless.py build C:\\Work\\Site\\project.yaml --mesh Regional --name Regional --climate average
+    python-qgis-ltr.bat run_headless.py run C:\\Work\\Site\\project.yaml --climate-retrieval on
 
 ``init`` writes a new project.yaml (output folder defaults to the YAML folder).
 Model boundary (default: a square of --regional-km around the project location):
@@ -28,8 +32,9 @@ Without --lat/--lon the project location is the boundary centroid.
 file, or a feature and its local watershed) without downloading; ``focus-run`` builds its ~1 m ground surface.
 ``mesh`` builds a 2D Delaunay triangle mesh (fixed boundary and --fixed-points nodes, about --points free interior
 nodes, optional --smooth passes) and writes Grid Builder files for MUT's ``2d mesh from gb`` under 2_mesh/<name>.
-With --streams it also fixes nodes along ranked rivers and streams (--stream-levels, --stream-min-km, ...) and writes
-``.nchos`` node selections per level; ``streams`` only finds and ranks them into a preview GeoPackage.
+With ``--streams`` (default ``--stream-mode cln``) it keeps the built mesh and writes ``Streams_CLN.xyzList``; use
+``--stream-mode embedded`` to rebuild with fixed stream nodes and ``.nchos`` files. ``streams`` only finds and ranks
+them into a preview GeoPackage. ``build`` writes ``2_models/<name>/_build.mut`` and elevation list files.
 Set OPENTOPOGRAPHY_API_KEY to enable the OpenTopography fallbacks.
 """
 
@@ -135,7 +140,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     me.add_argument("--smooth", type=int, default=0, help="Laplacian smoothing passes on free nodes (default 0)")
     me.add_argument("--preview", action="store_true", help="Only report the estimated spacing and point counts")
     me.add_argument("--no-qgz", action="store_true", help="Skip rewriting the .qgz QGIS project")
-    _stream_args(me, "Add fixed nodes and mesh edges along streams from this source")
+    _stream_args(me, "Stream source (with --stream-mode)")
+    me.add_argument(
+        "--stream-mode",
+        choices=("cln", "embedded"),
+        default=None,
+        help="With --streams: cln = keep mesh and export Streams_CLN.xyzList (default); "
+        "embedded = rebuild mesh with fixed stream nodes",
+    )
 
     st = sub.add_parser("streams", help="Find and rank the streams for a mesh (preview GeoPackage, no mesh)")
     st.add_argument("yaml", type=Path)
@@ -144,6 +156,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     st.add_argument("--simplify-m", type=float, default=0.0, help="Boundary simplification tolerance (default 0)")
     st.add_argument("--refresh", action="store_true", help="Ignore cached stream downloads")
     _stream_args(st, "Stream source (default auto)", default="auto")
+
+    bu = sub.add_parser("build", help="Write 2_models/<name>/_build.mut from a built mesh and regional surfaces")
+    bu.add_argument("yaml", type=Path)
+    bu.add_argument("--mesh", required=True, help="Built mesh name")
+    bu.add_argument("--name", required=True, help="Model folder name under 2_models/")
+    bu.add_argument("--no-swf", action="store_true", help="Omit the SWF domain")
+    bu.add_argument("--no-cln", action="store_true", help="Omit CLN even if Streams_CLN.xyzList exists")
+    bu.add_argument("--no-streams", action="store_true", help="Omit SWF choose cells from gb nodes (.nchos)")
+    bu.add_argument(
+        "--climate",
+        choices=("none", "average", "transient"),
+        default="average",
+        help="Climate forcing in _build.mut: long-term average P−ET TR spin-up (default), transient monthly P/PET, or none",
+    )
     return parser.parse_args(argv)
 
 
@@ -193,6 +219,11 @@ def _lake_args(parser: argparse.ArgumentParser) -> None:
         help="Correct lakes with bathymetry (default: the project's lake_bathymetry option, normally on); saved",
     )
     parser.add_argument("--lake-min-ha", type=float, help="Smallest lake corrected, in hectares (saved)")
+    parser.add_argument(
+        "--climate-retrieval",
+        choices=("on", "off"),
+        help="Retrieve precip/temperature/outlet flows (default: the project's climate_retrieval option, normally on); saved",
+    )
 
 
 def _apply_lake_args(args, project: Project) -> None:
@@ -200,6 +231,8 @@ def _apply_lake_args(args, project: Project) -> None:
         project.options.lake_bathymetry = args.bathymetry == "on"
     if getattr(args, "lake_min_ha", None) is not None:
         project.options.lake_min_area_ha = args.lake_min_ha
+    if getattr(args, "climate_retrieval", None):
+        project.options.climate_retrieval = args.climate_retrieval == "on"
 
 
 def _log(msg: str) -> None:
@@ -371,8 +404,36 @@ def _focus_run(args, project: Project) -> int:
 
 
 def _mesh(args, project: Project) -> int:
+    from core.cln_export import export_cln
     from core.mesh import build_mesh, preview
     from core.project import MeshSpec
+
+    streams = _stream_options(args)
+    mode = getattr(args, "stream_mode", None)
+    if streams is not None and mode is None:
+        mode = "cln"
+    if mode == "cln" and streams is not None:
+        existing = project.get_mesh(args.name)
+        if existing is None or existing.status != "built":
+            raise SystemExit(
+                f"Mesh '{args.name}' must already be built before --stream-mode cln. "
+                "Build without --streams first, or use --stream-mode embedded."
+            )
+        spec = MeshSpec(
+            name=existing.name,
+            boundary_spacing_m=existing.boundary_spacing_m,
+            boundary_tolerance_m=existing.boundary_tolerance_m,
+            interior_points=existing.interior_points,
+            fixed_points_file=existing.fixed_points_file,
+            smoothing_iterations=existing.smoothing_iterations,
+            streams=streams,
+            stream_mode="cln",
+            status=existing.status,
+            created=existing.created,
+        )
+        result = export_cln(project, spec, log=_log)
+        _log(f"CLN XYZ: {result.path}")
+        return 0 if result.ok else 1
 
     spec = MeshSpec(
         name=args.name,
@@ -381,7 +442,8 @@ def _mesh(args, project: Project) -> int:
         interior_points=args.points,
         fixed_points_file=str(args.fixed_points.resolve()) if args.fixed_points else "",
         smoothing_iterations=args.smooth,
-        streams=_stream_options(args),
+        streams=streams if mode == "embedded" else None,
+        stream_mode="embedded" if mode == "embedded" and streams else "none",
     )
     if args.preview:
         p = preview(project, spec)
@@ -412,7 +474,29 @@ def _streams(args, project: Project) -> int:
     for msg in network.warnings:
         _log(f"  {msg}")
     _log(f"Source: {network.citation}")
+    _log(f"Preview: {path}")
     return 0
+
+
+def _build(args, project: Project) -> int:
+    from core.mut_build import build_mut_project
+    from core.project import ModelSpec
+
+    spec = project.get_mesh(args.mesh)
+    if spec is None or spec.status != "built":
+        names = ", ".join(f"{m.name} ({m.status})" for m in project.meshes) or "none"
+        raise SystemExit(f"No built mesh '{args.mesh}' in {project.yaml_path} (meshes: {names})")
+    model = ModelSpec(
+        name=args.name,
+        mesh=spec.name,
+        include_swf=not args.no_swf,
+        include_cln=not args.no_cln,
+        include_stream_nchos=not args.no_streams,
+        climate=args.climate,
+    )
+    result = build_mut_project(project, spec, model, log=_log)
+    _log(f"Model folder: {result.model_dir}")
+    return 0 if result.ok else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -452,6 +536,9 @@ def main(argv: list[str] | None = None) -> int:
 
             prepare_network()
         return _mesh(args, project) if args.command == "mesh" else _streams(args, project)
+
+    if args.command == "build":
+        return _build(args, project)
 
     if not project.data_files and project.data_folder:
         _log("No data roles in the project file; using suggested roles from a folder scan:")

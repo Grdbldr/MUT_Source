@@ -15,6 +15,8 @@ A \mfus\ 3D groundwater flow (\gwf) domain can be generated from the template us
     An end instruction is required to stop the subtask e.g.:
 
     {\Large \sf end generate layered gwf domain}
+
+    After a successful generate, \mut\ writes \fpath{<prefix>.gwf.DomainBIN} and a sidecar \fpath{.reuse} stamp. On a later build, if the template mesh, NCV flag, generate-block text and referenced elevation files are unchanged, the DomainBIN is loaded and generation is skipped (materials and boundary conditions still run). Delete the DomainBIN or stamp to force a rebuild.
     }
 
     {\em NOTE: The term layers used here should not be confused with the \mf\ term of the same name. A \mf\ layer is one cell thick, while a \mut\ layer can be one or more elements thick.}

@@ -1,12 +1,43 @@
 # MUT — Current progress
 
-**Last updated:** 2026-10-15
-**Version in code:** 2025.032 (`GeneralRoutines.f90`)
-**Version in User's Guide:** 2025.032 (title page and `Modifications.tex`)
-**Active plan:** none (User's Guide cleanup from high-level review)
+**Last updated:** 2026-10-21
+**Version in code:** 2025.037 (`GeneralRoutines.f90`)
+**Version in User's Guide:** 2025.037 (title page and `Modifications.tex`)
+**Active plan:** none
 
 ## Done recently
 
+- QGIS MUT Model Builder **0.8.6** default GWF stack: Surficial (10 log-proportional sublayers, material 6 Borden sand) over Bedrock (5 log-proportional sublayers to flat base = min(surficial base)−200 m, material 21 Fractured crystalline rock from Freeze & Cherry / GW-Project ranges). USERBIN `GWF.csv` gains material 21. Docs: `QGIS_Usage.tex`.
+- QGIS MUT Model Builder **0.8.5** average climate is an Abdul-style **TR spin-up** (3000 d), not hard SS: `ClimateForcing.instructions` type TR; OC times `1e-4`…`3000` so ATS starts tiny. Grand River Watershed demo `_build.mut` / `ClimateForcing.instructions` updated the same way. Docs: `QGIS_Usage.tex`.
+- MUT **2025.037** fix empty `Modflow.rch` after DomainBIN reuse: `AssignRCHtoDomain` writes rates from `nRCHoption` (not `domain%name`); `TryReuseDomain` restores `D%name` from `domain_tag`; RCH open uses `status='replace'`.
+- QGIS MUT Model Builder **0.8.4** split **New mesh...** from **Add streams...** (separate menu/dialog). Mesh dialog builds only; streams dialog picks a built mesh, Find streams, Attach CLN or rebuild embedded. Mesh name combo still selects existing or types a new name.
+- MUT **2025.036** CLN–GWF connection reuse: `*.cln.gwfconn.bin` + `.reuse` stamp (GWF/CLN domain checksums) so `FindCLNtoGWFConnections` / `FindCLN_MeshIntersections` are skipped on later builds; nearest-cell Msg every 1000 cells.
+- MUT **2025.035** fix NCV JA asymmetry: `IaJa_CellGeometry_NodeCentred` dedups connections while building (overflow of `MAX_CNCTS=20` corrupted adjacent node columns on stream junctions); `MAX_CNCTS` → 48. Delete stale DomainBINs after upgrade.
+- MUT **2025.034** domain mesh reuse + CLN face/topology hardening (plan `domain_mesh_reuse`):
+  - `MUSG_DomainCache.f90`: `*.gwf/swf/cln.DomainBIN` + `.reuse` stamps; skip Generate*/Build* when TMPLT, NCV, generate-block and elevation/CLN file checksums match; materials/BCs/packages still run.
+  - CLN intersection: build GWF/SWF face topology once per build (`EnsureCLNFaceTopology`); XYZ content checksum (not mtime-only); mismatch diagnostics.
+  - `SaveMeshBIN(TMPLT)` after MUSG template mesh + `TemplateBuild`.
+  - UG: `Modifications.tex` / title page 2025.034; DomainBIN notes in `GWF.tex` / `SWF.tex` / `CLN.tex`.
+- MUT **2025.033** CLN intersection reuse + Tecplot unlock (plan `cln_cache_tecplot_unlock`):
+  - `cln mesh intersection` skips recomputation when `*_split.dat` / `*_split.xyzList` exist and a `.reuse` stamp matches MUT version, XYZ size/mtime, and GWF/SWF mesh fingerprints (`CLNIntersection.f90`).
+  - `TecIO_DeleteIfExists`: interactive console prompts to save/close locked SZPLT then retry; batch/non-TTY still hard-fails.
+  - UG: `CLN.tex` documents `cln mesh intersection` + reuse; `Modifications.tex` / title page 2025.033.
+- QGIS MUT Model Builder **0.8.3** default steady-state P−ET initial run (plan `default_ss_p-et_run`):
+  - Build MUT default climate is `average` (dialog, `ModelSpec`, headless `--climate`): one SS stress period with net $\max(P-\mathrm{PET},0)$ m/d.
+  - CLN first via `cln gstr` + constant `NetRecharge.asc`; SWF RCH option 4 at `net × (A_mesh − A_cln) / A_mesh` (Channel width 10 m × stream length); no GWF EVT in average mode.
+  - Level-1 critical-depth `Outlet` unchanged; transient monthly P+EVT remains optional.
+  - Tests: `test_climate_flows.py`; docs: `QGIS_Usage.tex` (Build MUT BC note fixed).
+- QGIS MUT Model Builder **0.8.2** Cancel run fix: background tasks use `QgsTask.Flag.CanCancel` plus a `threading.Event` so cancel is visible to GDAL/network callbacks; cancelable `warp_to_grid` runs in horizontal strips (no GDAL multithread) so remote Copernicus `/vsicurl/` DEM reads stop within a few seconds instead of ignoring Cancel for minutes; Run/focus/mesh log "Cancel requested…". Reinstall the plugin into QGIS to pick this up.
+- QGIS MUT Model Builder **0.8.1** default materials (plan `default_domain_materials`): Build MUT assigns GWF material 6 (Borden sand), SWF material 4 (Grass), CLN material 3 (Channel, 10 m × 1 m) from USERBIN CSVs instead of demo material 1. Docs: `QGIS_Usage.tex`.
+- QGIS builder: pretty-print user-facing project GeoJSON/JSON (`indent=2`) in `write_boundary` and `write_lakes`; caches stay compact.
+- User's Guide path typography: `\fpath` uses `\path` (plain `_`, not `\_`); QGIS climate/flow folders aligned with backslash project paths (`1_data\climate`, `1_data\flows`); same fix in `ModelExecution.tex`, `Excel.tex`, `TemplateMesh.tex`. Comment in `MUT User's Guide.tex`; PDF rebuilt.
+- QGIS MUT Model Builder **0.8.0** climate and river-flow retrieval (plan `climate_flow_retrieval`):
+  - Regional run (option `climate_retrieval`, default on) downloads domain-mean daily P/T/PET for the last 10 complete calendar years: Daymet single-pixel lattice in NA, else Open-Meteo archive (FAO ET0; Daymet uses Hargreaves–Samani). Writes `1_data/climate/` (daily/monthly CSV, LTA JSON) and report section.
+  - Outlet discharge: ECCC GeoMet HYDAT then USGS NWIS daily values near level-1 stream ends (or project location); `1_data/flows/`, report section. Observed Q for SWBC calibration, not a prescribed well.
+  - Build MUT: `ModelSpec.climate` = `transient` | `average` | `none`; writes `ClimateForcing.instructions` (monthly TR SPs or LTA SS: SWF RCH + GWF EVT EXDP=2 m), `Precipitation.rts`, copies `ObservedOutletQ_*.csv`, critical-depth Outlet on level-1 `.nchos`. Dialog combo and headless `--climate` / `--climate-retrieval`.
+  - Offline tests: `Tools/qgis_mut_builder/tests/test_climate_flows.py`. Docs: `QGIS_Usage.tex`.
+- Fix CLN Tecplot SZPLT crash under NCV (`tecend142` / "Currently need N for variable 8"): after `BuildModflowCLNDomain` always uses `nCells=nElements`, build/post Tecplot still marked all CLN fields as nodal when `nodal control volumes` was set, so TecIO expected `nNodes` values for vars 4–8 while the writer emitted `nElements`. `CLNToTecplot`/`CLNToTecplotBinary` now always use cell-centred locations for those fields; shared `_post`/velocity writers only treat fields as nodal when `nCells==nNodes`.
+- Fix `BuildModflowCLNDomain` access violation under NCV: always set `nCells = nElements` and use element-centred cell coordinates (CLN is mesh-centred; Cell is allocated to nElements, so using nNodes overran for multi-polyline CLN).
 - QGIS plugin 0.6.1 grid size limits and cancel: soft limit 40 M cells regional / 50 M focus (confirm), hard limit 250 M (`core/geo.py` `MAX_GRID_CELLS`, `grid_advice` suggests a cell size). Wizard Run page and focus dialog (Accept extent, Download 1 m DEM) confirm or refuse via `confirm_grid_size`; headless `run`/`focus-run` raise `GridTooLargeError` before downloading unless `--allow-large-grid`. `warp_to_grid`, gap fill and hillshade pass a GDAL callback so Cancel aborts within seconds and deletes partial files (no cache meta written). User's Guide `QGIS_Usage.tex` updated.
 - Grand River Watershed published to `MUT_Examples\Demonstration` (plan `grand_river_torepos`):
   - `Examples-Release\Demonstration\ToRepos.bat` copies `project.yaml`, the `.qgz`, reports, `1_data` vector/json/md files, `2_mesh`, and only four rasters from `1_data/surfaces` (`ground_top`, `bedrock_bottom`, `surficial_thickness`, `lake_depth`).
@@ -151,9 +182,15 @@
 
 - None tracked here
 
+## Done recently (plugin)
+
+- MUT Model Builder **Build MUT project...**: samples `ground_top`/`bedrock_bottom` onto mesh nodes, writes `2_models/<name>/_build.mut` + elevation lists (`core/mut_build.py`)
+- New mesh stream modes: default **CLN on existing mesh** (`core/cln_export.py` → `Streams_CLN.xyzList`; MUT `cln mesh intersection`) vs **rebuild with fixed stream nodes** (`.nchos` / SWF)
+- Fix `BuildCLNDomainFromXYZFile` / `CLNFromXYZPair`: appending a 2nd+ polyline used `nElements = nNodes-1` (false link + AVE); now adds only that polyline's cells and grows `Cell`
+
 ## Next up
 
-- MUT Model Builder: generate `_build.mut` / mesh inputs from `1_data/surfaces` (out of scope for the first plugin plan); OpenTopography globaldem fallback is untested without an API key
+- OpenTopography globaldem fallback is untested without an API key
 - Prefer `Save to Workspace` for new Cursor plans so they land in `.cursor/plans/`
 - Rebuild User's Guide PDF is local-only (gitignored); run `Docs/build_mut_guide.bat` before release packaging if a PDF deliverable is needed
 

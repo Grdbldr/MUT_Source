@@ -1,24 +1,47 @@
-"""Background QgsTasks for the regional pipeline, focus-area, stream and mesh builds; log lines go through a signal."""
+"""Background QgsTasks for the regional pipeline, focus-area, stream, mesh, CLN and MUT builds; log lines go through a signal."""
 
 from __future__ import annotations
 
+import threading
 import traceback
 
 from qgis.core import QgsTask
 from qgis.PyQt.QtCore import pyqtSignal
 
+from ..core.cln_export import export_cln
 from ..core.focus import build_focus
 from ..core.geo import GridTooLargeError
 from ..core.mesh import build_mesh, preview_streams
+from ..core.mut_build import build_mut_project
 from ..core.pipeline import run_pipeline
 
 
-class PipelineTask(QgsTask):
+class _CancelableTask(QgsTask):
+    """QgsTask that exposes a thread-safe cancel flag for GDAL/network callbacks.
+
+    ``QgsTask.cancel()`` is a no-op unless ``CanCancel`` is set; we also keep a
+    ``threading.Event`` so long GDAL work can see the request even if the SIP
+    ``isCanceled()`` wrapper is slow to observe it from a progress callback.
+    """
+
+    def __init__(self, description: str) -> None:
+        super().__init__(description, QgsTask.Flag.CanCancel)
+        self._cancel_event = threading.Event()
+
+    def cancel(self) -> None:
+        self._cancel_event.set()
+        super().cancel()
+
+    def stop_requested(self) -> bool:
+        return self._cancel_event.is_set() or self.isCanceled()
+
+
+class PipelineTask(_CancelableTask):
     message = pyqtSignal(str)
     completed = pyqtSignal(bool)
 
     def __init__(self, project, api_keys: dict, refresh: bool = False) -> None:
-        super().__init__(f"MUT Model Builder: {project.name}", QgsTask.CanCancel)
+        super().__init__(f"MUT Model Builder: {project.name}")
         self.project = project
         self.api_keys = api_keys
         self.refresh = refresh
@@ -32,7 +55,7 @@ class PipelineTask(QgsTask):
                 api_keys=self.api_keys,
                 log=self.message.emit,
                 progress=self.setProgress,
-                is_canceled=self.isCanceled,
+                is_canceled=self.stop_requested,
                 refresh=self.refresh,
             )
             return True
@@ -48,12 +71,12 @@ class PipelineTask(QgsTask):
         self.completed.emit(ok)
 
 
-class FocusTask(QgsTask):
+class FocusTask(_CancelableTask):
     message = pyqtSignal(str)
     completed = pyqtSignal(bool)
 
     def __init__(self, project, focus, api_keys: dict, refresh: bool = False) -> None:
-        super().__init__(f"MUT focus area: {focus.name}", QgsTask.CanCancel)
+        super().__init__(f"MUT focus area: {focus.name}")
         self.project = project
         self.focus = focus
         self.api_keys = api_keys
@@ -69,7 +92,7 @@ class FocusTask(QgsTask):
                 api_keys=self.api_keys,
                 log=self.message.emit,
                 progress=self.setProgress,
-                is_canceled=self.isCanceled,
+                is_canceled=self.stop_requested,
                 refresh=self.refresh,
             )
             return True
@@ -85,12 +108,12 @@ class FocusTask(QgsTask):
         self.completed.emit(ok)
 
 
-class StreamsTask(QgsTask):
+class StreamsTask(_CancelableTask):
     message = pyqtSignal(str)
     completed = pyqtSignal(bool)
 
     def __init__(self, project, spec, refresh: bool = False) -> None:
-        super().__init__(f"MUT streams: {spec.name}", QgsTask.CanCancel)
+        super().__init__(f"MUT streams: {spec.name}")
         self.project = project
         self.spec = spec
         self.refresh = refresh
@@ -101,7 +124,7 @@ class StreamsTask(QgsTask):
     def run(self) -> bool:  # worker thread
         try:
             self.network, self.path = preview_streams(
-                self.project, self.spec, log=self.message.emit, is_canceled=self.isCanceled, refresh=self.refresh
+                self.project, self.spec, log=self.message.emit, is_canceled=self.stop_requested, refresh=self.refresh
             )
             return True
         except InterruptedError:
@@ -114,12 +137,12 @@ class StreamsTask(QgsTask):
         self.completed.emit(ok)
 
 
-class MeshTask(QgsTask):
+class MeshTask(_CancelableTask):
     message = pyqtSignal(str)
     completed = pyqtSignal(bool)
 
     def __init__(self, project, spec) -> None:
-        super().__init__(f"MUT mesh: {spec.name}", QgsTask.CanCancel)
+        super().__init__(f"MUT mesh: {spec.name}")
         self.project = project
         self.spec = spec
         self.result = None
@@ -132,11 +155,75 @@ class MeshTask(QgsTask):
                 self.spec,
                 log=self.message.emit,
                 progress=self.setProgress,
-                is_canceled=self.isCanceled,
+                is_canceled=self.stop_requested,
             )
             return True
         except InterruptedError:
             self.error = "Mesh build canceled."
+        except Exception:  # noqa: BLE001 (reported to the user in the log)
+            self.error = traceback.format_exc()
+        return False
+
+    def finished(self, ok: bool) -> None:  # main thread
+        self.completed.emit(ok)
+
+
+class ClnExportTask(_CancelableTask):
+    message = pyqtSignal(str)
+    completed = pyqtSignal(bool)
+
+    def __init__(self, project, spec, network=None) -> None:
+        super().__init__(f"MUT CLN streams: {spec.name}")
+        self.project = project
+        self.spec = spec
+        self.network = network
+        self.result = None
+        self.error = ""
+
+    def run(self) -> bool:  # worker thread
+        try:
+            self.result = export_cln(
+                self.project,
+                self.spec,
+                network=self.network,
+                log=self.message.emit,
+                progress=self.setProgress,
+            )
+            return True
+        except InterruptedError:
+            self.error = "CLN export canceled."
+        except Exception:  # noqa: BLE001 (reported to the user in the log)
+            self.error = traceback.format_exc()
+        return False
+
+    def finished(self, ok: bool) -> None:  # main thread
+        self.completed.emit(ok)
+
+
+class BuildMutTask(_CancelableTask):
+    message = pyqtSignal(str)
+    completed = pyqtSignal(bool)
+
+    def __init__(self, project, mesh_spec, model_spec) -> None:
+        super().__init__(f"MUT build: {model_spec.name}")
+        self.project = project
+        self.mesh_spec = mesh_spec
+        self.model_spec = model_spec
+        self.result = None
+        self.error = ""
+
+    def run(self) -> bool:  # worker thread
+        try:
+            self.result = build_mut_project(
+                self.project,
+                self.mesh_spec,
+                self.model_spec,
+                log=self.message.emit,
+                progress=self.setProgress,
+            )
+            return True
+        except InterruptedError:
+            self.error = "Build MUT project canceled."
         except Exception:  # noqa: BLE001 (reported to the user in the log)
             self.error = traceback.format_exc()
         return False

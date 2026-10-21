@@ -8,6 +8,7 @@ module CLNIntersection
     use BasicTypes
     use NumericalMesh
     use ErrorHandling, only: ERR_INVALID_INPUT, ERR_FILE_IO, ERR_LOGIC, HandleError
+    use ifport, only: STAT
     implicit none
     
     private
@@ -21,6 +22,15 @@ module CLNIntersection
     public :: SplitCLNCells
     public :: WriteCLNStructure
     public :: RunCLNMeshIntersectionWithDomains
+    public :: ResetCLNFaceReadyFlags
+    public :: MarkCLNFacesReady
+    public :: EnsureCLNFaceTopology
+    public :: MeshReuseChecksum, FileSizeAndMtime, FileContentChecksum
+    public :: ClearMeshFaceTopology
+    
+    ! Within-build: 3D face topology built once per domain for CLN intersection
+    logical, save :: GWF_CLNFacesReady = .false.
+    logical, save :: SWF_CLNFacesReady = .false.
     
     !----------------------------------------------------------------------
     ! Data Structures
@@ -234,8 +244,8 @@ module CLNIntersection
         call Msg('  ')
         call Msg('FindCLN_MeshIntersections: mesh domain = '//trim(M%name))
         
-        ! Ensure mesh faces are calculated
-        if (.not. M%FacesCalculated) then
+        ! Ensure mesh faces are calculated (FaceHost allocated)
+        if (.not. allocated(M%FaceHost) .or. .not. M%FacesCalculated) then
             call BuildFaceTopologyFrommesh(M)
         end if
         
@@ -829,9 +839,232 @@ module CLNIntersection
     end subroutine MergeIntersectionLists
 
     !----------------------------------------------------------------------
+    ! Companion paths for cln mesh intersection outputs (.xyzList and .reuse).
+    !----------------------------------------------------------------------
+    subroutine CLNIntersectionCompanionPaths(output_cln_filename, xyz_out, reuse_out)
+        implicit none
+        character(*), intent(in) :: output_cln_filename
+        character(*), intent(out) :: xyz_out, reuse_out
+        integer(i4) :: n
+
+        xyz_out = trim(output_cln_filename)
+        reuse_out = trim(output_cln_filename)
+        n = len_trim(xyz_out)
+        if (n > 4) then
+            if (xyz_out(n-3:n) == '.dat' .or. xyz_out(n-3:n) == '.DAT') then
+                xyz_out = xyz_out(1:n-4)//'.xyzList'
+                reuse_out = reuse_out(1:n-4)//'.reuse'
+                return
+            end if
+        end if
+        xyz_out = trim(xyz_out)//'.xyzList'
+        reuse_out = trim(reuse_out)//'.reuse'
+    end subroutine CLNIntersectionCompanionPaths
+
+    !----------------------------------------------------------------------
+    subroutine MeshReuseChecksum(M, checksum)
+        implicit none
+        class(mesh), intent(in) :: M
+        integer(kind=8), intent(out) :: checksum
+        integer(i4) :: i, j
+
+        checksum = 0_8
+        checksum = checksum + int(M%nNodes, kind=8) * 1000003_8
+        checksum = checksum + int(M%nElements, kind=8) * 1000033_8
+        checksum = checksum + int(M%nNodesPerElement, kind=8)
+        if (.not. allocated(M%Node) .or. .not. allocated(M%idNode)) return
+        do i = 1, M%nNodes
+            checksum = checksum + nint(M%Node(i)%x * 1.0d3, kind=8)
+            checksum = checksum + nint(M%Node(i)%y * 1.0d3, kind=8)
+            checksum = checksum + nint(M%Node(i)%z * 1.0d3, kind=8)
+        end do
+        do i = 1, M%nElements
+            do j = 1, M%nNodesPerElement
+                checksum = checksum + int(M%idNode(j, i), kind=8) * int(i + j, kind=8)
+            end do
+        end do
+    end subroutine MeshReuseChecksum
+
+    !----------------------------------------------------------------------
+    subroutine FileSizeAndMtime(fname, filesize, mtime, ok)
+        ! ifport STAT: starray(8)=size bytes, starray(10)=last modification time
+        implicit none
+        character(*), intent(in) :: fname
+        integer(kind=8), intent(out) :: filesize, mtime
+        logical, intent(out) :: ok
+        integer(4) :: starray(12), result
+        character(len=:), allocatable :: filespec
+        logical :: exists
+
+        filesize = 0_8
+        mtime = 0_8
+        ok = .false.
+        inquire(file=trim(fname), exist=exists)
+        if (.not. exists) return
+        filespec = trim(fname)
+        result = STAT(filespec, starray)
+        if (result /= 0) return
+        filesize = int(starray(8), kind=8)
+        mtime = int(starray(10), kind=8)
+        ok = .true.
+    end subroutine FileSizeAndMtime
+
+    !----------------------------------------------------------------------
+    ! Content fingerprint so identical re-exports (mtime bump only) still reuse.
+    !----------------------------------------------------------------------
+    subroutine FileContentChecksum(fname, checksum, ok)
+        implicit none
+        character(*), intent(in) :: fname
+        integer(kind=8), intent(out) :: checksum
+        logical, intent(out) :: ok
+        integer(i4) :: FNum, ios
+        integer(1) :: b
+        integer(kind=8) :: n
+        logical :: exists
+
+        checksum = 0_8
+        ok = .false.
+        inquire(file=trim(fname), exist=exists)
+        if (.not. exists) return
+        call GetUnit(FNum)
+        open(FNum, file=trim(fname), form='unformatted', access='stream', &
+            status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            call FreeUnit(FNum)
+            return
+        end if
+        n = 0_8
+        do
+            read(FNum, iostat=ios) b
+            if (ios /= 0) exit
+            n = n + 1_8
+            checksum = checksum + int(b, kind=8) * (n + 1009_8)
+            checksum = ieor(checksum, ishft(checksum, 5))
+        end do
+        call FreeUnit(FNum)
+        ok = .true.
+    end subroutine FileContentChecksum
+
+    !----------------------------------------------------------------------
+    subroutine WriteCLNIntersectionReuseStamp(reuse_path, cln_filename, &
+            GWF_domain, SWF_domain)
+        implicit none
+        character(*), intent(in) :: reuse_path, cln_filename
+        class(mesh), intent(in) :: GWF_domain
+        class(mesh), intent(in), optional :: SWF_domain
+        integer(i4) :: FNum
+        integer(kind=8) :: xyz_size, xyz_mtime, xyz_cs, gwf_cs, swf_cs
+        logical :: ok
+
+        call FileSizeAndMtime(cln_filename, xyz_size, xyz_mtime, ok)
+        if (.not. ok) return
+        call FileContentChecksum(cln_filename, xyz_cs, ok)
+        if (.not. ok) return
+        call MeshReuseChecksum(GWF_domain, gwf_cs)
+
+        call GetUnit(FNum)
+        open(FNum, file=trim(reuse_path), form='formatted', status='replace', iostat=status)
+        if (status /= 0) then
+            call FreeUnit(FNum)
+            call WarnMsg('Could not write CLN intersection reuse stamp: '//trim(reuse_path))
+            return
+        end if
+        write(FNum, '(a)') 'mut='//trim(adjustl(MUTVersion))
+        write(FNum, '(a)') 'xyz='//trim(cln_filename)
+        write(FNum, '(a,i0)') 'xyz_size=', xyz_size
+        write(FNum, '(a,i0)') 'xyz_checksum=', xyz_cs
+        write(FNum, '(a,i0)') 'gwf_nnodes=', GWF_domain%nNodes
+        write(FNum, '(a,i0)') 'gwf_nelements=', GWF_domain%nElements
+        write(FNum, '(a,i0)') 'gwf_checksum=', gwf_cs
+        if (present(SWF_domain)) then
+            call MeshReuseChecksum(SWF_domain, swf_cs)
+            write(FNum, '(a,i0)') 'swf_nnodes=', SWF_domain%nNodes
+            write(FNum, '(a,i0)') 'swf_nelements=', SWF_domain%nElements
+            write(FNum, '(a,i0)') 'swf_checksum=', swf_cs
+        else
+            write(FNum, '(a)') 'swf=none'
+        end if
+        call FreeUnit(FNum)
+    end subroutine WriteCLNIntersectionReuseStamp
+
+    !----------------------------------------------------------------------
+    logical function CLNIntersectionReuseMatches(reuse_path, cln_filename, &
+            GWF_domain, SWF_domain)
+        implicit none
+        character(*), intent(in) :: reuse_path, cln_filename
+        class(mesh), intent(in) :: GWF_domain
+        class(mesh), intent(in), optional :: SWF_domain
+        character(MAX_STR) :: expected(16), actual
+        integer(i4) :: FNum, nexp, i, ios
+        integer(kind=8) :: xyz_size, xyz_mtime, xyz_cs, gwf_cs, swf_cs
+        logical :: ok, exists
+
+        CLNIntersectionReuseMatches = .false.
+        inquire(file=trim(reuse_path), exist=exists)
+        if (.not. exists) then
+            call Msg('CLN-mesh intersection reuse: no stamp '//trim(reuse_path))
+            return
+        end if
+        call FileSizeAndMtime(cln_filename, xyz_size, xyz_mtime, ok)
+        if (.not. ok) then
+            call Msg('CLN-mesh intersection reuse: cannot stat '//trim(cln_filename))
+            return
+        end if
+        call FileContentChecksum(cln_filename, xyz_cs, ok)
+        if (.not. ok) then
+            call Msg('CLN-mesh intersection reuse: cannot checksum '//trim(cln_filename))
+            return
+        end if
+        call MeshReuseChecksum(GWF_domain, gwf_cs)
+
+        nexp = 0
+        nexp = nexp + 1; write(expected(nexp), '(a)') 'mut='//trim(adjustl(MUTVersion))
+        nexp = nexp + 1; write(expected(nexp), '(a)') 'xyz='//trim(cln_filename)
+        nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'xyz_size=', xyz_size
+        nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'xyz_checksum=', xyz_cs
+        nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'gwf_nnodes=', GWF_domain%nNodes
+        nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'gwf_nelements=', GWF_domain%nElements
+        nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'gwf_checksum=', gwf_cs
+        if (present(SWF_domain)) then
+            call MeshReuseChecksum(SWF_domain, swf_cs)
+            nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'swf_nnodes=', SWF_domain%nNodes
+            nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'swf_nelements=', SWF_domain%nElements
+            nexp = nexp + 1; write(expected(nexp), '(a,i0)') 'swf_checksum=', swf_cs
+        else
+            nexp = nexp + 1; write(expected(nexp), '(a)') 'swf=none'
+        end if
+
+        call OpenAscii(FNum, reuse_path)
+        do i = 1, nexp
+            read(FNum, '(a)', iostat=ios) actual
+            if (ios /= 0) then
+                call FreeUnit(FNum)
+                call Msg('CLN-mesh intersection reuse miss: short stamp at line '// &
+                    trim(adjustl(expected(i))))
+                return
+            end if
+            if (trim(actual) /= trim(expected(i))) then
+                call FreeUnit(FNum)
+                call Msg('CLN-mesh intersection reuse miss: '//trim(expected(i))// &
+                    ' (stamp had '//trim(actual)//')')
+                return
+            end if
+        end do
+        ! Reject extra trailing non-blank content that would mean a newer stamp format
+        read(FNum, '(a)', iostat=ios) actual
+        call FreeUnit(FNum)
+        if (ios == 0 .and. len_trim(actual) > 0) then
+            call Msg('CLN-mesh intersection reuse miss: unexpected trailing stamp line')
+            return
+        end if
+        CLNIntersectionReuseMatches = .true.
+    end function CLNIntersectionReuseMatches
+
+    !----------------------------------------------------------------------
     ! Run CLN-mesh intersection using in-memory GWF (and optionally SWF) domains.
     ! CLN input is always read from a user-defined XYZ file.
     ! Builds face topology, finds intersections for each domain, merges lists, splits cells, writes output.
+    ! Reuses existing *_split.dat / *_split.xyzList when a matching *.reuse stamp is present.
     !----------------------------------------------------------------------
     subroutine RunCLNMeshIntersectionWithDomains(cln_filename, output_cln_filename, &
             GWF_domain, SWF_domain)
@@ -846,35 +1079,35 @@ module CLNIntersection
         type(t_intersection_list) :: intersections_gwf
         type(t_intersection_list) :: intersections_swf
         type(t_intersection_list) :: intersections_merged
-        character(MAX_STR) :: xyz_out
+        character(MAX_STR) :: xyz_out, reuse_out
+        logical :: dat_exists, xyz_exists, can_reuse
+
+        call CLNIntersectionCompanionPaths(output_cln_filename, xyz_out, reuse_out)
+        inquire(file=trim(output_cln_filename), exist=dat_exists)
+        inquire(file=trim(xyz_out), exist=xyz_exists)
+        can_reuse = .false.
+        if (dat_exists .and. xyz_exists) then
+            if (present(SWF_domain)) then
+                can_reuse = CLNIntersectionReuseMatches(reuse_out, cln_filename, GWF_domain, SWF_domain)
+            else
+                can_reuse = CLNIntersectionReuseMatches(reuse_out, cln_filename, GWF_domain)
+            end if
+        end if
+        if (can_reuse) then
+            call Msg('CLN-mesh intersection: reusing '//trim(output_cln_filename)// &
+                ' (inputs unchanged; delete *.reuse or split outputs to force rebuild)')
+            return
+        end if
         
         ! Read CLN input from XYZ file
         call ReadCLNFromXYZList(trim(cln_filename), cln_struct)
         
-        ! Clear stale 2D face topology inherited from the template mesh copy
-        ! so BuildFaceTopologyFrommesh rebuilds it correctly for the 3D mesh
-        call ClearMeshFaceTopology(GWF_domain)
-        if (GWF_domain%nNodesPerElement == 6) then
-            GWF_domain%TecplotTyp = 'feprism'
-        else if (GWF_domain%nNodesPerElement == 8) then
-            GWF_domain%TecplotTyp = 'febrick'
-        end if
-        
-        ! Build face topology and find intersections for GWF
-        call BuildFaceTopologyFrommesh(GWF_domain)
+        call EnsureCLNFaceTopology(GWF_domain, .true.)
         call FindCLN_MeshIntersections(cln_struct, GWF_domain, intersections_gwf)
-
-        ! Restore Tecplot-compatible zonetype (connectivity is written as febrick)
-        if (GWF_domain%nNodesPerElement == 6) then
-            GWF_domain%TecplotTyp = 'febrick'
-        end if
         
         if (present(SWF_domain)) then
-            call ClearMeshFaceTopology(SWF_domain)
-            ! Build face topology and find intersections for SWF
-            call BuildFaceTopologyFrommesh(SWF_domain)
+            call EnsureCLNFaceTopology(SWF_domain, .false.)
             call FindCLN_MeshIntersections(cln_struct, SWF_domain, intersections_swf)
-            ! Merge and split
             call MergeIntersectionLists(intersections_gwf, intersections_swf, intersections_merged)
             call SplitCLNCells(cln_struct, intersections_merged, new_cln_struct)
         else
@@ -882,23 +1115,74 @@ module CLNIntersection
         end if
         
         call WriteCLNStructure(trim(output_cln_filename), new_cln_struct)
-        
-        ! Also write an XYZ polyline list that can be used by "cln from xyz list"
-        xyz_out = trim(output_cln_filename)
-        if (len_trim(xyz_out) > 4) then
-            if (xyz_out(len_trim(xyz_out)-3:len_trim(xyz_out)) == '.dat') then
-                xyz_out = xyz_out(1:len_trim(xyz_out)-4)//'.xyzList'
-            else
-                xyz_out = trim(xyz_out)//'.xyzList'
-            end if
-        else
-            xyz_out = trim(xyz_out)//'.xyzList'
-        end if
         call WriteCLNXYZList(trim(xyz_out), new_cln_struct)
+        if (present(SWF_domain)) then
+            call WriteCLNIntersectionReuseStamp(reuse_out, cln_filename, GWF_domain, SWF_domain)
+        else
+            call WriteCLNIntersectionReuseStamp(reuse_out, cln_filename, GWF_domain)
+        end if
         
         call Msg('CLN-mesh intersection utility (GWF/SWF domains) completed.')
         
     end subroutine RunCLNMeshIntersectionWithDomains
+
+    !----------------------------------------------------------------------
+    subroutine ResetCLNFaceReadyFlags()
+        implicit none
+        GWF_CLNFacesReady = .false.
+        SWF_CLNFacesReady = .false.
+    end subroutine ResetCLNFaceReadyFlags
+
+    !----------------------------------------------------------------------
+    subroutine MarkCLNFacesReady(is_gwf)
+        implicit none
+        logical, intent(in) :: is_gwf
+        if (is_gwf) then
+            GWF_CLNFacesReady = .true.
+        else
+            SWF_CLNFacesReady = .true.
+        end if
+    end subroutine MarkCLNFacesReady
+
+    !----------------------------------------------------------------------
+    ! Build 3D (or SWF 2D) face topology once per domain per build.
+    ! Clears stale 2D FaceHost inherited from TMPLT on the first GWF call.
+    !----------------------------------------------------------------------
+    subroutine EnsureCLNFaceTopology(M, is_gwf)
+        implicit none
+        class(mesh), intent(inout) :: M
+        logical, intent(in) :: is_gwf
+        logical :: ready
+        character(40) :: saved_tecplot
+
+        if (is_gwf) then
+            ready = GWF_CLNFacesReady
+        else
+            ready = SWF_CLNFacesReady
+        end if
+
+        if (ready .and. allocated(M%FaceHost) .and. M%FacesCalculated) then
+            call Msg('CLN-mesh intersection: reusing face topology for '//trim(M%name))
+            return
+        end if
+
+        call ClearMeshFaceTopology(M)
+        saved_tecplot = M%TecplotTyp
+        if (is_gwf) then
+            if (M%nNodesPerElement == 6) then
+                M%TecplotTyp = 'feprism'
+            else if (M%nNodesPerElement == 8) then
+                M%TecplotTyp = 'febrick'
+            end if
+        end if
+        call BuildFaceTopologyFrommesh(M)
+        if (is_gwf .and. M%nNodesPerElement == 6) then
+            M%TecplotTyp = 'febrick'
+        else
+            M%TecplotTyp = saved_tecplot
+        end if
+        call MarkCLNFacesReady(is_gwf)
+    end subroutine EnsureCLNFaceTopology
     
     !----------------------------------------------------------------------
     subroutine ClearMeshFaceTopology(M)

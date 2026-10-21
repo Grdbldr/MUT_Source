@@ -8,7 +8,7 @@ module MUSG_BoundaryConditions
     use GeneralRoutines, only: bcheck, chosen, set, ConstantHead, Recharge, Drain, Well, CriticalDepth, Evapotranspiration, ialloc, UnitsOfTime
     use ErrorHandling, only: ERR_LOGIC, HandleError
     use ArrayUtilities, only: AllocChk
-    use GeneralRoutines, only: OpenAscii, FreeUnit
+    use GeneralRoutines, only: OpenAscii, FreeUnit, GetUnit
     use MUSG_Core, only: ModflowProject, ModflowDomain, NodalControlVolume
     use MUSG_Core, only: GSTRInstance, MAX_GSTR_INSTANCES, MAX_GSTR_SNAPS
     use NumericalMesh, only: mesh
@@ -349,7 +349,13 @@ module MUSG_BoundaryConditions
 
         if(modflow.iRCH == 0) then ! Initialize RCH file and write data to NAM
             Modflow.FNameRCH=trim(Modflow.Prefix)//'.rch'
-            call OpenAscii(Modflow.iRCH,Modflow.FNameRCH)
+            ! REPLACE so a prior truncated header-only RCH cannot linger
+            call GetUnit(Modflow.iRCH)
+            open(Modflow.iRCH, file=trim(Modflow.FNameRCH), status='replace', &
+                 form='formatted', iostat=ialloc)
+            if(ialloc /= 0) then
+                call ErrMsg('Error opening RCH file: '//trim(Modflow.FNameRCH))
+            end if
             call Msg('  ')
             call Msg(FileCreateSTR//'Modflow project file: '//trim(Modflow.FNameRCH))
             write(Modflow.iNAM,'(a,i4,a)') 'RCH  ',Modflow.iRCH,' '//trim(Modflow.FNameRCH)
@@ -357,28 +363,28 @@ module MUSG_BoundaryConditions
             write(Modflow.iRCH,*) domain%nRCHoption, domain%iCBB  
             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
+            if(nRCHoption == 4) then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
+            else
                 do i=1,domain%nCells
                     if(Modflow%GWF%cell(i)%iLayer==1) then
                         write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
+            endif
 
         else
             write(modflow.iRCH,*) 1   ! inrech, defaults to read one layer of recharge values
             write(Modflow.iRCH,'(a)') 'INTERNAL  1  (FREE)  -1  Recharge()'
-            if(domain%name == 'GWF') then
+            if(nRCHoption == 4) then
+                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
+            else
                 do i=1,domain%nCells
                     if(Modflow%GWF%cell(i)%iLayer==1) then
                         write(Modflow.iRCH,'('//FMT_R4//')') domain%recharge(i)
                     endif
                 end do
-            else if(domain%name == 'SWF') then
-                write(Modflow.iRCH,'(5('//FMT_R4//'))') (domain%recharge(i),i=1,domain%nCells)
-            endif                
+            endif
         end if
     end subroutine AssignRCHtoDomain
 

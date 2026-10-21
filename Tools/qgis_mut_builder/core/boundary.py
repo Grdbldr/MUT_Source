@@ -370,7 +370,7 @@ def write_boundary(geometry: dict, path: Path, properties: dict) -> Path:
         "name": path.stem,
         "features": [{"type": "Feature", "properties": properties, "geometry": geometry}],
     }
-    path.write_text(json.dumps(collection), encoding="utf-8")
+    path.write_text(json.dumps(collection, indent=2), encoding="utf-8")
     return path
 
 

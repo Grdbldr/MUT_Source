@@ -13,6 +13,9 @@ from .geo import Grid
 
 NODATA = -9999.0
 CREATION = ["COMPRESS=DEFLATE", "PREDICTOR=3", "TILED=YES", "BIGTIFF=IF_SAFER"]
+# Target cells per cancelable strip so Cancel can stop within a few seconds during remote /vsicurl/ warps.
+_CANCEL_STRIP_CELLS = 2_000_000
+_WARP_MEMORY_BYTES = 64 << 20
 
 
 def vsicurl(url: str) -> str:
@@ -44,6 +47,54 @@ def _run_cancelable(operation: Callable[[], object], out: Path | None, is_cancel
     return ds
 
 
+def _open_sources(sources: list[str], is_canceled: Callable[[], bool] | None):
+    datasets = []
+    for name in sources:
+        # gdal.Warp would open every source (an HTTP request each for /vsicurl/ tiles) before its first callback.
+        if is_canceled is not None and is_canceled():
+            raise InterruptedError("Run canceled")
+        datasets.append(gdal.Open(name))
+    return datasets
+
+
+def _warp_options(
+    grid: Grid,
+    resample: str,
+    src_nodata: float | None,
+    src_srs: str | None,
+    is_canceled: Callable[[], bool] | None,
+    *,
+    output_bounds: tuple[float, float, float, float] | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    fmt: str = "GTiff",
+    multithread: bool = False,
+):
+    kwargs: dict = {
+        "format": fmt,
+        "outputBounds": output_bounds or grid.bounds,
+        "xRes": grid.res,
+        "yRes": grid.res,
+        "dstSRS": grid.srs,
+        "srcSRS": src_srs,
+        "resampleAlg": resample,
+        "srcNodata": src_nodata,
+        "dstNodata": NODATA,
+        "outputType": gdal.GDT_Float32,
+        "multithread": multithread,
+        "warpMemoryLimit": _WARP_MEMORY_BYTES,
+        "targetAlignedPixels": False,
+        "callback": _gdal_callback(is_canceled),
+    }
+    if fmt == "GTiff":
+        kwargs["creationOptions"] = CREATION
+    if width is not None:
+        kwargs["width"] = width
+    if height is not None:
+        kwargs["height"] = height
+    return gdal.WarpOptions(**kwargs)
+
+
 def warp_to_grid(
     sources: list[str] | str,
     grid: Grid,
@@ -56,42 +107,86 @@ def warp_to_grid(
     """Reproject and mosaic ``sources`` onto ``grid``; later sources overwrite earlier ones.
 
     When ``is_canceled()`` becomes true the warp stops, the partial file is removed and InterruptedError is raised.
+    Cancelable warps run in horizontal strips (and without GDAL multithread) so a remote DEM read can stop
+    within a few seconds instead of waiting for a single multi-minute ``gdal.Warp`` to finish.
     """
     if isinstance(sources, str):
         sources = [sources]
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_name(dst.stem + ".tmp.tif")
-    datasets = []
-    for name in sources:
-        # gdal.Warp would open every source (an HTTP request each for /vsicurl/ tiles) before its first callback.
-        if is_canceled is not None and is_canceled():
-            raise InterruptedError("Run canceled")
-        datasets.append(gdal.Open(name))
-    options = gdal.WarpOptions(
-        format="GTiff",
-        outputBounds=grid.bounds,
-        xRes=grid.res,
-        yRes=grid.res,
-        dstSRS=grid.srs,
-        srcSRS=src_srs,
-        resampleAlg=resample,
-        srcNodata=src_nodata,
-        dstNodata=NODATA,
-        outputType=gdal.GDT_Float32,
-        creationOptions=CREATION,
-        multithread=True,
-        warpMemoryLimit=512,
-        targetAlignedPixels=False,
-        callback=_gdal_callback(is_canceled),
-    )
-    ds = _run_cancelable(lambda: gdal.Warp(str(tmp), datasets, options=options), tmp, is_canceled)
-    datasets = None
-    if ds is None:
-        tmp.unlink(missing_ok=True)
-        raise RuntimeError(f"gdal.Warp produced no output for {dst.name}")
-    ds = None
+    datasets = _open_sources(sources, is_canceled)
+    try:
+        if is_canceled is not None and grid.height > 1:
+            _warp_cancelable_strips(datasets, grid, tmp, resample, src_nodata, src_srs, is_canceled)
+        else:
+            options = _warp_options(
+                grid, resample, src_nodata, src_srs, is_canceled, fmt="GTiff", multithread=is_canceled is None
+            )
+            ds = _run_cancelable(lambda: gdal.Warp(str(tmp), datasets, options=options), tmp, is_canceled)
+            if ds is None:
+                tmp.unlink(missing_ok=True)
+                raise RuntimeError(f"gdal.Warp produced no output for {dst.name}")
+            ds = None
+    finally:
+        datasets = None
     tmp.replace(dst)
     return dst
+
+
+def _warp_cancelable_strips(
+    datasets,
+    grid: Grid,
+    tmp: Path,
+    resample: str,
+    src_nodata: float | None,
+    src_srs: str | None,
+    is_canceled: Callable[[], bool],
+) -> None:
+    """Warp into ``tmp`` one horizontal strip at a time, checking cancel between strips."""
+    strip_rows = max(32, min(grid.height, max(1, _CANCEL_STRIP_CELLS // max(1, grid.width))))
+    driver = gdal.GetDriverByName("GTiff")
+    out = driver.Create(str(tmp), grid.width, grid.height, 1, gdal.GDT_Float32, CREATION)
+    if out is None:
+        raise RuntimeError(f"Could not create {tmp.name}")
+    out.SetGeoTransform((grid.xmin, grid.res, 0.0, grid.ymax, 0.0, -grid.res))
+    out.SetProjection(_wkt(grid.epsg))
+    band = out.GetRasterBand(1)
+    band.SetNoDataValue(NODATA)
+    band.Fill(NODATA)
+    try:
+        for y0 in range(0, grid.height, strip_rows):
+            if is_canceled():
+                raise InterruptedError("Run canceled")
+            rows = min(strip_rows, grid.height - y0)
+            ymax = grid.ymax - y0 * grid.res
+            ymin = ymax - rows * grid.res
+            options = _warp_options(
+                grid,
+                resample,
+                src_nodata,
+                src_srs,
+                is_canceled,
+                output_bounds=(grid.xmin, ymin, grid.xmax, ymax),
+                width=grid.width,
+                height=rows,
+                fmt="MEM",
+                multithread=False,
+            )
+            mem = _run_cancelable(lambda opts=options: gdal.Warp("", datasets, options=opts), None, is_canceled)
+            if mem is None:
+                raise RuntimeError(f"gdal.Warp produced no output for strip at row {y0}")
+            arr = mem.ReadAsArray()
+            mem = None
+            if arr is None or arr.shape != (rows, grid.width):
+                raise RuntimeError(f"gdal.Warp strip shape mismatch at row {y0}")
+            band.WriteArray(arr, 0, y0)
+    except Exception:
+        out = None
+        band = None
+        tmp.unlink(missing_ok=True)
+        raise
+    band.ComputeStatistics(False)
+    out = None
 
 
 def read_array(path: Path) -> np.ndarray:

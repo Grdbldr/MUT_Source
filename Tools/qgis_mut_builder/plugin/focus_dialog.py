@@ -586,6 +586,7 @@ class FocusAreaDialog(QDialog):
             if result is not None:
                 done(result)
 
+        self._cancel_logged = False
         self.task = QgsTask.fromFunction(title, function, on_finished=finished, flags=QgsTask.Flag.CanCancel)
         self.append(f"{title} ...")
         self.update_buttons()
@@ -688,6 +689,7 @@ class FocusAreaDialog(QDialog):
             return
         self.project.options.lake_bathymetry = self.lakes.isChecked()
         api_keys = {"opentopography": QgsSettings().value(f"{SETTINGS}/opentopography_api_key", "", type=str)}
+        self._cancel_logged = False
         self.build_task = FocusTask(self.project, focus, api_keys, self.refresh.isChecked())
         self.build_task.message.connect(self.append)
         self.build_task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -714,9 +716,14 @@ class FocusAreaDialog(QDialog):
         self.show_preview()
 
     def cancel(self) -> None:
-        for task in (self.task, self.build_task):
-            if task is not None:
-                task.cancel()
+        tasks = [t for t in (self.task, self.build_task) if t is not None]
+        if not tasks:
+            return
+        if not getattr(self, "_cancel_logged", False):
+            self.append("Cancel requested — stopping after the current GDAL/download step…")
+            self._cancel_logged = True
+        for task in tasks:
+            task.cancel()
 
     def open_report(self) -> None:
         if self.report_path is not None and self.report_path.exists():

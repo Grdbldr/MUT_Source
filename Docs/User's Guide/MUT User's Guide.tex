@@ -33,7 +33,8 @@
     urlcolor=magenta
 }
 
-% Breakable filesystem paths (\fpath) and UI menu breadcrumbs (\menupath)
+% Breakable filesystem paths (\fpath) and UI menu breadcrumbs (\menupath).
+% Inside \fpath{...} use plain _ (not \_); \path handles underscores. Project paths use \; Windows drive paths e.g. C:\Work\...
 \usepackage{xurl}
 \newcommand{\fpath}[1]{{\urlstyle{tt}\path{#1}}}
 \newcommand{\menupath}[1]{{\urlstyle{sf}\path{#1}}}
@@ -114,7 +115,7 @@
     \vfill
     {\bfseries\Huge
         Modflow User Tools (MUT) \\
-        Version 2025.032\\
+        Version 2025.037\\
          User's Guide\\
     }
     \vspace{.3in}

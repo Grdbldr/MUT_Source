@@ -468,6 +468,7 @@ module NumericalMesh
             end do
         end do
         
+        M%FacesCalculated = .true.
         call ElapsedTime(1)
         
         continue

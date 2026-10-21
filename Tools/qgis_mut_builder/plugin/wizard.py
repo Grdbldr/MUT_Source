@@ -603,6 +603,13 @@ class SourcesPage(QWizardPage):
         )
         self.lake_area = _spin(0.1, 10000, opts.lake_min_area_ha, 1, " ha", 1.0)
         self.lakes.toggled.connect(self.lake_area.setEnabled)
+        self.climate = QCheckBox("Retrieve precipitation, temperature and outlet river flows from the internet")
+        self.climate.setChecked(opts.climate_retrieval)
+        self.climate.setToolTip(
+            "Downloads domain-mean daily precipitation and temperature (Daymet in North America, otherwise "
+            "Open-Meteo ERA5) and PET, plus discharge near level-1 outlets (ECCC then USGS). Writes "
+            "1_data/climate and 1_data/flows for the report and for Build MUT project climate forcing."
+        )
         self.refresh = QCheckBox("Ignore cached downloads (fetch again)")
 
         form = QFormLayout()
@@ -612,6 +619,7 @@ class SourcesPage(QWizardPage):
         form.addRow("Minimum surficial thickness", self.min_thick)
         form.addRow("", self.lakes)
         form.addRow("Smallest lake corrected", self.lake_area)
+        form.addRow("", self.climate)
         form.addRow("", self.refresh)
         layout.addLayout(form)
         self._selected: set[str] | None = None
@@ -653,6 +661,7 @@ class SourcesPage(QWizardPage):
             min_thickness_m=self.min_thick.value(),
             lake_bathymetry=self.lakes.isChecked(),
             lake_min_area_ha=self.lake_area.value(),
+            climate_retrieval=self.climate.isChecked(),
         )
 
     def validatePage(self) -> bool:
@@ -721,6 +730,11 @@ class RunPage(QWizardPage):
                 if project.options.lake_bathymetry
                 else "Lake bathymetry: off (lakes keep the DEM water surface).<br>"
             )
+            + (
+                "Climate and outlet flows: retrieve from the internet.<br>"
+                if project.options.climate_retrieval
+                else "Climate and outlet flows: off.<br>"
+            )
             + f"Outputs: {project.surfaces_dir}"
         )
 
@@ -741,6 +755,7 @@ class RunPage(QWizardPage):
         path = project.save()
         self.log.clear()
         self.append(f"Saved {path}")
+        self._cancel_logged = False
         self.task = PipelineTask(project, self.wiz.sources_page.api_keys(), self.wiz.sources_page.refresh.isChecked())
         self.task.message.connect(self.append)
         self.task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -751,8 +766,12 @@ class RunPage(QWizardPage):
         QgsApplication.taskManager().addTask(self.task)
 
     def cancel(self) -> None:
-        if self.task is not None:
-            self.task.cancel()
+        if self.task is None:
+            return
+        if not getattr(self, "_cancel_logged", False):
+            self.append("Cancel requested — stopping after the current GDAL/download step…")
+            self._cancel_logged = True
+        self.task.cancel()
 
     def on_completed(self, ok: bool) -> None:
         task, self.task = self.task, None
@@ -883,6 +902,7 @@ class ModelBuilderWizard(QWizard):
         src.min_thick.setValue(project.options.min_thickness_m)
         src.lakes.setChecked(project.options.lake_bathymetry)
         src.lake_area.setValue(project.options.lake_min_area_ha)
+        src.climate.setChecked(project.options.climate_retrieval)
         src.set_selected(project.providers)
         self.update_rubber_bands()
 
