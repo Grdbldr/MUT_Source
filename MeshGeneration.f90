@@ -1174,7 +1174,7 @@ Module MeshGen
                         base_elev(j) = top_elev(j) - z_added
                         node_fixed = node_fixed + 1
                     end if
-                else if(minimum_layer_thickness .and. (base_elev(j) + top_elev(j) > z_added)) then
+                else if(minimum_layer_thickness .and. ((top_elev(j) - base_elev(j)) < z_added)) then
                     base_elev(j) = top_elev(j) - z_added
                     node_fixed = node_fixed + 1
                 end if

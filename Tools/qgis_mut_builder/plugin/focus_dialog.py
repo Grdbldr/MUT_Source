@@ -47,7 +47,7 @@ from ..core import local_watershed as lw
 from ..core.focus import define_focus, describe, focus_outputs, preview_summary
 from ..core.geo import MAX_FOCUS_RES_M
 from ..core.project import FocusArea, Project
-from ..core.qgis_project import populate_focus, refresh_qgz
+from ..core.qgis_project import bind_open_qgz, populate_focus, refresh_qgz, release_focus_layers
 from .task import FocusTask
 from .wizard import SETTINGS, _spin, confirm_grid_size
 
@@ -690,6 +690,7 @@ class FocusAreaDialog(QDialog):
         self.project.options.lake_bathymetry = self.lakes.isChecked()
         api_keys = {"opentopography": QgsSettings().value(f"{SETTINGS}/opentopography_api_key", "", type=str)}
         self._cancel_logged = False
+        release_focus_layers(QgsProject.instance(), self.project, focus)
         self.build_task = FocusTask(self.project, focus, api_keys, self.refresh.isChecked())
         self.build_task.message.connect(self.append)
         self.build_task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -711,6 +712,7 @@ class FocusAreaDialog(QDialog):
             self.append(refresh_qgz(task.project))
         except RuntimeError as exc:
             self.append(str(exc))
+        bind_open_qgz(task.project)
         self.report_path = task.result.report_path
         self.append(f"Report: {self.report_path}")
         self.show_preview()

@@ -1,4 +1,4 @@
-"""'Add streams...' dialog: find rivers and attach as CLN or rebuild the mesh with fixed stream nodes."""
+"""'Add streams...' dialog: find rivers; attach as CLN, map onto mesh for SWF, or rebuild with fixed stream nodes."""
 
 from __future__ import annotations
 
@@ -29,10 +29,17 @@ from qgis.PyQt.QtWidgets import (
 
 from ..core.mesh import mesh_outputs
 from ..core.project import STREAM_SOURCES, MeshSpec, Project, StreamOptions
-from ..core.qgis_project import populate_mesh, refresh_qgz, streams_layer
+from ..core.qgis_project import (
+    bind_open_qgz,
+    populate_mesh,
+    refresh_qgz,
+    release_mesh_layers,
+    release_streams_preview,
+    streams_layer,
+)
 from ..core.streams import SOURCE_LABELS
 from .focus_dialog import FocusAreaDialog
-from .task import ClnExportTask, MeshTask, StreamsTask
+from .task import ClnExportTask, MeshTask, StreamMapTask, StreamsTask
 from .wizard import SETTINGS, _spin
 
 
@@ -56,14 +63,16 @@ class StreamsDialog(QDialog):
         self.task: MeshTask | None = None
         self.stream_task: StreamsTask | None = None
         self.cln_task: ClnExportTask | None = None
+        self.map_task: StreamMapTask | None = None
         self._last_network = None
 
         layout = QVBoxLayout(self)
         intro = QLabel(
             "Add rivers and streams to a <b>built</b> mesh under <tt>2_mesh/&lt;name&gt;/</tt>. "
-            "Choose an existing mesh, find streams, then either keep the triangulation and attach streams as "
-            "<b>CLN</b> (default), or rebuild the mesh with fixed stream nodes for <b>SWF</b>. "
-            "Build the mesh first with <b>New mesh...</b> if none exist yet."
+            "Find streams, then either attach them as a <b>CLN</b> 1-D domain, "
+            "<b>map</b> them onto the existing mesh for <b>SWF</b> (.nchos, no remesh), "
+            "or <b>rebuild</b> the mesh with fixed stream nodes for <b>SWF</b>. "
+            "CLN is optional. Build the mesh first with <b>New mesh...</b> if none exist yet."
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
@@ -117,21 +126,28 @@ class StreamsDialog(QDialog):
         box = QGroupBox("Stream options")
         form = QFormLayout(box)
 
-        self.mode_cln = QRadioButton("Keep current mesh — attach streams as CLN (default)")
+        self.mode_cln = QRadioButton("Keep current mesh — attach as CLN (1-D domain)")
         self.mode_cln.setToolTip(
             "Does not remesh. Writes Streams_CLN.xyzList beside the mesh; Build MUT project emits "
             "cln mesh intersection so MUT splits segments at GWF cells."
         )
-        self.mode_embedded = QRadioButton("Rebuild mesh with fixed stream nodes")
+        self.mode_mapped = QRadioButton("Keep current mesh — map onto mesh for SWF (.nchos)")
+        self.mode_mapped.setToolTip(
+            "Does not remesh and does not create CLN. Snaps ranked streams onto existing mesh nodes "
+            "(shortest paths along triangle edges) and writes .nchos for SWF choose cells from gb nodes."
+        )
+        self.mode_embedded = QRadioButton("Rebuild mesh with fixed stream nodes for SWF")
         self.mode_embedded.setToolTip(
             "Rebuilds the Delaunay mesh with fixed nodes along rivers and mesh edges along them "
-            "(for SWF choose cells from gb nodes)."
+            "(for SWF choose cells from gb nodes). Does not create CLN."
         )
         self.mode_cln.setChecked(True)
         self.mode_group = QButtonGroup(box)
         self.mode_group.addButton(self.mode_cln)
+        self.mode_group.addButton(self.mode_mapped)
         self.mode_group.addButton(self.mode_embedded)
         form.addRow(self.mode_cln)
+        form.addRow(self.mode_mapped)
         form.addRow(self.mode_embedded)
         self.mode_group.buttonClicked.connect(lambda _b: self.update_buttons())
 
@@ -156,7 +172,8 @@ class StreamsDialog(QDialog):
         self.stream_spacing = _spin(0, 100000, 0, 0, " m", 50)
         self.stream_spacing.setSpecialValueText("same as the boundary spacing")
         self.stream_spacing.setToolTip(
-            "Distance between CLN vertices or fixed mesh nodes along the streams (default: boundary spacing)"
+            "Distance between CLN vertices, mapped samples, or fixed mesh nodes along the streams "
+            "(default: boundary spacing)"
         )
         form.addRow("Stream node spacing", self.stream_spacing)
         self.main_river = QLineEdit()
@@ -203,6 +220,8 @@ class StreamsDialog(QDialog):
     def set_stream_options(self, opts: StreamOptions | None, stream_mode: str = "cln") -> None:
         if stream_mode == "embedded":
             self.mode_embedded.setChecked(True)
+        elif stream_mode == "mapped":
+            self.mode_mapped.setChecked(True)
         else:
             self.mode_cln.setChecked(True)
         if opts is None:
@@ -216,7 +235,11 @@ class StreamsDialog(QDialog):
         self.dem_threshold.setValue(opts.dem_threshold_km2)
 
     def stream_mode(self) -> str:
-        return "embedded" if self.mode_embedded.isChecked() else "cln"
+        if self.mode_embedded.isChecked():
+            return "embedded"
+        if self.mode_mapped.isChecked():
+            return "mapped"
+        return "cln"
 
     def has_ranked_streams(self) -> bool:
         if self._last_network is not None:
@@ -235,6 +258,7 @@ class StreamsDialog(QDialog):
             return
         spec = self.trial_spec()
         self._cancel_logged = False
+        release_streams_preview(QgsProject.instance(), self.project, spec)
         self.stream_task = StreamsTask(self.project, spec)
         self.stream_task.message.connect(self.append)
         self.stream_task.completed.connect(self.on_streams)
@@ -264,7 +288,7 @@ class StreamsDialog(QDialog):
         self.update_buttons()
 
     def busy(self) -> bool:
-        return self.task is not None or self.stream_task is not None or self.cln_task is not None
+        return any(t is not None for t in (self.task, self.stream_task, self.cln_task, self.map_task))
 
     def append(self, text: str) -> None:
         self.log.appendPlainText(text)
@@ -332,6 +356,7 @@ class StreamsDialog(QDialog):
             boundary_tolerance_m=existing.boundary_tolerance_m,
             interior_points=existing.interior_points,
             smoothing_iterations=existing.smoothing_iterations,
+            smoothing_tolerance_m=existing.smoothing_tolerance_m,
             fixed_points_file=existing.fixed_points_file,
             streams=self.stream_options(),
             stream_mode=mode,
@@ -384,6 +409,15 @@ class StreamsDialog(QDialog):
                 and self.has_ranked_streams()
             )
             self.build_button.setEnabled(can)
+        elif mode == "mapped":
+            self.build_button.setText("Map streams to mesh")
+            self.build_button.setEnabled(
+                self.project is not None
+                and not busy
+                and bool(self.mesh_name())
+                and mesh_built
+                and self.has_ranked_streams()
+            )
         else:
             self.build_button.setText("Rebuild mesh with streams")
             self.build_button.setEnabled(
@@ -398,8 +432,12 @@ class StreamsDialog(QDialog):
     def build(self) -> None:
         if self.project is None or not self.mesh_name() or self.busy():
             return
-        if self.stream_mode() == "cln":
+        mode = self.stream_mode()
+        if mode == "cln":
             self.attach_cln()
+            return
+        if mode == "mapped":
+            self.map_streams()
             return
         existing = self.project.get_mesh(self.mesh_name())
         if existing is None or existing.status != "built":
@@ -418,6 +456,7 @@ class StreamsDialog(QDialog):
             QMessageBox.warning(self, "Streams", "Find streams first, then rebuild.")
             return
         self._cancel_logged = False
+        release_mesh_layers(QgsProject.instance(), self.project, spec)
         self.task = MeshTask(self.project, spec)
         self.task.message.connect(self.append)
         self.task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -425,6 +464,32 @@ class StreamsDialog(QDialog):
         self.progress.setValue(0)
         self.update_buttons()
         QgsApplication.taskManager().addTask(self.task)
+
+    def map_streams(self) -> None:
+        if self.project is None or not self.mesh_name() or self.busy():
+            return
+        existing = self.project.get_mesh(self.mesh_name())
+        if existing is None or existing.status != "built":
+            QMessageBox.warning(
+                self,
+                "Map streams",
+                "Build the regional mesh first (New mesh...), then map streams onto it for SWF.",
+            )
+            return
+        if not self.has_ranked_streams():
+            QMessageBox.warning(self, "Map streams", "Find streams first, then map onto the mesh.")
+            return
+        spec = self.trial_spec()
+        spec.stream_mode = "mapped"
+        self._cancel_logged = False
+        release_mesh_layers(QgsProject.instance(), self.project, spec)
+        self.map_task = StreamMapTask(self.project, spec, network=self._last_network)
+        self.map_task.message.connect(self.append)
+        self.map_task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
+        self.map_task.completed.connect(self.on_mapped)
+        self.progress.setValue(0)
+        self.update_buttons()
+        QgsApplication.taskManager().addTask(self.map_task)
 
     def attach_cln(self) -> None:
         if self.project is None or not self.mesh_name() or self.busy():
@@ -465,6 +530,28 @@ class StreamsDialog(QDialog):
             self.append(snippet.read_text(encoding="utf-8"))
         self.refresh_summary()
 
+    def on_mapped(self, ok: bool) -> None:
+        task, self.map_task = self.map_task, None
+        self.update_buttons()
+        if task is None:
+            return
+        if not ok or task.result is None:
+            self.append(task.error or "Stream mapping failed.")
+            return
+        self.project = task.project
+        populate_mesh(QgsProject.instance(), task.project, task.spec)
+        try:
+            self.append(refresh_qgz(task.project))
+        except (RuntimeError, OSError, ValueError) as exc:
+            self.append(str(exc))
+        bind_open_qgz(task.project)
+        snippet = task.result.outputs.get("snippet")
+        if snippet is not None and Path(snippet).exists():
+            self.append(f"SWF .nchos written; MUT instructions: {snippet}")
+            self.append(Path(snippet).read_text(encoding="utf-8"))
+        self.append(f"Mapped {task.result.n_stream_nodes:,} stream nodes on {task.result.n_paths} path(s)")
+        self.refresh_summary()
+
     def on_built(self, ok: bool) -> None:
         task, self.task = self.task, None
         self.update_buttons()
@@ -478,6 +565,7 @@ class StreamsDialog(QDialog):
             self.append(refresh_qgz(task.project))
         except (RuntimeError, OSError, ValueError) as exc:
             self.append(str(exc))
+        bind_open_qgz(task.project)
         snippet = mesh_outputs(task.project, task.spec)["snippet"]
         self.append(f"MUT instructions: {snippet}")
         if snippet.exists():
@@ -486,7 +574,7 @@ class StreamsDialog(QDialog):
         self.refresh_summary()
 
     def cancel(self) -> None:
-        tasks = [t for t in (self.task, self.stream_task, self.cln_task) if t is not None]
+        tasks = [t for t in (self.task, self.stream_task, self.cln_task, self.map_task) if t is not None]
         if not tasks:
             return
         if not getattr(self, "_cancel_logged", False):

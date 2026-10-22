@@ -15,7 +15,7 @@ BOUNDARY_MODES = ("square", "rectangle", "watershed", "file")
 FOCUS_MODES = ("rectangle", "digitized", "file", "feature_watershed", "feature")
 DELINEATIONS = ("none", "regional_dem", "global_watersheds")
 STREAM_SOURCES = ("auto", "ohn", "nhdplus", "osm", "dem")
-STREAM_MODES = ("none", "cln", "embedded")
+STREAM_MODES = ("none", "cln", "embedded", "mapped")
 CLIMATE_MODES = ("none", "average", "transient")
 LEGACY_KEYS = ("site_buffer_km",)
 LEGACY_OPTIONS = ("blend_width_m",)
@@ -108,6 +108,9 @@ class StreamOptions:
             raise ValueError("Stream minimum length and spacing must not be negative; DEM threshold must be positive")
 
 
+SMOOTHING_MAX_CAP = 10
+
+
 @dataclass
 class MeshSpec:
     """A 2D Delaunay triangle mesh of the regional model area (boundary and user points fixed, interior free)."""
@@ -116,7 +119,8 @@ class MeshSpec:
     boundary_spacing_m: float = 300.0
     interior_points: int = 5000
     fixed_points_file: str = ""
-    smoothing_iterations: int = 0
+    smoothing_iterations: int = 10  # max Laplacian passes (1..10); stop earlier if tolerance met
+    smoothing_tolerance_m: float = 0.01  # stop when largest free-node move is below this (metres)
     boundary_tolerance_m: float = 0.0
     streams: StreamOptions | None = None
     stream_mode: str = "none"
@@ -135,8 +139,11 @@ class MeshSpec:
             raise ValueError("Mesh boundary simplification tolerance must not be negative")
         if self.interior_points < 1:
             raise ValueError("Mesh interior point count must be at least 1")
-        if self.smoothing_iterations < 0:
-            raise ValueError("Mesh smoothing iterations must not be negative")
+        if self.smoothing_tolerance_m <= 0:
+            raise ValueError("Mesh smoothing tolerance must be positive")
+        # Clamp to 1..SMOOTHING_MAX_CAP. Legacy YAML leftovers (0 or 1) are bumped to the
+        # default max in Project.from_dict so intentional UI values below 10 still work.
+        self.smoothing_iterations = min(SMOOTHING_MAX_CAP, max(1, int(self.smoothing_iterations)))
 
     @property
     def slug(self) -> str:
@@ -153,6 +160,7 @@ class ModelSpec:
     include_cln: bool = True
     include_stream_nchos: bool = True
     climate: str = "average"
+    lake_level_obs: bool = True
     status: str = "defined"
     created: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
 
@@ -326,7 +334,16 @@ class Project:
         known_opts = set(Options.__dataclass_fields__)
         data["options"] = Options(**{k: v for k, v in options.items() if k in known_opts})
         data["focus_areas"] = [FocusArea(**f) for f in (data.get("focus_areas") or [])]
-        data["meshes"] = [MeshSpec(**m) for m in (data.get("meshes") or [])]
+        mesh_fields = set(MeshSpec.__dataclass_fields__)
+        meshes = []
+        for raw in data.get("meshes") or []:
+            m = {k: v for k, v in raw.items() if k in mesh_fields}
+            # Legacy project.yaml often stored 0/1 from the old fixed-pass UI; bump to default max.
+            n = int(m.get("smoothing_iterations", SMOOTHING_MAX_CAP) or 0)
+            if n < SMOOTHING_MAX_CAP:
+                m["smoothing_iterations"] = SMOOTHING_MAX_CAP
+            meshes.append(MeshSpec(**m))
+        data["meshes"] = meshes
         data["models"] = [ModelSpec(**m) for m in (data.get("models") or [])]
         data["data_files"] = [DataFile(**f) for f in (data.get("data_files") or [])]
         data["providers"] = list(data.get("providers") or [])

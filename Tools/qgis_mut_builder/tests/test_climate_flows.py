@@ -146,7 +146,7 @@ class MutForcing(unittest.TestCase):
                 monthly=[],
                 lta={"P_m_per_d": 0.0025, "PET_m_per_d": 0.0018},
                 include_swf=True,
-                outlet_rel="..\\..\\2_mesh\\R\\R.nchos.Stream level 1",
+                outlet_rel="..\\..\\2_mesh\\R\\R.nchos.Outlet",
                 observed_notes=["Observed outlet Q: ECCC 02GA003"],
                 include_cln=True,
                 net_rate=0.0007,
@@ -170,7 +170,26 @@ class MutForcing(unittest.TestCase):
             self.assertRegex(text, r"swf recharge\n\s+0\.00069300\n")
             self.assertIn("swf critical depth", text)
             self.assertIn("Outlet", text)
+            self.assertIn("R.nchos.Outlet", text)
+            self.assertNotIn("Stream level", text)
             self.assertIn("Observed outlet Q", text)
+
+    def test_outlet_rel_rejects_stream_level(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ClimateForcing.instructions"
+            with self.assertRaises(ValueError):
+                write_climate_forcing_instructions(
+                    path,
+                    mode="average",
+                    monthly=[],
+                    lta={"P_m_per_d": 0.0025, "PET_m_per_d": 0.0018},
+                    include_swf=True,
+                    outlet_rel="..\\..\\2_mesh\\R\\R.nchos.Stream level 1",
+                    observed_notes=[],
+                    include_cln=False,
+                    net_rate=0.0007,
+                    swf_rate=0.0007,
+                )
 
     def test_average_swf_only(self):
         with tempfile.TemporaryDirectory() as tmp:

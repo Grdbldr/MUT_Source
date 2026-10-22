@@ -59,7 +59,7 @@ from ..core.geo import LARGE_GRID_CELLS, MAX_REGIONAL_RES_M, grid_advice, utm_ep
 from ..core.inventory import scan_folder
 from ..core.project import ROLES, DataFile, Options, Project
 from ..core.providers import KINDS, PROVIDERS
-from ..core.qgis_project import OSM_URI, populate, refresh_qgz
+from ..core.qgis_project import OSM_URI, bind_open_qgz, populate, refresh_qgz, release_surfaces_layers
 from .task import PipelineTask
 
 SETTINGS = "mut_model_builder"
@@ -756,6 +756,7 @@ class RunPage(QWizardPage):
         self.log.clear()
         self.append(f"Saved {path}")
         self._cancel_logged = False
+        release_surfaces_layers(QgsProject.instance(), project)
         self.task = PipelineTask(project, self.wiz.sources_page.api_keys(), self.wiz.sources_page.refresh.isChecked())
         self.task.message.connect(self.append)
         self.task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -792,6 +793,7 @@ class RunPage(QWizardPage):
             self.append(refresh_qgz(project, result))
         except RuntimeError as exc:
             self.append(str(exc))
+        bind_open_qgz(project)
         self.wiz.zoom_to_region()
         self.report_path = result.report_path
         self.report_button.setEnabled(result.report_path is not None)

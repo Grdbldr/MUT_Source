@@ -12,6 +12,7 @@
     python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --spacing-m 300 --points 5000
     python-qgis-ltr.bat run_headless.py streams C:\\Work\\Site\\project.yaml --name Regional --stream-levels 3
     python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-mode cln
+    python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-mode mapped
     python-qgis-ltr.bat run_headless.py mesh C:\\Work\\Site\\project.yaml --name Regional --streams auto --stream-mode embedded
     python-qgis-ltr.bat run_headless.py build C:\\Work\\Site\\project.yaml --mesh Regional --name Regional
     python-qgis-ltr.bat run_headless.py build C:\\Work\\Site\\project.yaml --mesh Regional --name Regional --climate average
@@ -31,10 +32,12 @@ Without --lat/--lon the project location is the boundary centroid.
 ``focus-search`` lists features inside the regional area; ``focus-add`` defines a focus area (rectangle, vector
 file, or a feature and its local watershed) without downloading; ``focus-run`` builds its ~1 m ground surface.
 ``mesh`` builds a 2D Delaunay triangle mesh (fixed boundary and --fixed-points nodes, about --points free interior
-nodes, optional --smooth passes) and writes Grid Builder files for MUT's ``2d mesh from gb`` under 2_mesh/<name>.
-With ``--streams`` (default ``--stream-mode cln``) it keeps the built mesh and writes ``Streams_CLN.xyzList``; use
-``--stream-mode embedded`` to rebuild with fixed stream nodes and ``.nchos`` files. ``streams`` only finds and ranks
-them into a preview GeoPackage. ``build`` writes ``2_models/<name>/_build.mut`` and elevation list files.
+nodes) and writes Grid Builder files for MUT's ``2d mesh from gb`` under 2_mesh/<name>. Laplacian smoothing always
+runs on remeshes until free-node moves fall below ``--smooth-tol-m`` (default 0.01 m) or ``--smooth-max`` passes
+(default 10). With ``--streams`` (default ``--stream-mode cln``) it keeps the built mesh and writes
+``Streams_CLN.xyzList``; use ``--stream-mode mapped`` to keep the mesh and write SWF ``.nchos`` (no CLN), or
+``--stream-mode embedded`` to rebuild with fixed stream nodes. ``streams`` only finds and ranks them into a preview
+GeoPackage. ``build`` writes ``2_models/<name>/_build.mut`` and elevation list files.
 Set OPENTOPOGRAPHY_API_KEY to enable the OpenTopography fallbacks.
 """
 
@@ -137,16 +140,30 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Remove boundary detail smaller than this (default 0: mesh edges follow the boundary exactly)",
     )
     me.add_argument("--fixed-points", type=Path, help="Vector file of fixed points (wells, shafts, observation points)")
-    me.add_argument("--smooth", type=int, default=0, help="Laplacian smoothing passes on free nodes (default 0)")
+    me.add_argument(
+        "--smooth-tol-m",
+        type=float,
+        default=0.01,
+        help="Stop smoothing when the largest free-node move is below this (default 0.01 m / 1 cm)",
+    )
+    me.add_argument(
+        "--smooth-max",
+        "--smooth",
+        type=int,
+        default=10,
+        dest="smooth_max",
+        help="Maximum Laplacian smoothing passes on free nodes (default 10, capped at 10)",
+    )
     me.add_argument("--preview", action="store_true", help="Only report the estimated spacing and point counts")
     me.add_argument("--no-qgz", action="store_true", help="Skip rewriting the .qgz QGIS project")
     _stream_args(me, "Stream source (with --stream-mode)")
     me.add_argument(
         "--stream-mode",
-        choices=("cln", "embedded"),
+        choices=("cln", "embedded", "mapped"),
         default=None,
         help="With --streams: cln = keep mesh and export Streams_CLN.xyzList (default); "
-        "embedded = rebuild mesh with fixed stream nodes",
+        "embedded = rebuild mesh with fixed stream nodes; "
+        "mapped = keep mesh and write .nchos for SWF (no CLN)",
     )
 
     st = sub.add_parser("streams", help="Find and rank the streams for a mesh (preview GeoPackage, no mesh)")
@@ -169,6 +186,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("none", "average", "transient"),
         default="average",
         help="Climate forcing in _build.mut: long-term average P−ET TR spin-up (default), transient monthly P/PET, or none",
+    )
+    bu.add_argument(
+        "--lake-level-obs",
+        choices=("on", "off"),
+        default="on",
+        help="SWF observation points at deepest bathymetry cell of each corrected lake (default on)",
     )
     return parser.parse_args(argv)
 
@@ -412,11 +435,11 @@ def _mesh(args, project: Project) -> int:
     mode = getattr(args, "stream_mode", None)
     if streams is not None and mode is None:
         mode = "cln"
-    if mode == "cln" and streams is not None:
+    if mode in ("cln", "mapped") and streams is not None:
         existing = project.get_mesh(args.name)
         if existing is None or existing.status != "built":
             raise SystemExit(
-                f"Mesh '{args.name}' must already be built before --stream-mode cln. "
+                f"Mesh '{args.name}' must already be built before --stream-mode {mode}. "
                 "Build without --streams first, or use --stream-mode embedded."
             )
         spec = MeshSpec(
@@ -426,13 +449,20 @@ def _mesh(args, project: Project) -> int:
             interior_points=existing.interior_points,
             fixed_points_file=existing.fixed_points_file,
             smoothing_iterations=existing.smoothing_iterations,
+            smoothing_tolerance_m=existing.smoothing_tolerance_m,
             streams=streams,
-            stream_mode="cln",
+            stream_mode=mode,
             status=existing.status,
             created=existing.created,
         )
-        result = export_cln(project, spec, log=_log)
-        _log(f"CLN XYZ: {result.path}")
+        if mode == "cln":
+            result = export_cln(project, spec, log=_log)
+            _log(f"CLN XYZ: {result.path}")
+            return 0 if result.ok else 1
+        from core.stream_map import map_streams_to_mesh
+
+        result = map_streams_to_mesh(project, spec, log=_log)
+        _log(f"Mapped {result.n_stream_nodes:,} stream nodes; .nchos beside the mesh")
         return 0 if result.ok else 1
 
     spec = MeshSpec(
@@ -441,7 +471,8 @@ def _mesh(args, project: Project) -> int:
         boundary_tolerance_m=args.simplify_m,
         interior_points=args.points,
         fixed_points_file=str(args.fixed_points.resolve()) if args.fixed_points else "",
-        smoothing_iterations=args.smooth,
+        smoothing_iterations=args.smooth_max,
+        smoothing_tolerance_m=args.smooth_tol_m,
         streams=streams if mode == "embedded" else None,
         stream_mode="embedded" if mode == "embedded" and streams else "none",
     )
@@ -493,6 +524,7 @@ def _build(args, project: Project) -> int:
         include_cln=not args.no_cln,
         include_stream_nchos=not args.no_streams,
         climate=args.climate,
+        lake_level_obs=args.lake_level_obs == "on",
     )
     result = build_mut_project(project, spec, model, log=_log)
     _log(f"Model folder: {result.model_dir}")

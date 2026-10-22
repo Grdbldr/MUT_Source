@@ -13,6 +13,7 @@ from qgis.PyQt.QtWidgets import (
     QComboBox,
     QDialog,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -44,8 +45,8 @@ class BuildMutDialog(QDialog):
         intro = QLabel(
             "Creates a starter MODFLOW-USG model folder under <tt>2_models/&lt;name&gt;/</tt> with "
             "<tt>_build.mut</tt> and elevation list files sampled from the regional surfaces onto the mesh nodes. "
-            "Streams follow the mesh: <b>CLN</b> if attached without remeshing, or <b>SWF</b> "
-            "<tt>choose cells from gb nodes</tt> if the mesh was rebuilt with fixed stream nodes. "
+            "Streams: <b>CLN</b> only if attached as a 1-D domain; <b>SWF</b> "
+            "<tt>choose cells from gb nodes</tt> when streams were mapped onto the mesh or rebuilt with fixed stream nodes. "
             "Does not run <tt>mut.exe</tt>."
         )
         intro.setWordWrap(True)
@@ -78,6 +79,18 @@ class BuildMutDialog(QDialog):
         self.climate.addItem("None (steady SS, no climate BCs)", "none")
         form.addRow("Climate forcing", self.climate)
         layout.addLayout(form)
+
+        lake_box = QGroupBox("Lake Levels")
+        lake_form = QFormLayout(lake_box)
+        self.lake_level_obs = QCheckBox("Observation Points")
+        self.lake_level_obs.setChecked(True)
+        self.lake_level_obs.setToolTip(
+            "SWF observation point at the deepest bathymetry cell of each corrected lake "
+            "(name = lake name). Writes SWF_LakeLevelObservationPoints.instructions."
+        )
+        lake_form.addRow("", self.lake_level_obs)
+        layout.addWidget(lake_box)
+        self.include_swf.toggled.connect(self._sync_lake_obs)
 
         self.summary = QLabel("Open a project file.")
         self.summary.setWordWrap(True)
@@ -158,9 +171,16 @@ class BuildMutDialog(QDialog):
             f"<b>{self.project.name}</b> / mesh <b>{spec.name}</b> (stream_mode={spec.stream_mode})",
             f"Ground: {ground_label}; bedrock: {bedrock_label}",
         ]
+        swf_streams = spec.stream_mode in ("embedded", "mapped")
+        if spec.stream_mode == "mapped":
+            bits.append("Streams mapped onto mesh for <b>SWF</b> (.nchos; no remesh, no CLN by default)")
+        elif spec.stream_mode == "embedded":
+            bits.append("Streams embedded in mesh for <b>SWF</b> (.nchos; no CLN by default)")
+        elif spec.stream_mode == "cln":
+            bits.append("Streams attached as <b>CLN</b> (1-D domain)")
         if cln:
             bits.append(f"CLN XYZ: {len(cln)} file(s)")
-        elif can_export_cln:
+        elif can_export_cln and not swf_streams:
             src = previews[0].name if previews else "mesh streams layer"
             bits.append(
                 f"Ranked streams available ({src}) but not yet attached as CLN to this mesh. "
@@ -171,7 +191,7 @@ class BuildMutDialog(QDialog):
         if not cln and not nchos and not can_export_cln and spec.stream_mode == "none":
             bits.append(
                 "No stream attachments on this mesh. Use <b>Add streams...</b> → Find streams, "
-                "then Attach streams as CLN (or rebuild with fixed stream nodes)."
+                "then map onto mesh for SWF, rebuild with fixed stream nodes, or attach as CLN."
             )
         models = ", ".join(f"{m.name} ({m.status})" for m in self.project.models) or "none yet"
         bits.append(f"Models: {models}")
@@ -180,10 +200,19 @@ class BuildMutDialog(QDialog):
         climate_label = "yes" if climate.exists() else "<b>missing</b> (run regional model)"
         flows_label = "yes" if flows.exists() else "none"
         bits.append(f"Climate data: {climate_label}; outlet flows: {flows_label}")
+        lakes_gj = self.project.surfaces_dir / "lakes.geojson"
+        lake_depth = self.project.surfaces_dir / "lake_depth.tif"
+        if lakes_gj.exists() and lake_depth.exists():
+            bits.append("Lake bathymetry: yes (observation points available)")
+        else:
+            bits.append("Lake bathymetry: <b>missing</b> (no lakes.geojson / lake_depth.tif)")
         self.summary.setText("<br>".join(bits))
-        self.include_cln.setEnabled(bool(cln) or spec.stream_mode == "cln" or can_export_cln)
+        # CLN optional when leftover XYZ exist; default off for SWF-mapped/embedded meshes.
+        self.include_cln.setEnabled(bool(cln) or spec.stream_mode == "cln" or (can_export_cln and not swf_streams))
         self.include_nchos.setEnabled(bool(nchos))
         if not self.include_cln.isEnabled():
+            self.include_cln.setChecked(False)
+        elif swf_streams:
             self.include_cln.setChecked(False)
         elif cln or spec.stream_mode == "cln" or can_export_cln:
             self.include_cln.setChecked(True)
@@ -199,7 +228,24 @@ class BuildMutDialog(QDialog):
             idx = self.climate.findData("none")
             if idx >= 0:
                 self.climate.setCurrentIndex(idx)
+        have_lakes = lakes_gj.exists() and lake_depth.exists()
+        self.lake_level_obs.setChecked(have_lakes and self.include_swf.isChecked())
+        self._sync_lake_obs()
         self.update_buttons()
+
+    def _sync_lake_obs(self, _checked: bool = False) -> None:
+        have_lakes = False
+        if self.project is not None:
+            have_lakes = (self.project.surfaces_dir / "lakes.geojson").exists() and (
+                self.project.surfaces_dir / "lake_depth.tif"
+            ).exists()
+        enabled = self.include_swf.isChecked() and have_lakes
+        was_enabled = self.lake_level_obs.isEnabled()
+        self.lake_level_obs.setEnabled(enabled)
+        if not enabled:
+            self.lake_level_obs.setChecked(False)
+        elif not was_enabled:
+            self.lake_level_obs.setChecked(True)
 
     def update_buttons(self) -> None:
         busy = self.task is not None
@@ -233,6 +279,7 @@ class BuildMutDialog(QDialog):
             include_cln=self.include_cln.isChecked(),
             include_stream_nchos=self.include_nchos.isChecked(),
             climate=self.climate.currentData() or "average",
+            lake_level_obs=self.lake_level_obs.isChecked(),
         )
         self.task = BuildMutTask(self.project, spec, model)
         self.task.message.connect(self.append)

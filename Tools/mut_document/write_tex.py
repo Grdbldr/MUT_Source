@@ -261,6 +261,8 @@ def _preamble(title: str, pdf_title: str) -> str:
 \newunicodechar{{±}}{{\ensuremath{{\pm}}}}
 \newunicodechar{{×}}{{\ensuremath{{\times}}}}
 \newunicodechar{{°}}{{\ensuremath{{^\circ}}}}
+\newunicodechar{{−}}{{-}}
+\newunicodechar{{—}}{{---}}
 \hypersetup{{
   colorlinks=true,
   linkcolor=blue,
@@ -276,7 +278,7 @@ def _preamble(title: str, pdf_title: str) -> str:
   keepspaces=true,
   literate={{≈}}{{{{$\approx$}}}}1 {{→}}{{{{$\rightarrow$}}}}1 {{←}}{{{{$\leftarrow$}}}}1
     {{≤}}{{{{$\leq$}}}}1 {{≥}}{{{{$\geq$}}}}1 {{±}}{{{{$\pm$}}}}1 {{×}}{{{{$\times$}}}}1
-    {{°}}{{{{$^\circ$}}}}1 {{—}}{{{{---}}}}1 {{–}}{{{{--}}}}1
+    {{°}}{{{{$^\circ$}}}}1 {{—}}{{{{---}}}}1 {{–}}{{{{--}}}}1 {{−}}{{{{-}}}}1
 }}
 \graphicspath{{{{imagery/}}{{imagery_user/}}}}
 \title{{{tex_escape(title)}}}

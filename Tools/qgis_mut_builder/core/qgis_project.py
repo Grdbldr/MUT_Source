@@ -9,6 +9,7 @@ from pathlib import Path
 
 from qgis.core import (
     Qgis,
+    QgsApplication,
     QgsContrastEnhancement,
     QgsCoordinateReferenceSystem,
     QgsFillSymbol,
@@ -136,8 +137,96 @@ def _add_lake_layers(qproject: QgsProject, group, outputs: dict, lakes_file, wat
     return added
 
 
+def _remove_group(qproject: QgsProject, title: str) -> None:
+    """Remove a layer-tree group and every map layer it contains."""
+    root = qproject.layerTreeRoot()
+    old = root.findGroup(title)
+    if old is None:
+        return
+    for layer_id in old.findLayerIds():
+        qproject.removeMapLayer(layer_id)
+    root.removeChildNode(old)
+
+
+def _path_key(path: Path) -> str:
+    return str(Path(path).resolve()).replace("\\", "/").casefold()
+
+
+def release_paths(qproject: QgsProject, paths) -> None:
+    """Remove any map layer whose data source refers to one of ``paths`` (Windows file locks)."""
+    keys = {_path_key(p) for p in paths if p is not None}
+    if not keys:
+        return
+    remove = []
+    for layer in qproject.mapLayers().values():
+        source = layer.source().replace("\\", "/").casefold()
+        if any(key in source for key in keys):
+            remove.append(layer.id())
+    for layer_id in remove:
+        qproject.removeMapLayer(layer_id)
+
+
+def _flush_layer_handles() -> None:
+    """Let QGIS finish closing OGR/GDAL handles before a worker overwrites the files."""
+    QgsApplication.processEvents()
+
+
+def release_mesh_layers(qproject: QgsProject, project, spec) -> None:
+    """Unload mesh and streams-preview layers so ``write_gpkg`` can replace the GeoPackage."""
+    from .mesh import mesh_outputs, streams_preview_path
+
+    _remove_group(qproject, f"{project.name} mesh: {spec.name}")
+    preview_title = f"{spec.name} streams (preview)"
+    for old in qproject.mapLayersByName(preview_title):
+        qproject.removeMapLayer(old.id())
+    release_paths(qproject, (mesh_outputs(project, spec)["gpkg"], streams_preview_path(project, spec)))
+    _flush_layer_handles()
+
+
+def release_streams_preview(qproject: QgsProject, project, spec) -> None:
+    """Unload only the streams preview layer before rewriting the preview GeoPackage."""
+    from .mesh import streams_preview_path
+
+    preview_title = f"{spec.name} streams (preview)"
+    for old in qproject.mapLayersByName(preview_title):
+        qproject.removeMapLayer(old.id())
+    release_paths(qproject, (streams_preview_path(project, spec),))
+    _flush_layer_handles()
+
+
+def release_focus_layers(qproject: QgsProject, project, focus) -> None:
+    """Unload focus-area layers so DEM / lake outputs can be overwritten."""
+    from .focus import focus_outputs
+
+    outputs = focus_outputs(project, focus)
+    _remove_group(qproject, f"{project.name} focus: {focus.name}")
+    release_paths(
+        qproject,
+        (
+            outputs.get("ground_top"),
+            outputs.get("hillshade"),
+            outputs.get("water_surface"),
+            outputs.get("lake_depth"),
+            outputs.get("lakes"),
+            Path(focus.boundary_file) if focus.boundary_file else None,
+        ),
+    )
+    _flush_layer_handles()
+
+
+def release_surfaces_layers(qproject: QgsProject, project) -> None:
+    """Unload regional surface layers so a wizard re-run can rewrite GeoTIFFs and lake files."""
+    _remove_group(qproject, f"{project.name} surfaces")
+    paths = [project.surfaces_dir]
+    if project.boundary_file:
+        paths.append(Path(project.boundary_file))
+    release_paths(qproject, paths)
+    _flush_layer_handles()
+
+
 def populate(qproject: QgsProject, project, result, add_basemap: bool = True) -> list:
     """Add styled output layers (and boundary files) to ``qproject`` under a "<name> surfaces" group."""
+    release_surfaces_layers(qproject, project)
     root = qproject.layerTreeRoot()
     group = root.insertGroup(0, f"{project.name} surfaces")
     added = []
@@ -205,12 +294,8 @@ def populate_focus(qproject: QgsProject, project, focus) -> list:
 
     outputs = focus_outputs(project, focus)
     title = f"{project.name} focus: {focus.name}"
+    release_focus_layers(qproject, project, focus)
     root = qproject.layerTreeRoot()
-    old = root.findGroup(title)
-    if old is not None:
-        for layer_id in old.findLayerIds():
-            qproject.removeMapLayer(layer_id)
-        root.removeChildNode(old)
     group = root.insertGroup(0, title)
     added = []
     outline = _outline(Path(focus.boundary_file), f"{focus.name} outline", FOCUS_COLOUR, "1.0")
@@ -278,14 +363,10 @@ def populate_mesh(qproject: QgsProject, project, spec) -> list:
 
     gpkg = mesh_outputs(project, spec)["gpkg"]
     title = f"{project.name} mesh: {spec.name}"
-    root = qproject.layerTreeRoot()
-    old = root.findGroup(title)
-    if old is not None:
-        for layer_id in old.findLayerIds():
-            qproject.removeMapLayer(layer_id)
-        root.removeChildNode(old)
+    release_mesh_layers(qproject, project, spec)
     if not gpkg.exists():
         return []
+    root = qproject.layerTreeRoot()
     group = root.insertGroup(0, title)
     added = []
     nodes = QgsVectorLayer(f"{gpkg}|layername=nodes", f"{spec.name} nodes", "ogr")
@@ -342,3 +423,27 @@ def refresh_qgz(project, result=None) -> str:
     if open_file and Path(open_file).resolve() == project.qgz_path.resolve():
         return f"Layers added to the open QGIS project; save it (Ctrl+S) to keep them in {project.qgz_path.name}"
     return f"QGIS project written: {write_qgz(project, result)}"
+
+
+def _set_home_path(qproject: QgsProject, home: str) -> None:
+    """Set project home path across QGIS API variants without raising AttributeError.
+
+    Older/newer builds expose ``setHomePath`` or ``setPresetHomePath`` (the latter
+    backs the ``presetHomePath`` property). If neither setter exists, skip safely.
+    """
+    for name in ("setHomePath", "setPresetHomePath"):
+        setter = getattr(qproject, name, None)
+        if callable(setter):
+            setter(home)
+            return
+
+
+def bind_open_qgz(project) -> None:
+    """Point the open QGIS project at ``project.qgz_path`` so Save/Save As use the model folder."""
+    qproject = QgsProject.instance()
+    path = str(project.qgz_path.resolve())
+    if Path(qproject.fileName() or "").resolve() != project.qgz_path.resolve():
+        qproject.setFileName(path)
+    _set_home_path(qproject, str(project.output_path.resolve()))
+    if not qproject.title():
+        qproject.setTitle(project.name)

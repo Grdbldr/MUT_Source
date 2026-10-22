@@ -521,10 +521,17 @@ def smooth(
     log=print,
     is_canceled: Callable[[], bool] = lambda: False,
     chains: list[Chain] | None = None,
-) -> tuple[Mesh, list[str]]:
-    """Laplacian smoothing of free nodes (fixed nodes never move), re-triangulating after each pass."""
+    tolerance_m: float = 0.01,
+) -> tuple[Mesh, list[str], dict]:
+    """Laplacian smoothing of free nodes (fixed nodes never move), re-triangulating after each pass.
+
+    Stops when the largest free-node move is below ``tolerance_m`` or ``iterations`` passes have run.
+    """
     warnings: list[str] = []
-    for it in range(iterations):
+    moved = 0.0
+    passes = 0
+    converged = False
+    for it in range(max(1, iterations)):
         if is_canceled():
             raise InterruptedError("Run canceled")
         tris = mesh.triangles
@@ -546,10 +553,25 @@ def smooth(
         mesh = Mesh(xy, mesh.fixed, mesh.source, level=mesh.level)
         mesh, w = triangulate(mesh, rings, polygon, spacing, log, chains)
         warnings = w
-        log(f"  Smoothing pass {it + 1}/{iterations}: largest move {moved:,.1f} m")
-        if moved < 1e-3 * spacing:
+        passes = it + 1
+        log(f"  Smoothing pass {passes}/{iterations}: largest move {moved:,.4f} m (tol {tolerance_m:g} m)")
+        if moved < tolerance_m:
+            converged = True
+            log(f"  Smoothing converged after {passes} pass(es) (largest move {moved:,.4f} m < {tolerance_m:g} m)")
             break
-    return mesh, warnings
+    else:
+        log(
+            f"  Smoothing stopped at max {passes} pass(es) "
+            f"(largest move {moved:,.4f} m, tol {tolerance_m:g} m)"
+        )
+    info = {
+        "passes": passes,
+        "max_iterations": int(iterations),
+        "tolerance_m": float(tolerance_m),
+        "last_move_m": float(moved),
+        "converged": converged,
+    }
+    return mesh, warnings, info
 
 
 def quality(mesh: Mesh) -> dict:
@@ -723,8 +745,71 @@ def write_nchos(path: Path, header: str, mask: np.ndarray) -> Path:
     return path
 
 
-def nchos_files(mesh: Mesh, prefix: Path) -> dict[str, Path]:
-    """``<prefix>.nchos.Stream level k`` (nodes on level-k streams) and ``.nchos.Streams`` (all stream nodes)."""
+def nodes_on_mesh_boundary(mesh: Mesh) -> np.ndarray:
+    """True for nodes on the mesh outer boundary (``source==boundary`` or incident to a boundary edge)."""
+    n = mesh.n_nodes
+    mask = np.zeros(n, dtype=bool)
+    if n == 0:
+        return mask
+    mask |= mesh.source == SOURCES.index("boundary")
+    tris = mesh.triangles
+    if tris is None or len(tris) == 0:
+        return mask
+    counts: dict[tuple[int, int], int] = {}
+    for a, b, c in tris:
+        for u, v in ((int(a), int(b)), (int(b), int(c)), (int(c), int(a))):
+            e = (u, v) if u < v else (v, u)
+            counts[e] = counts.get(e, 0) + 1
+    for (u, v), cnt in counts.items():
+        if cnt == 1:
+            mask[u] = True
+            mask[v] = True
+    return mask
+
+
+def outlet_node_mask(
+    mesh: Mesh,
+    chains: list[Chain] | None = None,
+    outlet_indices: list[int] | None = None,
+) -> np.ndarray:
+    """Downstream ends of level-1 streams that lie on the mesh outer boundary (critical-depth SWBC).
+
+    Prefer explicit ``outlet_indices`` (mapped streams: last boundary node on each level-1 chain) or the
+    last node of each level-1 ``chains`` entry (embedded remesh; downstream last) when that node is on
+    the boundary. Does **not** flag every level-1 node that happens to lie on the domain edge (a river
+    hugging the boundary would otherwise become a string of critical-depth cells).
+
+    When neither ``outlet_indices`` nor ``chains`` is supplied, returns an empty mask — callers that
+    only have mesh CSVs must recompute outlets from stream paths (see ``mut_build._ensure_outlet_nchos``).
+    """
+    n = mesh.n_nodes
+    mask = np.zeros(n, dtype=bool)
+    if n == 0 or mesh.level is None:
+        return mask
+    on_bnd = nodes_on_mesh_boundary(mesh)
+    if outlet_indices is not None:
+        for i in outlet_indices:
+            if 0 <= int(i) < n and on_bnd[int(i)] and int(mesh.level[int(i)]) == 1:
+                mask[int(i)] = True
+        return mask
+    if chains is not None:
+        for ids, level in chains:
+            if int(level) != 1 or not ids:
+                continue
+            i = int(ids[-1])
+            if 0 <= i < n and on_bnd[i] and int(mesh.level[i]) == 1:
+                mask[i] = True
+        return mask
+    return mask
+
+
+def nchos_files(
+    mesh: Mesh,
+    prefix: Path,
+    chains: list[Chain] | None = None,
+    outlet_indices: list[int] | None = None,
+) -> dict[str, Path]:
+    """``.nchos.Stream level k``, ``.nchos.Streams``, and ``.nchos.Outlet`` (downstream level-1 ends on boundary)."""
     for old in prefix.parent.glob(prefix.name + ".nchos.*"):
         old.unlink()
     out: dict[str, Path] = {}
@@ -735,10 +820,19 @@ def nchos_files(mesh: Mesh, prefix: Path) -> dict[str, Path]:
         name = f"Stream level {k}"
         out[f"nchos_level{k}"] = write_nchos(prefix.with_name(f"{prefix.name}.nchos.{name}"), name, mesh.level == k)
     out["nchos_streams"] = write_nchos(prefix.with_name(f"{prefix.name}.nchos.Streams"), "Streams", mesh.level > 0)
+    outlet = outlet_node_mask(mesh, chains=chains, outlet_indices=outlet_indices)
+    if outlet.any():
+        out["nchos_outlet"] = write_nchos(prefix.with_name(f"{prefix.name}.nchos.Outlet"), "Outlet", outlet)
     return out
 
 
-def mut_snippet(project: Project, spec: MeshSpec, stream_levels: list[int] | None = None) -> str:
+def mut_snippet(
+    project: Project,
+    spec: MeshSpec,
+    stream_levels: list[int] | None = None,
+    *,
+    has_outlet: bool = False,
+) -> str:
     """MUT instructions for a model folder two levels below the project folder (e.g. ``2_models/<model>``)."""
     rel = f"..\\..\\2_mesh\\{spec.slug}\\{spec.slug}"
     text = (
@@ -757,10 +851,21 @@ def mut_snippet(project: Project, spec: MeshSpec, stream_levels: list[int] | Non
         for k in stream_levels:
             text += f"!   choose cells from gb nodes\n!   {rel}.nchos.Stream level {k}\n"
         text += f"!   choose cells from gb nodes\n!   {rel}.nchos.Streams\n"
+        if has_outlet:
+            text += (
+                f"! Critical-depth outlet (downstream level-1 ends on the mesh boundary only):\n"
+                f"!   choose cells from gb nodes\n!   {rel}.nchos.Outlet\n"
+            )
     return text
 
 
-def write_outputs(project: Project, spec: MeshSpec, result: MeshResult, network=None) -> dict[str, Path]:
+def write_outputs(
+    project: Project,
+    spec: MeshSpec,
+    result: MeshResult,
+    network=None,
+    chains: list[Chain] | None = None,
+) -> dict[str, Path]:
     out = mesh_outputs(project, spec)
     mesh = result.mesh
     out["folder"].mkdir(parents=True, exist_ok=True)
@@ -771,10 +876,11 @@ def write_outputs(project: Project, spec: MeshSpec, result: MeshResult, network=
         from .streams import write_streams
 
         write_streams(network, out["gpkg"], project.epsg)
-    outputs.update(nchos_files(mesh, out["gb_prefix"]))
+    outputs.update(nchos_files(mesh, out["gb_prefix"], chains=chains))
     outputs["xy_csv"], outputs["idnode_csv"] = write_csvs(mesh, out["xy_csv"], out["idnode_csv"])
     levels = sorted(int(v) for v in np.unique(mesh.level) if v > 0)
-    out["snippet"].write_text(mut_snippet(project, spec, levels), encoding="utf-8")
+    has_outlet = "nchos_outlet" in outputs
+    out["snippet"].write_text(mut_snippet(project, spec, levels, has_outlet=has_outlet), encoding="utf-8")
     outputs["snippet"] = out["snippet"]
     summary = {
         "mesh": asdict(spec),
@@ -786,6 +892,9 @@ def write_outputs(project: Project, spec: MeshSpec, result: MeshResult, network=
     }
     if network is not None:
         summary["streams"] = network.summary()
+    n_outlet = int(outlet_node_mask(mesh, chains=chains).sum()) if levels else 0
+    if n_outlet and isinstance(result.stats.get("streams"), dict):
+        result.stats["streams"]["outlet_nodes"] = n_outlet
     out["summary"].write_text(json.dumps(summary, indent=2), encoding="utf-8")
     outputs["summary"] = out["summary"]
     return outputs
@@ -967,10 +1076,24 @@ def build_mesh(
     log(f"  Delaunay: {len(mesh.triangles):,} triangles, minimum angle {result.stats['initial']['min_angle_deg']:.1f} deg")
     progress(60)
 
-    if spec.smoothing_iterations > 0:
-        mesh, w = smooth(mesh, rings, mesh_poly, spacing, spec.smoothing_iterations, log, is_canceled, chains)
-        result.stats["smoothed"] = quality(mesh)
-        log(f"  Smoothed: minimum angle {result.stats['smoothed']['min_angle_deg']:.1f} deg")
+    mesh, w, smooth_info = smooth(
+        mesh,
+        rings,
+        mesh_poly,
+        spacing,
+        spec.smoothing_iterations,
+        log,
+        is_canceled,
+        chains,
+        tolerance_m=spec.smoothing_tolerance_m,
+    )
+    result.stats["smoothed"] = quality(mesh)
+    result.stats["smoothing"] = smooth_info
+    log(
+        f"  Smoothed: minimum angle {result.stats['smoothed']['min_angle_deg']:.1f} deg "
+        f"({smooth_info['passes']} pass(es), "
+        f"{'converged' if smooth_info['converged'] else 'max iterations'})"
+    )
     for msg in w:
         warn(msg)
     progress(80)
@@ -990,7 +1113,7 @@ def build_mesh(
         result.stats["streams"]["nodes_by_level"] = {
             str(k): int((mesh.level == k).sum()) for k in sorted(set(mesh.level.tolist())) if k > 0
         }
-    result.outputs = write_outputs(project, spec, result, network)
+    result.outputs = write_outputs(project, spec, result, network, chains=chains)
     rel = mut_snippet(project, spec).splitlines()[-1]
     if len(rel) > GB_PATH_MAX:
         warn(f"The Grid Builder path in mut_snippet.txt is longer than {GB_PATH_MAX} characters; shorten the mesh name")

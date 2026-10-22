@@ -31,7 +31,7 @@ from qgis.PyQt.QtWidgets import (
 
 from ..core.mesh import mesh_outputs, preview
 from ..core.project import MeshSpec, Project
-from ..core.qgis_project import populate_mesh, refresh_qgz
+from ..core.qgis_project import bind_open_qgz, populate_mesh, refresh_qgz, release_mesh_layers
 from .focus_dialog import FocusAreaDialog
 from .task import MeshTask
 from .wizard import SETTINGS, _spin
@@ -105,9 +105,17 @@ class MeshDialog(QDialog):
         self.file.setFilter("Vector files (*.shp *.gpkg *.geojson *.json *.csv *.kml *.gml);;All files (*)")
         self.file.setToolTip("Used when no map layer is chosen")
         form.addRow("... or fixed points file", self.file)
-        self.smooth = _int_spin(0, 200, 0)
-        self.smooth.setToolTip("Laplacian smoothing passes; only free nodes move, the mesh is re-triangulated each pass")
-        form.addRow("Smoothing passes", self.smooth)
+        self.smooth_tol = _spin(0.001, 10, 0.01, 3, " m", 0.01)
+        self.smooth_tol.setToolTip(
+            "Stop Laplacian smoothing when the largest free-node move in a pass is below this "
+            "(default 1 cm). Fixed nodes never move; the mesh is re-triangulated each pass."
+        )
+        form.addRow("Smoothing tolerance", self.smooth_tol)
+        self.smooth_max = _int_spin(1, 10, 10)
+        self.smooth_max.setToolTip(
+            "Maximum smoothing passes (1–10). Stops earlier if the tolerance is met."
+        )
+        form.addRow("Max smoothing passes", self.smooth_max)
         layout.addLayout(form)
         for box in (self.spacing, self.points, self.tolerance):
             box.valueChanged.connect(self.show_preview)
@@ -178,7 +186,8 @@ class MeshDialog(QDialog):
                 (self.spacing, spec.boundary_spacing_m),
                 (self.tolerance, spec.boundary_tolerance_m),
                 (self.points, spec.interior_points),
-                (self.smooth, spec.smoothing_iterations),
+                (self.smooth_tol, spec.smoothing_tolerance_m),
+                (self.smooth_max, spec.smoothing_iterations),
             ):
                 box.blockSignals(True)
                 box.setValue(value)
@@ -193,7 +202,8 @@ class MeshDialog(QDialog):
             boundary_spacing_m=self.spacing.value(),
             boundary_tolerance_m=self.tolerance.value(),
             interior_points=self.points.value(),
-            smoothing_iterations=self.smooth.value(),
+            smoothing_iterations=self.smooth_max.value(),
+            smoothing_tolerance_m=self.smooth_tol.value(),
             streams=None,
             stream_mode="none",
             cln_xyz_file=existing.cln_xyz_file if existing else "",
@@ -263,6 +273,7 @@ class MeshDialog(QDialog):
             QMessageBox.warning(self, "Mesh", str(exc))
             return
         self._cancel_logged = False
+        release_mesh_layers(QgsProject.instance(), self.project, spec)
         self.task = MeshTask(self.project, spec)
         self.task.message.connect(self.append)
         self.task.progressChanged.connect(lambda pct: self.progress.setValue(int(pct)))
@@ -284,6 +295,7 @@ class MeshDialog(QDialog):
             self.append(refresh_qgz(task.project))
         except (RuntimeError, OSError, ValueError) as exc:
             self.append(str(exc))
+        bind_open_qgz(task.project)
         if self.name.findText(task.spec.name) < 0:
             self.name.blockSignals(True)
             self.name.addItem(task.spec.name)

@@ -31,7 +31,12 @@ from .cln_export import (
     stream_preview_candidates,
 )
 from .flows import load_flows, retrieve_flows
-from .mesh import GB_PATH_MAX, mesh_outputs, mut_snippet
+from .lake_obs import (
+    INSTRUCTIONS_NAME as LAKE_OBS_INSTRUCTIONS,
+    find_lake_level_obs_points,
+    write_swf_lake_level_obs_instructions,
+)
+from .mesh import GB_PATH_MAX, mesh_outputs, mut_snippet, outlet_node_mask, write_nchos
 from .net import prepare_network
 from .project import MeshSpec, ModelSpec, Project, StreamOptions
 
@@ -41,7 +46,7 @@ DEFAULT_GWF_BEDROCK_MATERIAL = 21  # Fractured crystalline rock
 DEFAULT_SWF_MATERIAL = 4  # Grass
 DEFAULT_CLN_MATERIAL = 3  # Channel (rectangular 10 m × 1 m)
 CLN_CHANNEL_WIDTH_M = 10.0  # plan width for Channel material 3 (matches DEFAULT_CLN_MATERIAL)
-BEDROCK_EXTENSION_M = 200.0  # flat model base = min(surficial base) − this
+BEDROCK_EXTENSION_M = 200.0  # flat model base = min(surficial base) - this
 SURFICIAL_SUBLAYERS = 10
 BEDROCK_SUBLAYERS = 5
 LOG_SUBLAYER_DECADE = 10.0  # deepest/shallowest proportional thickness
@@ -120,7 +125,7 @@ def nchos_paths(project: Project, spec: MeshSpec) -> list[Path]:
 
 
 def _mesh_block(project: Project, spec: MeshSpec) -> str:
-    """Mesh load instructions (no stream comments — those are handled separately)."""
+    """Mesh load instructions (no stream comments - those are handled separately)."""
     rel = f"..\\..\\2_mesh\\{spec.slug}\\{spec.slug}"
     return (
         f"! Delaunay mesh '{spec.name}' from MUT Model Builder; path assumes this folder is\n"
@@ -190,12 +195,72 @@ def _nchos_block(project: Project, spec: MeshSpec, model_dir: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _outlet_nchos(project: Project, spec: MeshSpec) -> Path | None:
-    """Prefer ``.nchos.Stream level 1`` for the critical-depth outlet."""
-    for path in nchos_paths(project, spec):
-        if "Stream level 1" in path.name:
-            return path
-    return None
+def _ensure_outlet_nchos(project: Project, spec: MeshSpec, log: Callable[[str], None] = print) -> Path | None:
+    """Write or refresh ``.nchos.Outlet`` (downstream level-1 ends on the mesh boundary).
+
+    Rematches ranked stream paths onto the mesh so outlets are true sinks (not every level-1 node
+    on the domain edge). Existing meshes get a correct critical-depth selection on Build MUT without
+    remeshing. Returns the path when at least one outlet node is flagged.
+    """
+    from .stream_map import load_mesh_from_csvs, map_paths_to_levels
+
+    outs = mesh_outputs(project, spec)
+    prefix = outs["gb_prefix"]
+    outlet_path = prefix.with_name(f"{prefix.name}.nchos.Outlet")
+    xy_csv, id_csv = outs["xy_csv"], outs["idnode_csv"]
+    if not xy_csv.exists() or not id_csv.exists():
+        return outlet_path if outlet_path.exists() else None
+    try:
+        mesh = load_mesh_from_csvs(xy_csv, id_csv)
+    except (OSError, ValueError) as exc:
+        log(f"  WARNING: could not rebuild outlet .nchos from mesh CSVs: {exc}")
+        return outlet_path if outlet_path.exists() else None
+    if mesh.level is None or not (mesh.level == 1).any():
+        if outlet_path.exists():
+            outlet_path.unlink()
+        return None
+
+    outlet_indices: list[int] | None = None
+    try:
+        paths = load_stream_paths(project, spec)
+    except (OSError, ValueError, RuntimeError) as exc:
+        log(f"  WARNING: could not load stream paths for Outlet refresh: {exc}")
+        paths = []
+    if paths and mesh.triangles is not None and len(mesh.triangles):
+        ds = (spec.streams.spacing_m if spec.streams else 0.0) or spec.boundary_spacing_m
+        try:
+            _, _, outlet_indices = map_paths_to_levels(paths, mesh.xy, mesh.triangles, ds)
+        except (OSError, ValueError, RuntimeError) as exc:
+            log(f"  WARNING: could not remap streams for Outlet refresh: {exc}")
+            outlet_indices = None
+
+    if outlet_indices is None:
+        # No path rematch — keep a previously written Outlet rather than inventing all boundary∩L1.
+        if outlet_path.exists():
+            log(f"  Keeping existing Outlet .nchos (stream-path rematch unavailable): {outlet_path.name}")
+            return outlet_path
+        log("  WARNING: no stream paths to locate critical-depth Outlet nodes")
+        return None
+
+    mask = outlet_node_mask(mesh, outlet_indices=outlet_indices)
+    if not mask.any():
+        if outlet_path.exists():
+            outlet_path.unlink()
+        log("  WARNING: no downstream level-1 outlet on the mesh boundary for critical-depth Outlet")
+        return None
+    write_nchos(outlet_path, "Outlet", mask)
+    log(f"  Outlet .nchos: {int(mask.sum())} downstream level-1 node(s) on boundary -> {outlet_path.name}")
+    return outlet_path
+
+
+def _outlet_nchos(project: Project, spec: MeshSpec, log: Callable[[str], None] = print) -> Path | None:
+    """``.nchos.Outlet`` (downstream level-1 ends on boundary) for critical-depth SWBC; never Stream level 1."""
+    path = _ensure_outlet_nchos(project, spec, log=log)
+    if path is not None and "Stream level" in path.name:
+        raise RuntimeError(
+            f"Internal error: critical-depth outlet resolved to Stream level file {path.name}"
+        )
+    return path
 
 
 def _mesh_area_m2(project: Project, spec: MeshSpec) -> float:
@@ -310,13 +375,14 @@ def write_build_mut(
     include_nchos: bool,
     climate_mode: str = "none",
     oc_times: list[str] | None = None,
+    lake_level_obs: bool = False,
 ) -> str:
     min_thik = project.options.min_thickness_m
     surf_w = log_proportional_weights(SURFICIAL_SUBLAYERS)
     bed_w = log_proportional_weights(BEDROCK_SUBLAYERS)
     desc = project.description.strip() or "(no description)"
     header = (
-        f"! {project.name} — auto-generated by MUT Model Builder\n"
+        f"! {project.name} - auto-generated by MUT Model Builder\n"
         f"! {desc}\n"
         f"! Mesh: {spec.name} (stream_mode={spec.stream_mode})\n"
         f"! Generated {datetime.now().isoformat(timespec='seconds')}\n"
@@ -345,8 +411,8 @@ def write_build_mut(
     body += [
         "",
         "    ! --- GWF: Surficial (10 log-proportional) + Bedrock (5 log-proportional) ---",
-        f"    ! Model base elevation constant = min(surficial base) − {BEDROCK_EXTENSION_M:g} m",
-        f"    !   → {model_base_m:.6f} m",
+        f"    ! Model base elevation constant = min(surficial base) - {BEDROCK_EXTENSION_M:g} m",
+        f"    !   -> {model_base_m:.6f} m",
         "    generate layered gwf domain",
         "        top elevation",
         "            elevation from list file",
@@ -434,6 +500,12 @@ def write_build_mut(
             body.append("")
             for line in _nchos_block(project, spec, model_dir).splitlines():
                 body.append(f"    {line}" if line else "")
+        if lake_level_obs:
+            body += [
+                "",
+                "    ! --- lake level observation points ---",
+                f"    include {LAKE_OBS_INSTRUCTIONS}",
+            ]
 
     if include_cln:
         body.append("")
@@ -530,10 +602,11 @@ def build_mut_project(
         result.warnings.append("Stream .nchos selections need the SWF domain; enabling SWF")
         include_swf = True
 
-    # CLN: use existing XYZ, or export from ranked stream preview / mesh streams layer when requested.
+    # CLN: only when requested. Do not auto-export from stream preview for SWF-mapped/embedded meshes.
     want_cln = model.include_cln
-    have_cln = bool(cln_files(project, spec)) or spec.stream_mode == "cln" or bool(spec.cln_xyz_file)
-    if want_cln and not have_cln and has_stream_geometry(project, spec):
+    swf_streams = spec.stream_mode in ("embedded", "mapped")
+    have_cln = bool(cln_files(project, spec)) or bool(spec.cln_xyz_file) or spec.stream_mode == "cln"
+    if want_cln and not have_cln and not swf_streams and has_stream_geometry(project, spec):
         log("  No Streams_CLN.xyzList on this mesh yet; exporting CLN from ranked streams ...")
         if spec.streams is None:
             spec.streams = StreamOptions()
@@ -550,9 +623,9 @@ def build_mut_project(
         previews = stream_preview_candidates(project, spec)
         hint = f" (found preview: {previews[0].name})" if previews else ""
         result.warnings.append(
-            "Include CLN was requested but no ranked streams were found"
+            "Include CLN was requested but no Streams_CLN.xyzList was found"
             + hint
-            + "; run Add streams... → Find streams, then rebuild"
+            + "; run Add streams... → Find streams, then Attach streams as CLN"
         )
     include_cln = want_cln and have_cln
 
@@ -587,8 +660,8 @@ def build_mut_project(
         bad = np.isnan(z_bed)
         if bad.any():
             z_bed[bad] = z_ground[bad] - min_thik
-            result.warnings.append(f"Filled {int(bad.sum())} bedrock value(s) as ground − min thickness")
-        # enforce bottom ≤ top − min thickness
+            result.warnings.append(f"Filled {int(bad.sum())} bedrock value(s) as ground - min thickness")
+        # enforce bottom <= top - min thickness
         too_thick = z_bed > z_ground - min_thik
         if too_thick.any():
             z_bed[too_thick] = z_ground[too_thick] - min_thik
@@ -604,7 +677,7 @@ def build_mut_project(
     model_base_m = z_surf_base_min - BEDROCK_EXTENSION_M
     log(
         f"  Model base elevation constant = {model_base_m:.3f} m "
-        f"(min surficial base {z_surf_base_min:.3f} − {BEDROCK_EXTENSION_M:g} m); "
+        f"(min surficial base {z_surf_base_min:.3f} - {BEDROCK_EXTENSION_M:g} m); "
         f"Surficial {SURFICIAL_SUBLAYERS} + Bedrock {BEDROCK_SUBLAYERS} log-proportional sublayers"
     )
     progress(60)
@@ -633,8 +706,16 @@ def build_mut_project(
             result.warnings.append(f"Outlet flow refresh failed: {exc}")
 
     observed_notes = _copy_observed_flows(project, model_dir)
-    outlet = _outlet_nchos(project, spec) if include_swf else None
+    outlet = _outlet_nchos(project, spec, log=log) if include_swf else None
     outlet_rel = _rel_to(model_dir, outlet) if outlet is not None else None
+    if include_swf and climate_mode in ("average", "transient"):
+        if outlet_rel:
+            log(f"  Critical-depth SWBC Outlet file: {outlet_rel}")
+        else:
+            result.warnings.append(
+                "No .nchos.Outlet for critical-depth SWBC (need level-1 stream ends on the mesh "
+                "boundary). ClimateForcing will omit swf critical depth — not Stream level 1."
+            )
     oc_times = ["1.0"]
     if climate_mode in ("average", "transient"):
         lta = (climate_summary or {}).get("lta") or {}
@@ -687,11 +768,11 @@ def build_mut_project(
                 result.outputs["net_recharge_asc"] = asc_path
                 net_asc_rel = NET_RECHARGE_ASC
                 log(
-                    f"  Net P−ET={net_rate:.6g} m/d; A_mesh={a_mesh:.3g} m2; "
+                    f"  Net P-ET={net_rate:.6g} m/d; A_mesh={a_mesh:.3g} m2; "
                     f"A_cln={a_cln:.3g} m2; SWF_RCH={swf_rate:.6g} m/d"
                 )
             else:
-                log(f"  Net P−ET={net_rate:.6g} m/d → SWF RCH (no CLN partition)")
+                log(f"  Net P-ET={net_rate:.6g} m/d -> SWF RCH (no CLN partition)")
         forcing = write_climate_forcing_instructions(
             model_dir / "ClimateForcing.instructions",
             mode=climate_mode,
@@ -708,7 +789,13 @@ def build_mut_project(
             a_cln_m2=a_cln,
         )
         result.outputs["climate_forcing"] = forcing
-        log(f"  Wrote {forcing.name} ({climate_mode})")
+        climate_text = forcing.read_text(encoding="utf-8")
+        if "swf critical depth" in climate_text and "Stream level" in climate_text:
+            raise RuntimeError(
+                f"{forcing.name} still references a Stream level .nchos for critical depth; "
+                "expected .nchos.Outlet only"
+            )
+        log(f"  Wrote {forcing.name} ({climate_mode})" + (f"; Outlet={outlet_rel}" if outlet_rel else ""))
         if daily:
             rts = write_precipitation_rts(model_dir / "Precipitation.rts", daily)
             result.outputs["precipitation_rts"] = rts
@@ -717,6 +804,24 @@ def build_mut_project(
     elif observed_notes:
         # Still document observed Q even without climate forcing
         (model_dir / "ObservedFlows.txt").write_text("\n".join(observed_notes) + "\n", encoding="utf-8")
+
+    want_lake_obs = bool(model.lake_level_obs)
+    lake_obs_written = False
+    if include_swf and want_lake_obs:
+        lakes_gj = project.surfaces_dir / "lakes.geojson"
+        lake_depth = project.surfaces_dir / "lake_depth.tif"
+        points, lake_warns = find_lake_level_obs_points(lakes_gj, lake_depth, epsg=project.epsg)
+        for w in lake_warns:
+            result.warnings.append(w)
+        if points:
+            obs_path = write_swf_lake_level_obs_instructions(model_dir / LAKE_OBS_INSTRUCTIONS, points)
+            result.outputs["lake_level_obs"] = obs_path
+            lake_obs_written = True
+            log(f"  Wrote {obs_path.name} ({len(points)} lake observation point(s))")
+        elif not lake_warns:
+            result.warnings.append("Lake level observation points requested but none were written")
+    elif want_lake_obs and not include_swf:
+        result.warnings.append("Lake level observation points need the SWF domain; skipped")
 
     text = write_build_mut(
         project,
@@ -730,6 +835,7 @@ def build_mut_project(
         include_nchos=include_nchos,
         climate_mode=climate_mode,
         oc_times=oc_times,
+        lake_level_obs=lake_obs_written,
     )
     mut_path = model_dir / "_build.mut"
     mut_path.write_text(text, encoding="utf-8")
@@ -743,13 +849,17 @@ def build_mut_project(
                 levels.append(int(p.name.rsplit(" ", 1)[-1]))
             except ValueError:
                 pass
-    outs["snippet"].write_text(mut_snippet(project, spec, levels or None), encoding="utf-8")
+    has_outlet = bool(outlet is not None and Path(outlet).exists())
+    outs["snippet"].write_text(
+        mut_snippet(project, spec, levels or None, has_outlet=has_outlet), encoding="utf-8"
+    )
 
     model.status = "built"
     model.include_swf = include_swf
     model.include_cln = include_cln
     model.include_stream_nchos = include_nchos
     model.climate = climate_mode
+    model.lake_level_obs = want_lake_obs and include_swf
     project.set_model(model)
     project.save()
 

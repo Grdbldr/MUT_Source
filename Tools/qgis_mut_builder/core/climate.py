@@ -497,7 +497,14 @@ def write_climate_forcing_instructions(
     ``average``: net P−PET to CLN (GSTR) then SWF RCH (area-reduced); no GWF EVT.
     One long TR stress period (Abdul-style spin-up) so ATS can grow from a tiny Δt.
     ``transient``: monthly P → SWF RCH and PET → GWF EVT.
+
+    ``outlet_rel`` must be ``.nchos.Outlet`` (downstream level-1 ends on the boundary), never a
+    ``Stream level k`` file — those select the whole stem and create thousands of critical-depth cells.
     """
+    if outlet_rel and "Stream level" in outlet_rel.replace("\\", "/"):
+        raise ValueError(
+            f"Critical-depth SWBC must use .nchos.Outlet, not a Stream level file: {outlet_rel}"
+        )
     lines = [
         "! Climate forcing from MUT Model Builder (retrieved Daymet / Open-Meteo)",
         f"! Mode: {mode}",

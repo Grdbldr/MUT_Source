@@ -47,7 +47,7 @@ class MutModelBuilderPlugin:
         icon = QgsApplication.getThemeIcon("/mActionAddLine.svg")
         self.streams_action = QAction(icon, "Add streams...", self.iface.mainWindow())
         self.streams_action.setToolTip(
-            "Find rivers for a built mesh and attach as CLN, or rebuild the mesh with fixed stream nodes"
+            "Find rivers for a built mesh: attach as CLN, map onto the mesh for SWF, or rebuild with fixed stream nodes"
         )
         self.streams_action.triggered.connect(self.open_streams_dialog)
         self.iface.addPluginToMenu(MENU, self.streams_action)

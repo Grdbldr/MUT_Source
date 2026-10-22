@@ -14,6 +14,7 @@ from ..core.geo import GridTooLargeError
 from ..core.mesh import build_mesh, preview_streams
 from ..core.mut_build import build_mut_project
 from ..core.pipeline import run_pipeline
+from ..core.stream_map import map_streams_to_mesh
 
 
 class _CancelableTask(QgsTask):
@@ -192,6 +193,38 @@ class ClnExportTask(_CancelableTask):
             return True
         except InterruptedError:
             self.error = "CLN export canceled."
+        except Exception:  # noqa: BLE001 (reported to the user in the log)
+            self.error = traceback.format_exc()
+        return False
+
+    def finished(self, ok: bool) -> None:  # main thread
+        self.completed.emit(ok)
+
+
+class StreamMapTask(_CancelableTask):
+    message = pyqtSignal(str)
+    completed = pyqtSignal(bool)
+
+    def __init__(self, project, spec, network=None) -> None:
+        super().__init__(f"MUT map streams: {spec.name}")
+        self.project = project
+        self.spec = spec
+        self.network = network
+        self.result = None
+        self.error = ""
+
+    def run(self) -> bool:  # worker thread
+        try:
+            self.result = map_streams_to_mesh(
+                self.project,
+                self.spec,
+                network=self.network,
+                log=self.message.emit,
+                progress=self.setProgress,
+            )
+            return True
+        except InterruptedError:
+            self.error = "Stream mapping canceled."
         except Exception:  # noqa: BLE001 (reported to the user in the log)
             self.error = traceback.format_exc()
         return False
